@@ -21,14 +21,13 @@ from cm.legacy.services.action_process.types import ProcessStepState
 from cm.models import Action, Component, Host, Process, ProcessStep, ProcessStepInput
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_409_CONFLICT
 from tests.client import APINode
-from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
 
 from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers
 
 
-class TestWizardActionProcessMapping(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
+class TestWizardActionProcessMapping(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers):
     @classmethod
     def setUpTestData(cls) -> None:
         cls._initialize_roles_and_adcm()
@@ -396,7 +395,7 @@ class TestWizardActionProcessMapping(ADCMDjangoAPISuite, APIV2Mixin, WizardProce
         with self.subTest("Submit `add already existing` payload"):
             hc_delta = {"add": [{"hostId": host_1.pk, "componentId": component_1_s2.pk}]}
 
-            self.set_hostcomponent(cluster=self.cluster_3, entries=[(host_1, component_1_s2)])
+            self.uc.set_hostcomponent(cluster=self.cluster_3, entries=[(host_1, component_1_s2)])
             response = submit_mapping_step(hc_delta, first_mapping_step.id, expected_status=HTTP_409_CONFLICT)
             expected_response = {
                 "code": "ACTION_PROCESS_OPERATION_CONFLICT",

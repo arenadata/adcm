@@ -14,7 +14,8 @@ from cm.converters import orm_object_to_action_target_descriptor
 from cm.models import Action, Component, Host, MaintenanceMode, Service, TaskLog
 from cm.tests.mocks.task_runner import FailedJobInfo
 from cm.transition.action import RetrieveStartImpossibleReason
-from core.types import TaskID
+from core.cluster import ClusterService
+from core.types import MaintenanceModeOfObjects, MaintenanceModeState, MMReason, ObjectMM, TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from tests.dependencies import TaskRunnerOverride
@@ -79,7 +80,7 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
 
     def test_task_run_if_hc_exists_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response = self.do_change_mm_request(obj=self.service)
 
@@ -123,8 +124,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.task_runner.expect_task_not_launched()
 
     def test_task_run_if_hc_exists_component(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response = self.do_change_mm_request(obj=self.component)
 
@@ -134,7 +135,7 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_without_hc(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
         response = self.do_change_mm_request(obj=self.host)
 
@@ -144,8 +145,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_hc_exists(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
         response = self.do_change_mm_request(obj=self.host)
 
@@ -155,8 +156,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
 
     def test_mm_not_changed_on_fail_service(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.service.maintenance_mode
 
         response = self.do_change_mm_request(obj=self.service)
@@ -172,8 +173,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
 
     def test_mm_not_changed_on_fail_component(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.component.maintenance_mode
 
         response = self.do_change_mm_request(obj=self.component)
@@ -189,8 +190,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
 
     def test_mm_not_changed_on_fail_host(self):
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.host.maintenance_mode
 
         response = self.do_change_mm_request(obj=self.host)
@@ -263,6 +264,48 @@ class TestMaintenanceMode(ADCMDjangoAPISuite, MMUtilsMixin):
             entries=((cls.host_1, cls.component_1), (cls.host_2, cls.component_2), (cls.host_3, cls.component_3)),
         )
 
+    def test_service_implicit_mm_from_components_different_mm(self):
+        """Service should consider explicit AND implicit component's MM status"""
+
+        self.do_change_mm_request(obj=self.host_1)
+        self.do_change_mm_request(obj=self.host_2)
+        self.do_change_mm_request(obj=self.component_3)
+
+        expected_own_mm = MaintenanceModeOfObjects(
+            services={self.service.pk: ObjectMM(MaintenanceModeState.OFF, MMReason.SELF)},
+            components={
+                self.component_1.pk: ObjectMM(MaintenanceModeState.OFF, MMReason.SELF),
+                self.component_2.pk: ObjectMM(MaintenanceModeState.OFF, MMReason.SELF),
+                self.component_3.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+            },
+            hosts={
+                self.host_1.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+                self.host_2.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+                self.host_3.pk: ObjectMM(MaintenanceModeState.OFF, MMReason.SELF),
+            },
+        )
+        expected_calculated_mm = MaintenanceModeOfObjects(
+            services={self.service.pk: ObjectMM(MaintenanceModeState.ON, MMReason.ALL_COMPONENTS_IN_MM)},
+            components={
+                self.component_1.pk: ObjectMM(MaintenanceModeState.ON, MMReason.ALL_HOSTS_IN_MM),
+                self.component_2.pk: ObjectMM(MaintenanceModeState.ON, MMReason.ALL_HOSTS_IN_MM),
+                self.component_3.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+            },
+            hosts={
+                self.host_1.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+                self.host_2.pk: ObjectMM(MaintenanceModeState.ON, MMReason.SELF),
+                self.host_3.pk: ObjectMM(MaintenanceModeState.OFF, MMReason.SELF),
+            },
+        )
+
+        cluster_service = self.uc.container.get(ClusterService)
+        topology = cluster_service.retrieve_topology(cluster_id=self.cluster.pk)
+        own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_ids=(self.cluster.pk,))
+        calculated_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
+
+        self.assertEqual(own_mm, expected_own_mm)
+        self.assertEqual(calculated_mm, expected_calculated_mm)
+
     def test_turn_off_mm_service_in_implicit_mm_from_hosts(self):
         # turn ON mm on all hosts
         for host in (self.host_1, self.host_2, self.host_3):
@@ -275,8 +318,8 @@ class TestMaintenanceMode(ADCMDjangoAPISuite, MMUtilsMixin):
         expected_response = {
             "code": "MAINTENANCE_MODE",
             "level": "error",
-            "desc": "The service is in maintenance mode because the hosts where it is installed are in maintenance "
-            "mode. To turn it off, disable maintenance mode on related hosts.",
+            "desc": "The service is in maintenance mode because all it's components are in maintenance "
+            "mode. To turn it off, disable maintenance mode on related components.",
         }
 
         response = self.do_change_mm_request(obj=self.service)

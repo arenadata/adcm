@@ -297,16 +297,20 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_adcm_4703_retrieve_upgrade_with_variant_without_cluster_config_500(self) -> None:
-        old_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_old")
-        new_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_new")
+        old_bundle = self.uc.upload_bundle(
+            self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_old"
+        )
+        new_bundle = self.uc.upload_bundle(
+            self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_new"
+        )
 
         upgrade = Upgrade.objects.get(bundle=new_bundle, name="upgrade_via_action_complex")
 
-        cluster = self.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
+        cluster = self.uc.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
         self.assertIsNone(cluster.config)
 
-        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="first_host"))
-        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="second_host"))
+        self.uc.add_host_to_cluster(cluster=cluster, host=self.uc.add_host(provider=self.provider, fqdn="first_host"))
+        self.uc.add_host_to_cluster(cluster=cluster, host=self.uc.add_host(provider=self.provider, fqdn="second_host"))
 
         response = self.client.v2[cluster, "upgrades", upgrade].get()
 
@@ -318,10 +322,10 @@ class TestUpgrade(ADCMDjangoAPISuite):
         )
 
     def test_start_impossible_reason(self):
-        host_1 = self.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
-        host_2 = self.add_host(provider=self.provider, fqdn="second_host", cluster=self.cluster_1)
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="second_host", cluster=self.cluster_1)
         component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        self.set_hostcomponent(cluster=self.cluster_1, entries=((host_1, component_2), (host_2, component_2)))
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=((host_1, component_2), (host_2, component_2)))
 
         # list
         mm_response = self.client.v2[self.cluster_1, "hosts", host_1, "maintenance-mode"].post(
@@ -485,9 +489,9 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertIn("not in variant list", data["desc"])
 
     def test_adcm_7535_encrypt_secrets_from_new_defaults(self):
-        old_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_old")
-        new_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_new")
-        cluster = self.add_cluster(bundle=old_bundle, name="nice")
+        old_bundle = self.uc.upload_bundle(self.test_bundles_dir / "adcm_7535_old")
+        new_bundle = self.uc.upload_bundle(self.test_bundles_dir / "adcm_7535_new")
+        cluster = self.uc.add_cluster(bundle=old_bundle, name="nice")
         upgrade = Upgrade.objects.get(bundle_id=new_bundle.pk)
 
         response = self.client.v2[cluster, "upgrades", upgrade, "run"].post(data={})
@@ -501,7 +505,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
     def test_adcm_7676_create_config_host_group_without_config_correct_error(self):
         self.accept_license_of_first_service()
 
-        service = self.add_services_to_cluster(["service_with_miss_config_service"], cluster=self.cluster_1).get()
+        service, *_ = self.uc.add_services_to_cluster(["service_with_miss_config_service"], cluster=self.cluster_1)
         response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         component = Component.objects.get(service=service, prototype__name="will_miss_config")

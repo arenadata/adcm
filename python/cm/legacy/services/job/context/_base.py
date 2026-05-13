@@ -14,7 +14,7 @@ from itertools import chain
 from operator import itemgetter
 from typing import Iterable
 
-from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
+from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
@@ -25,8 +25,8 @@ from core.types import (
     HostID,
     HostName,
     MaintenanceModeOfObjects,
+    MaintenanceModeState,
     ObjectID,
-    ObjectMaintenanceModeState,
 )
 from django.db.models import F
 from infra.services import get_config_service
@@ -72,6 +72,7 @@ from cm.models import (
 def get_inventory_data(
     target: ActionTargetDescriptor,
     is_host_action: bool,
+    cluster_service: ClusterService,
     delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
     process_mapping_delta: dict[str, set[tuple[HostID, HostName]]] | None = None,
@@ -91,6 +92,7 @@ def get_inventory_data(
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.order_by("id").all()),
             config_service=config_service,
             process_mapping_delta=process_mapping_delta or {},
+            cluster_service=cluster_service,
         )
 
     if target.type == ADCMCoreType.PROVIDER or (target.type == ADCMCoreType.HOST and not is_host_action):
@@ -141,6 +143,7 @@ def get_inventory_data(
         target_hosts=target_hosts,
         config_service=config_service,
         process_mapping_delta=process_mapping_delta or {},
+        cluster_service=cluster_service,
     )
 
 
@@ -178,6 +181,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     target_hosts: Iterable[tuple[HostID, HostName]],
     config_service: core.config.ConfigService,
     process_mapping_delta: dict[str, set[tuple[HostID, HostName]]],
+    cluster_service: ClusterService,
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
@@ -202,9 +206,9 @@ def _get_inventory_for_action_from_cluster_bundle(
         ADCMCoreType.HOST: set(map(itemgetter(0), chain.from_iterable(host_groups.values()))),
     }
 
-    objects_in_maintenance_mode = calculate_maintenance_mode_for_cluster_objects(
+    objects_in_maintenance_mode = cluster_service.calculate_maintenance_mode(
         topology=cluster_topology,
-        own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[cluster_topology.cluster_id]),
+        objects_own_mm=cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_topology.cluster_id,)),
     )
 
     config_host_groups = retrieve_config_host_groups_for_hosts(
@@ -404,8 +408,7 @@ def _get_objects_basic_info(
             result |= {
                 (ADCMCoreType.SERVICE, service_info["id"]): ServiceNode(
                     **service_info,
-                    maintenance_mode=objects_maintenance_mode.services[service_info["id"]]
-                    == ObjectMaintenanceModeState.ON,
+                    maintenance_mode=objects_maintenance_mode.services[service_info["id"]] == MaintenanceModeState.ON,
                     config=objects_configuration[ADCMCoreType.SERVICE, service_info["id"]],
                     before_upgrade=objects_before_upgrade[
                         CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service_info["id"])
@@ -425,7 +428,7 @@ def _get_objects_basic_info(
                 (ADCMCoreType.COMPONENT, component_info["id"]): ComponentNode(
                     **component_info,
                     maintenance_mode=objects_maintenance_mode.components[component_info["id"]]
-                    == ObjectMaintenanceModeState.ON,
+                    == MaintenanceModeState.ON,
                     config=objects_configuration[ADCMCoreType.COMPONENT, component_info["id"]],
                     before_upgrade=objects_before_upgrade[
                         CoreObjectDescriptor(type=ADCMCoreType.COMPONENT, id=component_info["id"])

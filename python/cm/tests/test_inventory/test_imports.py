@@ -12,6 +12,7 @@
 
 from typing import Iterable
 
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from infra.services import get_config_service
 
@@ -100,9 +101,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     def prepare_cluster_hostcomponent(self) -> None:
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
-        self.set_hostcomponent(
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=((self.host_1, self.component), (self.host_2, self.component))
         )
 
@@ -167,7 +168,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
-                actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
+                actual_inventory = decrypt_secrets(
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )
+                )
                 expected_inventory = self.render_json_template(
                     file=self.templates_dir / "configs_and_imports" / template, context=self.context
                 )
@@ -188,7 +195,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
                 actual_vars = decrypt_secrets(
-                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )["all"]["vars"]
                 )
                 self.assertDictEqual(actual_vars, expected_vars)
 
@@ -223,7 +234,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
                 actual_vars = decrypt_secrets(
-                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )["all"]["vars"]
                 )
                 self.assertDictEqual(actual_vars, expected_vars)
 
@@ -268,7 +283,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 action = Action.objects.filter(prototype=object_.prototype, name="dummy").first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
                 actual_vars = decrypt_secrets(
-                    get_inventory_data(target=target, is_host_action=action.host_action)["all"]["vars"]
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )["all"]["vars"]
                 )
                 actual_vars["cluster"]["imports"]["for_export"] = sorted(
                     actual_vars["cluster"]["imports"]["for_export"], key=lambda i: i["just_integer"]
@@ -366,13 +385,15 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertDictEqual(result, expected)
 
     def test_config_host_group_effect_on_import_with_default(self) -> None:
-        host_3 = self.add_host(provider=self.provider, fqdn="host-3")
-        host_4 = self.add_host(provider=self.provider, fqdn="host-4")
+        host_3 = self.uc.add_host(provider=self.provider, fqdn="host-3")
+        host_4 = self.uc.add_host(provider=self.provider, fqdn="host-4")
 
-        self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
-        self.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
+        self.uc.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_3)
+        self.uc.add_host_to_cluster(cluster=self.cluster_with_defaults, host=host_4)
         component = Component.objects.filter(service=self.service_with_defaults).get()
-        self.set_hostcomponent(cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)])
+        self.uc.set_hostcomponent(
+            cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)]
+        )
         group = self.add_config_host_group(parent=self.service_with_defaults, hosts=[host_3])
         self.change_configuration(
             target=self.service_with_defaults,
@@ -392,7 +413,11 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         action = Action.objects.filter(prototype=self.service_with_defaults.prototype, name="dummy").first()
         target = CoreObjectDescriptor(id=self.service_with_defaults.id, type=ADCMCoreType.SERVICE)
-        result = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))["all"]
+        result = decrypt_secrets(
+            get_inventory_data(
+                target=target, is_host_action=action.host_action, cluster_service=self.uc.container.get(ClusterService)
+            )
+        )["all"]
         expected_vars_imports = {
             "very_complex": {
                 "just_integer": 4,

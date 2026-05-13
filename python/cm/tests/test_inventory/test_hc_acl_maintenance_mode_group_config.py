@@ -18,25 +18,23 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster")
-        self.provider = self.add_provider(bundle=provider_bundle, name="provider")
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="cluster")
+        self.provider = self.uc.add_provider(bundle=provider_bundle, name="provider")
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
-        self.host_4 = self.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
+        self.host_4 = self.uc.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
 
-        self.service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster
-        ).get()
+        self.service, *_ = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster)
 
         self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service)
         self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_1, self.component_1), (self.host_2, self.component_2)]
         )
 
@@ -79,7 +77,7 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
         ]
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster, new_mapping=action_hc_map)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_3, self.component_1), (self.host_4, self.component_2)]
         )
 

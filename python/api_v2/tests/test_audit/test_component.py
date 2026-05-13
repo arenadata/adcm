@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from cm.models import Action, Cluster, Component, MaintenanceMode, Service
 from rest_framework.status import (
     HTTP_200_OK,
@@ -28,9 +27,9 @@ class TestComponentAudit(ADCMDjangoAPISuite):
         super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        self.test_user = self.uc.create_user(**self.test_user_credentials)
 
-        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
+        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
         self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
         self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)

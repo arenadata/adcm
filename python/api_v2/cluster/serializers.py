@@ -25,6 +25,7 @@ from cm.models import (
     Prototype,
     Service,
 )
+from core.types import ObjectMM
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import DictField
@@ -304,8 +305,8 @@ class ComponentMappingSerializer(ModelSerializer):
         return self.context["depend_on"].get(instance.id)
 
     @extend_schema_field(field=ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value)))
-    def get_maintenance_mode(self, instance: Component):
-        return self.context["mm"].components.get(instance.id, MaintenanceMode.OFF).value
+    def get_maintenance_mode(self, instance: Component) -> str:
+        return self.context["mm"].components.get(instance.id, ObjectMM(MaintenanceMode.OFF)).state.value
 
     @extend_schema_field(field=BooleanField())
     def get_is_maintenance_mode_available(self, _instance: Component):

@@ -13,7 +13,16 @@
 from typing import Iterable, Protocol
 
 from core.cluster._types import ClusterTopology
-from core.types import ActionHostGroupID, ClusterID, ClusterObjectDesc, MaintenanceModeOfObjects
+from core.types import (
+    ActionHostGroupID,
+    ClusterID,
+    ClusterObjectDesc,
+    ComponentDesc,
+    HostDesc,
+    MaintenanceModeOfObjects,
+    MaintenanceModeState,
+    ServiceDesc,
+)
 
 
 class ClusterRepoI(Protocol):
@@ -28,4 +37,7 @@ class ClusterRepoI(Protocol):
         ...
 
     def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
+        ...
+
+    def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
         ...

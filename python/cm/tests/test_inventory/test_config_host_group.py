@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster import ClusterService
 from core.types import CoreObjectDescriptor
 
 from cm.converters import model_name_to_core_type
@@ -18,6 +19,7 @@ from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
+    Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -26,19 +28,23 @@ class TestCHGsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.cluster = self.add_cluster(
+        self.cluster = self.uc.add_cluster(
             bundle=self.add_bundle(source_dir=self.bundles_dir / "cluster_config_host_group"), name="Target Cluster"
         )
 
-        self.provider = self.add_provider(
+        self.provider = self.uc.add_provider(
             bundle=self.add_bundle(source_dir=self.bundles_dir / "provider"), name="provider"
         )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
 
-        self.service_not_simple, self.service_thesame = self.add_services_to_cluster(
-            cluster=self.cluster, service_names=["not_simple", "thesame"]
+        service_names = ["not_simple", "thesame"]
+        self.service_not_simple, self.service_thesame = self.uc.add_services_to_cluster(
+            cluster=self.cluster, names=service_names
+        )
+        self.service_not_simple, self.service_thesame = Service.objects.filter(
+            cluster=self.cluster, prototype__name__in=service_names
         ).order_by("prototype__name")
         self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"
@@ -54,7 +60,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         )
 
     def test_config_host_group_in_inventory(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.host_1, self.component_not_simple),
@@ -184,7 +190,13 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype).first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
-                actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
+                actual_inventory = decrypt_secrets(
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )
+                )
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
                 self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
                 for host_name, actual_data in actual_inventory["all"]["hosts"].items():

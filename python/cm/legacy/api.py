@@ -15,6 +15,7 @@ from typing import Literal, TypedDict
 import json
 
 from adcm_version import compare_prototype_versions
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic, on_commit
@@ -253,7 +254,7 @@ def delete_host_provider(provider, cancel_tasks=True):
     logger.info("host provider #%s is deleted", provider.pk)
 
 
-def delete_host(host: Host, cancel_tasks: bool = True) -> None:
+def delete_host(host: Host, cluster_service: ClusterService, cancel_tasks: bool = True) -> None:
     cluster = host.cluster
     if cluster:
         raise AdcmEx(code="HOST_CONFLICT", msg="Unable to remove a host associated with a cluster.")
@@ -270,12 +271,12 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
     host_pk = host.pk
     host.delete()
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     logger.info("host #%s is deleted", host_pk)
 
 
-def delete_cluster(cluster: Cluster) -> None:
+def delete_cluster(cluster: Cluster, cluster_service: ClusterService) -> None:
     tasks = []
     for lock in cluster.concerns.filter(type=ConcernType.LOCK):
         for task in TaskLog.objects.filter(lock=lock):
@@ -302,13 +303,13 @@ def delete_cluster(cluster: Cluster) -> None:
     cluster.delete()
 
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     for task in tasks:
         task.cancel(obj_deletion=True)
 
 
-def remove_host_from_cluster(host: Host, rbac_scenarios: RBACScenarios) -> Host:
+def remove_host_from_cluster(host: Host, cluster_service: ClusterService, rbac_scenarios: RBACScenarios) -> Host:
     cluster = host.cluster
 
     if HostComponent.objects.filter(cluster=cluster, host=host).exists():
@@ -338,7 +339,7 @@ def remove_host_from_cluster(host: Host, rbac_scenarios: RBACScenarios) -> Host:
         rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     return host
 

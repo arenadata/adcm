@@ -14,6 +14,7 @@ from configparser import ConfigParser
 from pathlib import Path
 import json
 
+from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -28,7 +29,7 @@ from django.urls import reverse
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin, TaskTestMixin
+from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
 
 from cm.converters import orm_object_to_core_type
@@ -163,7 +164,7 @@ class DummyObject:
     pass
 
 
-class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
+class ActionAllowTest(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
@@ -189,7 +190,7 @@ class ActionAllowTest(BusinessLogicMixin, BaseTestCase):
             cluster=self.cluster, prototype__name="component_2", prototype__display_name="Component 2 from Service 1"
         )
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=[
                 (self.host_1, component_1),
@@ -305,7 +306,9 @@ class TestActionParams(ADCMDjangoAPISuite):
 
         job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)
-        prepare_ansible_environment(task=task, job=job, configuration=self.configuration)
+        prepare_ansible_environment(
+            task=task, job=job, configuration=self.configuration, cluster_service=self.uc.container.get(ClusterService)
+        )
 
         ansible_cfg_file: Path = job_dir / "ansible.cfg"
         config_json_file: Path = job_dir / "config.json"
@@ -425,25 +428,23 @@ class TestActionParams(ADCMDjangoAPISuite):
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
 
 
-class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
+class TestActionLogic(BaseTestCase, TaskTestMixin):
     def setUp(self) -> None:
         super().setUp()
         bundles_dir = self.base_dir / "python" / "cm" / "tests" / "bundles"
 
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
-        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
 
-        self.provider = self.add_provider(bundle=provider_bundle, name="Test provider")
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="Test cluster")
+        self.provider = self.uc.add_provider(bundle=provider_bundle, name="Test provider")
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="Test cluster")
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
-        self.host_4 = self.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
+        self.host_4 = self.uc.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
 
-        self.service = self.add_services_to_cluster(
-            cluster=self.cluster, service_names=["service_two_components"]
-        ).get()
+        self.service, *_ = self.uc.add_services_to_cluster(cluster=self.cluster, names=["service_two_components"])
         self.component_1 = self.service.components.get(prototype__name="component_1")
         self.component_2 = self.service.components.get(prototype__name="component_2")
 
@@ -485,13 +486,14 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
         return task, job
 
     def test_internal_hc_apply(self):
+        cluster_service = self.uc.container.get(ClusterService)
         service_name = self.service.prototype.name
         c1_name = self.component_1.prototype.name
         c2_name = self.component_2.prototype.name
 
         # h1-c1, h2-c1, h3-c2
         initial_hc = ((self.host_1, self.component_1), (self.host_2, self.component_1), (self.host_3, self.component_2))
-        self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
 
         # Case 1. rules specifies changes not present in mapping_delta
         mapping_delta = TaskMappingDelta(
@@ -500,7 +502,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
         rules = [HcAclRule(service=service_name, component=c1_name, action="add")]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        internal_script_hc_apply(task=task, job=job)
+        internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(host.pk, component.pk) for host, component in initial_hc}
         self.assertSetEqual(actual_hc, expected_hc)
@@ -515,13 +517,13 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        internal_script_hc_apply(task=task, job=job)
+        internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(self.host_2.pk, self.component_1.pk), (self.host_3.pk, self.component_2.pk)}
         self.assertSetEqual(actual_hc, expected_hc)
 
         # restore HC
-        self.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
 
         # Case 3. mapping_delta is partially specified in rules
         mapping_delta = TaskMappingDelta(
@@ -533,7 +535,7 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        internal_script_hc_apply(task=task, job=job)
+        internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {
             (self.host_1.pk, self.component_1.pk),
@@ -546,4 +548,4 @@ class TestActionLogic(BaseTestCase, BusinessLogicMixin, TaskTestMixin):
 
         task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, rules=rules)
         with self.assertRaises(AdcmEx):
-            internal_script_hc_apply(task=task, job=job)
+            internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)

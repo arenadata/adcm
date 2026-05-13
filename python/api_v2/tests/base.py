@@ -17,7 +17,6 @@ from typing import Collection, TypeAlias
 import uuid
 import tarfile
 
-from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_clusters_objects_maintenance_mode
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -33,8 +32,8 @@ from cm.models import (
     Provider,
     Service,
 )
-from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.types import ClusterID, ObjectMaintenanceModeState
+from core.cluster import ClusterService
+from core.types import ClusterID, MaintenanceModeState
 from rbac.models import Group, Policy, Role, User
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from tests.client import ADCMTestClient, APINode
@@ -282,23 +281,25 @@ class APIV2Mixin:
 
 
 class TestUtilsMixin:
-    def check_mm_is_on_only_for(self, obj: Component | Host | None, cluster_id: ClusterID):
-        objects_mm = calculate_maintenance_mode_for_cluster_objects(
-            topology=retrieve_cluster_topology(cluster_id=cluster_id),
-            own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=(cluster_id,)),
+    def check_mm_is_on_only_for(
+        self, obj: Component | Host | None, cluster_id: ClusterID, cluster_service: ClusterService
+    ) -> None:
+        objects_mm = cluster_service.calculate_maintenance_mode(
+            topology=cluster_service.retrieve_topology(cluster_id=cluster_id),
+            objects_own_mm=cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_id,)),
         )
         components_mm = objects_mm.components
         hosts_mm = objects_mm.hosts
 
         if isinstance(obj, Component):
-            self.assertEqual(components_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+            self.assertEqual(components_mm.pop(obj.id), MaintenanceModeState.ON)
         elif isinstance(obj, Host):
-            self.assertEqual(hosts_mm.pop(obj.id), ObjectMaintenanceModeState.ON)
+            self.assertEqual(hosts_mm.pop(obj.id), MaintenanceModeState.ON)
         elif obj is None:
             pass
         else:
             raise ValueError(f"Unexpected object type: {type(obj)}")
 
-        self.assertSetEqual(set(objects_mm.services.values()), {ObjectMaintenanceModeState.OFF})
-        self.assertSetEqual(set(components_mm.values()), {ObjectMaintenanceModeState.OFF})
-        self.assertSetEqual(set(hosts_mm.values()), {ObjectMaintenanceModeState.OFF})
+        self.assertSetEqual({mm.state for mm in objects_mm.services.values()}, {MaintenanceModeState.OFF})
+        self.assertSetEqual({mm.state for mm in components_mm.values()}, {MaintenanceModeState.OFF})
+        self.assertSetEqual({mm.state for mm in hosts_mm.values()}, {MaintenanceModeState.OFF})

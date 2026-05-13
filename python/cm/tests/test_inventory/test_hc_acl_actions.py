@@ -20,16 +20,16 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
+        self.provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
 
-        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
-        self.service: Service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster_1
-        ).get()
+        self.cluster_1 = self.uc.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        self.service: Service = self.uc.add_services_to_cluster(
+            names=["service_two_components"], cluster=self.cluster_1
+        )[0]
         self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service)
         self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service)
 
@@ -52,7 +52,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             }
         ]
         self.initial_hc_objects = ((self.host_1, self.component_1),)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
 
     def test_expand(self):
         expected_topology = {
@@ -104,7 +104,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         ]
 
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_add)
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
         )
 
@@ -126,7 +126,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 )
 
     def test_shrink(self):
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
         )
 
@@ -172,7 +172,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
             ),
         }
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=self.initial_hc)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=self.initial_hc_objects)
 
         for obj, action in (
             (self.cluster_1, self.hc_acl_action_cluster),
@@ -192,7 +192,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
                 )
 
     def test_move(self):
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[*self.initial_hc_objects, (self.host_2, self.component_2)]
         )
 
@@ -256,7 +256,7 @@ class TestInventoryHcAclActions(BaseInventoryTestCase):
         ]
 
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster_1, new_mapping=hc_map_move)
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1, entries=[(self.host_2, self.component_1), (self.host_1, self.component_2)]
         )
 

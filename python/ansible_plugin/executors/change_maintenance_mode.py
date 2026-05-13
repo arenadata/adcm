@@ -14,9 +14,9 @@ from contextlib import suppress
 from typing import Any, Collection
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.status.notify import reset_objects_in_mm
 from cm.legacy.status_api import send_object_update_event
 from cm.models import Host, MaintenanceMode
+from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import field_validator
@@ -104,6 +104,7 @@ class ADCMChangeMMExecutor(ADCMAnsiblePluginExecutor[ChangeMaintenanceModeArgume
             )
 
         with suppress(Exception):
-            reset_objects_in_mm()
+            status_scenarios = self._container.get(StatusScenarios)
+            status_scenarios.reset_objects_in_mm()
 
         return CallResult(value=None, changed=True, error=None)

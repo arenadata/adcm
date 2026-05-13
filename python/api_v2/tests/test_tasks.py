@@ -49,7 +49,7 @@ class TestTask(ADCMDjangoAPISuite):
         self.test_user = self.create_user(**self.test_user_credentials)
 
         self.adcm = ADCM.objects.first()
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
@@ -320,14 +320,14 @@ class TestTaskObjects(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
+        self.service_2 = self.uc.add_services_to_cluster(names=["service_2"], cluster=self.cluster_1)
 
         self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
-        self.host = self.add_host(provider=self.provider, fqdn="just-host")
+        self.host = self.uc.add_host(provider=self.provider, fqdn="just-host")
 
-        self.add_host_to_cluster(self.cluster_1, self.host)
+        self.uc.add_host_to_cluster(self.cluster_1, self.host)
         HostComponent.objects.create(
             cluster=self.cluster_1, host=self.host, service=self.service_1, component=self.component_1
         )

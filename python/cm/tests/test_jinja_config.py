@@ -15,13 +15,13 @@ from unittest.mock import patch
 import unittest
 
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin, TaskTestMixin
+from tests.deprecated import TaskTestMixin
 
 from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import Action
 
 
-class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestJinjaConfigBugs(TaskTestMixin, BaseTestCase):
     maxDiff = None
 
     def setUp(self) -> None:
@@ -58,8 +58,8 @@ class TestJinjaConfigBugs(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
             "root": {**expected_full_limits["root"], "variants": {"tutu": "string", "tata": "integer"}},
         }
 
-        bundle = self.add_bundle(self.bugs_bundle_dir / "ADCM-5556")
-        cluster = self.add_cluster(bundle=bundle, name="adcm-5556-cluster")
+        bundle = self.uc.upload_bundle(self.bugs_bundle_dir / "ADCM-5556")
+        cluster = self.uc.add_cluster(bundle=bundle, name="adcm-5556-cluster")
         action = Action.objects.get(prototype=cluster.prototype, name="with_j2_config")
 
         config_prototypes = {

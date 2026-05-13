@@ -189,7 +189,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         self.assert_fields_in_ahg(group.pk, expected)
 
     def test_delete_success(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=((self.hosts[0], self.component), (self.hosts[1], self.component))
         )
 
@@ -225,15 +225,15 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
                 )
 
     def test_unlink_host_from_component_success(self) -> None:
-        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+        service_2, *_ = self.uc.add_services_to_cluster(["second"], cluster=self.cluster)
 
         component_2 = self.service.components.last()
         component_3 = service_2.components.last()
         self.hosts += [
-            self.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3, 6)
+            self.uc.add_host(provider=self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3, 6)
         ]
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.hosts[0], self.component),
@@ -294,11 +294,11 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         )
 
     def test_move_host_to_another_component_success(self) -> None:
-        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+        service_2, *_ = self.uc.add_services_to_cluster(["second"], cluster=self.cluster)
         component_1 = service_2.components.first()
         component_2 = service_2.components.last()
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.hosts[0], self.component),
@@ -350,9 +350,9 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         self.assertEqual(component_group_3.hosts.count(), 0)
 
     def test_unlink_hosts_from_correct_service_success(self) -> None:
-        service_2 = self.add_services_to_cluster(["second"], cluster=self.cluster).get()
+        service_2, *_ = self.uc.add_services_to_cluster(["second"], cluster=self.cluster)
         component_2 = service_2.components.last()
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.hosts[0], self.component),
@@ -390,7 +390,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         )
 
     def test_unlink_host_from_cluster_service_and_component_success(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=((self.hosts[0], self.component), (self.hosts[1], self.component))
         )
 
@@ -436,7 +436,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
     def test_retrieve_success(self) -> None:
         name = "aWeSOME Group NAmE"
         host_1, host_2, host_3, *_ = self.hosts
-        self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
         another_group = self.uc.create_action_host_group(name=f"{name}XXX21321", owner=self.service, description="hoho")
         service_group = self.uc.create_action_host_group(name=name, owner=self.service)
         self.uc.add_hosts_to_action_host_group(group_id=service_group.id, hosts=[host_1.id, host_3.id])
@@ -464,9 +464,10 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
         name_3 = "tired fantasies"
         description = "nananan"
 
-        another_component = self.add_services_to_cluster(["second"], cluster=self.cluster).get().components.first()
+        service, *_ = self.uc.add_services_to_cluster(["second"], cluster=self.cluster)
+        another_component = service.components.first()
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=[(host, self.component) for host in self.hosts] + [(self.hosts[1], another_component)],
         )
@@ -538,7 +539,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
             name="Service Group #2", owner=self.service, description="some description 2"
         )
 
-        self.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host, self.component) for host in self.hosts])
 
         self.uc.add_hosts_to_action_host_group(cluster_group.id, hosts=[host_1.id, host_2.id, host_3.id])
         self.uc.add_hosts_to_action_host_group(group_1.id, hosts=[host_1.id, host_2.id])
@@ -585,13 +586,13 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
 
     def test_adcm_5931_duplicates_when_filtering_by_has_host(self) -> None:
         host_1, host_2, *_ = self.hosts
-        host_3 = self.add_host(provider=host_1.provider, fqdn="special", cluster=self.cluster)
+        host_3 = self.uc.add_host(provider=host_1.provider, fqdn="special", cluster=self.cluster)
 
         group_1 = self.uc.create_action_host_group(name="Service Group", owner=self.service)
         group_2 = self.uc.create_action_host_group(name="Super Custom", owner=self.service)
         group_3 = self.uc.create_action_host_group(name="Super Custom #2", owner=self.service)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(host, self.component) for host in (host_1, host_2, host_3)]
         )
 
@@ -614,7 +615,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
     def test_host_candidates_success(self) -> None:
         host_1, host_2, host_3 = self.hosts
         host_1_data, host_2_data, host_3_data = ({"id": host.id, "name": host.fqdn} for host in self.hosts)
-        self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
         cluster_group = self.uc.create_action_host_group(name="Some Taken", owner=self.cluster)
         cluster_group_2 = self.uc.create_action_host_group(name="None Taken", owner=self.cluster)
@@ -673,7 +674,7 @@ class TestHostsInActionHostGroup(ADCMDjangoAPISuite):
         cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider")
         cls.hosts = [cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}") for i in range(5)]
 
-        cls.service_2, *_ = cls.add_services_to_cluster(["second"], cluster=cls.cluster)
+        cls.service_2, *_ = cls.uc.add_services_to_cluster(["second"], cluster=cls.cluster)
         cls.component_2, cls.component_3 = cls.service_2.components.all()
 
         for host in cls.hosts[:3]:
@@ -977,9 +978,9 @@ class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
                 self.assertEqual(data["displayName"], group_action.display_name)
 
     def test_run(self) -> None:
-        provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
-        host_1, host_2 = (self.add_host(provider=provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2))
-        self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
+        provider = self.uc.add_provider(bundle=self.provider_bundle, name="Provider")
+        host_1, host_2 = (self.uc.add_host(provider=provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2))
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
         for target, action_name in (
             (self.cluster, "allowed_in_group_1"),
@@ -1077,9 +1078,9 @@ class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
                     )
 
     def test_adcm_6790_download_logs_ahg(self) -> None:
-        provider = self.add_provider(bundle=self.provider_bundle, name="Provider")
-        host_1, host_2 = (self.add_host(provider=provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2))
-        self.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
+        provider = self.uc.add_provider(bundle=self.provider_bundle, name="Provider")
+        host_1, host_2 = (self.uc.add_host(provider=provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(2))
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host_1, self.component), (host_2, self.component)])
 
         group = self.group_map[self.cluster]
         self.uc.add_hosts_to_action_host_group(group_id=group.id, hosts=[host_1.id, host_2.id])
@@ -1113,7 +1114,7 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
         cls.control_service, *_ = cls.uc.add_services_to_cluster(["example"], cluster=cls.control_cluster)
         cls.control_component = cls.control_service.components.first()
 
-        cls.provider = cls.add_provider(bundle=cls.provider_bundle, name="Provider")
+        cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider")
         cls.host_1, cls.host_2 = (
             cls.uc.add_host(provider=cls.provider, fqdn=f"host-{i}", cluster=cls.cluster) for i in range(2)
         )

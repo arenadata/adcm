@@ -69,7 +69,7 @@ class RetrieveStartImpossibleReason:
                 cluster_id = self.cluster_service.repo.get_related_cluster_id(object_=target_desc)
 
                 topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
-                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
+                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_id,))
                 objects_mm = self.cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
 
                 result = operations.detect_start_impossible_reason_for_cluster_objects(
@@ -97,7 +97,7 @@ class RetrieveStartImpossibleReason:
 
             case Descriptor(type=ADCMCoreType.CLUSTER):
                 topology = self.cluster_service.retrieve_topology(cluster_id=target.id)
-                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_id=target.id)
+                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_ids=(target.id,))
                 objects_mm = self.cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
                 result = operations.detect_start_impossible_reason_for_cluster_objects(
                     target=target, topology=topology, maintenance_mode=objects_mm

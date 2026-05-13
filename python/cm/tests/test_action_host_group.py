@@ -12,6 +12,7 @@
 
 from pathlib import Path
 
+from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -22,7 +23,6 @@ from core.legacy.job.runners import (
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, ExtraActionTargetType
 from django.conf import settings
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
 
@@ -37,27 +37,27 @@ from cm.models import Action, ActionHostGroup, Component, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
         self.bundles_dir = Path(__file__).parent / "bundles"
 
-        self.provider = self.add_provider(
-            bundle=self.add_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
+        self.provider = self.uc.add_provider(
+            bundle=self.uc.upload_bundle(self.bundles_dir / "provider_full_config"), name="Host Provider"
         )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host-1")
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host-2")
 
-        self.cluster = self.add_cluster(
-            bundle=self.add_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
+        self.cluster = self.uc.add_cluster(
+            bundle=self.uc.upload_bundle(self.bundles_dir / "cluster_full_config"), name="Main Cluster"
         )
-        self.service = self.add_services_to_cluster(service_names=["all_params"], cluster=self.cluster).first()
+        self.service, *_ = self.uc.add_services_to_cluster(names=["all_params"], cluster=self.cluster)
         self.component = Component.objects.get(service=self.service)
 
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
-        self.set_hostcomponent(
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=((self.host_1, self.component), (self.host_2, self.component))
         )
 
@@ -106,6 +106,7 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
             target=ActionTargetDescriptor(id=self.action_group.id, type=ExtraActionTargetType.ACTION_HOST_GROUP),
             is_host_action=False,
             delta=None,
+            cluster_service=self.uc.container.get(ClusterService),
         )
 
         self.assertIn("target", group_inventory["all"]["children"])
@@ -117,6 +118,7 @@ class TestActionHostGroup(WithDishkaContainer, BusinessLogicMixin, BaseTestCase)
             target=ActionTargetDescriptor(id=self.cluster.id, type=ADCMCoreType.CLUSTER),
             is_host_action=False,
             delta=None,
+            cluster_service=self.uc.container.get(ClusterService),
         )
 
         group_inventory["all"]["children"].pop("target")

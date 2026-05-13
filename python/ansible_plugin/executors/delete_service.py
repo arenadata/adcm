@@ -14,6 +14,7 @@ from typing import Collection
 
 from cm.legacy.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
 from cm.models import ClusterBind, HostComponent, Prototype, Service
+from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
@@ -81,6 +82,7 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
                 cluster_id=service.cluster_id,
                 bundle_id=bundle_id,
                 new_mapping=new_mapping,
+                cluster_service=self._container.get(ClusterService),
                 checks_func=check_nothing,
             )
 

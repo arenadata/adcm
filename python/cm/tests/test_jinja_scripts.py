@@ -16,7 +16,7 @@ from uuid import uuid4
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin, TaskTestMixin
+from tests.deprecated import TaskTestMixin
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
 import core
@@ -40,27 +40,27 @@ from cm.models import (
 from cm.tests.dependencies import WithDishkaContainer
 
 
-class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestJinjaScriptsEnvironment(TaskTestMixin, BaseTestCase):
     maxDiff = None
 
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"
 
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
-        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
         self.cluster_task_id = self.prepare_task(owner=self.cluster, name="action_on_cluster").id
 
-        service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
+        service, *_ = self.uc.add_services_to_cluster(names=["service_one_component"], cluster=self.cluster)
         self.service_task_id = self.prepare_task(owner=service, name="action_on_service").id
 
         component = service.components.get(prototype__name="component_1")
         self.component_task_id = self.prepare_task(owner=component, name="action_on_component").id
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
-        host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
-        self.set_hostcomponent(cluster=self.cluster, entries=((host, component),))
+        provider = self.uc.add_provider(bundle=provider_bundle, name="test_provider")
+        host = self.uc.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=((host, component),))
 
         self.component_host_task_id = self.prepare_task(owner=component, host=host, name="host_action_on_component").id
 
@@ -241,18 +241,18 @@ class TestJinjaScriptsEnvironment(BusinessLogicMixin, TaskTestMixin, BaseTestCas
         self.assertDictEqual(env, expected_env)
 
 
-class TestJinjaScriptsJobs(WithDishkaContainer, BusinessLogicMixin, TaskTestMixin, BaseTestCase):
+class TestJinjaScriptsJobs(WithDishkaContainer, TaskTestMixin, BaseTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
-        provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="test_cluster")
-        service = self.add_services_to_cluster(service_names=["service_one_component"], cluster=self.cluster).get()
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
+        service, *_ = self.uc.add_services_to_cluster(names=["service_one_component"], cluster=self.cluster)
         self.component = Component.objects.get(service=service)
 
-        provider = self.add_provider(bundle=provider_bundle, name="test_provider")
-        self.host = self.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
+        provider = self.uc.add_provider(bundle=provider_bundle, name="test_provider")
+        self.host = self.uc.add_host(provider=provider, fqdn="test_host", cluster=self.cluster)
 
     def test_jobs_generation(self):
         with self.subTest("Old scripts processing"):
@@ -288,7 +288,7 @@ class TestJinjaScriptsJobs(WithDishkaContainer, BusinessLogicMixin, TaskTestMixi
                 },
             )
 
-        self.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=((self.host, self.component),))
 
         with self.subTest("[With hc] Old scripts processing"):
             task_id = self.prepare_task(owner=self.cluster, name="jinja_scripts_action").id

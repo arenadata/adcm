@@ -36,7 +36,7 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
 
         bundle = self.add_bundle(bundle_dir)
 
-        self.cluster = self.add_cluster(bundle=bundle, name="cc")
+        self.cluster = self.uc.add_cluster(bundle=bundle, name="cc")
 
     def test_render_templates_in_regular_action(self):
         action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_templates")
@@ -63,8 +63,8 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
 class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     def test_adcm_7609(self):
         bundle_path = Path(__file__).parent / "bundles" / "adcm_7609"
-        bundle = self.add_bundle(bundle_path)
-        cluster = self.add_cluster(bundle=bundle, name="aa")
+        bundle = self.uc.upload_bundle(bundle_path)
+        cluster = self.uc.add_cluster(bundle=bundle, name="aa")
         action = Action.objects.get(name="aa", prototype_id=cluster.prototype_id)
 
         template = parse_template(action.scripts_template)

@@ -26,22 +26,18 @@ class TestImport(ADCMDjangoAPISuite):
         self.client.login(username="admin", password="admin")
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        self.test_user = self.uc.create_user(**self.test_user_credentials)
 
-        export_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_export")
-        self.export_cluster = self.add_cluster(bundle=export_bundle, name="cluster_export")
-        self.export_service = self.add_services_to_cluster(
-            service_names=["service_export"], cluster=self.export_cluster
-        ).get()
+        export_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_export")
+        self.export_cluster = self.uc.add_cluster(bundle=export_bundle, name="cluster_export")
+        self.export_service, *_ = self.uc.add_services_to_cluster(names=["service_export"], cluster=self.export_cluster)
 
-        import_bundle = self.add_bundle(source_dir=self.test_bundles_dir / "cluster_import")
-        self.import_cluster = self.add_cluster(bundle=import_bundle, name="cluster_import")
-        self.import_service = self.add_services_to_cluster(
-            service_names=["service_import"], cluster=self.import_cluster
-        ).get()
-        self.import_service_2 = self.add_services_to_cluster(
-            service_names=["service_import_2"], cluster=self.import_cluster
-        ).get()
+        import_bundle = self.uc.upload_bundle(self.test_bundles_dir / "cluster_import")
+        self.import_cluster = self.uc.add_cluster(bundle=import_bundle, name="cluster_import")
+        self.import_service, *_ = self.uc.add_services_to_cluster(names=["service_import"], cluster=self.import_cluster)
+        self.import_service_2, *_ = self.uc.add_services_to_cluster(
+            names=["service_import_2"], cluster=self.import_cluster
+        )
         self.aclient = ADCMAsyncTestClient()
         self.aclient.force_login(User.objects.get(username="admin"))
 

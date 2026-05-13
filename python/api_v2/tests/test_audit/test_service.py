@@ -40,8 +40,8 @@ class TestServiceAudit(ADCMDjangoAPISuite):
             "description": "new config",
         }
 
-        self.export_service = self.add_services_to_cluster(service_names=["service"], cluster=self.cluster_2).get()
-        self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1)
+        self.export_service, *_ = self.uc.add_services_to_cluster(names=["service"], cluster=self.cluster_2)
+        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
 
         self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)

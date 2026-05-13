@@ -14,6 +14,7 @@ from datetime import datetime
 from functools import partial
 from typing import Any, Callable, Generator, Iterable, NamedTuple
 
+from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.legacy.job.types import Job, ScriptType, Task
@@ -62,6 +63,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
         config_scenarios: ConfigScenarios,
+        cluster_service: ClusterService,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -70,6 +72,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
             config_scenarios=config_scenarios,
+            cluster_service=cluster_service,
         )
 
         self._failed_job = failed_job
@@ -117,6 +120,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
         config_scenarios: ConfigScenarios,
+        cluster_service: ClusterService,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -125,6 +129,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
             config_scenarios=config_scenarios,
+            cluster_service=cluster_service,
         )
 
         self.imitators = change_jobs or {}

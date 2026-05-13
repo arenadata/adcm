@@ -19,21 +19,21 @@ class TestHostAction(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
+        self.provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
 
-        self.service: Service = self.add_services_to_cluster(
-            cluster=self.cluster, service_names=["service_one_component"]
-        ).get()
+        self.service: Service = self.uc.add_services_to_cluster(cluster=self.cluster, names=["service_one_component"])[
+            0
+        ]
 
         self.component = Component.objects.get(service=self.service, prototype__name="component_1")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_1, self.component), (self.host_2, self.component)]
         )
 

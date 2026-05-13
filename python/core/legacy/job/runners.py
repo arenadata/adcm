@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, NamedTuple, Protocol
 
+from core.cluster import ClusterService
 from core.legacy.job.executors import Executor
 from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.types import ExecutionStatus, Job, Task
@@ -59,6 +60,7 @@ class JobEnvironmentBuilder(Protocol):
         task: Task,
         job: Job,
         configuration: ExternalSettings,
+        cluster_service: ClusterService,
     ) -> None:
         ...
 

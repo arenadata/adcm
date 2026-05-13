@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from rbac.scenarios import RBACScenarios
 from tests.base import BaseTestCase
@@ -85,6 +86,7 @@ class TestComponent(BaseTestCase):
                 cluster_id=self.cluster.id,
                 bundle_id=self.cluster.bundle_id,
                 new_mapping=(HostComponentEntry(host_id=host.id, component_id=component_1.id),),
+                cluster_service=self.uc.container.get(ClusterService),
             )
 
     def test_service_requires_issue(self):

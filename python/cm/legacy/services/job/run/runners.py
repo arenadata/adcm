@@ -15,6 +15,7 @@ from typing import Any, Protocol
 import os
 import signal
 
+from core.cluster import ClusterService
 from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
 from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.runners import (
@@ -62,7 +63,7 @@ class EventNotifier(Protocol):
 
 
 class StatusServerInteractor(Protocol):
-    def reset_objects_in_mm(self) -> Any:
+    def reset_objects_in_mm(self, cluster_service: ClusterService) -> Any:
         ...
 
     def reset_hc_map(self) -> Any:
@@ -203,8 +204,11 @@ class JobSequenceRunner(TaskRunner):
     def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
         (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
 
+        cluster_service = self._container.get(ClusterService)
         for prepare_environment in target.environment_builders:
-            prepare_environment(task=task, job=target.job, configuration=self._settings)
+            prepare_environment(
+                task=task, job=target.job, configuration=self._settings, cluster_service=cluster_service
+            )
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
@@ -329,7 +333,8 @@ class JobSequenceRunner(TaskRunner):
             self._update_owner_state(task=finished_task, job=last_job, owner=owner)
 
         if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
-            set_hostcomponent(task=finished_task, logger=self._logger)
+            cluster_service = self._container.get(ClusterService)
+            set_hostcomponent(task=finished_task, cluster_service=cluster_service, logger=self._logger)
 
     def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
         if self._runtime.status == ExecutionStatus.SUCCESS:

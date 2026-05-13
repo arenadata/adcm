@@ -40,7 +40,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
     def test_simple_call_success(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
-                self.set_hostcomponent(
+                self.uc.set_hostcomponent(
                     cluster=self.cluster,
                     entries=((self.host_1, self.component_1),),
                 )
@@ -73,7 +73,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 self.assertListEqual(actual_hc, expected_hc)
 
     def test_simple_call_forbidden_arg_fail(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, self.component_1),),
         )
@@ -116,7 +116,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 self.assertListEqual(actual_hc, expected_hc)
 
     def test_complex_call_success(self) -> None:
-        service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).get()
+        service_2, *_ = self.uc.add_services_to_cluster(["service_2"], cluster=self.cluster)
         component_2 = self.service_1.components.get(prototype__name="component_2")
         component_3 = service_2.components.get(prototype__name="component_1")
         component_4 = service_2.components.get(prototype__name="component_2")
@@ -132,7 +132,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             key=itemgetter("component_id"),
         )
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, self.component_1), (self.host_2, component_3), (self.host_2, component_4)),
         )
@@ -224,7 +224,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_add_already_existing_fail(self) -> None:
         object_ = self.service_1
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, self.component_1),),
         )
@@ -254,9 +254,9 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(self.get_current_hc_dicts(), expected_hc)
 
     def test_remove_host_with_action_group_called_success(self) -> None:
-        service_2 = self.add_services_to_cluster(["service_2"], cluster=self.cluster).first()
+        service_2, *_ = self.uc.add_services_to_cluster(["service_2"], cluster=self.cluster)
         component_2 = Component.objects.filter(service=service_2).first()
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.host_1, self.component_1),
@@ -296,7 +296,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_remove_absent_fail(self) -> None:
         object_ = self.component_1
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, self.component_1),),
         )

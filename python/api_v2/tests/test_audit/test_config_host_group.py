@@ -36,20 +36,20 @@ class TestCHGAudit(ADCMDjangoAPISuite):
             object_type=ContentType.objects.get_for_model(self.cluster_1),
             object_id=self.cluster_1.pk,
         )
-        self.host = self.add_host(provider=self.provider, fqdn="host")
+        self.host = self.uc.add_host(provider=self.provider, fqdn="host")
         self.cluster_1_host_group.hosts.add(self.host)
-        self.new_host = self.add_host(provider=self.provider, fqdn="new_host")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
+        self.new_host = self.uc.add_host(provider=self.provider, fqdn="new_host")
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.service_1_host_group = ConfigHostGroup.objects.create(
             name="service_1_config_host_group",
             object_type=ContentType.objects.get_for_model(self.service_1),
             object_id=self.service_1.pk,
         )
         self.service_1_host_group.hosts.add(self.host)
-        self.host_for_service = self.add_host(provider=self.provider, fqdn="host_for_service")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
+        self.host_for_service = self.uc.add_host(provider=self.provider, fqdn="host_for_service")
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
 
         self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
@@ -64,7 +64,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
             object_type=ContentType.objects.get_for_model(self.provider),
             object_id=self.provider.pk,
         )
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
         self.cluster_config_data = {
             "config": {
                 "activatable_group": {"integer": 100},

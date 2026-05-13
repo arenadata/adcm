@@ -248,7 +248,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
         self.assertIn("It is forbidden to delete host from cluster in upgrade mode", result.error.message)
 
     def test_remove_host_from_cluster_with_component_on_host_constraint_error(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
@@ -269,8 +269,8 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
         self.assertIn("There are components on the host.", result.error.message)
 
     def test_remove_host_from_cluster_with_component_on_host_success(self) -> None:
-        self.add_host_to_cluster(self.cluster, self.host_2)
-        self.set_hostcomponent(
+        self.uc.add_host_to_cluster(self.cluster, self.host_2)
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_2, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
@@ -315,7 +315,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
                 )
 
     def test_incorrect_cluster_in_context_fail(self) -> None:
-        cluster_2 = self.add_cluster(bundle=self.cluster_bundle, name="Another Cluster")
+        cluster_2 = self.uc.add_cluster(bundle=self.cluster_bundle, name="Another Cluster")
         task = self.prepare_task(owner=cluster_2, name="dummy")
         job, *_ = JobRepoImpl.get_task_jobs(task.id)
         executor = self.prepare_executor(

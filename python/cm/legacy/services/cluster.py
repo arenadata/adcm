@@ -25,7 +25,7 @@ from core.legacy.cluster.types import (
     HostClusterPair,
     HostComponentEntry,
 )
-from core.types import ClusterID, HostID, MaintenanceModeOfObjects, ObjectMaintenanceModeState, ShortObjectInfo
+from core.types import ClusterID, HostID, MaintenanceModeOfObjects, MaintenanceModeState, ObjectMM, ShortObjectInfo
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
@@ -174,17 +174,17 @@ def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component 
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
     return MaintenanceModeOfObjects(
         hosts={
-            host_id: ObjectMaintenanceModeState(mm)
+            host_id: ObjectMM(MaintenanceModeState(mm))
             for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
         },
         services={
-            service_id: ObjectMaintenanceModeState(mm)
+            service_id: ObjectMM(MaintenanceModeState(mm))
             for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )
         },
         components={
-            component_id: ObjectMaintenanceModeState(mm)
+            component_id: ObjectMM(MaintenanceModeState(mm))
             for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )

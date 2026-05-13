@@ -16,6 +16,7 @@ from typing import Any, Collection, Literal
 from cm.legacy.api import get_hc
 from cm.legacy.services.mapping import change_host_component_mapping
 from cm.models import Cluster, Component, Host, JobLog
+from core.cluster import ClusterService
 from core.legacy.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
@@ -129,6 +130,7 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
         change_host_component_mapping(
             cluster_id=cluster.id,
             bundle_id=cluster.prototype.bundle_id,
+            cluster_service=self._container.get(ClusterService),
             mapping_delta=TaskMappingDelta(add=mapping_add, remove=mapping_remove),
         )
 

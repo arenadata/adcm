@@ -44,6 +44,7 @@ from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from rbac.scenarios import RBACScenarios
 from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
@@ -243,6 +244,8 @@ class UseCaseProvider(Provider):
     )
 
     add_check_log_record = provide(AddCheckLogRecordForJob)
+
+    set_maintenance_mode = provide(SetMaintenanceMode)
 
     update_configuration_of_object = provide(UpdateConfigurationOfObject)
     update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)

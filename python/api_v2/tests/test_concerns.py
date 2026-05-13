@@ -34,7 +34,7 @@ from cm.models import (
     TaskLog,
 )
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from core.types import ObjectMaintenanceModeState as MM  # noqa: N814
+from core.types import MaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.status import (
@@ -82,7 +82,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
     def test_required_service_concern(self):
-        cluster = self.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
+        cluster = self.uc.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
             "message": ConcernMessage.REQUIRED_SERVICE_ISSUE.template.message,
             "placeholder": {
@@ -109,7 +109,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_required_config_concern(self):
-        cluster = self.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster-1")
+        cluster = self.uc.add_cluster(bundle=self.required_config_bundle, name="required_config_cluster-1")
         expected_concern_reason = {
             "message": ConcernMessage.CONFIG_ISSUE.template.message,
             "placeholder": {
@@ -127,7 +127,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertDictEqual(concern["reason"], expected_concern_reason)
 
     def test_required_import_concern(self):
-        cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
         expected_concern_reason = {
             "message": ConcernMessage.REQUIRED_IMPORT_ISSUE.template.message,
             "placeholder": {
@@ -142,32 +142,32 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
     def test_adcm_6354_hostprovider_action_concern_locks_all_related_clusters_success(self):
-        cluster_1 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_1")
-        cluster_2 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_2")
-        cluster_3 = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_3")
-        second_provider = self.add_provider(Bundle.objects.get(name="provider"), "Second Provider")
+        cluster_1 = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_1")
+        cluster_2 = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_2")
+        cluster_3 = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies_3")
+        second_provider = self.uc.add_provider(Bundle.objects.get(name="provider"), "Second Provider")
 
-        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_1)
-        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_2)
-        self.add_services_to_cluster(service_names=["first_service"], cluster=cluster_3)
+        self.uc.add_services_to_cluster(names=["first_service"], cluster=cluster_1)
+        self.uc.add_services_to_cluster(names=["first_service"], cluster=cluster_2)
+        self.uc.add_services_to_cluster(names=["first_service"], cluster=cluster_3)
 
         hosts = []
 
         for host_n in range(1, 4):
             cluster = cluster_1 if host_n % 2 == 0 else cluster_2
-            hosts.append(self.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
+            hosts.append(self.uc.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
             hostcomponent_entry = (
                 Host.objects.get(fqdn=f"host_{host_n}"),
                 Component.objects.get(cluster=cluster, prototype__name="first_component"),
             )
-            self.set_hostcomponent(cluster=cluster, entries=[hostcomponent_entry])
+            self.uc.set_hostcomponent(cluster=cluster, entries=[hostcomponent_entry])
 
-        host_from_second_provider = self.add_host(provider=second_provider, fqdn="host_5", cluster=cluster_3)
+        host_from_second_provider = self.uc.add_host(provider=second_provider, fqdn="host_5", cluster=cluster_3)
         hostcomponent_entry = (
             host_from_second_provider,
             Component.objects.get(cluster=cluster_3, prototype__name="first_component"),
         )
-        self.set_hostcomponent(cluster=cluster_3, entries=[hostcomponent_entry])
+        self.uc.set_hostcomponent(cluster=cluster_3, entries=[hostcomponent_entry])
 
         objects_to_be_locked_by_action = sorted(
             [(cluster.pk, cluster.prototype_id) for cluster in [cluster_1, cluster_2]]
@@ -219,16 +219,14 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertNotIn(obj, related_objects)
 
     def test_adcm_6275_concern_propagation_success(self):
-        cluster = self.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies")
-        self.add_services_to_cluster(
-            service_names=["first_service", "second_service", "third_service"], cluster=cluster
-        )
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_with_dependencies")
+        self.uc.add_services_to_cluster(names=["first_service", "second_service", "third_service"], cluster=cluster)
 
         components = Component.objects.filter(cluster=cluster)
 
         hosts = []
         for host_n in range(1, 4):
-            hosts.append(self.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
+            hosts.append(self.uc.add_host(provider=self.provider, fqdn=f"host_{host_n}", cluster=cluster))
 
         hostcomponent_entries = []
         for i, component in enumerate(components.exclude(prototype__name="single_component")):
@@ -241,7 +239,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             (hosts[2], Component.objects.get(cluster=cluster, prototype__name="single_component"))
         )
 
-        self.set_hostcomponent(cluster=cluster, entries=hostcomponent_entries)
+        self.uc.set_hostcomponent(cluster=cluster, entries=hostcomponent_entries)
 
         objects_to_be_locked_by_action = sorted(
             [(cluster.pk, cluster.prototype_id)]
@@ -292,8 +290,8 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertListEqual(related_objects, objects_to_be_locked_by_action)
 
     def test_required_hc_concern(self):
-        cluster = self.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
-        self.add_services_to_cluster(service_names=["service_1"], cluster=cluster)
+        cluster = self.uc.add_cluster(bundle=self.required_hc_bundle, name="required_hc_cluster")
+        self.uc.add_services_to_cluster(names=["service_1"], cluster=cluster)
         expected_concern_reason = {
             "message": ConcernMessage.HOST_COMPONENT_ISSUE.template.message,
             "placeholder": {
@@ -308,7 +306,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
 
     def test_outdated_config_flag(self):
-        cluster = self.add_cluster(bundle=self.config_flag_bundle, name="config_flag_cluster")
+        cluster = self.uc.add_cluster(bundle=self.config_flag_bundle, name="config_flag_cluster")
         expected_concern_reason = {
             "message": f"{ConcernMessage.FLAG.template.message}outdated config",
             "placeholder": {"source": {"name": cluster.name, "params": {"clusterId": cluster.pk}, "type": "cluster"}},
@@ -394,7 +392,7 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertEqual(concerns.first().cause, "config")
 
         with self.subTest("Adcm-6562 raise outdated_config for provider"):
-            provider = self.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
+            provider = self.uc.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
             provider.state = "notcreated"
             provider.save(update_fields=["state"])
 
@@ -408,8 +406,8 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertEqual(concerns.first().cause, "config")
 
     def test_service_requirements(self):
-        cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
-        service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
+        cluster = self.uc.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
+        service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=cluster)
         expected_concern_reason = {
             "message": ConcernMessage.UNSATISFIED_REQUIREMENT_ISSUE.template.message,
             "placeholder": {
@@ -463,11 +461,13 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
 
     def test_permissions_to_delete_concern_item(self):
         cluster = self.cluster_1
-        provider = self.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
+        provider = self.uc.add_provider(bundle=self.provider_changed_state, name="provider_outdated_state")
 
-        service, service_2 = self.add_services_to_cluster(
-            service_names=["service_1", "service_2"], cluster=cluster
-        ).order_by("prototype__name")
+        names = ["service_1", "service_2"]
+        self.uc.add_services_to_cluster(names=names, cluster=cluster)
+        service, service_2 = Service.objects.filter(prototype__name__in=names, cluster=cluster).order_by(
+            "prototype__name"
+        )
 
         component = service.components.filter(prototype__name="component_1").get()
 
@@ -633,8 +633,8 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
             self.assertEqual(target_concern.count(), 1)
 
     def test_import_concern_resolved_after_saving_import(self):
-        import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
-        unused_import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="unused_import_cluster")
+        import_cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        unused_import_cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="unused_import_cluster")
         export_cluster = self.cluster_1
 
         response = self.client.v2[import_cluster].get()
@@ -665,7 +665,7 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         self.assertEqual(self.cluster_2.concerns.count(), 0)
 
     def test_concern_owner_cluster(self):
-        import_cluster = self.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        import_cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
 
         response = self.client.v2[import_cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -673,8 +673,8 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "cluster")
 
     def test_concern_owner_service(self):
-        cluster = self.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
-        service = self.add_services_to_cluster(service_names=["service_1"], cluster=cluster).get()
+        cluster = self.uc.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
+        service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=cluster)
         response = self.client.v2[service].get()
 
         self.assertEqual(len(response.json()["concerns"]), 1)
@@ -682,10 +682,8 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         self.assertEqual(response.json()["concerns"][0]["owner"]["type"], "service")
 
     def test_adcm_5677_hc_issue_on_link_host_to_cluster_with_plus_constraint(self):
-        cluster = self.add_cluster(bundle=self.hc_mapping_constraints_bundle, name="hc_mapping_constraints_cluster")
-        service = self.add_services_to_cluster(
-            service_names=["service_with_plus_component_constraint"], cluster=cluster
-        ).get()
+        cluster = self.uc.add_cluster(bundle=self.hc_mapping_constraints_bundle, name="hc_mapping_constraints_cluster")
+        service, *_ = self.uc.add_services_to_cluster(names=["service_with_plus_component_constraint"], cluster=cluster)
         component = Component.objects.get(prototype__name="plus", service=service, cluster=cluster)
 
         expected_concern_part = {
@@ -713,9 +711,9 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         self.assertDictEqual(actual_concern, expected_concern_part)
 
         # add host to cluster and map it to `plus` component. Should be no concerns
-        provider = self.add_provider(bundle=self.provider_no_config_bundle, name="provider_no_config")
-        host_1 = self.add_host(provider=provider, fqdn="host_1", cluster=cluster)
-        self.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
+        provider = self.uc.add_provider(bundle=self.provider_no_config_bundle, name="provider_no_config")
+        host_1 = self.uc.add_host(provider=provider, fqdn="host_1", cluster=cluster)
+        self.uc.set_hostcomponent(cluster=cluster, entries=((host_1, component),))
 
         response = self.client.v2[cluster].get()
         self.assertEqual(len(response.json()["concerns"]), 0)
@@ -772,7 +770,7 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         # self.assertEqual(len(response.json()["concerns"]), 0)
 
     def test_concerns_on_add_services(self):
-        cluster = self.add_cluster(bundle=self.service_add_concerns_bundle, name="service_add_concerns_cluster")
+        cluster = self.uc.add_cluster(bundle=self.service_add_concerns_bundle, name="service_add_concerns_cluster")
         required_service_concern = {
             "owner_id": cluster.pk,
             "owner_type": ContentType.objects.get_for_model(cluster),
@@ -781,9 +779,9 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
         }
         self._check_concerns(object_=cluster, expected_concerns=[required_service_concern])
 
-        service_1 = self.add_services_to_cluster(
-            service_names=["service_requires_service_with_many_issues_on_add"], cluster=cluster
-        ).get()
+        service_1, *_ = self.uc.add_services_to_cluster(
+            names=["service_requires_service_with_many_issues_on_add"], cluster=cluster
+        )
         unsatisfied_requirements_concern = {
             "owner_id": service_1.pk,
             "owner_type": ContentType.objects.get_for_model(service_1),
@@ -797,9 +795,7 @@ class TestConcernsLogic(ADCMDjangoAPISuite):
             object_=service_1, expected_concerns=[required_service_concern, unsatisfied_requirements_concern]
         )
 
-        service_2 = self.add_services_to_cluster(
-            service_names=["service_with_many_issues_on_add"], cluster=cluster
-        ).get()
+        service_2, *_ = self.uc.add_services_to_cluster(names=["service_with_many_issues_on_add"], cluster=cluster)
         component = service_2.components.get()
         hc_concern = {
             "owner_id": cluster.pk,
@@ -945,29 +941,29 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
     def test_concerns_swap_on_mapping_changes(self) -> None:
         # prepare
         host_1, host_2, unmapped_host = (
-            self.add_host(self.provider, fqdn=f"host_{i}", cluster=self.cluster) for i in range(3)
+            self.uc.add_host(self.provider, fqdn=f"host_{i}", cluster=self.cluster) for i in range(3)
         )
-        unbound_host = self.add_host(self.provider, fqdn="free-host")
+        unbound_host = self.uc.add_host(self.provider, fqdn="free-host")
         self.change_configuration(host_2, config_diff={"field": 4})
         lower_flag(
             BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
             on_objects=[CoreObjectDescriptor(id=host_2.id, type=ADCMCoreType.HOST)],
         )
 
-        main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
+        main_s, *_ = self.uc.add_services_to_cluster(["main"], cluster=self.cluster)
         single_c = main_s.components.get(prototype__name="single")
         free_c = main_s.components.get(prototype__name="free")
 
-        require_dummy_s = self.add_services_to_cluster(["require_dummy_service"], cluster=self.cluster).get()
+        require_dummy_s, *_ = self.uc.add_services_to_cluster(["require_dummy_service"], cluster=self.cluster)
         silent_c = require_dummy_s.components.get(prototype__name="silent")
         sir_c = require_dummy_s.components.get(prototype__name="sir")
 
         # have to add it to proceed to hc set
-        dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
+        dummy_s, *_ = self.uc.add_services_to_cluster(["dummy"], cluster=self.cluster)
         dummy_c = dummy_s.components.get()
 
         # component-less service
-        no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
+        no_components_s, *_ = self.uc.add_services_to_cluster(["no_components"], cluster=self.cluster)
 
         # find own concerns
         provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
@@ -1100,11 +1096,11 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
     def test_mm_does_not_affect_concerns_distribution(self) -> None:
         # prepare
-        second_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
-        host_no_concerns = self.add_host(provider=second_provider, fqdn="no-concerns-host", cluster=self.cluster)
+        second_provider = self.uc.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
+        host_no_concerns = self.uc.add_host(provider=second_provider, fqdn="no-concerns-host", cluster=self.cluster)
 
         host_1, host_2, unmapped_host = (
-            self.add_host(self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3)
+            self.uc.add_host(self.provider, fqdn=f"host-{i}", cluster=self.cluster) for i in range(3)
         )
 
         for object_ in (host_no_concerns, host_2):
@@ -1112,11 +1108,12 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             object_desc = CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))
             lower_flag(BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name, on_objects=[object_desc])
 
-        main_s, no_components_s = (
-            self.add_services_to_cluster(["main", "no_components"], cluster=self.cluster)
-            .order_by("prototype__name")
-            .all()
+        names = ["main", "no_components"]
+        self.uc.add_services_to_cluster(names, cluster=self.cluster)
+        main_s, no_components_s = Service.objects.filter(cluster=self.cluster, prototype__name__in=names).order_by(
+            "prototype__name"
         )
+
         single_c = main_s.components.get(prototype__name="single")
         free_c = main_s.components.get(prototype__name="free")
 
@@ -1197,7 +1194,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             self.change_mm_via_api(MM.OFF, main_s)
             check_concerns()
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (host_no_concerns, free_c)),
         )
@@ -1227,18 +1224,18 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
     def test_concern_removal_with_flag_autogeneration_on_config_change(self) -> None:
         # prepare
-        host_1 = self.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
-        host_2 = self.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
-        unmapped_host = self.add_host(self.provider, fqdn="unmapped-host", cluster=self.cluster)
-        another_provider = self.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
-        another_host = self.add_host(provider=another_provider, fqdn="no-concerns-host", cluster=self.cluster)
+        host_1 = self.uc.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
+        host_2 = self.uc.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
+        unmapped_host = self.uc.add_host(self.provider, fqdn="unmapped-host", cluster=self.cluster)
+        another_provider = self.uc.add_provider(bundle=self.provider.prototype.bundle, name="No Concerns HP")
+        another_host = self.uc.add_host(provider=another_provider, fqdn="no-concerns-host", cluster=self.cluster)
 
-        main_s = self.add_services_to_cluster(["main"], cluster=self.cluster).get()
-        no_components_s = self.add_services_to_cluster(["no_components"], cluster=self.cluster).get()
+        main_s, *_ = self.uc.add_services_to_cluster(["main"], cluster=self.cluster)
+        no_components_s, *_ = self.uc.add_services_to_cluster(["no_components"], cluster=self.cluster)
         single_c = main_s.components.get(prototype__name="single")
         free_c = main_s.components.get(prototype__name="free")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((host_1, single_c), (host_1, free_c), (host_2, free_c), (another_host, free_c)),
         )
@@ -1380,19 +1377,19 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
     def test_concerns_changes_on_import(self) -> None:
         # prepare
-        host_1 = self.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
-        host_2 = self.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
+        host_1 = self.uc.add_host(self.provider, fqdn="host-1", cluster=self.cluster)
+        host_2 = self.uc.add_host(self.provider, fqdn="host-2", cluster=self.cluster)
 
-        import_s = self.add_services_to_cluster(["with_multiple_imports"], cluster=self.cluster).get()
+        import_s, *_ = self.uc.add_services_to_cluster(["with_multiple_imports"], cluster=self.cluster)
         component_1, component_2 = import_s.components.order_by("prototype__name")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((host_1, component_2),),
         )
 
-        export_cluster = self.add_cluster(self.add_bundle(self.bundles_dir / "cluster_export"), "Exporter")
-        export_service = self.add_services_to_cluster(["service_export"], cluster=export_cluster).get()
+        export_cluster = self.uc.add_cluster(self.uc.upload_bundle(self.bundles_dir / "cluster_export"), "Exporter")
+        export_service, *_ = self.uc.add_services_to_cluster(["service_export"], cluster=export_cluster)
 
         # find own concerns
         provider_config_con = self.provider.get_own_issue(ConcernCause.CONFIG)
@@ -1442,10 +1439,10 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
     def test_concerns_dis_appearance_on_move_cluster_host(self) -> None:
         # prepare
-        host_1 = self.add_host(self.provider, fqdn="host-1")
-        mapped_host = self.add_host(self.provider, fqdn="mapped-host", cluster=self.cluster)
+        host_1 = self.uc.add_host(self.provider, fqdn="host-1")
+        mapped_host = self.uc.add_host(self.provider, fqdn="mapped-host", cluster=self.cluster)
 
-        greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
+        greedy_s, *_ = self.uc.add_services_to_cluster(["greedy"], cluster=self.cluster)
         on_all_c = greedy_s.components.get(prototype__name="on_all")
 
         # find concerns
@@ -1454,7 +1451,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         mapped_host_cons = (provider_config_con, mapped_host.get_own_issue(ConcernCause.CONFIG))
         greedy_s_con = greedy_s.get_own_issue(ConcernCause.CONFIG)
 
-        self.set_hostcomponent(cluster=self.cluster, entries=[(mapped_host, on_all_c)])
+        self.uc.set_hostcomponent(cluster=self.cluster, entries=[(mapped_host, on_all_c)])
         self.assertIsNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
 
         cluster_own_cons = tuple(
@@ -1497,9 +1494,9 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
     def test_concerns_on_service_deletion(self) -> None:
         # prepare
-        greedy_s = self.add_services_to_cluster(["greedy"], cluster=self.cluster).get()
+        greedy_s, *_ = self.uc.add_services_to_cluster(["greedy"], cluster=self.cluster)
 
-        dummy_s = self.add_services_to_cluster(["dummy"], cluster=self.cluster).get()
+        dummy_s, *_ = self.uc.add_services_to_cluster(["dummy"], cluster=self.cluster)
         dummy_c = dummy_s.components.get(prototype__name="same_dummy")
 
         # test
@@ -1523,7 +1520,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
         host_2 = self.add_host_via_api(self.provider, fqdn="host2")
         provider_pk, host_1_pk, host_2_pk = self.provider.pk, host_1.pk, host_2.pk
-        another_provider = self.add_provider(
+        another_provider = self.uc.add_provider(
             bundle=Bundle.objects.get(name="provider_with_concerns"), name="Concerned HP 2"
         )
 
@@ -1543,7 +1540,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         host_1 = self.add_host_via_api(self.provider, fqdn="host1")
         host_2 = self.add_host_via_api(self.provider, fqdn="host2")
         host_1_pk = host_1.pk
-        another_provider = self.add_provider(
+        another_provider = self.uc.add_provider(
             bundle=Bundle.objects.get(name="provider_with_concerns"), name="Concerned HP 2"
         )
         host_3 = self.add_host_via_api(another_provider, fqdn="host3")
@@ -1576,7 +1573,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         self.assertIsNotNone(self.provider.get_own_issue(ConcernCause.CONFIG))
         self.assertIsNone(host.get_own_issue(ConcernCause.CONFIG))
 
-        host_2 = self.add_host(self.provider, fqdn="host2")
+        host_2 = self.uc.add_host(self.provider, fqdn="host2")
         host_2_config_issue = host_2.get_own_issue(ConcernCause.CONFIG)
         self.assertIsNotNone(host_2_config_issue)
         self.check_concerns(host_2, concerns=(host_2_config_issue, self.provider.get_own_issue(ConcernCause.CONFIG)))

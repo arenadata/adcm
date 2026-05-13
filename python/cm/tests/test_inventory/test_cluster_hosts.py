@@ -13,6 +13,7 @@
 
 from pathlib import Path
 
+from core.cluster import ClusterService
 from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
@@ -32,11 +33,11 @@ class TestClusterHosts(BaseInventoryTestCase):
         bundles_dir = Path(__file__).parent.parent / "bundles"
         self.templates_dir = Path(__file__).parent.parent / "files/response_templates"
 
-        self.provider_bundle = self.add_bundle(source_dir=bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=bundles_dir / "cluster_1")
+        self.provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
 
-        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
+        self.cluster_1 = self.uc.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider")
 
     def test_cluster_action_on_cluster(self):
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
@@ -59,7 +60,7 @@ class TestClusterHosts(BaseInventoryTestCase):
         )
 
     def test_add_1_host_on_cluster_actions(self):
-        host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_host = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
@@ -114,8 +115,8 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_add_2_hosts_on_cluster_actions(self):
-        host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_host_1 = Action.objects.get(name="action_on_host", prototype=host_1.prototype)
@@ -200,9 +201,9 @@ class TestClusterHosts(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_adcm_5747_delete_service(self) -> None:
-        service = self.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1).get()
-        host = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.components.first())])
+        service, *_ = self.uc.add_services_to_cluster(["service_one_component"], cluster=self.cluster_1)
+        host = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(host, service.components.first())])
 
         action = Action.objects.get(prototype=service.prototype, name="action_on_service")
         target = CoreObjectDescriptor(id=service.id, type=ADCMCoreType.SERVICE)
@@ -215,12 +216,19 @@ class TestClusterHosts(BaseInventoryTestCase):
 
         # without related objects it fails
         with self.assertRaises(ObjectDoesNotExist) as err_context:
-            get_inventory_data(target=task.target, is_host_action=False)
+            get_inventory_data(
+                target=task.target, is_host_action=False, cluster_service=self.uc.container.get(ClusterService)
+            )
 
         self.assertIn("Service matching query does not exist.", str(err_context.exception))
 
         # with those inventory is generated
-        data = get_inventory_data(target=task.target, is_host_action=False, related_objects=task.owner.related_objects)
+        data = get_inventory_data(
+            target=task.target,
+            is_host_action=False,
+            related_objects=task.owner.related_objects,
+            cluster_service=self.uc.container.get(ClusterService),
+        )
 
         self.assertSetEqual(set(data["all"]["vars"]), {"cluster", "services"})
         self.assertDictEqual(data["all"]["vars"]["services"], {})
