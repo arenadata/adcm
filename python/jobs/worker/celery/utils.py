@@ -18,6 +18,8 @@ from celery.utils.nodenames import gethostname
 from jobs.scheduler._types import UTC, CeleryTaskState
 from jobs.scheduler.logger import logger
 from jobs.worker.celery import custom_settings, repo
+from jobs.worker.celery.consul import settings as consul_settings
+from jobs.worker.celery.consul.control import ConsulControl, ConsulInspect
 from jobs.worker.celery.models import DBTables
 
 
@@ -75,4 +77,14 @@ class InspectionMixin:
 
 
 class CustomCelery(Celery, InspectionMixin):
-    pass
+    """
+    Celery subclass that routes control/inspect commands through Consul KV
+    when enabled.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if consul_settings.is_enabled():
+            self.control_cls = ConsulControl
+            self.inspect_cls = ConsulInspect
