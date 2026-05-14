@@ -9,14 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-import adcm.init_django  # noqa: F401, isort:skip
-from jobs.worker.celery.consul.bootstep import ConsulListenerStep
-from jobs.worker.celery.utils import CustomCelery, CustomWorkerStep
-
-app = CustomCelery("job-runner")
-app.config_from_object("jobs.worker.celery.settings")
-app.autodiscover_tasks(packages=["jobs.worker"])
-app.steps["worker"].add(CustomWorkerStep)
-app.steps["worker"].add(ConsulListenerStep)
