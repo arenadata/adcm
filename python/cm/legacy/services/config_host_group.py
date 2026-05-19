@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 from functools import reduce
 from operator import or_
 from typing import Collection, Iterable, TypeAlias
 
+from core.action import context
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Q
@@ -24,22 +24,12 @@ from cm.legacy.services.host_group_common import HostGroupRepoMixin
 from cm.models import ConfigHostGroup
 
 ConfigHostGroupName: TypeAlias = str
-
-
-@dataclass(slots=True)
-class ConfigHostGroupInfo:
-    id: ObjectID
-    name: str
-
-    hosts: set[ShortObjectInfo]
-
-    current_config_id: int
-    owner: CoreObjectDescriptor
+ConfigHostGroupInfo = context.ConfigHostGroupInfo  # fix to direct imports later
 
 
 def retrieve_config_host_groups_for_hosts(
     hosts: Iterable[HostID], restrict_by_owner_type: Collection[ADCMCoreType] = ()
-) -> dict[ObjectID, ConfigHostGroupInfo]:
+) -> dict[ObjectID, context.ConfigHostGroupInfo]:
     query = Q(hosts__in=hosts)
     if restrict_by_owner_type:
         query &= Q(
@@ -53,7 +43,7 @@ def retrieve_config_host_groups_for_hosts(
 
 def retrieve_config_host_groups_for_objects(
     objects: dict[ADCMCoreType, set[ObjectID]],
-) -> dict[ObjectID, ConfigHostGroupInfo]:
+) -> dict[ObjectID, context.ConfigHostGroupInfo]:
     types_with_chg = {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT, ADCMCoreType.PROVIDER}
 
     core_type_content_type_map: dict[ADCMCoreType, int] = {
@@ -73,7 +63,7 @@ def retrieve_config_host_groups_for_objects(
     return _retrieve_config_host_groups_info(query=query)
 
 
-def _retrieve_config_host_groups_info(query: Q) -> dict[ObjectID, ConfigHostGroupInfo]:
+def _retrieve_config_host_groups_info(query: Q) -> dict[ObjectID, context.ConfigHostGroupInfo]:
     queryset = ConfigHostGroup.objects.filter(query).values(
         "id",
         "name",
@@ -84,11 +74,11 @@ def _retrieve_config_host_groups_info(query: Q) -> dict[ObjectID, ConfigHostGrou
         host_name=F("hosts__fqdn"),
     )
 
-    result: dict[ObjectID, ConfigHostGroupInfo] = {}
+    result: dict[ObjectID, context.ConfigHostGroupInfo] = {}
     for record in queryset:
         group = result.setdefault(
             record["id"],
-            ConfigHostGroupInfo(
+            context.ConfigHostGroupInfo(
                 id=record["id"],
                 name=record["name"],
                 current_config_id=record["current_config_id"],

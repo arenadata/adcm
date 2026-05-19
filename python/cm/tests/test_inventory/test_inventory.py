@@ -429,18 +429,20 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BaseTestCase):
             object_=self.cluster_target_group,
             payload=RunActionDTO(launch=core.legacy.job.dto.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
-        )["hosts"]
+        )["children"]
+
+        group_key = f"chg_{groups[0].pk}_{groups[1].pk}"
 
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["cluster"]["config"],
+            inventory_data[group_key]["vars"]["cluster"]["config"],
             {"some_string": "cluster", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["config"],
+            inventory_data[group_key]["vars"]["services"]["service_1_target_group"]["config"],
             {"some_string": "service_1", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["component_1_target_group"][
+            inventory_data[group_key]["vars"]["services"]["service_1_target_group"]["component_1_target_group"][
                 "config"
             ],
             {"some_string": "some_string", "float": 0.1},

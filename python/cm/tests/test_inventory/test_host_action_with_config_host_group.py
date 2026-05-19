@@ -64,11 +64,13 @@ class TestHostAction(BaseInventoryTestCase):
 
     def test_host_action(self):
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
+        group_key = f"chg_{self.cluster_host_group.pk}_{self.service_host_group.pk}_{self.component_host_group.pk}"
         expected_topology = {
             "CLUSTER": host_names,
             self.service.name: host_names,
             f"{self.service.name}.{self.component.name}": host_names,
             "target": [self.host_1.fqdn],
+            group_key: [self.host_1.fqdn],
         }
 
         expected_data = {
@@ -77,15 +79,6 @@ class TestHostAction(BaseInventoryTestCase):
                 {
                     "adcm_hostid": self.host_1.pk,
                     "uuid": self.host_1.uuid,
-                    "cluster_config_integer": 101,
-                    "cluster_id": self.cluster.pk,
-                    "cluster_uuid": self.cluster.uuid,
-                    "service_id": self.service.pk,
-                    "service_uuid": self.service.uuid,
-                    "service_config_integer": 102,
-                    "component_id": self.component.pk,
-                    "component_uuid": self.component.uuid,
-                    "component_config_integer": 103,
                 },
             ),
             ("hosts", f"{self.host_2.fqdn}"): (
@@ -109,6 +102,20 @@ class TestHostAction(BaseInventoryTestCase):
                     "service_uuid": self.service.uuid,
                     "component_id": self.component.pk,
                     "component_uuid": self.component.uuid,
+                },
+            ),
+            ("children", group_key, "vars"): (
+                self.templates_dir / "host_group_host_action_with_chg.json.j2",
+                {
+                    "cluster_config_integer": 101,
+                    "cluster_id": self.cluster.pk,
+                    "cluster_uuid": self.cluster.uuid,
+                    "service_id": self.service.pk,
+                    "service_uuid": self.service.uuid,
+                    "service_config_integer": 102,
+                    "component_id": self.component.pk,
+                    "component_uuid": self.component.uuid,
+                    "component_config_integer": 103,
                 },
             ),
         }

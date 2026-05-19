@@ -12,14 +12,16 @@
 
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import reduce
 from typing import Any, Iterable, NamedTuple
 
+from core.cluster import ClusterTopology
 from core.config import ConfigDict
-from core.legacy.cluster.types import ClusterTopology
 from core.types import (
     ADCMCoreType,
     ADCMHostGroupType,
+    ConfigHostGroupID,
     ConfigID,
     CoreObjectDescriptor,
     HostGroupDescriptor,
@@ -40,7 +42,14 @@ class _ObjectRequiredConfigInfo(NamedTuple):
     config_id: ConfigID
 
 
-def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
+@dataclass(slots=True)
+class _ConfigRetrievalData:
+    configurations: dict[ConfigID, core.config.Configuration]
+    objects_config_info: dict[CoreObjectDescriptor, _ObjectRequiredConfigInfo]
+    specifications_for_prototypes: dict[PrototypeID, core.config.spec.FullSpec]
+
+
+def prepare_groups_for_config_host_group(
     config_host_groups: Iterable[ConfigHostGroupInfo],
     cluster_vars: dict,
     objects_before_upgrade: dict[CoreObjectDescriptor | tuple[CoreObjectDescriptor, ConfigHostGroupName], dict],
@@ -52,58 +61,19 @@ def get_config_host_group_alternatives_for_hosts_in_cluster_groups(
     if not groups_with_hosts:
         return {}
 
-    configurations = config_service.retrieve_configurations_by_id(
-        configurations=(group.current_config_id for group in groups_with_hosts)
+    config_data = _retrieve_config_dependencies(groups_with_hosts=groups_with_hosts, config_service=config_service)
+    updated_configurations_by_group_id = _prepare_updated_configurations_by_group_id(
+        groups_with_hosts=groups_with_hosts,
+        config_data=config_data,
+        config_service=config_service,
     )
-
-    objects_with_groups = defaultdict(set)
-    for group in groups_with_hosts:
-        objects_with_groups[group.owner.type].add(group.owner.id)
-
-    objects_config_info = get_config_info(objects=objects_with_groups)
-
-    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
-        prototypes=(entry.prototype_id for entry in objects_config_info.values())
+    return core.action.context.operations.prepare_groups_for_host_groups(
+        groups_with_hosts=groups_with_hosts,
+        updated_configurations_by_group_id=updated_configurations_by_group_id,
+        cluster_vars=cluster_vars,
+        objects_before_upgrade=objects_before_upgrade,
+        topology=topology,
     )
-
-    result = defaultdict(lambda: deepcopy(cluster_vars))
-
-    for group in groups_with_hosts:
-        file_owner = (group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG))
-        updated_configuration = config_service.prepare_configuration_for_ansible(
-            configuration=configurations[group.current_config_id],
-            specification=specifications_for_prototypes[objects_config_info[group.owner].prototype_id],
-            file_owner=file_owner,
-        )
-
-        group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
-
-        for host_info in group.hosts:
-            node = None
-            match group.owner.type:
-                case ADCMCoreType.CLUSTER:
-                    node = result[host_info.name]["cluster"]
-                case ADCMCoreType.SERVICE:
-                    node = result[host_info.name]["services"][topology.services[group.owner.id].info.name]
-                case ADCMCoreType.COMPONENT:
-                    service = next(
-                        (service_ for service_ in topology.services.values() if group.owner.id in service_.components),
-                        None,
-                    )
-                    if service:
-                        node = result[host_info.name]["services"][service.info.name][
-                            service.components[group.owner.id].info.name
-                        ]
-
-            if not node:
-                raise RuntimeError(f"Failed to determine node in `vars` for {group.owner}")
-
-            if group_before_upgrade:
-                node["before_upgrade"] = group_before_upgrade
-
-            node["config"] = updated_configuration.values
-
-    return result
 
 
 def get_config_host_group_alternatives_for_hosts_in_provider_groups(
@@ -247,3 +217,47 @@ def get_config_info(objects: ObjectsInInventoryMap) -> dict[CoreObjectDescriptor
         ): _ObjectRequiredConfigInfo(prototype_id=row["prototype_id"], config_id=row["current_config_id"])
         for row in query_for_objects_config_info
     }
+
+
+def _retrieve_config_dependencies(
+    groups_with_hosts: tuple[ConfigHostGroupInfo, ...], config_service: core.config.ConfigService
+) -> _ConfigRetrievalData:
+    configurations = config_service.retrieve_configurations_by_id(
+        configurations=(group.current_config_id for group in groups_with_hosts)
+    )
+
+    objects_with_groups = defaultdict(set)
+    for group in groups_with_hosts:
+        objects_with_groups[group.owner.type].add(group.owner.id)
+
+    objects_config_info = get_config_info(objects=objects_with_groups)
+
+    specifications_for_prototypes = config_service.retrieve_specifications_by_prototypes(
+        prototypes=(entry.prototype_id for entry in objects_config_info.values())
+    )
+
+    return _ConfigRetrievalData(
+        configurations=configurations,
+        objects_config_info=objects_config_info,
+        specifications_for_prototypes=specifications_for_prototypes,
+    )
+
+
+def _prepare_updated_configurations_by_group_id(
+    groups_with_hosts: tuple[ConfigHostGroupInfo, ...],
+    config_data: _ConfigRetrievalData,
+    config_service: core.config.ConfigService,
+) -> dict[ConfigHostGroupID, core.config.Configuration]:
+    updated_configurations_by_group_id: dict[ConfigHostGroupID, core.config.Configuration] = {}
+
+    for group in groups_with_hosts:
+        file_owner = (group.owner, HostGroupDescriptor(id=group.id, type=ADCMHostGroupType.CONFIG))
+        updated_configurations_by_group_id[group.id] = config_service.prepare_configuration_for_ansible(
+            configuration=config_data.configurations[group.current_config_id],
+            specification=config_data.specifications_for_prototypes[
+                config_data.objects_config_info[group.owner].prototype_id
+            ],
+            file_owner=file_owner,
+        )
+
+    return updated_configurations_by_group_id
