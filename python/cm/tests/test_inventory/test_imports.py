@@ -435,6 +435,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "for_export": [{"another_stuff": {"hehe": 500.5}}],
         }
 
+        group_key = f"chg_{group.pk}"
+        chg_groups = {k for k in result["children"] if k.startswith("chg_")}
+        self.assertSetEqual({group_key}, chg_groups)
         self.assertDictEqual(result["vars"]["cluster"]["imports"], expected_vars_imports)
-        self.assertDictEqual(result["hosts"]["host-3"]["cluster"]["imports"], expected_vars_imports)
-        self.assertNotIn("cluster", result["hosts"]["host-4"])
+        self.assertDictEqual(result["children"][group_key]["vars"]["cluster"]["imports"], expected_vars_imports)

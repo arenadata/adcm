@@ -14,8 +14,7 @@ from itertools import chain
 from operator import itemgetter
 from typing import Iterable
 
-from core.cluster import ClusterService
-from core.legacy.cluster.types import ClusterTopology
+from core.cluster import ClusterService, ClusterTopology
 from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
@@ -40,9 +39,9 @@ from cm.legacy.services.cluster import (
 from cm.legacy.services.config_host_group import ConfigHostGroupName, retrieve_config_host_groups_for_hosts
 from cm.legacy.services.job.context._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.legacy.services.job.context._config import (
-    get_config_host_group_alternatives_for_hosts_in_cluster_groups,
     get_config_host_group_alternatives_for_hosts_in_provider_groups,
     get_objects_configurations,
+    prepare_groups_for_config_host_group,
 )
 from cm.legacy.services.job.context._groups import detect_host_groups_for_cluster_bundle_action
 from cm.legacy.services.job.context._imports import get_imports_for_inventory
@@ -233,7 +232,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     cluster_vars = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes)
     cluster_vars_dict = cluster_vars_to_dict(cluster_vars)
 
-    alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
+    host_groups_children = prepare_groups_for_config_host_group(
         config_host_groups=config_host_groups.values(),
         cluster_vars=cluster_vars_dict,
         objects_before_upgrade=objects_before_upgrades,
@@ -248,13 +247,13 @@ def _get_inventory_for_action_from_cluster_bundle(
             "children": {
                 group_name: {"hosts": {host_name: {} for _, host_name in host_tuples}}
                 for group_name, host_tuples in sorted_host_groups.items()
-            },
+            }
+            | host_groups_children,
             "vars": cluster_vars_dict,
             "hosts": {
                 host_name: basic_nodes[ADCMCoreType.HOST, host_id].model_dump(
                     mode="json", by_alias=True, exclude_defaults=True
                 )
-                | alternative_host_nodes.get(host_name, {})
                 for host_tuples in sorted_host_groups.values()
                 for host_id, host_name in host_tuples
             },

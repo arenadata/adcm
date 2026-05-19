@@ -74,6 +74,19 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             ),
         )
 
+        self.cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
+        self.service_thesame_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
+        self.component_another_thesame_group = self.add_config_host_group(
+            parent=self.component_another_thesame, hosts=(self.host_2,)
+        )
+        self.component_thesame_group = self.add_config_host_group(
+            parent=self.component_thesame, hosts=(self.host_1, self.host_3)
+        )
+
+        group_1_key = f"chg_{self.cluster_group.pk}_{self.service_thesame_group.pk}_{self.component_thesame_group.pk}"
+        group_2_key = f"chg_{self.cluster_group.pk}_{self.component_thesame_group.pk}"
+        group_3_key = f"chg_{self.component_another_thesame_group.pk}"
+
         host_names = [self.host_1.name, self.host_2.name, self.host_3.name]
         expected_topology = {
             "CLUSTER": host_names,
@@ -83,16 +96,10 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             self.service_thesame.name: host_names,
             f"{self.service_thesame.name}.{self.component_thesame.name}": [host_names[0], host_names[2]],
             f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[1]],
+            group_1_key: [self.host_1.fqdn],
+            group_2_key: [self.host_3.fqdn],
+            group_3_key: [self.host_2.fqdn],
         }
-
-        self.cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
-        self.service_thesame_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
-        self.component_another_thesame_group = self.add_config_host_group(
-            parent=self.component_another_thesame, hosts=(self.host_2,)
-        )
-        self.component_thesame_group = self.add_config_host_group(
-            parent=self.component_thesame, hosts=(self.host_1, self.host_3)
-        )
 
         self.change_configuration(
             target=self.cluster_group,
@@ -199,8 +206,15 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                 )
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
                 self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
-                for host_name, actual_data in actual_inventory["all"]["hosts"].items():
+                for group_name, actual_data in actual_inventory["all"]["children"].items():
+                    # quickiest fix possible for this test
+                    if not group_name.startswith("chg_"):
+                        continue
+
+                    # one host per group in inventory, so safe to detect name like that
+                    host_name = next(iter(actual_data["hosts"]))
+
                     self.assertDictEqual(
-                        actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
+                        actual_data["vars"]["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
                     )
-                    self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])
+                    self.assertDictEqual(actual_data["vars"]["services"], expected_parts[f"{host_name}_services"])

@@ -81,6 +81,8 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
             cluster=self.cluster, entries=[(self.host_3, self.component_1), (self.host_4, self.component_2)]
         )
 
+        group_key = f"chg_{self.cluster_group.pk}"
+
         expected_topology = {
             "CLUSTER": [self.host_2.fqdn, self.host_3.fqdn, self.host_4.fqdn],
             "CLUSTER.maintenance_mode": [self.host_1.fqdn],
@@ -91,14 +93,13 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
             f"{self.service.name}.{self.component_2.name}.add": [self.host_4.fqdn],
             f"{self.service.name}.{self.component_1.name}.remove.maintenance_mode": [self.host_1.fqdn],
             f"{self.service.name}.{self.component_2.name}.remove": [self.host_2.fqdn],
+            group_key: [self.host_1.fqdn, self.host_2.fqdn],
         }
 
         expected_data = {
-            ("hosts", f"{self.host_2.fqdn}"): (
+            ("children", group_key, "vars"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
-                    "adcm_hostid": self.host_2.pk,
-                    "uuid": self.host_2.uuid,
                     "cluster_id": self.cluster.pk,
                     "cluster_uuid": self.cluster.uuid,
                     "cluster_config_integer": 101,
@@ -110,6 +111,13 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                     "component_2_uuid": self.component_2.uuid,
                 },
             ),
+            ("hosts", f"{self.host_2.fqdn}"): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
+                },
+            ),
             ("hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {"adcm_hostid": self.host_3.pk, "uuid": self.host_3.uuid},
@@ -119,19 +127,10 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                 {"adcm_hostid": self.host_4.pk, "uuid": self.host_4.uuid},
             ),
             ("hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_two_components.json.j2",
+                self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                     "uuid": self.host_1.uuid,
-                    "cluster_id": self.cluster.pk,
-                    "cluster_config_integer": 101,
-                    "cluster_uuid": self.cluster.uuid,
-                    "service_id": self.service.pk,
-                    "service_uuid": self.service.uuid,
-                    "component_1_id": self.component_1.pk,
-                    "component_1_uuid": self.component_1.uuid,
-                    "component_2_id": self.component_2.pk,
-                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
             ("vars", "cluster"): (

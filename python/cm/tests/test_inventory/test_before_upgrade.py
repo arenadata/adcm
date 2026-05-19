@@ -333,12 +333,16 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             },
         )
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
+        group_1_key = f"chg_{cluster_group.pk}_{service_group.pk}"
+        group_2_key = f"chg_{cluster_group.pk}_{component_1_group.pk}"
 
         expected_topology = {
             "CLUSTER": host_names,
             "service_two_components": host_names,
             "service_two_components.component_1": host_names,
             "service_two_components.component_2": host_names,
+            group_1_key: [self.host_2.fqdn],
+            group_2_key: [self.host_1.fqdn],
         }
 
         expected_data = {
@@ -351,9 +355,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                     "component_2": self.component_2,
                 },
             ),
-            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("hosts", "host_1", "services"): expected_host_1_services,
-            ("hosts", "host_2", "services"): expected_host_2_services,
+            ("children", group_2_key, "vars", "cluster"): expected_hosts_cluster,
+            ("children", group_2_key, "vars", "services"): expected_host_1_services,
+            ("children", group_1_key, "vars", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -371,6 +375,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             meta_diff={"/string": {"isSynchronized": False}},
         )
 
+        expected_topology.pop(group_2_key)
+        group_3_key = f"chg_{cluster_group.pk}"
+        expected_topology[group_3_key] = [self.host_1.fqdn]
         expected_hosts_cluster = (
             cluster_file,
             {"config_integer": changed_integer, "before_upgrade_integer": changed_integer, "cluster": self.cluster_1},
@@ -406,9 +413,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                     "component_2": self.component_2,
                 },
             ),
-            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("hosts", "host_1", "services"): expected_host_1_services,
-            ("hosts", "host_2", "services"): expected_host_2_services,
+            ("children", group_3_key, "vars", "cluster"): expected_hosts_cluster,
+            ("children", group_3_key, "vars", "services"): expected_host_1_services,
+            ("children", group_1_key, "vars", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -480,11 +487,12 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         group_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}.group.{component_group.id}"
 
-        hosts_node = inventory["all"]["hosts"]
-        node = hosts_node["host_1"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
+        group_key = f"chg_{component_group.pk}"
+        children = inventory["all"]["children"]
+        group_nodes = {key for key in children if key.startswith("chg_")}
+        self.assertSetEqual({group_key}, group_nodes)
+        node = children[group_key]["vars"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
         self.assertEqual(node["plain"], f"{group_prefix}.plain.")
         self.assertEqual(node["secte"], f"{group_prefix}.secte.")
         self.assertEqual(node["bunch"]["plain"], f"{group_prefix}.bunch.plain")
         self.assertEqual(node["bunch"]["secte"], f"{group_prefix}.bunch.secte")
-
-        self.assertNotIn("services", hosts_node["host_2"])

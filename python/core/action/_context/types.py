@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# later it will become service, so function imports will go away
-from core.action._context import groups, operations
-from core.action._context._wizard_process import construct_process_info
-from core.action._context.types import ConfigHostGroupInfo
+from dataclasses import dataclass
 
-__all__ = [
-    "ConfigHostGroupInfo",
-    "construct_process_info",
-    "groups",
-    "operations",
-]
+from core.types import CoreObjectDescriptor, ObjectID, ShortObjectInfo
+
+
+@dataclass(slots=True)
+class ConfigHostGroupInfo:
+    id: ObjectID
+    name: str
+    hosts: set[ShortObjectInfo]
+    current_config_id: int
+    owner: CoreObjectDescriptor

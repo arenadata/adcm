@@ -10,7 +10,7 @@
         "value3"
       ]
     },
-    "name": "cluster",
+    "name": "cluster_1",
     "id": {{ cluster_id }},
     "uuid": "{{ cluster_uuid }}",
     "version": "1.0",
@@ -22,7 +22,7 @@
     }
   },
   "services": {
-    "service_two_components": {
+    "service_one_component": {
       "id": {{ service_id }},
       "uuid": "{{ service_uuid }}",
       "version": "1.0",
@@ -39,15 +39,15 @@
         ]
       },
       "maintenance_mode": {{ service_maintenance_mode | default("false") }},
-      "display_name": "service_two_components",
+      "display_name": "service_one_component",
       "before_upgrade": {
         "state": null
       },
       "component_1": {
-        "component_id": {{ component_1_id }},
-        "uuid": "{{ component_1_uuid }}",
+        "component_id": {{ component_id }},
+        "uuid": "{{ component_uuid }}",
         "config": {
-          "integer": {{ component_1_config_integer | default(10) }},
+          "integer": {{ component_config_integer | default(10) }},
           "password": "password",
           "string": "string",
           "list": [
@@ -58,29 +58,8 @@
         },
         "state": "created",
         "multi_state": [],
-        "maintenance_mode": {{ component_1_maintenance_mode | default("false") }},
+        "maintenance_mode": {{ component_maintenance_mode | default("false") }},
         "display_name": "component_1",
-        "before_upgrade": {
-          "state": null
-        }
-      },
-      "component_2": {
-        "component_id": {{ component_2_id }},
-        "uuid": "{{ component_2_uuid }}",
-        "config": {
-          "integer": {{ component_2_config_integer | default(10) }},
-          "password": "password",
-          "string": "string",
-          "list": [
-            "value1",
-            "value2",
-            "value3"
-          ]
-        },
-        "state": "created",
-        "multi_state": [],
-        "maintenance_mode": {{ component_2_maintenance_mode | default("false") }},
-        "display_name": "component_2",
         "before_upgrade": {
           "state": null
         }

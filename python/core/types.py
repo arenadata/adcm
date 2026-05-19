@@ -34,6 +34,7 @@ ActionProcessID: TypeAlias = int
 ActionProcessStepID: TypeAlias = int
 PID: TypeAlias = int
 
+ConfigHostGroupID: TypeAlias = int
 ActionHostGroupID: TypeAlias = int
 
 ObjectConfigID: TypeAlias = int
