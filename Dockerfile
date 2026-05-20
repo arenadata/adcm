@@ -30,7 +30,7 @@ COPY poetry.lock pyproject.toml /adcm/
 
 RUN python -m venv $POETRY_VENV && \
     $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
-    $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root --with ansible,run
+    $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root --with run
 
 
 FROM python:3.10-alpine
@@ -63,7 +63,6 @@ COPY --from=go_builder /code/bin/runstatus /adcm/go/bin/runstatus
 COPY --from=ui_builder /wwwroot /adcm/wwwroot
 COPY --from=python_builder /usr/local/bin /usr/local/bin
 COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-COPY --from=arenadata/ansible:2.9.27-python3.10 /venv/2.9 /venv/2.9
 COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
 COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
 COPY conf /adcm/conf
