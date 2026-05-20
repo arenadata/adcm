@@ -1,9 +1,20 @@
-[tool.poetry]
+[project]
 name = "adcm"
 version = "2.0.0"
 description = "Arenadata Cluster Manager"
-authors = [""]
+authors = [
+    { name = "Aleksandr Alferov", email = "<aas@arenadata.io>" },
+    { name = "Egor Araslanov", email = "<aer@arenadata.io>" },
+    { name = "Daniil Skrynnik", email = "<d.skrynnik@arenadata.io>" },
+    { name = "Artem Starovoitov", email = "<a.starovoitov@arenadata.io>" },
+    { name = "Polina Ikonnikova", email = "<p.ikonnikova@arenadata.io>" },
+    { name = "Ella Kurginyan", email = "<ke@arenadata.io>" },
+    { name = "Vladimir Elagin", email = "<v.elagin@arenadata.io>" }
+]
 readme = "README.md"
+
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "~3.10"
@@ -33,24 +44,17 @@ ruyaml = "^0.91.0"
 python-gnupg = "^0.5.5"  # for the bundle signature verification mechanism
 dishka = "^1.7.2"
 hvac = "^2.3.0"  # vault integration
+pydantic-settings = "^2.13.0"
+jinja2 = "^3.1.6"
+pyyaml = "^6.0.3"
 
 # Ansible
-ansible = { git = "https://github.com/arenadata/ansible.git", rev = "v2.8.8-p8" }
-jinja2 = "<3.0.0"  # required for Ansible for jinja_native option,
-# "<3.0.0" is due to the absence of the "jinja2._compat" module in jinja2 >= 3.0.0.
-# Jinja2 is also used for rendering files in ADCM.
-markupsafe = "<2.1"  # required for jinja2,
-# "<2.1" is due to the absence of the "soft_unicode()" function in markupsafe >= 2.1,
-# but which is used in jinja2 < 3.0.0
-pydantic-settings = "^2.13.0"
-
-[tool.poetry.group.ansible.dependencies]
-# hvac was moved to main dependencies in order to support vault secrets storage
-# yet it's required by bundle developers
-# hvac = "^2.3.0"  # required for hashi_vault plugin
-jmespath = "1.0.1"  # required for community.general.json_query filter
-grpcio = "^1.75.0"  # required for YCC bundle
-lxml = "^6.0.2"  # required for `yarn_scheduler_jmx` custom filter
+# ADCM requires its own ansible.
+# Ansible is used in ADCM to work with secrets, as well as in a plugin for collecting statistics.
+# See adcm_add_host_info.py
+# Plugins like adcm_config and others are not part of ADCM's own ansible, and they run in a different environment.
+# From the statements above, I conclude that ansible-core will be sufficient for ADCM to work properly with Ansible.
+ansible-core = "2.16.4"
 
 [tool.poetry.group.celery.dependencies]
 celery = "5.5.3"

@@ -114,7 +114,7 @@ class TemplateRendererJinja2(TemplateRenderer):
         # ruff have a problem with this one too, yet it's how it is working for now, can't change it
         return Environment(
             loader=loader,
-            autoescape=autoescape,  # pyright: ignore [reportArgumentType] # noqa: S701
+            autoescape=autoescape,  # noqa: S701
         )
 
 
