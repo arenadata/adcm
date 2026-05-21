@@ -1,6 +1,9 @@
 import type { Schema } from '@cfworker/json-schema';
-
-import { validateWithCfWorker as validate, generateFromSchema, type SchemaLike } from './jsonSchemaUtils';
+import {
+  validateWithCfWorker as validate,
+  generateFromSchemaWithCfWorker as generateFromSchema,
+  type SchemaLike,
+} from '@utils/jsonSchema/cfworkerSchemaUtils.ts';
 
 describe('validate', () => {
   const schema: Schema = {
@@ -255,11 +258,13 @@ describe('validate', () => {
     const errors = validate(schema, object);
 
     expect(errors).not.toBe(null);
-    expect(errors?.length).toBe(2);
-    expect(errors![0].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/internal_replica');
-    expect(errors![0].message).toBe('11 is less than 12.');
-    expect(errors![1].instancePath).toBe('/clusterConfiguration/cluster_config/cluster/shard/0/weight');
-    expect(errors![1].message).toBe('11 is greater than 10.');
+    const byPath = new Map((errors ?? []).map((e) => [e.instancePath, e]));
+    expect(byPath.get('/clusterConfiguration/cluster_config/cluster/shard/0/internal_replica')?.message).toBe(
+      '11 is less than 12.',
+    );
+    expect(byPath.get('/clusterConfiguration/cluster_config/cluster/shard/0/weight')?.message).toBe(
+      '11 is greater than 10.',
+    );
   });
 
   test('validate multiple types', () => {
@@ -309,6 +314,276 @@ describe('validate', () => {
 
     const errors3 = validate(schema, object3);
     expect(errors3).not.toBe(null);
+  });
+
+  test('validate contains: emits element-level errors for cfworker', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          items: {},
+          contains: { type: 'integer' },
+        },
+      },
+    };
+
+    const data = { arr: ['a', 'b'] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const paths = new Set((errors ?? []).map((e) => e.instancePath));
+    expect(paths.has('/arr/0')).toBe(true);
+    expect(paths.has('/arr/1')).toBe(true);
+  });
+
+  test('validate contains + maxContains: reports error even when cfworker returns valid', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          items: {},
+          contains: { type: 'integer' },
+          maxContains: 1,
+        },
+      },
+    };
+
+    const data = { arr: ['a'] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const paths = new Set((errors ?? []).map((e) => e.instancePath));
+    expect(paths.has('/arr')).toBe(true);
+    expect(paths.has('/arr/0')).toBe(true);
+  });
+
+  test('tuple prefixItems + items=false: highlights array path, not root', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          prefixItems: [{ type: 'string' }, { type: 'integer' }],
+          items: false,
+        },
+      },
+    };
+
+    const data = { arr: ['x', 1, true] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const rootAdditionalProps = (errors ?? []).find(
+      (e) => e.keyword === 'additionalProperties' && e.instancePath === '',
+    );
+    expect(rootAdditionalProps).toBeUndefined();
+    expect((errors ?? []).some((e) => e.instancePath === '/arr')).toBe(true);
+  });
+
+  test('items=false disallow-any: highlights leaf item path', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          items: false,
+        },
+      },
+    };
+
+    const data = { arr: [1] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const paths = new Set((errors ?? []).map((e) => e.instancePath));
+    expect(paths.has('/arr/0')).toBe(true);
+    expect(paths.has('/arr')).toBe(false);
+  });
+
+  test('unsupported keyword additionalItems: cfworker mimics AJV strict compile error', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          prefixItems: [{ type: 'integer' }, { type: 'integer' }],
+          additionalItems: false,
+        },
+      },
+    };
+
+    const data = { arr: [1, 2] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    expect(errors?.[0]?.instancePath).toBe('/');
+    expect(errors?.[0]?.keyword).toBe('$ref');
+    expect(errors?.[0]?.message).toBe('strict mode: unknown keyword: "additionalItems"');
+  });
+
+  test('unevaluatedItems=false: keeps array marker and drops leaf false-schema noise', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['arr'],
+      properties: {
+        arr: {
+          type: 'array',
+          prefixItems: [{ type: 'integer' }],
+          unevaluatedItems: false,
+        },
+      },
+    };
+
+    const data = { arr: [1, 'x'] };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const pathsByKeyword = new Map((errors ?? []).map((e) => [`${e.keyword}:${e.instancePath}`, e]));
+    expect(pathsByKeyword.has('unevaluatedItems:/arr')).toBe(true);
+    expect(pathsByKeyword.has('false-schema:/arr/1')).toBe(false);
+    expect(pathsByKeyword.has('false-schema:/arr')).toBe(false);
+  });
+
+  test('inactive group deep path: no ancestor false-schema wrappers', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['section'],
+      properties: {
+        section: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['sub'],
+          properties: {
+            sub: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['leaf'],
+              properties: {
+                leaf: { type: 'string', minLength: 10 },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const data = { section: { sub: { leaf: 'short' } } };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    // We should not keep generic `false-schema` wrappers on ancestor objects like `/section` or `/section/sub`.
+    const keys = new Set((errors ?? []).map((e) => `${e.keyword}:${e.instancePath}`));
+    expect(keys.has('false-schema:/section')).toBe(false);
+    expect(keys.has('false-schema:/section/sub')).toBe(false);
+  });
+
+  test('cfworker: drop false-schema when concrete error exists at same path', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['leaf'],
+      properties: {
+        leaf: { type: 'string', minLength: 10 },
+      },
+    };
+
+    const data = { leaf: 'short' };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const keys = new Set((errors ?? []).map((e) => `${e.keyword}:${e.instancePath}`));
+    expect(keys.has('minLength:/leaf')).toBe(true);
+    expect(keys.has('false-schema:/leaf')).toBe(false);
+  });
+
+  test('additionalProperties:false extra key: keep object marker and drop leaf false-schema', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: false,
+      required: ['name'],
+      properties: {
+        name: { type: 'string' },
+      },
+    };
+
+    const data = { name: 'ok', surprise: 'no' };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const keys = new Set((errors ?? []).map((e) => `${e.keyword}:${e.instancePath}`));
+    expect(keys.has('additionalProperties:')).toBe(true);
+    expect(keys.has('false-schema:/surprise')).toBe(false);
+
+    const ap = (errors ?? []).find((e) => e.keyword === 'additionalProperties' && e.instancePath === '');
+    expect(ap?.params?.additionalProperty).toBe('surprise');
+  });
+
+  test('propertyNames: attach pattern error to object path (AJV-like)', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      additionalProperties: true,
+      properties: {},
+      propertyNames: {
+        pattern: '^[a-z]{3,}$',
+      },
+    };
+
+    const data = { ab: 1 };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const keys = new Set((errors ?? []).map((e) => `${e.keyword}:${e.instancePath}`));
+    expect(keys.has('propertyNames:')).toBe(true);
+    expect(keys.has('pattern:')).toBe(true);
+    expect(keys.has('pattern:/ab')).toBe(false);
+    const patternError = (errors ?? []).find((e) => e.keyword === 'pattern' && e.instancePath === '');
+    expect(patternError?.params?.pattern).toBe('^[a-z]{3,}$');
+    expect(patternError?.params?.propertyName).toBe('ab');
+  });
+
+  test('unevaluatedProperties:false stray key: keep object marker and drop leaf false-schema', () => {
+    const schema: SchemaLike = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      patternProperties: { '^x_': { type: 'integer' } },
+      unevaluatedProperties: false,
+    };
+
+    const data = { id: 'main', other: 1 };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+    const keys = new Set((errors ?? []).map((e) => `${e.keyword}:${e.instancePath}`));
+    expect(keys.has('unevaluatedProperties:')).toBe(true);
+    expect(keys.has('false-schema:/other')).toBe(false);
+
+    const up = (errors ?? []).find((e) => e.keyword === 'unevaluatedProperties' && e.instancePath === '');
+    expect(up?.params?.unevaluatedProperty).toBe('other');
   });
 });
 

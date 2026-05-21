@@ -30,8 +30,6 @@ import configurationValidationData from './__fixtures__/configurationValidationD
 import {
   buildConfigurationNodes,
   buildConfigurationTree,
-  fillParentPathParts,
-  getConfigurationErrors,
   getDefaultValue,
   getErrorsForTreeRow,
   getOneOfSchemaDefaults,
@@ -41,6 +39,7 @@ import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from
 import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
 import type { JSONObject } from '@models/json';
 import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { jsonSchemaValidationService } from '@utils/jsonSchema/JsonSchemaValidationService';
 import {
   discriminatorFieldName,
   nestedPropsErrorKeyword,
@@ -118,6 +117,22 @@ describe('structure node tests', () => {
     expect(structureNode.children?.length).toBe(2);
     expect(structureNode.children?.[0].data.title).toBe('someField1');
     expect(structureNode.children?.[1].data.title).toBe('someField2');
+  });
+
+  test('root object with only patternProperties: children come from configuration keys', () => {
+    const schema: SchemaDefinition = {
+      type: 'object',
+      readOnly: false,
+      additionalProperties: false,
+      properties: {},
+      patternProperties: {
+        '^[a-z]+$': { title: 'lowerKey', type: 'string', readOnly: false },
+      },
+    };
+    const data: JSONObject = { ab: 'v1', cd: 'v2' };
+    const tree = buildConfigurationNodes(schema, data, {});
+    expect(tree.children?.length).toBe(2);
+    expect(tree.children?.map((c) => c.key).sort()).toEqual(['/ab', '/cd']);
   });
 });
 
@@ -404,21 +419,28 @@ describe('validate', () => {
     expect((fieldErrors as FieldErrors).messages).not.toStrictEqual({ required: 'must be string' });
   });
 
-  test('fillParentPathParts', () => {
-    const errors: ConfigurationErrors = {
-      '/config/cluster/clusterName': true,
-    };
+  test('fills parent paths (via service mapping)', () => {
+    const rawErrors = [
+      {
+        instancePath: '/config/cluster/clusterName',
+        parentSchema: {} as SchemaDefinition,
+        data: {},
+        keyword: 'type',
+        message: 'x',
+        params: {},
+      },
+    ];
 
-    fillParentPathParts(errors);
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', rawErrors, {});
 
     const expected: ConfigurationErrors = {
       '/': true,
       '/config': true,
       '/config/cluster': true,
-      '/config/cluster/clusterName': true,
+      '/config/cluster/clusterName': expect.anything(),
     };
 
-    expect(errors).toStrictEqual(expected);
+    expect(configurationErrors).toMatchObject(expected);
   });
 
   test('required validation', () => {
@@ -477,7 +499,10 @@ describe('validate', () => {
     expect(isValid).toBe(false);
     expect(Object.keys(configurationErrors).length).toBeGreaterThan(0);
 
-    expect(configurationErrors['/']).toBe(true);
+    expect(
+      configurationErrors['/'] === true ||
+        (typeof configurationErrors['/'] === 'object' && configurationErrors['/'] !== null),
+    ).toBe(true);
     expect(
       configurationErrors['/my_group_with_required_not_default_parameters'] === true ||
         (typeof configurationErrors['/my_group_with_required_not_default_parameters'] === 'object' &&
@@ -657,6 +682,48 @@ describe('getErrorsForTreeRow', () => {
   });
 });
 
+describe('getConfigurationErrors root instancePath', () => {
+  test('object-level keywords (minProperties) attach to / so the root row shows FieldErrors', () => {
+    const schema: SchemaDefinition = {
+      type: 'object',
+      readOnly: false,
+      additionalProperties: false,
+      minProperties: 2,
+      maxProperties: 2,
+      properties: {
+        a: { title: 'a', type: 'string', readOnly: false },
+        b: { title: 'b', type: 'string', readOnly: false },
+        c: { title: 'c', type: 'string', readOnly: false },
+      },
+    };
+    const data: JSONObject = { a: 'only' };
+    const raw = validateJsonSchema(schema, data);
+    expect(raw).not.toBe(null);
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', raw, {});
+    expect(typeof configurationErrors['/']).toBe('object');
+    expect(getErrorsForTreeRow(configurationErrors, '/')).toBeDefined();
+  });
+
+  test('required leaf path does not become //x when instancePath is "/"', () => {
+    // AJV normally uses "" for root, but we also generate synthetic root errors with "/" (e.g. schema compilation errors).
+    // When we attach a missing-property marker for UI, we must produce "/<prop>", not "//<prop>".
+    const errors = [
+      {
+        instancePath: '/',
+        parentSchema: { type: 'object', required: ['x'] } as unknown as SchemaDefinition,
+        data: {} as JSONObject,
+        keyword: 'required',
+        message: "must have required property 'x'",
+        params: { missingProperty: 'x' },
+      },
+    ] as unknown as ReturnType<typeof validateJsonSchema>;
+
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', errors, {});
+    expect(configurationErrors['/x']).toBeDefined();
+    expect(configurationErrors['//x']).toBeUndefined();
+  });
+});
+
 describe('getConfigurationErrors + discriminated oneOf', () => {
   test('leaf path exists for missing required inside selected branch', () => {
     const data: JSONObject = {
@@ -664,8 +731,8 @@ describe('getConfigurationErrors + discriminated oneOf', () => {
     };
     const raw = validateJsonSchema(selectableObjectSchema, data);
     expect(raw).not.toBe(null);
-    const map = getConfigurationErrors(raw);
-    expect(map['/selectable_no_default_required/a/plain']).toBeDefined();
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', raw, {});
+    expect(configurationErrors['/selectable_no_default_required/a/plain']).toBeDefined();
   });
 });
 
