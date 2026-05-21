@@ -25,9 +25,19 @@ export interface AdcmFieldMetaData {
 type RedefinedFields = 'items' | 'properties' | 'additionalProperties';
 
 export interface SchemaDefinition extends Omit<JSONSchema7, RedefinedFields> {
-  // Fields that must be redefined because they make use of this definition itself
-  items?: SchemaDefinition;
-  additionalItems?: SchemaDefinition;
+  /**
+   * Project uses 2020-12, while `JSONSchema7` typings cover draft-07.
+   * Redefine/extend keywords we actively use in schemas so TS matches runtime behavior.
+   */
+  items?: SchemaDefinition | false;
+  // deprecated
+  additionalItems?: SchemaDefinition | false;
+  // 2019-09 / 2020-12
+  unevaluatedItems?: SchemaDefinition | false;
+  unevaluatedProperties?: SchemaDefinition | false;
+  minContains?: number;
+  maxContains?: number;
+  prefixItems?: SchemaDefinition[];
   properties?: {
     [key: string]: SchemaDefinition;
   };
@@ -36,6 +46,9 @@ export interface SchemaDefinition extends Omit<JSONSchema7, RedefinedFields> {
   readOnly?: boolean;
   oneOf?: SchemaDefinition[];
   discriminator?: { propertyName: string };
+  // 2019-09 / 2020-12
+  dependentRequired?: Record<string, string[]>;
+  dependentSchemas?: Record<string, SchemaDefinition | boolean>;
 }
 
 export type SchemaTypeName = JSONSchema7TypeName;

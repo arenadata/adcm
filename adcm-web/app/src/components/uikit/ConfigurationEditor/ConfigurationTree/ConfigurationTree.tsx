@@ -32,6 +32,7 @@ import type {
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
+import type { JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -51,6 +52,7 @@ export interface ConfigurationTreeProps {
   onFieldAttributesChange: ChangeFieldAttributesHandler;
   onChangeIsValid?: (isValid: boolean) => void;
   isReadOnly?: boolean;
+  validationEngine?: JsonSchemaEngineId;
 }
 
 const getNodeClassName = (
@@ -79,6 +81,7 @@ const ConfigurationTree = ({
   attributes,
   filter,
   areExpandedAll,
+  validationEngine = 'ajv',
   onEditField,
   onAddEmptyObject,
   onAddField,
@@ -93,14 +96,20 @@ const ConfigurationTree = ({
   isReadOnly = false,
 }: ConfigurationTreeProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const configNode: ConfigurationNode = buildConfigurationNodes(schema, configuration, attributes, isReadOnly);
+  const configNode: ConfigurationNode = buildConfigurationNodes(
+    schema,
+    configuration,
+    attributes,
+    isReadOnly,
+    validationEngine,
+  );
   const nodeDictionary = buildNodeDictionary(configNode);
 
   const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
 
   const viewConfigTree = buildConfigurationTree(configNode, filter, treeState);
 
-  const { isValid, configurationErrors } = validate(schema, configuration, attributes);
+  const { isValid, configurationErrors } = validate(schema, configuration, attributes, validationEngine);
 
   useEffect(() => {
     onChangeIsValid?.(isValid);

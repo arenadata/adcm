@@ -2,6 +2,7 @@ import type {
   ConfigurationData,
   ConfigurationSchema,
   SchemaDefinition,
+  SchemaTypeName,
   ConfigurationErrors,
   ConfigurationAttributes,
   FieldAttributes,
@@ -19,65 +20,18 @@ import type {
   NodesDictionary,
   ConfigurationSelectableObject,
 } from '../ConfigurationEditor.types';
-import { validate as validateJsonSchema, generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
-import {
-  discriminatorFieldName,
-  nestedPropsErrorKeyword,
-  nestedPropsErrorMessage,
-  primitiveFieldTypes,
-  rootNodeKey,
-  rootNodeTitle,
-  secretFieldValuePrefixToIgnore,
-} from './ConfigurationTree.constants';
+import { jsonSchemaValidationService, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
+import { discriminatorFieldName, primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
 
 const getIndex = (nodeArr?: ConfigurationNode[]) => (nodeArr && nodeArr.length > 0 ? nodeArr.at(-1)!.index + 1 : 0);
 
-export const validate = (schema: SchemaDefinition, configuration: JSONObject, attributes: ConfigurationAttributes) => {
-  const errors = validateJsonSchema(schema, configuration);
-
-  const configurationErrors = getConfigurationErrors(errors);
-  filterConfigurationErrors(configurationErrors, attributes);
-  fillParentPathParts(configurationErrors);
-
-  const isValid = Object.keys(configurationErrors).length === 0;
-
-  return { isValid, configurationErrors };
-};
-
-export const getConfigurationErrors = (errors: ReturnType<typeof validateJsonSchema>) => {
-  const result: ConfigurationErrors = {};
-
-  const addError = (path: string, schema: SchemaDefinition, value: JSONValue, keyword: string, message: string) => {
-    if (!result[path]) {
-      result[path] = { schema, value, messages: {} };
-    }
-
-    const fieldErrors = result[path] as FieldErrors;
-    fieldErrors.messages[keyword] = message;
-  };
-
-  if (!errors || errors.length === 0) {
-    return result;
-  }
-
-  // group error by fieldPath
-  for (const error of errors) {
-    addError(
-      error.instancePath,
-      error.parentSchema as SchemaDefinition,
-      error.data as JSONValue,
-      error.keyword,
-      error.message || '',
-    );
-    // config tree generates from schema. And we must show missing property error on property node
-    // extend error from structure to field,
-    if (error.keyword === 'required') {
-      const fieldPath = `${error.instancePath}/${error.params.missingProperty}`;
-      addError(fieldPath, error.parentSchema as SchemaDefinition, error.data as JSONValue, error.keyword, 'required');
-    }
-  }
-
-  return result;
+export const validate = (
+  schema: SchemaDefinition,
+  configuration: JSONObject,
+  attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId = 'ajv',
+) => {
+  return jsonSchemaValidationService.validate(engine, schema, configuration, attributes);
 };
 
 /** Path `p` is a strict descendant of `ancestorKey` in the config tree (`/a` → `/a/b`, not `/ab`). */
@@ -108,67 +62,6 @@ export function getErrorsForTreeRow(
   return entry as FieldErrors;
 }
 
-export const filterConfigurationErrors = (errors: ConfigurationErrors, attributes: ConfigurationAttributes) => {
-  // ignore errors for not active groups
-  for (const [path, value] of Object.entries(attributes)) {
-    if (value.isActive === false) {
-      for (const [errorPath] of Object.entries(errors)) {
-        if (errorPath === path || errorPath.startsWith(`${path}/`)) {
-          delete errors[errorPath];
-        }
-      }
-    }
-  }
-
-  for (const [errorPath, error] of Object.entries(errors)) {
-    const fieldErrors = error as FieldErrors;
-    const { fieldSchema } = determineFieldSchema(fieldErrors.schema);
-
-    if (fieldSchema.type === 'string' && fieldSchema.adcmMeta?.isSecret) {
-      const fieldValue = fieldErrors.value as string;
-      const isIgnoredKeyword =
-        fieldErrors.messages.pattern || fieldErrors.messages.minLength || fieldErrors.messages.maxLength;
-
-      // ignore hashed secrets from backend
-      if (isIgnoredKeyword && fieldValue?.startsWith(secretFieldValuePrefixToIgnore)) {
-        delete errors[errorPath];
-      }
-    }
-  }
-};
-
-export const fillParentPathParts = (errors: ConfigurationErrors) => {
-  // root always has children with errors
-  if (Object.keys(errors).length > 0) {
-    errors['/'] = true;
-  }
-
-  // errorPath - is full path to field
-  // like /configuration/cluster/clusterName
-  for (const errorPath of Object.keys(errors)) {
-    const parts = errorPath.split('/');
-    let path = '';
-
-    // skip first part and last:
-    // - first part is empty string
-    // - last part represents full path and it already exists in errors
-    for (let i = 1; i < parts.length - 1; i++) {
-      const part = parts[i];
-      path = `${path}/${part}`;
-
-      if (!errors[path]) {
-        errors[path] = true;
-      } else {
-        const parentError = errors[path];
-        // if parent error already exists, add information about child errors
-        if (typeof parentError === 'object') {
-          parentError.messages[nestedPropsErrorKeyword] = nestedPropsErrorMessage;
-        }
-      }
-    }
-  }
-};
-
 export const getTitle = (keyName: string, fieldSchema: SchemaDefinition) =>
   fieldSchema.title?.length ? fieldSchema.title : keyName;
 
@@ -197,6 +90,39 @@ const getDefaultFieldSchema = (parentFieldSchema: SchemaDefinition | null): Sche
   }
 
   return fieldSchema;
+};
+
+/**
+ * Resolve per-key schema for map-like objects.
+ *
+ * We support keys that are present in data but absent in `properties`:
+ * - prefer explicit `properties[key]`
+ * - else match the first `patternProperties` regex (ECMA-262)
+ * - else fall back to a primitive schema so the UI has a renderable control
+ */
+const resolvePropertySchemaForObjectKey = (
+  parentFieldSchema: SchemaDefinition,
+  propertyKey: string,
+): SchemaDefinition => {
+  const explicit = parentFieldSchema.properties?.[propertyKey];
+  if (explicit) return explicit;
+
+  const patternMap = parentFieldSchema.patternProperties;
+  if (patternMap && typeof patternMap === 'object') {
+    for (const [pattern, subSchema] of Object.entries(patternMap)) {
+      if (!subSchema || typeof subSchema !== 'object') continue;
+      try {
+        const re = new RegExp(pattern);
+        if (re.test(propertyKey)) {
+          return subSchema as SchemaDefinition;
+        }
+      } catch {
+        // ignore invalid regex in schema
+      }
+    }
+  }
+
+  return getDefaultFieldSchema(parentFieldSchema);
 };
 
 const getIsReadonly = (
@@ -267,8 +193,9 @@ export const buildConfigurationNodes = (
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
   isReadOnly?: boolean,
+  engine: JsonSchemaEngineId = 'ajv',
 ): ConfigurationNode => {
-  const rootNode = buildRootNode(schema, configuration, attributes, isReadOnly);
+  const rootNode = buildRootNode(schema, configuration, attributes, isReadOnly, engine);
   return rootNode;
 };
 
@@ -297,6 +224,7 @@ const buildRootNode = (
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
   isReadOnly = false,
+  engine: JsonSchemaEngineId = 'ajv',
 ): ConfigurationNode => {
   const { fieldSchema } = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
@@ -319,15 +247,28 @@ const buildRootNode = (
   };
 
   const children: ConfigurationNode[] = [];
-  if (fieldSchema.properties) {
-    for (const [index, key] of Object.keys(fieldSchema.properties).entries()) {
-      children.push(
-        buildNode(index, key, [key], rootNode, fieldSchema.properties[key], configuration[key], attributes),
-      );
+  const props = fieldSchema.properties ?? {};
+  // We render both schema-defined properties and extra keys present in data (maps / patternProperties).
+  const addedKeys = new Set<string>();
+
+  Object.entries(props).forEach(([key, childSchema], index) => {
+    if (childSchema === undefined) {
+      return;
     }
+    children.push(buildNode(index, key, [key], rootNode, childSchema, configuration[key], attributes, engine));
+    addedKeys.add(key);
+  });
+
+  let nextIndex = children.length;
+  for (const key of Object.keys(configuration)) {
+    if (addedKeys.has(key)) continue;
+    const childSchema = resolvePropertySchemaForObjectKey(fieldSchema, key);
+    children.push(buildNode(nextIndex, key, [key], rootNode, childSchema, configuration[key], attributes, engine));
+    addedKeys.add(key);
+    nextIndex++;
   }
 
-  rootNode.children = children;
+  rootNode.children = children.length ? children : undefined;
 
   return rootNode;
 };
@@ -340,11 +281,22 @@ const buildNode = (
   fieldSchema: SchemaDefinition,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId = 'ajv',
 ): ConfigurationNode => {
   const { fieldSchema: singleFieldSchema, isNullable } = determineFieldSchema(fieldSchema);
 
   if (singleFieldSchema.type === 'object' && singleFieldSchema.discriminator === undefined) {
-    return buildObjectNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildObjectNode(
+      index,
+      fieldName,
+      path,
+      parentNode,
+      singleFieldSchema,
+      isNullable,
+      fieldValue,
+      attributes,
+      engine,
+    );
   }
 
   if (singleFieldSchema.type === 'object' && singleFieldSchema.discriminator !== undefined) {
@@ -357,11 +309,22 @@ const buildNode = (
       isNullable,
       fieldValue,
       attributes,
+      engine,
     );
   }
 
   if (singleFieldSchema.type === 'array') {
-    return buildArrayNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
+    return buildArrayNode(
+      index,
+      fieldName,
+      path,
+      parentNode,
+      singleFieldSchema,
+      isNullable,
+      fieldValue,
+      attributes,
+      engine,
+    );
   }
 
   if (primitiveFieldTypes.has(singleFieldSchema.type as string)) {
@@ -376,6 +339,44 @@ const buildNode = (
     return buildFieldNode(index, fieldName, path, parentNode, singleFieldSchema, isNullable, fieldValue, attributes);
   }
 
+  /*
+   * `items: {}` (empty schema) allows any JSON value; the editor needs a concrete control.
+   * Infer a primitive type from the runtime value instead of falling through to UNKNOWN FIELD.
+   * validation.arrays.contains_basic / validation.arrays.contains_minContains_2/ validation.arrays.contains_maxContains_1
+   */
+  const isEmptySchemaWithoutType =
+    singleFieldSchema.type === undefined &&
+    singleFieldSchema.enum === undefined &&
+    singleFieldSchema.oneOf === undefined;
+
+  const hasRuntimeValue = fieldValue !== null && fieldValue !== undefined;
+
+  if (isEmptySchemaWithoutType && hasRuntimeValue) {
+    const valueType = typeof fieldValue;
+    const isSupportedPrimitive = valueType === 'string' || valueType === 'number' || valueType === 'boolean';
+
+    if (isSupportedPrimitive) {
+      let inferredType: SchemaTypeName;
+
+      if (valueType === 'number') {
+        const asNumber = fieldValue as number;
+        inferredType = Number.isInteger(asNumber) ? 'integer' : 'number';
+      } else {
+        inferredType = valueType as SchemaTypeName;
+      }
+
+      // `items: {}` (empty schema) allows any JSON value; infer a concrete primitive type from runtime value
+      // so we can render a usable control instead of an UNKNOWN field.
+      const inferredSchema: SchemaDefinition = {
+        ...singleFieldSchema,
+        type: inferredType,
+        title: singleFieldSchema.title ?? `Item #${fieldName}`,
+      };
+
+      return buildFieldNode(index, fieldName, path, parentNode, inferredSchema, isNullable, fieldValue, attributes);
+    }
+  }
+
   return buildUnknownNode(index, fieldName, path, parentNode, singleFieldSchema);
 };
 
@@ -388,6 +389,7 @@ const buildObjectNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId = 'ajv',
 ) => {
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
@@ -423,7 +425,8 @@ const buildObjectNode = (
 
   const nodeData = node.data as ConfigurationObject;
 
-  if (fieldSchema === undefined || fieldSchema.properties === undefined) {
+  // Objects may be described via `patternProperties` without `properties`.
+  if (fieldSchema === undefined) {
     const fullPath = [...path, fieldName];
     console.error(`schema for /${fullPath.join('/')} not found`);
   } else {
@@ -431,7 +434,7 @@ const buildObjectNode = (
       nodeData.objectType = 'structure';
     }
 
-    node.children = addObjectProperties(node, attributes);
+    node.children = addObjectProperties(node, attributes, engine);
   }
 
   return node;
@@ -446,6 +449,7 @@ const buildSelectableObjectNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId = 'ajv',
 ) => {
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
@@ -467,7 +471,7 @@ const buildSelectableObjectNode = (
       path,
       fieldSchema,
       selectedFieldSchema: determineSelectableFieldSchema(fieldSchema, fieldValue),
-      oneOfSchemaDefaults: getOneOfSchemaDefaults(fieldSchema),
+      oneOfSchemaDefaults: getOneOfSchemaDefaults(fieldSchema, engine),
       isNullable,
       parentNode,
       isCleanable,
@@ -484,43 +488,56 @@ const buildSelectableObjectNode = (
     const fullPath = [...path, fieldName];
     console.error(`schema for /${fullPath.join('/')} not found`);
   } else {
-    node.children = addObjectProperties(node, attributes);
+    node.children = addObjectProperties(node, attributes, engine);
   }
 
   return node;
 };
 
-const addObjectProperties = (node: ConfigurationNode, attributes: ConfigurationAttributes) => {
+const addObjectProperties = (
+  node: ConfigurationNode,
+  attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId,
+) => {
   const configObject = node.data as ConfigurationObject | ConfigurationSelectableObject;
   const { value, path } = configObject;
 
   const fieldSchema = configObject.type === 'object' ? configObject.fieldSchema : configObject.selectedFieldSchema;
 
-  const objectValue = value as JSONObject | null;
+  // Guard: schema may declare object, but the runtime value can still be scalar/null/array.
+  // Only treat plain objects as objects for children rendering.
+  const objectValue =
+    typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as JSONObject) : null;
 
   const children = [];
 
-  if (fieldSchema?.properties && objectValue) {
-    const addedFields = new Set();
+  if (fieldSchema && objectValue) {
+    const addedFields = new Set<string>();
+    const props = fieldSchema.properties ?? {};
+    const propertyKeys = Object.keys(props);
 
     // add children from schema
-    for (const [key, value] of Object.keys(fieldSchema.properties).entries()) {
-      const fieldPath = [...path, value];
-      const propertyValue = objectValue?.[value] ?? null;
-      const childrenFieldSchema = fieldSchema.properties[value];
+    for (const [key, propName] of propertyKeys.entries()) {
+      const childrenFieldSchema = props[propName];
+      if (childrenFieldSchema === undefined) {
+        continue;
+      }
 
-      children.push(buildNode(key, value, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
-      addedFields.add(value);
+      const fieldPath = [...path, propName];
+      const propertyValue = objectValue[propName] ?? null;
+
+      children.push(buildNode(key, propName, fieldPath, node, childrenFieldSchema, propertyValue, attributes, engine));
+      addedFields.add(propName);
     }
 
-    // add children from data (map case)
-    let index = 0;
+    // Add children from data (map-like objects / patternProperties keys not listed in `properties`).
+    let index = children.length;
     for (const [key, propertyValue] of Object.entries(objectValue)) {
       if (!addedFields.has(key)) {
         const fieldPath = [...path, key];
-        const childrenFieldSchema = fieldSchema.properties[key] ?? getDefaultFieldSchema(fieldSchema);
+        const childrenFieldSchema = resolvePropertySchemaForObjectKey(fieldSchema, key);
 
-        children.push(buildNode(index, key, fieldPath, node, childrenFieldSchema, propertyValue, attributes));
+        children.push(buildNode(index, key, fieldPath, node, childrenFieldSchema, propertyValue, attributes, engine));
         addedFields.add(key);
         index++;
       }
@@ -624,6 +641,7 @@ const buildArrayNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
+  engine: JsonSchemaEngineId = 'ajv',
 ) => {
   const array = fieldValue as Array<JSONValue> | null;
 
@@ -658,13 +676,35 @@ const buildArrayNode = (
     },
   };
 
-  const itemsSchema = fieldSchema.items as SchemaDefinition;
+  /*
+   * JSON Schema tuple arrays:
+   * - `prefixItems` define per-index schemas
+   * - `items` apply after `prefixItems`
+   * - `items: false` forbids extra elements
+   *
+   * The UI must still render existing data elements even when forbidden, so we show them as "not allowed".
+   */
+  const prefixItemsSchemas = fieldSchema.prefixItems;
+  const itemsSchema = fieldSchema.items;
+
+  const getSchemaForIndex = (i: number): SchemaDefinition | undefined => {
+    const schemaFromPrefix = prefixItemsSchemas?.[i];
+    if (schemaFromPrefix) return schemaFromPrefix;
+    if (itemsSchema === false) return undefined;
+    return itemsSchema;
+  };
   node.children = [];
 
   if (array) {
     for (let i = 0; i < array.length; i++) {
       const elementPath = [...path, i];
-      node.children.push(buildNode(i, i.toString(), elementPath, node, itemsSchema, array[i], attributes));
+      const schemaForIndex = getSchemaForIndex(i);
+
+      node.children.push(
+        schemaForIndex
+          ? buildNode(i, i.toString(), elementPath, node, schemaForIndex, array[i], attributes, engine)
+          : buildUnknownNode(i, i.toString(), elementPath, node, {} as SchemaDefinition),
+      );
     }
   }
 
@@ -720,11 +760,15 @@ const buildUnknownNode = (
   parentNode: ConfigurationNode,
   fieldSchema: SchemaDefinition,
 ) => {
+  // Keep unknown nodes readable: include field name + schema type; allow overrides for special cases (e.g. "not allowed").
+  const title =
+    fieldSchema.title ??
+    `UNKNOWN FIELD: ${fieldName}, TYPE: ${fieldSchema.type === undefined ? 'undefined' : String(fieldSchema.type)}`;
   const node: ConfigurationNode = {
     key: buildKey(path),
     index,
     data: {
-      title: `UNKNOWN FIELD: ${fieldName}, TYPE: ${fieldSchema.type}`,
+      title,
       type: 'field',
       path,
       parentNode,
@@ -822,13 +866,33 @@ const buildConfigurationTreeRecursively = (
   }
 
   if (nodeData.type === 'array' && !nodeData.isReadonly) {
-    const itemsSchema = nodeData.fieldSchema.items as SchemaDefinition;
+    // `ConfigurationEditor` array UI needs a concrete schema for:
+    // - building "Add property" button
+    // - building drop placeholder nodes on drag
+    //
+    // For tuple arrays (`prefixItems`) with `additionalItems` / `unevaluatedItems`, there might be no `items`.
+    // In that case we must not try to build add/drop nodes with `undefined` schema (it crashes in `getNodeClassName`).
+    const nodeFieldSchema = nodeData.fieldSchema;
+
+    const asArrayItemSchema = (s: SchemaDefinition | false | undefined): SchemaDefinition | undefined => {
+      if (s === undefined || s === false) return undefined;
+      return s;
+    };
+
+    const itemsSchema =
+      asArrayItemSchema(nodeFieldSchema.items) ??
+      asArrayItemSchema(nodeFieldSchema.additionalItems) ??
+      asArrayItemSchema(nodeFieldSchema.unevaluatedItems);
+
     if (treeNode.children === undefined) {
       treeNode.children = [];
     }
 
+    // Tuple-only arrays can have no `items` at all; in that case, do not create add/drop UI (would crash on undefined schema).
+    const canBuildAddOrDropNodes = itemsSchema !== undefined;
+
     // add drop placeholders on drag
-    if (treeState?.dragNode?.data && treeNode.children.length) {
+    if (canBuildAddOrDropNodes && treeState?.dragNode?.data && treeNode.children.length) {
       const isDragItemInArray = treeState.dragNode.data.parentNode.key === node.key;
       if (isDragItemInArray) {
         const childrenWithDropPlaceholders: ConfigurationNodeView[] = [];
@@ -856,7 +920,9 @@ const buildConfigurationTreeRecursively = (
       }
     }
 
-    treeNode.children.push(buildAddArrayItemNode(nodeData.path, node, itemsSchema));
+    if (canBuildAddOrDropNodes) {
+      treeNode.children.push(buildAddArrayItemNode(nodeData.path, node, itemsSchema));
+    }
   }
 
   return treeNode;
@@ -906,7 +972,10 @@ export const determineSelectableFieldSchema = (
   return null;
 };
 
-export const getOneOfSchemaDefaults = (fieldSchema: SchemaDefinition): Record<string, JSONValue> => {
+export const getOneOfSchemaDefaults = (
+  fieldSchema: SchemaDefinition,
+  engine: JsonSchemaEngineId = 'ajv',
+): Record<string, JSONValue> => {
   if (fieldSchema.oneOf === undefined) {
     return {};
   }
@@ -917,7 +986,7 @@ export const getOneOfSchemaDefaults = (fieldSchema: SchemaDefinition): Record<st
 
   for (const oneOfSchema of oneOf) {
     const discriminatorValue = (oneOfSchema?.properties?.[discriminatorFieldName].const as string) ?? '';
-    const option = generateFromSchema({ ...rest, ...oneOfSchema }) as object;
+    const option = jsonSchemaValidationService.generateDefaults<object>(engine, { ...rest, ...oneOfSchema }) ?? {};
     result[discriminatorValue] = {
       ...option,
       [discriminatorFieldName]: discriminatorValue,

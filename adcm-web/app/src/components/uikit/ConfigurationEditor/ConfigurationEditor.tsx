@@ -13,6 +13,7 @@ import {
 } from './ConfigurationEditor.utils';
 import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import type { JSONPrimitive, JSONValue } from '@models/json';
+import type { JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
 import { syncFieldAttributes } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTreeAttributes.utils';
 import type { FieldAttributesSyncPayload } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.types';
 
@@ -32,6 +33,7 @@ export interface ConfigurationEditorProps {
   onConfigurationAndAttributesChange: (configuration: ConfigurationData, attributes: ConfigurationAttributes) => void;
   onChangeIsValid?: (isValid: boolean) => void;
   isReadOnly?: boolean;
+  validationEngine?: JsonSchemaEngineId;
 }
 
 const ConfigurationEditor = ({
@@ -45,6 +47,7 @@ const ConfigurationEditor = ({
   onConfigurationAndAttributesChange,
   onChangeIsValid,
   isReadOnly = false,
+  validationEngine = 'ajv',
 }: ConfigurationEditorProps) => {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);
@@ -173,6 +176,7 @@ const ConfigurationEditor = ({
         attributes={attributes}
         filter={filter}
         areExpandedAll={areExpandedAll}
+        validationEngine={validationEngine}
         onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
         onAddField={handleOpenAddFieldDialog}

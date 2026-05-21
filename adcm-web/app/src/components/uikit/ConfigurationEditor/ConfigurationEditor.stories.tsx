@@ -73,6 +73,7 @@ export const ConfigurationEditorStoryWithHooks = ({
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});
   const [areExpandedAll, setAreExpandedAll] = useState(false);
+  const [showCfworker, setShowCfworker] = useState(true);
   const [filter, setFilter] = useState<ConfigurationTreeFilter>({
     title: '',
     showAdvanced: false,
@@ -118,6 +119,7 @@ export const ConfigurationEditorStoryWithHooks = ({
     <>
       <Switch isToggled={filter.showAdvanced} variant="blue" onChange={handleAdvancedChange} label="Show advanced" />
       <Switch isToggled={areExpandedAll} onChange={handleChangeExpandedAll} label="expand content" />
+      <Switch isToggled={showCfworker} onChange={() => setShowCfworker((v) => !v)} label="show cfworker" />
       <br />
       Show invisible:
       <Checkbox checked={filter.showInvisible} onChange={handleInvisibleChange} />
@@ -125,16 +127,36 @@ export const ConfigurationEditorStoryWithHooks = ({
       Filter:
       <Input value={filter.title} onChange={handleFilterChange} />
       <br />
-      <ConfigurationEditor
-        schema={schema}
-        configuration={configuration}
-        attributes={attributes}
-        filter={filter}
-        areExpandedAll={areExpandedAll}
-        onConfigurationChange={handleConfigurationChange}
-        onAttributesChange={handleAttributesChange}
-        onConfigurationAndAttributesChange={handleConfigurationAndAttributesChange}
-      />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <ConfigurationEditor
+            schema={schema}
+            configuration={configuration}
+            attributes={attributes}
+            filter={filter}
+            areExpandedAll={areExpandedAll}
+            validationEngine="ajv"
+            onConfigurationChange={handleConfigurationChange}
+            onAttributesChange={handleAttributesChange}
+            onConfigurationAndAttributesChange={handleConfigurationAndAttributesChange}
+          />
+        </div>
+        {showCfworker && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ConfigurationEditor
+              schema={schema}
+              configuration={configuration}
+              attributes={attributes}
+              filter={filter}
+              areExpandedAll={areExpandedAll}
+              validationEngine="cfworker"
+              onConfigurationChange={handleConfigurationChange}
+              onAttributesChange={handleAttributesChange}
+              onConfigurationAndAttributesChange={handleConfigurationAndAttributesChange}
+            />
+          </div>
+        )}
+      </div>
     </>
   );
 };
