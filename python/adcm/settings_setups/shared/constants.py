@@ -56,6 +56,9 @@ USERNAME_MAX_LENGTH = 150
 STDOUT_STDERR_LOG_CUT_LENGTH = 1500
 STDOUT_STDERR_LOG_LINE_CUT_LENGTH = 1000
 STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH = STDOUT_STDERR_LOG_CUT_LENGTH * STDOUT_STDERR_LOG_LINE_CUT_LENGTH
-STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via link>"
+STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = (
+    "<The log is too large, and you only see the last 1500 lines to optimize the "
+    "display. Download full version via link>"
+)
 
 ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=2)
