@@ -4,7 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import type { AdcmCluster } from '@models/adcm';
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
@@ -58,6 +58,9 @@ const clusterSlice = createSlice({
     setIsLoading(state, action) {
       state.isLoading = action.payload;
     },
+    setCluster(state, action: PayloadAction<AdcmCluster>) {
+      state.cluster = action.payload;
+    },
     cleanupCluster() {
       return createInitialState();
     },
@@ -104,6 +107,6 @@ const clusterSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupCluster } = clusterSlice.actions;
-export { getCluster, cleanupCluster };
+const { setIsLoading, cleanupCluster, setCluster } = clusterSlice.actions;
+export { getCluster, cleanupCluster, setCluster };
 export default clusterSlice.reducer;
