@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { AdcmClustersApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import type { AdcmCluster } from '@models/adcm';
@@ -61,6 +61,13 @@ const clustersSlice = createSlice({
     setLoadState(state, action) {
       state.loadState = action.payload;
     },
+    upsertCluster(state, action: PayloadAction<AdcmCluster>) {
+      const { payload: cluster } = action;
+      const index = state.clusters.findIndex((c) => c.id === cluster.id);
+      if (index >= 0) {
+        state.clusters[index] = cluster;
+      }
+    },
     cleanupClusters() {
       return createInitialState();
     },
@@ -104,6 +111,6 @@ const clustersSlice = createSlice({
   },
 });
 
-const { setLoadState, cleanupClusters } = clustersSlice.actions;
-export { getClusters, refreshClusters, cleanupClusters, setLoadState };
+const { setLoadState, cleanupClusters, upsertCluster } = clustersSlice.actions;
+export { getClusters, refreshClusters, cleanupClusters, setLoadState, upsertCluster };
 export default clustersSlice.reducer;

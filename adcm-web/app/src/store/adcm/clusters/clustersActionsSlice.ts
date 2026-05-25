@@ -1,7 +1,8 @@
 import type { RequestError } from '@api';
 import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { refreshClusters } from './clustersSlice';
+import { refreshClusters, upsertCluster } from './clustersSlice';
+import { setCluster } from './clusterSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import {
@@ -89,8 +90,9 @@ const renameClusterWithUpdate = createAsyncThunk(
   'adcm/clustersActions/renameClusterWithUpdate',
   async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
     try {
-      await AdcmClustersApi.patchCluster(id, { name });
-      await thunkAPI.dispatch(refreshClusters());
+      const cluster = await AdcmClustersApi.patchCluster(id, { name });
+      thunkAPI.dispatch(upsertCluster(cluster));
+      thunkAPI.dispatch(setCluster(cluster));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -102,7 +104,9 @@ const editClusterDescriptionWithUpdate = createAsyncThunk(
   'adcm/clustersActions/editClusterDescriptionWithUpdate',
   async ({ id, description }: AdcmEditDescriptionArgs, thunkAPI) => {
     try {
-      await AdcmClustersApi.patchCluster(id, { description });
+      const cluster = await AdcmClustersApi.patchCluster(id, { description });
+      thunkAPI.dispatch(upsertCluster(cluster));
+      thunkAPI.dispatch(setCluster(cluster));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
