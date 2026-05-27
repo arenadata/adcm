@@ -35,9 +35,6 @@ from core.tests.test_config.utils import name_id
 class TestChangesDiff(TestCase):
     maxDiff = None
 
-    # NOTE: Synchronization isn't tested with selection groups,
-    #  because it's currently not working fully together (ADCM-7948)
-
     @classmethod
     def setUpClass(cls) -> None:
         cls.parameters = (
@@ -222,5 +219,109 @@ class TestChangesDiff(TestCase):
         new_config.attributes["/root_sel/one/ag"].is_active = True
 
         result = detect_changes(self.config_with_selected_one, new_config, self.spec)
+
+        self.assert_changes(result, expected)
+
+    def test_sync_in_selected_branch_without_selection_change(self):
+        expected = [Change(parameter="/root_sel/one/l", type=ChT.SYNCHRONIZATION, old=True, new=False)]
+        previous_config = self.config_based_on(self.config_with_selected_one)
+        previous_config.attributes["/root_sel/one/l"] = Attributes(is_synced=True)
+        new_config = self.config_based_on(previous_config)
+        new_config.attributes["/root_sel/one/l"] = Attributes(is_synced=False)
+
+        result = detect_changes(previous_config, new_config, self.spec)
+
+        self.assert_changes(result, expected)
+
+    def test_selection_change_with_desync_in_newly_selected_branch(self):
+        expected = [
+            Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new="two"),
+            Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=None),
+            Change(parameter="/root_sel/one/ag", type=ChT.ACTIVATION, old=False, new=None),
+            Change(parameter="/root_sel/one/ag/g/s", type=ChT.VALUE, old="w", new=None),
+            Change(parameter="/root_sel/one/ag/b", type=ChT.VALUE, old=False, new=None),
+            Change(parameter="/root_sel/two/m", type=ChT.VALUE, old=None, new={"k": "v"}),
+            Change(parameter="/root_sel/two/m", type=ChT.SYNCHRONIZATION, old=None, new=False),
+        ]
+        previous_config = self.config_based_on(self.config_with_selected_one)
+        new_config = self.config_based_on(self.config_with_selected_one)
+        new_config.values["root_sel"] = {"two": {"m": {"k": "v"}}}
+        new_config.attributes = {
+            "/root_act": Attributes(is_active=True),
+            "/root_sel/two/m": Attributes(is_synced=False),
+        }
+
+        result = detect_changes(previous_config, new_config, self.spec)
+
+        self.assert_changes(result, expected)
+
+    def test_selection_change_sync_in_outdated_branch(self):
+        expected = [
+            Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new="two"),
+            Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=None),
+            Change(parameter="/root_sel/one/l", type=ChT.SYNCHRONIZATION, old=True, new=False),
+            Change(parameter="/root_sel/one/ag", type=ChT.ACTIVATION, old=False, new=None),
+            Change(parameter="/root_sel/one/ag/g/s", type=ChT.VALUE, old="w", new=None),
+            Change(parameter="/root_sel/one/ag/b", type=ChT.VALUE, old=False, new=None),
+            Change(parameter="/root_sel/two/m", type=ChT.VALUE, old=None, new={"k": "v"}),
+        ]
+        previous_config = self.config_based_on(self.config_with_selected_one)
+        previous_config.attributes["/root_sel/one/l"] = Attributes(is_synced=True)
+        new_config = self.config_based_on(previous_config)
+        new_config.values["root_sel"] = {"two": {"m": {"k": "v"}}}
+        new_config.attributes["/root_sel/one/l"] = Attributes(is_synced=False)
+        new_config.attributes.pop("/root_sel/one/ag")
+
+        result = detect_changes(previous_config, new_config, self.spec)
+
+        self.assert_changes(result, expected)
+
+    def test_selection_to_none_sync_in_removed_branch(self):
+        expected = [
+            Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new=None),
+            Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=None),
+            Change(parameter="/root_sel/one/l", type=ChT.SYNCHRONIZATION, old=True, new=None),
+            Change(parameter="/root_sel/one/ag", type=ChT.ACTIVATION, old=False, new=None),
+            Change(parameter="/root_sel/one/ag/b", type=ChT.VALUE, old=False, new=None),
+            Change(parameter="/root_sel/one/ag/g/s", type=ChT.VALUE, old="w", new=None),
+        ]
+        previous_config = self.config_based_on(self.config_with_selected_one)
+        previous_config.attributes["/root_sel/one/l"] = Attributes(is_synced=True)
+        new_config = self.config_based_on(previous_config)
+        new_config.values["root_sel"] = None
+        new_config.attributes.pop("/root_sel/one/l")
+        new_config.attributes.pop("/root_sel/one/ag")
+
+        result = detect_changes(previous_config, new_config, self.spec)
+
+        self.assert_changes(result, expected)
+
+    def test_selection_change_has_activation_gone_and_appeared(self):
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("root_sel"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("root_sel", "one")),
+            ParameterGroup(identifier=name_id("root_sel", "one", "ag1"), activation=Activation()),
+            BooleanParameter(identifier=name_id("root_sel", "one", "ag1", "b")),
+            ParameterGroup(identifier=name_id("root_sel", "two")),
+            ParameterGroup(identifier=name_id("root_sel", "two", "ag2"), activation=Activation()),
+            BooleanParameter(identifier=name_id("root_sel", "two", "ag2", "b")),
+        )
+        previous_config = Configuration(
+            values={"root_sel": {"one": {"ag1": {"b": True}}}},
+            attributes={"/root_sel/one/ag1": Attributes(is_active=False)},
+        )
+        new_config = Configuration(
+            values={"root_sel": {"two": {"ag2": {"b": False}}}},
+            attributes={"/root_sel/two/ag2": Attributes(is_active=True)},
+        )
+        expected = [
+            Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new="two"),
+            Change(parameter="/root_sel/one/ag1", type=ChT.ACTIVATION, old=False, new=None),
+            Change(parameter="/root_sel/one/ag1/b", type=ChT.VALUE, old=True, new=None),
+            Change(parameter="/root_sel/two/ag2", type=ChT.ACTIVATION, old=None, new=True),
+            Change(parameter="/root_sel/two/ag2/b", type=ChT.VALUE, old=None, new=False),
+        ]
+
+        result = detect_changes(previous_config, new_config, spec)
 
         self.assert_changes(result, expected)
