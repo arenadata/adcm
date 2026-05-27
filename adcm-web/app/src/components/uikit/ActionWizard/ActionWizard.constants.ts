@@ -6,6 +6,7 @@ export const terminalStatuses = new Set([
   AdcmJobStatus.Locked,
   AdcmJobStatus.Aborted,
   AdcmJobStatus.Broken,
+  AdcmJobStatus.Revoked,
 ]);
 
 export const defaultWizardTitle = 'Manage install';

@@ -8,6 +8,9 @@ export enum AdcmJobStatus {
   Broken = 'broken',
   Info = 'info',
   Warning = 'warning',
+  Revoked = 'revoked',
+  Queued = 'queued',
+  Scheduled = 'scheduled',
 }
 
 export enum AdcmJobObjectType {

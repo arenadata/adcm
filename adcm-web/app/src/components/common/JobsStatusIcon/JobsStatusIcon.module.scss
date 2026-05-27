@@ -8,6 +8,8 @@
     --status-icon-color-broken: var(--color-xgray-light);
     --status-icon-color-warning: var(--color-yellow-lighter);
     --status-icon-color-info: var(--color-xblue);
+    --status-icon-color-revoked: var(--color-xred);
+    --status-icon-color-queued: var(--color-xwhite-off);
   }
   body.theme-light {
     --status-icon-color-success: var(--color-xgreen-saturated);
@@ -18,6 +20,8 @@
     --status-icon-color-broken: var(--color-xgray-light);
     --status-icon-color-warning: var(--color-warning-orange-new);
     --status-icon-color-info: var(--color-xblue);
+    --status-icon-color-revoked: var(--color-xred-light);
+    --status-icon-color-queued: var(--color-xdark);
   }
 }
 
@@ -52,5 +56,17 @@
 
   &_info {
     color: var(--status-icon-color-info);
+  }
+
+  &_revoked {
+    color: var(--status-icon-color-revoked);
+  }
+
+  &_queued {
+    color: var(--status-icon-color-queued);
+  }
+
+  &_scheduled {
+    color: var(--status-icon-color-queued);
   }
 }

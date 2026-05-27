@@ -31,8 +31,11 @@ export const columns: TableColumn[] = [
 export const jobStatusesMap: { [key in AdcmJobStatus]: BaseStatus } = {
   [AdcmJobStatus.Created]: 'created',
   [AdcmJobStatus.Running]: 'running',
+  [AdcmJobStatus.Queued]: 'running',
+  [AdcmJobStatus.Scheduled]: 'running',
   [AdcmJobStatus.Success]: 'success',
   [AdcmJobStatus.Failed]: 'failed',
+  [AdcmJobStatus.Revoked]: 'failed',
   [AdcmJobStatus.Aborted]: 'aborted',
   [AdcmJobStatus.Locked]: 'locked',
   [AdcmJobStatus.Broken]: 'broken',
