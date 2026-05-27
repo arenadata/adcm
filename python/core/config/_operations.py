@@ -339,32 +339,22 @@ def update_config_of_host_group(
     target = deepcopy(main)
     source = host_group
 
-    desynced = (name for name, value in source.attributes.items() if value.synchronization and not value.is_synced)
+    present_names = set(nested_to_flat(configuration=target, specification=specification).values)
+    desynced_names = {
+        name for name, attrs in source.attributes.items() if attrs.synchronization and not attrs.is_synced
+    }
 
-    for name in desynced:
-        if name in target.attributes:
-            target.attributes[name].is_active = source.attributes[name].is_active
-            target.attributes[name].is_synced = False
-        else:
-            value = get_by_full_name(name, values=source.values)
-            set_by_full_name(new_value=value, name=name, values=target.values)
-
-    # set "sync" values for those activatable groups that has it unset:
-    # at this point only activatable groups are expected in attributes
-    for attrs in target.attributes.values():
-        if not attrs.synchronization:
-            attrs.is_synced = True
-
-    present_parameters = set(nested_to_flat(configuration=target, specification=specification).values)
-
-    # re-build sync values for attributes, because they are missing in main config
-    for name in present_parameters:
-        is_synced = True
-
-        if (previous_attributes := source.attributes.get(name)) and previous_attributes.synchronization:
-            is_synced = previous_attributes.is_synced
-
-        target.attributes[name] = Attributes(is_synced=is_synced)
+    for name in chain(present_names, target.attributes):
+        attrs = target.attributes.setdefault(name, Attributes(is_synced=True))
+        attrs.is_synced = name not in desynced_names
+        if not attrs.is_synced:
+            if attrs.activation:
+                # is activatable group, need to sync it's `is_active` value
+                attrs.is_active = source.attributes[name].is_active
+            else:
+                # is regular value, need to sync value itself
+                value = get_by_full_name(name, values=source.values)
+                set_by_full_name(new_value=value, name=name, values=target.values)
 
     return Success(target)
 
