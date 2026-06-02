@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import AuditObject
+from audit.models import AuditLog, AuditObject
 from cm.models import Cluster, Host, ObjectType, Prototype
 from rest_framework.status import (
     HTTP_200_OK,
@@ -543,3 +543,39 @@ class TestHostAudit(ADCMDjangoAPISuite):
                 "previous": {"fqdn": "test_host_2", "description": ""},
             },
         )
+
+    def test_adcm_7851_too_long_operation_name(self):
+        fqdn_max_length = Host._meta.get_field("fqdn").max_length
+        op_name_max_length = AuditLog._meta.get_field("operation_name").max_length
+
+        # construct ~maximum length fqdn pattern
+        # be careful: if num_hosts > 99 test may fail with "too long fqdn" error
+        fqdn_template = "Test-host-with-{}long-fqdn-"
+        filler_part = "very-"
+
+        rest_length = fqdn_max_length - (len(fqdn_template) + 1)  # -2 for `{}` placeholder, +3 for `-XX` part
+        num_fillers = rest_length // len(filler_part)
+
+        fqdn_template = fqdn_template.format(filler_part * num_fillers)
+        num_hosts = (op_name_max_length // (len(fqdn_template) + 2)) + 1  # +2 for `XX`, +1 for overflow
+
+        payload = []
+        fqdns = []
+        for i in range(num_hosts):
+            fqdn = f"{fqdn_template}{i:0>2}"
+            host_id = self.uc.add_host(provider=self.provider, fqdn=fqdn).id
+            payload.append({"host_id": host_id})
+            fqdns.append(fqdn)
+
+        response = self.client.v2[self.cluster_1, "hosts"].post(data=payload)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        mid = len(fqdns) // 2
+        first_names = ", ".join(fqdns[:mid])
+        second_names = ", ".join(fqdns[mid:])
+
+        last_record, previous_record = AuditLog.objects.filter(
+            operation_type="update", operation_result="success", user__username="admin"
+        ).order_by("-id")[:2]
+        self.assertEqual(previous_record.operation_name, f"[{first_names}] host(s) added")
+        self.assertEqual(last_record.operation_name, f"[{second_names}] host(s) added")

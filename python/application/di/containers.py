@@ -16,6 +16,7 @@ from dishka import Provider
 from application.di.providers.environment import EnvironmentProvider
 from application.di.providers.main import (
     ActionHostGroupProvider,
+    AuditProvider,
     BundleProvider,
     ClusterProvider,
     ConfigProvider,
@@ -51,4 +52,5 @@ def get_main_providers() -> tuple[Provider, ...]:
         UseCaseProvider(),
         UtilsProvider(),
         WizardProvider(),
+        AuditProvider(),
     )

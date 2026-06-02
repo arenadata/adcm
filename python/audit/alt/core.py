@@ -12,6 +12,7 @@
 
 from collections import UserDict
 from dataclasses import dataclass, field
+from typing import TypeAlias
 
 from django.conf import settings  # TODO: maybe we should pass the version as a dependency?
 from django.db.models import Model
@@ -28,6 +29,86 @@ from audit.models import (
 )
 
 Result = TypeVar("Result")
+NameTemplate: TypeAlias = str
+ObjectName: TypeAlias = str
+OperationName: TypeAlias = str
+
+
+class AuditConfigurationError(Exception):
+    ...
+
+
+@dataclass(slots=True, frozen=True)
+class NameSplitterSettings:
+    operation_name_max_len: int
+    truncated_message: str = "...<truncated>"
+    delimiter: str = ", "
+
+
+@dataclass(slots=True, frozen=True)
+class OperationNameTemplate:
+    names: tuple[ObjectName, ...]
+    template: NameTemplate
+
+
+class NameSplitter(Protocol):
+    def __call__(self: Self, name: OperationName | OperationNameTemplate) -> list[OperationName]:
+        pass
+
+
+@dataclass(slots=True)
+class NameHalfSplitter:
+    """
+    Recursively splits object names in halves if final operation_name is longer than settings.operation_name_max_len.
+    Truncates single object name if templating result exceeds this limit.
+    Returns list of operation_names with partial sets of object names.
+    """
+
+    settings: NameSplitterSettings
+
+    def __call__(self: Self, name: OperationName | OperationNameTemplate) -> list[OperationName]:
+        if isinstance(name, OperationName):
+            return [name]
+
+        return self._split_names(template=name)
+
+    def _split_names(self: Self, template: OperationNameTemplate) -> list[OperationName]:
+        names = template.names
+        template = template.template
+
+        operation_name = template.format(self.settings.delimiter.join(names))
+        if len(operation_name) <= self.settings.operation_name_max_len:
+            return [operation_name]
+
+        if len(names) == 1:
+            template_len = len(template.format(""))
+            truncated_msg_len = len(self.settings.truncated_message)
+            rest_len = self.settings.operation_name_max_len - (template_len + truncated_msg_len)
+
+            if rest_len <= 0:
+                # This situation is unlikely to happen, since op_name_max_len = 2000
+                # We don't want to check model's limits at import time in decorator, so it takes place here
+                err_msg = (
+                    f"Can't truncate object's name `{names[0]}` to suite operation_name field max length. "
+                    f"Adjust some of the following: {template_len=}, {truncated_msg_len=}, "
+                    f"operation_name_len={self.settings.operation_name_max_len}"
+                )
+                raise AuditConfigurationError(err_msg)
+
+            name = f"{names[0][:rest_len]}{self.settings.truncated_message}"
+            return [template.format(name)]
+
+        mid = len(names) // 2
+        left = OperationNameTemplate(names=names[:mid], template=template)
+        right = OperationNameTemplate(names=names[mid:], template=template)
+
+        return self._split_names(template=left) + self._split_names(template=right)
+
+
+def build_name_splitter_settings_from_django_models() -> NameSplitterSettings:
+    operation_name_max_len = AuditLog._meta.get_field("operation_name").max_length
+
+    return NameSplitterSettings(operation_name_max_len=operation_name_max_len)
 
 
 class AuditedCallArguments(UserDict):
@@ -125,7 +206,7 @@ class OperationAuditContext:
 
     DEFAULT_HOOKS = Hooks()
 
-    name: str
+    name: OperationName | OperationNameTemplate
     result: AuditLogOperationResult
     meta: OperationMeta
 
@@ -134,6 +215,7 @@ class OperationAuditContext:
 
     _call: AuditedCall
     _retrieve_object: RetrieveAuditObjectFunc
+    _name_splitter: NameSplitter
 
     def __init__(
         self,
@@ -141,11 +223,13 @@ class OperationAuditContext:
         default_name: str,
         retrieve_object: RetrieveAuditObjectFunc,
         custom_hooks: Hooks,
+        name_splitter: NameSplitter,
     ):
         self._default_name = default_name
         self._signature = signature
         self._hooks = self.DEFAULT_HOOKS + custom_hooks
         self._retrieve_object = retrieve_object
+        self._name_splitter = name_splitter
 
         self.restore_defaults()
 
@@ -196,17 +280,20 @@ class OperationAuditContext:
         return self
 
     def save(self) -> None:
-        record = AuditLog.objects.create(
-            audit_object=self.object,
-            operation_name=self.name,
-            operation_type=self._signature.type,
-            operation_result=self.result,
-            user=self.user,
-            object_changes=self.meta.changes,
-            address=self.meta.address,
-            agent=self.meta.agent,
-        )
-        write_cef_log(audit_instance=record, signature_id=self._signature.id, adcm_version=settings.ADCM_VERSION)
+        operation_names = self._name_splitter(name=self.name)
+
+        for operation_name in operation_names:
+            record = AuditLog.objects.create(
+                audit_object=self.object,
+                operation_name=operation_name,
+                operation_type=self._signature.type,
+                operation_result=self.result,
+                user=self.user,
+                object_changes=self.meta.changes,
+                address=self.meta.address,
+                agent=self.meta.agent,
+            )
+            write_cef_log(audit_instance=record, signature_id=self._signature.id, adcm_version=settings.ADCM_VERSION)
 
 
 @dataclass(slots=True)

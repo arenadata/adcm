@@ -19,7 +19,7 @@ from audit.alt.api import (
     AuditEndpointsRegistry,
     get_endpoints_registry,
 )
-from audit.alt.core import AuditSignature
+from audit.alt.core import AuditSignature, NameHalfSplitter
 
 
 class AuditMiddleware:
@@ -67,6 +67,7 @@ class AuditMiddleware:
             default_name=endpoint_config.operation_name,
             retrieve_object=endpoint_config.retrieve_object_func,
             custom_hooks=endpoint_config.hooks,
+            name_splitter=request.container.get(NameHalfSplitter),
         )
         self.current_audit_context.attach_call_arguments(arguments=view_kwargs | {"request": request})
         self.current_audit_context.run_pre_call_hooks()

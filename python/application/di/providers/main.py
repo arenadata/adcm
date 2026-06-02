@@ -15,6 +15,7 @@ from pathlib import Path
 import os
 
 from adcm.feature_flags import use_new_job_scheduler
+from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
@@ -252,3 +253,13 @@ class UseCaseProvider(Provider):
     update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
     set_primary_config_revision = provide(SetPrimaryConfigRevision)
     find_primary_config_diff = provide(FindPrimaryConfigDiff)
+
+
+class AuditProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def name_splitter_settings(self) -> NameSplitterSettings:
+        return build_name_splitter_settings_from_django_models()
+
+    name_half_splitter = provide(NameHalfSplitter)

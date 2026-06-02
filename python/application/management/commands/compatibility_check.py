@@ -24,7 +24,7 @@ class Command(BaseCommand):
     """
 
     def handle(self, *_, **_kw):
-        container = make_container(*get_main_providers())
+        container = make_container(*get_main_providers())  # TODO: ADCM-8154
         check_adcm_start_is_allowed(
             container=container,
             failure_exc=CommandError,

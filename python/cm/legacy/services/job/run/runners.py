@@ -288,7 +288,7 @@ class JobSequenceRunner(TaskRunner):
         else:
             delete_task_flag_concern(task_id=task.id)
 
-        audit_task_finish(task=task, task_result=task_result)
+        audit_task_finish(task=task, task_result=task_result, container=self._container)
 
         finished_task = self._repo.get_task(id=task.id)
         if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
