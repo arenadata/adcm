@@ -13,7 +13,7 @@ import {
 } from './ConfigurationEditor.utils';
 import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import type { JSONPrimitive, JSONValue } from '@models/json';
-import type { JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
+import { DEFAULT_JSON_SCHEMA_ENGINE, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
 import { syncFieldAttributes } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTreeAttributes.utils';
 import type { FieldAttributesSyncPayload } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.types';
 
@@ -47,7 +47,7 @@ const ConfigurationEditor = ({
   onConfigurationAndAttributesChange,
   onChangeIsValid,
   isReadOnly = false,
-  validationEngine = 'ajv',
+  validationEngine = DEFAULT_JSON_SCHEMA_ENGINE,
 }: ConfigurationEditorProps) => {
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);

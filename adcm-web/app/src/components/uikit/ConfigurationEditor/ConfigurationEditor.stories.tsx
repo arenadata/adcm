@@ -21,7 +21,7 @@ import {
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type { ConfigurationTreeFilter } from './ConfigurationEditor.types';
 import { Checkbox, Input, Switch } from '@uikit';
-import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 
 type Story = StoryObj<typeof ConfigurationEditor>;
 export default {
@@ -68,7 +68,7 @@ export const ConfigurationEditorStoryWithHooks = ({
   initialAttributes,
   schema,
 }: StoryProps) => {
-  const safeConfigurationData = initialConfigurationData ?? generateFromSchema(schema);
+  const safeConfigurationData = initialConfigurationData ?? generateJsonSchemaDefaults(schema);
   // biome-ignore lint/suspicious/noExplicitAny:
   const [configuration, setConfiguration] = useState<ConfigurationData>(safeConfigurationData as any);
   const [attributes, setAttributes] = useState<ConfigurationAttributes>(initialAttributes ?? {});

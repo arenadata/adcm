@@ -7,7 +7,11 @@ import {
   nestedPropsErrorMessage,
   rootNodeKey,
   secretFieldValuePrefixToIgnore,
+  DEFAULT_JSON_SCHEMA_ENGINE,
+  JSON_SCHEMA_ENGINE_LOCAL_STORAGE_KEY,
 } from './jsonValidationService.constants';
+
+export { DEFAULT_JSON_SCHEMA_ENGINE, JSON_SCHEMA_ENGINE_LOCAL_STORAGE_KEY };
 
 import { validateSchemaLikeWithAjv, generateFromSchema, type SchemaLike } from './jsonSchemaUtils';
 import { generateFromSchemaWithCfWorker, validateWithCfWorker } from '@utils/jsonSchema/cfworkerSchemaUtils';
@@ -32,7 +36,7 @@ export type EngineValidationError = {
 class JsonSchemaValidationService {
   private getEngineOverride(): JsonSchemaEngineId | null {
     try {
-      const item = window.localStorage.getItem('json-schema-engine') as JsonSchemaEngineId | null;
+      const item = window.localStorage.getItem(JSON_SCHEMA_ENGINE_LOCAL_STORAGE_KEY) as JsonSchemaEngineId | null;
       return item === 'ajv' || item === 'cfworker' ? item : null;
     } catch {
       return null;
@@ -237,3 +241,6 @@ class JsonSchemaValidationService {
 }
 
 export const jsonSchemaValidationService = new JsonSchemaValidationService();
+
+export const generateJsonSchemaDefaults = <T>(schema: SchemaLike): T | null | undefined =>
+  jsonSchemaValidationService.generateDefaults<T>(DEFAULT_JSON_SCHEMA_ENGINE, schema);

@@ -6,7 +6,7 @@ import type {
   AdcmDynamicActionRunConfig,
   ConfigurationData,
 } from '@models/adcm';
-import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 
 export const getDynamicActionSteps = (
   actionDetails: AdcmDynamicActionDetails,
@@ -71,7 +71,7 @@ export const prepareConfigurationFromActionDetails = (
   return {
     configurationData:
       actionDetails.configuration.config ??
-      generateFromSchema<ConfigurationData>(actionDetails.configuration.configSchema) ??
+      generateJsonSchemaDefaults<ConfigurationData>(actionDetails.configuration.configSchema) ??
       {},
     attributes: actionDetails.configuration.adcmMeta ?? adcmMeta ?? {},
     schema: actionDetails.configuration.configSchema,
