@@ -1,0 +1,103 @@
+- type: cluster
+  name: cluster_many_services
+  contract_version: "2.1"
+  version: 1.0
+  venv: "2.16"
+
+  config: &config
+    - name: boolean
+      type: boolean
+      default: true
+
+- &service
+  type: service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_01
+  version: 1.0
+  config: *config
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_02
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_03
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_04
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_05
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_06
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_07
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_08
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_09
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_10
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_11
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_12
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_13
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_14
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_15
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_16
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_17
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_18
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_19
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_20
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_21
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_22
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_23
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_24
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_25
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_26
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_27
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_28
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_29
+
+- <<: *service
+  name: service_from_cluster_with_many_services_with_unnecessary_long_name_30

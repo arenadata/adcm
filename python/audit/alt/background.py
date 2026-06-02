@@ -13,7 +13,10 @@
 from functools import wraps
 from typing import Callable, ParamSpec, TypeVar
 
-from audit.alt.core import AuditSignature, Hooks, OperationAuditContext
+from application.di.providers.main import AuditProvider
+import dishka
+
+from audit.alt.core import AuditSignature, Hooks, NameHalfSplitter, OperationAuditContext
 from audit.alt.hooks import AuditHook
 from audit.alt.object_retrievers import ignore_object_search
 from audit.models import AuditLogOperationResult, AuditLogOperationType, AuditUser
@@ -48,6 +51,8 @@ class SetSystemUser(AuditHook):
 
 class BackgroundOperationAudit:
     def __init__(self, name: str, type_: AuditLogOperationType):
+        container = dishka.make_container(AuditProvider())  # TODO: ADCM-8154
+
         self._context: BackgroundOperationAuditContext = BackgroundOperationAuditContext(
             signature=AuditSignature(id="Background operation", type=type_),
             default_name=name,
@@ -55,6 +60,7 @@ class BackgroundOperationAudit:
             # pre call will be called when creating initial operation record,
             # on collect on creating finishing one
             custom_hooks=Hooks(pre_call=(SetSystemUser,), on_collect=(SetBackgroundOperationState, SetSystemUser)),
+            name_splitter=container.get(NameHalfSplitter),
         )
 
     @property

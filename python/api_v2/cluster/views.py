@@ -908,7 +908,9 @@ class HostClusterViewSet(
 
         return by_cluster_qs
 
-    @audit_update(name="Hosts added", object_=parent_cluster_from_lookup).attach_hooks(pre_call=set_add_hosts_name)
+    @audit_update(name="[{}] host(s) added", object_=parent_cluster_from_lookup).attach_hooks(
+        pre_call=set_add_hosts_name
+    )
     @inject
     def create(
         self,

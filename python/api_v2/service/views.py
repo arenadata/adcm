@@ -233,7 +233,7 @@ class ServiceViewSet(
 
         return ServiceRetrieveSerializer
 
-    @audit_update(name="{service_names} service(s) added", object_=parent_cluster_from_lookup).attach_hooks(
+    @audit_update(name="[{}] service(s) added", object_=parent_cluster_from_lookup).attach_hooks(
         pre_call=set_service_names_from_request
     )
     @inject

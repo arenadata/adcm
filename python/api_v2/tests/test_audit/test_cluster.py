@@ -12,6 +12,7 @@
 
 import unittest
 
+from audit.models import AuditLog
 from cm.models import (
     Action,
     AnsibleConfig,
@@ -707,6 +708,31 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
             user__username="admin",
         )
+
+    def test_adcm_7851_operation_name_too_long(self):
+        bundle_with_many_services = self.uc.upload_bundle(src=self.test_bundles_dir / "cluster_many_services")
+        cluster = self.uc.add_cluster(bundle=bundle_with_many_services, name="Cluster with many services")
+
+        prototype_ids = Prototype.objects.filter(bundle=bundle_with_many_services, type="service").values_list(
+            "id", flat=True
+        )
+        payload = [{"prototype_id": id_} for id_ in prototype_ids]
+
+        response = self.client.v2[cluster, "services"].post(data=payload)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        service_name_prefix = "service_from_cluster_with_many_services_with_unnecessary_long_name_"
+        names = [f"{service_name_prefix}{i:0>2}" for i in range(1, len(payload) + 1)]
+
+        mid = len(names) // 2
+        first_names = ", ".join(names[:mid])
+        second_names = ", ".join(names[mid:])
+
+        last_record, previous_record = AuditLog.objects.filter(
+            operation_type="update", operation_result="success", user__username="admin"
+        ).order_by("-id")[:2]
+        self.assertEqual(previous_record.operation_name, f"[{first_names}] service(s) added")
+        self.assertEqual(last_record.operation_name, f"[{second_names}] service(s) added")
 
     def test_add_service_wrong_data_fail(self):
         response = self.client.v2[self.cluster_1, "services"].post(
