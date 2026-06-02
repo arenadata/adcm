@@ -20,7 +20,11 @@ import type {
   NodesDictionary,
   ConfigurationSelectableObject,
 } from '../ConfigurationEditor.types';
-import { jsonSchemaValidationService, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
+import {
+  DEFAULT_JSON_SCHEMA_ENGINE,
+  jsonSchemaValidationService,
+  type JsonSchemaEngineId,
+} from '@utils/jsonSchema/JsonSchemaValidationService';
 import { discriminatorFieldName, primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
 
 const getIndex = (nodeArr?: ConfigurationNode[]) => (nodeArr && nodeArr.length > 0 ? nodeArr.at(-1)!.index + 1 : 0);
@@ -29,7 +33,7 @@ export const validate = (
   schema: SchemaDefinition,
   configuration: JSONObject,
   attributes: ConfigurationAttributes,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ) => {
   return jsonSchemaValidationService.validate(engine, schema, configuration, attributes);
 };
@@ -193,7 +197,7 @@ export const buildConfigurationNodes = (
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
   isReadOnly?: boolean,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ): ConfigurationNode => {
   const rootNode = buildRootNode(schema, configuration, attributes, isReadOnly, engine);
   return rootNode;
@@ -224,7 +228,7 @@ const buildRootNode = (
   configuration: ConfigurationData,
   attributes: ConfigurationAttributes,
   isReadOnly = false,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ): ConfigurationNode => {
   const { fieldSchema } = determineFieldSchema(schema);
   const rootNode: ConfigurationNode = {
@@ -281,7 +285,7 @@ const buildNode = (
   fieldSchema: SchemaDefinition,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ): ConfigurationNode => {
   const { fieldSchema: singleFieldSchema, isNullable } = determineFieldSchema(fieldSchema);
 
@@ -389,7 +393,7 @@ const buildObjectNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ) => {
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
@@ -449,7 +453,7 @@ const buildSelectableObjectNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ) => {
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
@@ -641,7 +645,7 @@ const buildArrayNode = (
   isNullable: boolean,
   fieldValue: JSONValue,
   attributes: ConfigurationAttributes,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ) => {
   const array = fieldValue as Array<JSONValue> | null;
 
@@ -974,7 +978,7 @@ export const determineSelectableFieldSchema = (
 
 export const getOneOfSchemaDefaults = (
   fieldSchema: SchemaDefinition,
-  engine: JsonSchemaEngineId = 'ajv',
+  engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
 ): Record<string, JSONValue> => {
   if (fieldSchema.oneOf === undefined) {
     return {};

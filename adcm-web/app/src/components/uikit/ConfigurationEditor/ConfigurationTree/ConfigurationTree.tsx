@@ -32,7 +32,7 @@ import type {
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
 import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
-import type { JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
+import { DEFAULT_JSON_SCHEMA_ENGINE, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -81,7 +81,7 @@ const ConfigurationTree = ({
   attributes,
   filter,
   areExpandedAll,
-  validationEngine = 'ajv',
+  validationEngine = DEFAULT_JSON_SCHEMA_ENGINE,
   onEditField,
   onAddEmptyObject,
   onAddField,

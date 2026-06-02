@@ -1,7 +1,7 @@
 import type { ConfigurationData, SchemaDefinition } from '@models/adcm';
 import type { JSONObject, JSONPrimitive, JSONValue } from '@models/json';
 import type { ConfigurationNodePath } from './ConfigurationEditor.types';
-import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 import { deepClone, isObject } from '@utils/objectUtils';
 import { isValueUnset } from '@utils/checkUtils';
 
@@ -73,7 +73,7 @@ export const addArrayItem = (
     node = node[part] as JSONObject;
   }
 
-  const newItem = generateFromSchema(schema);
+  const newItem = generateJsonSchemaDefaults(schema);
   // we need this check because initially node is an object
   if (Array.isArray(node)) {
     node.push(newItem);
