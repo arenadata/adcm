@@ -34,8 +34,25 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
 def untar_safe(to: Path, tar_from: Path) -> None:
     try:
         with tarfile.open(tar_from) as tar:
-            tar.extractall(path=to)
+            resolved_to = to.resolve()
+            for member in tar.getmembers():
 
+                target_path = (resolved_to / member.name).resolve()
+                if not str(target_path).startswith(str(resolved_to)):
+                    raise BundleProcessingError(
+                        f"Incorrect paths were found in the file"
+                    )
+
+                if member.issym():
+                    link_target = member.linkname
+
+                    abs_link_target = (target_path.parent / link_target).resolve()
+                    if not str(abs_link_target).startswith(str(resolved_to)):
+                        raise BundleProcessingError(
+                            f"Incorrect paths were found in the file"
+                        )
+
+                tar.extract(member, path=to, set_attrs=True)
     except tarfile.ReadError as e:
         raise BundleProcessingError(f"Can't open bundle tar file: {tar_from}") from e
 
