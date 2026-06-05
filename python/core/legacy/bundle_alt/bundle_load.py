@@ -36,21 +36,16 @@ def untar_safe(to: Path, tar_from: Path) -> None:
         with tarfile.open(tar_from) as tar:
             resolved_to = to.resolve()
             for member in tar.getmembers():
-
                 target_path = (resolved_to / member.name).resolve()
                 if not str(target_path).startswith(str(resolved_to)):
-                    raise BundleProcessingError(
-                        "Incorrect paths were found in the file"
-                    )
+                    raise BundleProcessingError("Incorrect paths were found in the file")
 
                 if member.issym():
                     link_target = member.linkname
 
                     abs_link_target = (target_path.parent / link_target).resolve()
                     if not str(abs_link_target).startswith(str(resolved_to)):
-                        raise BundleProcessingError(
-                            "Incorrect paths were found in the file"
-                        )
+                        raise BundleProcessingError("Incorrect paths were found in the file")
 
                 tar.extract(member, path=to, set_attrs=True)
     except tarfile.ReadError as e:
