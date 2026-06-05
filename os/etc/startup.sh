@@ -39,7 +39,7 @@ fi
 
 sv_stop() {
     for s in nginx wsgi status; do
-        /sbin/sv stop $s
+        /usr/sbin/sv stop /etc/sv/$s
     done
 }
 
