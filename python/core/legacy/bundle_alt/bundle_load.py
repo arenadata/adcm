@@ -40,7 +40,7 @@ def untar_safe(to: Path, tar_from: Path) -> None:
                 target_path = (resolved_to / member.name).resolve()
                 if not str(target_path).startswith(str(resolved_to)):
                     raise BundleProcessingError(
-                        f"Incorrect paths were found in the file"
+                        "Incorrect paths were found in the file"
                     )
 
                 if member.issym():
@@ -49,7 +49,7 @@ def untar_safe(to: Path, tar_from: Path) -> None:
                     abs_link_target = (target_path.parent / link_target).resolve()
                     if not str(abs_link_target).startswith(str(resolved_to)):
                         raise BundleProcessingError(
-                            f"Incorrect paths were found in the file"
+                            "Incorrect paths were found in the file"
                         )
 
                 tar.extract(member, path=to, set_attrs=True)
