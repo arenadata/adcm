@@ -71,7 +71,7 @@ class TestUntarSafe(TestCase):
         archive = self._create_tar({"../../outside.txt": "malicious"})
         with self.assertRaises(BundleProcessingError) as ctx:
             untar_safe(self.extract_dir, archive)
-        self.assertIn("TarSlip detected", str(ctx.exception))
+        self.assertIn("Incorrect paths were found in the file", str(ctx.exception))
         outside_file = self.temp_root / "outside.txt"
         self.assertFalse(outside_file.exists())
 
