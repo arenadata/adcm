@@ -32,7 +32,7 @@ def _handle_member_symlink(member: tarfile.TarInfo, target_path: Path, safe_root
     try:
         abs_link_target = (target_path.parent / member.linkname).resolve()
     except RuntimeError as e:
-        raise BundleProcessingError(f"Failed to resolve symlink target for {member.name}: {e}")
+        raise BundleProcessingError(f"Failed to resolve symlink target for {member.name}: {e}") from e
 
     if not _is_path_safe(abs_link_target, safe_root):
         raise BundleProcessingError(f"Symlink `{member.name}` points outside the extraction directory!")
