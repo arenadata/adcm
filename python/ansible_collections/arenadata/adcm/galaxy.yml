@@ -1,0 +1,27 @@
+###
+# See https://docs.ansible.com/ansible/latest/dev_guide/collections_galaxy_meta.html
+###
+
+namespace: arenadata
+name: adcm
+version: 1.0.0
+readme: README.md
+authors:
+  - Arenadata Team
+
+description: ADCM Ansible Collection for cluster management
+license:
+  - Apache-2.0
+license_file: LICENSE
+tags:
+  - adcm
+  - cluster
+  - infrastructure
+dependencies: {}
+repository: https://github.com/arenadata/adcm
+documentation: https://docs.arenadata.io/en/ADCM/current/introduction/intro.html
+homepage: https://arenadata.tech
+issues: https://github.com/arenadata/adcm/issues
+
+build_ignore:
+  - "*.tar.gz"

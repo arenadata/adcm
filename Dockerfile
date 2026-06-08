@@ -66,7 +66,8 @@ COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
 COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
 COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
 COPY conf /adcm/conf
-COPY python/ansible_share/plugins /usr/share/ansible/plugins
+COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
+COPY python/ansible_collections/arenadata/adcm /root/.ansible/collections/ansible_collections/arenadata/adcm
 COPY python /adcm/python
 
 RUN ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py

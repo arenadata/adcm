@@ -18,7 +18,7 @@ DOCUMENTATION = r"""
 module: adcm_add_host
 short_description: add host to ADCM DB
 description:
-    - The C(adcm_add_host) module is intended to add host to ADCM DB.
+    - The C(adcm_add_host) module is intended to add Host.
       This module should be run in host provider context.
 options:
   fqdn:
