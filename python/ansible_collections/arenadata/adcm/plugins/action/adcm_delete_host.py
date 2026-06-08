@@ -18,7 +18,7 @@ DOCUMENTATION = r"""
 module: adcm_delete_host
 short_description: delete host from ADCM DB
 description:
-    - The C(adcm_delete_host) module is intended to delete host from ADCM DB.
+    - The C(adcm_delete_host) module is intended to delete Host.
       This module should be run in host context. Host Id is taken from context.
 options:
 """
