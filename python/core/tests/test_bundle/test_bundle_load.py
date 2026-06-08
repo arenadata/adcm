@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+from unittest import TestCase
 import io
 import shutil
 import tarfile
-from pathlib import Path
-from unittest import TestCase
 
 from core.legacy.bundle_alt.bundle_load import untar_safe
 from core.legacy.bundle_alt.errors import BundleProcessingError
