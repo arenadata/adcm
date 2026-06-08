@@ -18,14 +18,10 @@ from core.legacy.bundle_alt.errors import BundleProcessingError, BundleValidatio
 
 
 def _is_path_safe(member_path: Path, safe_root: Path) -> bool:
-    try:
-        member_path.relative_to(safe_root)
-        return True
-    except ValueError:
-        return False
+    return member_path.is_relative_to(safe_root)
 
 
-def _handle_member_symlink(member: tarfile.TarInfo, target_path: Path, safe_root: Path) -> None:
+def _check_member_symlink(member: tarfile.TarInfo, target_path: Path, safe_root: Path) -> None:
     if not member.issym():
         return
 
@@ -61,7 +57,7 @@ def untar_safe(to: Path, tar_from: Path) -> None:
                 if not _is_path_safe(member_path, safe_root):
                     raise BundleProcessingError("Incorrect paths were found in the file")
 
-                _handle_member_symlink(member, member_path, safe_root)
+                _check_member_symlink(member, member_path, safe_root)
 
                 tar.extract(member, path=to, set_attrs=True)
 

@@ -1,20 +1,9 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from pathlib import Path
 from unittest import TestCase
 import io
 import shutil
 import tarfile
+import tempfile
 
 from core.legacy.bundle_alt.bundle_load import untar_safe
 from core.legacy.bundle_alt.errors import BundleProcessingError
@@ -34,19 +23,30 @@ CONFIG_YAML = """\
   contract_version: '2.1'
 """
 
-
 class TestUntarSafe(TestCase):
-    def setUp(self) -> None:
-        self.temp_dir = Path(__file__).parent / "temp_test_untar"
-        self.temp_dir.mkdir(exist_ok=True)
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_root_obj = tempfile.TemporaryDirectory()
+        cls.temp_root = Path(cls.temp_root_obj.name)
+        cls.extract_dir = cls.temp_root / "extract"
+        cls.extract_dir.mkdir()
 
-    def tearDown(self) -> None:
-        if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
+    @classmethod
+    def tearDownClass(cls):
+        cls.temp_root_obj.cleanup()
+
+    def setUp(self):
+        for item in self.extract_dir.iterdir():
+            if item.is_file():
+                item.unlink()
+            elif item.is_dir():
+                shutil.rmtree(item)
+        self.tar_path = self.temp_root / "test.tar"
+        if self.tar_path.exists():
+            self.tar_path.unlink()
 
     def _create_tar(self, extra_members: dict[str, str]) -> Path:
-        tar_path = self.temp_dir / "test.tar"
-        with tarfile.open(tar_path, "w") as tar:
+        with tarfile.open(self.tar_path, "w") as tar:
             cfg_data = CONFIG_YAML.encode("utf-8")
             cfg_info = tarfile.TarInfo(name="config.yaml")
             cfg_info.size = len(cfg_data)
@@ -57,28 +57,21 @@ class TestUntarSafe(TestCase):
                 info = tarfile.TarInfo(name=name)
                 info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
-        return tar_path
+        return self.tar_path
 
     def test_untar_safe_normal_extra_file(self):
         archive = self._create_tar({"install.yaml": "# empty"})
-        extract_dir = self.temp_dir / "extract"
-        extract_dir.mkdir()
+        untar_safe(self.extract_dir, archive)
 
-        untar_safe(extract_dir, archive)
-
-        self.assertTrue((extract_dir / "config.yaml").exists())
-        self.assertTrue((extract_dir / "install.yaml").exists())
+        self.assertTrue((self.extract_dir / "config.yaml").exists())
+        self.assertTrue((self.extract_dir / "install.yaml").exists())
 
     def test_untar_safe_path_traversal_extra_file(self):
         archive = self._create_tar({"../../outside.txt": "malicious"})
-        extract_dir = self.temp_dir / "extract"
-        extract_dir.mkdir()
-
         with self.assertRaises(BundleProcessingError) as ctx:
-            untar_safe(extract_dir, archive)
-
-        self.assertIn("Incorrect paths were found in the file", str(ctx.exception))
-        outside_file = self.temp_dir / "outside.txt"
+            untar_safe(self.extract_dir, archive)
+        self.assertIn("TarSlip detected", str(ctx.exception))
+        outside_file = self.temp_root / "outside.txt"
         self.assertFalse(outside_file.exists())
 
     def test_untar_safe_symlink_pointing_outside(self):
@@ -89,14 +82,10 @@ class TestUntarSafe(TestCase):
             link_info.linkname = "../../../outside"
             tar.addfile(link_info)
 
-        extract_dir = self.temp_dir / "extract"
-        extract_dir.mkdir()
-
         with self.assertRaises(BundleProcessingError) as ctx:
-            untar_safe(extract_dir, archive)
-
+            untar_safe(self.extract_dir, archive)
         self.assertIn("points outside", str(ctx.exception))
-        self.assertFalse((extract_dir / "evil_link").exists())
+        self.assertFalse((self.extract_dir / "evil_link").exists())
 
     def test_untar_safe_symlink_pointing_inside(self):
         archive = self._create_tar({"target.txt": "secret"})
@@ -106,14 +95,11 @@ class TestUntarSafe(TestCase):
             link_info.linkname = "target.txt"
             tar.addfile(link_info)
 
-        extract_dir = self.temp_dir / "extract"
-        extract_dir.mkdir()
+        untar_safe(self.extract_dir, archive)
 
-        untar_safe(extract_dir, archive)
-
-        self.assertTrue((extract_dir / "config.yaml").exists())
-        self.assertTrue((extract_dir / "target.txt").exists())
-        self.assertTrue((extract_dir / "good_link").exists())
-        link_target = (extract_dir / "good_link").resolve()
-        target_path = (extract_dir / "target.txt").resolve()
+        self.assertTrue((self.extract_dir / "config.yaml").exists())
+        self.assertTrue((self.extract_dir / "target.txt").exists())
+        self.assertTrue((self.extract_dir / "good_link").exists())
+        link_target = (self.extract_dir / "good_link").resolve()
+        target_path = (self.extract_dir / "target.txt").resolve()
         self.assertEqual(link_target, target_path)
