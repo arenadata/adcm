@@ -77,7 +77,7 @@ class TestUntarSafe(TestCase):
         with self.assertRaises(BundleProcessingError) as ctx:
             untar_safe(extract_dir, archive)
 
-        self.assertIn("TarSlip detected", str(ctx.exception))
+        self.assertIn("Incorrect paths were found in the file", str(ctx.exception))
         outside_file = self.temp_dir / "outside.txt"
         self.assertFalse(outside_file.exists())
 
@@ -114,7 +114,6 @@ class TestUntarSafe(TestCase):
         self.assertTrue((extract_dir / "config.yaml").exists())
         self.assertTrue((extract_dir / "target.txt").exists())
         self.assertTrue((extract_dir / "good_link").exists())
-        # Проверяем, что симлинк ведёт на target.txt
         link_target = (extract_dir / "good_link").resolve()
         target_path = (extract_dir / "target.txt").resolve()
         self.assertEqual(link_target, target_path)
