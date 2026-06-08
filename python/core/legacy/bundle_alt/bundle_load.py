@@ -17,6 +17,27 @@ import tarfile
 from core.legacy.bundle_alt.errors import BundleProcessingError, BundleValidationError
 
 
+def _is_path_safe(member_path: Path, safe_root: Path) -> bool:
+    try:
+        member_path.relative_to(safe_root)
+        return True
+    except ValueError:
+        return False
+
+
+def _handle_member_symlink(member: tarfile.TarInfo, target_path: Path, safe_root: Path) -> None:
+    if not member.issym():
+        return
+
+    try:
+        abs_link_target = (target_path.parent / member.linkname).resolve()
+    except RuntimeError as e:
+        raise BundleProcessingError(f"Failed to resolve symlink target for {member.name}: {e}")
+
+    if not _is_path_safe(abs_link_target, safe_root):
+        raise BundleProcessingError(f"Symlink `{member.name}` points outside the extraction directory!")
+
+
 def get_config_files(path: Path) -> list[tuple[Path, Path]]:
     conf_list = []
     valid_suffixes = {".yaml", ".yml"}
@@ -34,20 +55,16 @@ def get_config_files(path: Path) -> list[tuple[Path, Path]]:
 def untar_safe(to: Path, tar_from: Path) -> None:
     try:
         with tarfile.open(tar_from) as tar:
-            resolved_to = to.resolve()
+            safe_root = to.resolve()
             for member in tar.getmembers():
-                target_path = (resolved_to / member.name).resolve()
-                if not str(target_path).startswith(str(resolved_to)):
+                member_path = (safe_root / member.name).resolve()
+                if not _is_path_safe(member_path, safe_root):
                     raise BundleProcessingError("Incorrect paths were found in the file")
 
-                if member.issym():
-                    link_target = member.linkname
-
-                    abs_link_target = (target_path.parent / link_target).resolve()
-                    if not str(abs_link_target).startswith(str(resolved_to)):
-                        raise BundleProcessingError("Incorrect paths were found in the file")
+                _handle_member_symlink(member, member_path, safe_root)
 
                 tar.extract(member, path=to, set_attrs=True)
+
     except tarfile.ReadError as e:
         raise BundleProcessingError(f"Can't open bundle tar file: {tar_from}") from e
 
