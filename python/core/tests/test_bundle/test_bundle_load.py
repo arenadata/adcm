@@ -23,6 +23,7 @@ CONFIG_YAML = """\
   contract_version: '2.1'
 """
 
+
 class TestUntarSafe(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -81,7 +82,6 @@ class TestUntarSafe(TestCase):
             link_info.type = tarfile.SYMTYPE
             link_info.linkname = "../../../outside"
             tar.addfile(link_info)
-
         with self.assertRaises(BundleProcessingError) as ctx:
             untar_safe(self.extract_dir, archive)
         self.assertIn("points outside", str(ctx.exception))
