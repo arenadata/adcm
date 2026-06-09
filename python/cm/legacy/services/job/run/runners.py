@@ -318,7 +318,8 @@ class JobSequenceRunner(TaskRunner):
         self._notifier.send_task_status_update_event(task_id=self._runtime.task_id, status=task_result)
 
         try:
-            self._status_server.reset_objects_in_mm()
+            cluster_service = self._container.get(ClusterService)
+            self._status_server.reset_objects_in_mm(cluster_service=cluster_service)
         except:  # noqa: E722
             self._logger.exception("Error loading mm objects on task finish")
 

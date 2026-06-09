@@ -103,7 +103,7 @@ class StatusScenarios:
         legacy_notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     def update_all(self) -> None:
-        legacy_update_all()
+        legacy_update_all(cluster_service=self.cluster_service)
 
     def reset_hc_map(self) -> None:
         legacy_reset_hc_map()

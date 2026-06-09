@@ -25,10 +25,10 @@ from cm.legacy.status_api import api_request
 from cm.models import Cluster, Component, Host, HostComponent, Service
 
 
-def update_all() -> None:
+def update_all(cluster_service: ClusterService) -> None:
     register_all_duplicates()
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
 
 def reset_hc_map() -> None:
