@@ -238,6 +238,62 @@
         strict: true
         name: host_in_cluster
 
+- name: adcm_8014_8016
+  type: service
+  version: *version
+  config:
+    - name: option_no_req_def
+      type: option
+      option:
+        value1: value1
+        value2: value2
+      default: value1
+      required: false
+    - name: variant_no_req_def
+      type: variant
+      source:
+        type: inline
+        strict: true
+        value:
+          - value1
+          - value2
+      default: value1
+      required: false
+    - name: variant_req_def
+      type: variant
+      source:
+        type: inline
+        strict: true
+        value:
+          - value1
+          - value2
+      default: value1
+      required: true
+    - name: structure_no_req_def
+      type: structure
+      yspec: ./structure.yaml
+      default:
+        string: value
+      required: false
+    - name: structure_list_no_req_def
+      type: structure
+      yspec: ./structure_list.yaml
+      default:
+        - string: value
+      required: false
+    - name: structure_dict_no_req_def
+      type: structure
+      yspec: ./structure.yaml
+      default:
+        string: value
+      required: false
+    - name: structure_req_def
+      type: structure
+      yspec: ./structure.yaml
+      default:
+        string: value
+      required: true
+
 - name: service_6_delete_with_action
   type: service
   version: "1004"

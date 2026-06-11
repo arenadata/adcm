@@ -316,10 +316,13 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         schema = response.json()["configuration"]["configSchema"]
-        self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host", None])
+        self.assertEqual(schema["properties"]["pick_host"]["oneOf"][0]["enum"], ["first_host", "second_host"])
+        self.assertEqual(schema["properties"]["pick_host"]["oneOf"][1], {"type": "null"})
         self.assertEqual(
-            schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
+            schema["properties"]["grouped"]["properties"]["pick_host"]["oneOf"][0]["enum"],
+            ["first_host", "second_host"],
         )
+        self.assertEqual(schema["properties"]["grouped"]["properties"]["pick_host"]["oneOf"][1], {"type": "null"})
 
     def test_start_impossible_reason(self):
         host_1 = self.uc.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
