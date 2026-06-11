@@ -20,7 +20,7 @@ from cm.legacy.adcm_config.utils import config_is_ro, group_keys_to_flat, proto_
 from cm.legacy.checker import FormatError, SchemaError, process_rule
 from cm.legacy.services.bundle import is_path_correct
 from cm.legacy.services.config.patterns import Pattern
-from cm.models import ConfigHostGroup, Prototype
+from cm.models import ConfigHostGroup, Prototype, PrototypeConfig
 
 
 def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: dict) -> None:
@@ -28,7 +28,11 @@ def check_agreement_group_attr(group_keys: dict, custom_group_keys: dict, spec: 
     flat_custom_group_keys = group_keys_to_flat(origin=custom_group_keys, spec=spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
-            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"the `{key}` field cannot be included in the group")
+            key_display_name = _get_full_display_name_from_flat_spec(config=spec[key], spec=spec)
+            raise AdcmEx(
+                code="ATTRIBUTE_ERROR",
+                msg=f"the `{key_display_name}` field cannot be included in the group",
+            )
 
 
 def check_group_keys_attr(attr: dict, spec: dict, config_host_group: ConfigHostGroup) -> None:
@@ -63,35 +67,38 @@ def check_attr(
                 raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"not allowed key `{key}` for object ({ref})")
             continue
 
-        if f"{key}/" not in spec:
+        spec_key = f"{key}/"
+        if spec_key not in spec:
             raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the config ({ref})")
 
-        if spec[f"{key}/"].type != "group":
-            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"config key `{key}` is not a group ({ref})")
+        key_display_name = _get_key_display_name(spec=spec[spec_key], key=key)
+        if spec[spec_key].type != "group":
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"config key `{key_display_name}` is not a group ({ref})")
 
     for value in spec.values():
         key = value.name
         if value.type == "group" and "activatable" in value.limits:
+            key_display_name = _get_key_display_name(spec=value, key=key)
             if key not in attr:
-                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key}` group in the `attr`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"there isn't `{key_display_name}` group in the `attr`")
 
             if not isinstance(attr[key], dict):
                 raise AdcmEx(
                     code="ATTRIBUTE_ERROR",
-                    msg=f"value of attribute `{key}` should be a map ({ref})",
+                    msg=f"value of attribute `{key_display_name}` should be a map ({ref})",
                 )
 
             for attr_key in attr[key]:
                 if attr_key not in allowed_key:
                     raise AdcmEx(
                         code="ATTRIBUTE_ERROR",
-                        msg=f"not allowed key `{attr_key}` of attribute `{key}` ({ref})",
+                        msg=f"not allowed key `{attr_key}` of attribute `{key_display_name}` ({ref})",
                     )
 
                 if not isinstance(attr[key]["active"], bool):
                     raise AdcmEx(
                         code="ATTRIBUTE_ERROR",
-                        msg=f"value of key `active` of attribute `{key}` should be boolean ({ref})",
+                        msg=f"value of key `active` of attribute `{key_display_name}` should be boolean ({ref})",
                     )
 
                 if (
@@ -99,7 +106,7 @@ def check_attr(
                     and (current_attr[key]["active"] != attr[key]["active"])
                     and config_is_ro(obj=obj, key=key, limits=value.limits)
                 ):
-                    raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=f"config key {key} of {ref} is read only")
+                    raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=f"config key {key_display_name} of {ref} is read only")
 
     if is_host_group:
         check_group_keys_attr(attr=attr, spec=spec, config_host_group=obj)
@@ -111,17 +118,19 @@ def check_structure_for_group_attr(group_keys: dict, spec: dict, key_name: str) 
         if key not in spec:
             raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid `{key}` field in `{key_name}`")
 
-        if spec[key].type == "group":
+        config = spec[key]
+        key_display_name = _get_full_display_name_from_flat_spec(config=config, spec=spec)
+        if config.type == "group":
             if not (
                 isinstance(value, bool)
-                and "activatable" in spec[key].limits
+                and "activatable" in config.limits
                 or value is None
-                and "activatable" not in spec[key].limits
+                and "activatable" not in config.limits
             ):
-                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `value` field in `{key}`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `value` field in `{key_display_name}`")
         else:
             if not isinstance(value, bool):
-                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key}` field in `{key_name}`")
+                raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"invalid type `{key_display_name}` field in `{key_name}`")
 
     for key, value in spec.items():
         if value.type != "group" and key not in flat_group_attr:
@@ -138,11 +147,29 @@ def _check_empty_values(key: str, current: dict, new: dict) -> bool:
     return False
 
 
-def _check_str(value: Any, idx: Any, key: str, subkey: str, ref: str, label: str):
+def _get_full_display_name_from_flat_spec(config: PrototypeConfig, spec: dict[str, PrototypeConfig]) -> str:
+    if not config.subname:
+        return config.display_name or config.name
+
+    group_config = spec.get(f"{config.name}/")
+    group_display_name = group_config.display_name if group_config and group_config.display_name else config.name
+    sub_display_name = config.display_name or config.subname
+    return f"{group_display_name}/{sub_display_name}"
+
+
+def _get_key_display_name(spec: dict | PrototypeConfig, key: str, subkey: str = "") -> str:
+    default_name = f"{key}/{subkey}" if subkey else f"{key}/"
+    if isinstance(spec, PrototypeConfig):
+        return spec.display_name or default_name
+
+    return spec.get("full_display_name", default_name)
+
+
+def _check_str(value: Any, idx: Any, key_name: str, ref: str, label: str):
     if not isinstance(value, str):
         raise AdcmEx(
             code="CONFIG_VALUE_ERROR",
-            msg=f'{label} ("{value}") of element "{idx}" of config key "{key}/{subkey}"' f" should be string ({ref})",
+            msg=f'{label} ("{value}") of element "{idx}" of config key "{key_name}" should be string ({ref})',
         )
 
 
@@ -157,9 +184,10 @@ def check_config_type(
 ) -> None:
     ref = proto_ref(prototype=prototype)
     label = "Default value" if default else "Value"
+    key_display_name = _get_key_display_name(spec=spec, key=key, subkey=subkey)
 
-    tmpl1 = f'{label} of config key "{key}/{subkey}" {{}} ({ref})'
-    tmpl2 = f'{label} ("{value}") of config key "{key}/{subkey}" {{}} ({ref})'
+    tmpl1 = f'{label} of config key "{key_display_name}" {{}} ({ref})'
+    tmpl2 = f'{label} ("{value}") of config key "{key_display_name}" {{}} ({ref})'
     should_not_be_empty = "should be not empty"
 
     if (
@@ -191,7 +219,7 @@ def check_config_type(
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
         for i, _value in enumerate(value):
-            _check_str(value=_value, idx=i, key=key, subkey=subkey, ref=ref, label=label)
+            _check_str(value=_value, idx=i, key_name=key_display_name, ref=ref, label=label)
 
     if spec["type"] in {"map", "secretmap"}:
         if not isinstance(value, dict):
@@ -201,7 +229,7 @@ def check_config_type(
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl1.format(should_not_be_empty))
 
         for value_key, value_value in value.items():
-            _check_str(value=value_value, idx=value_key, key=key, subkey=subkey, ref=ref, label=label)
+            _check_str(value=value_value, idx=value_key, key_name=key_display_name, ref=ref, label=label)
 
     if spec["type"] in ("string", "password", "text", "secrettext"):
         if not isinstance(value, str):
@@ -215,7 +243,7 @@ def check_config_type(
             and not value.startswith(settings.ANSIBLE_VAULT_HEADER)
             and not Pattern(saved_pattern).matches(value)
         ):
-            message = f"The value of {key}/{subkey} config parameter does not match pattern: {saved_pattern}"
+            message = f"The value of {key_display_name} config parameter does not match pattern: {saved_pattern}"
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=message, http_code=HTTP_409_CONFLICT)
 
     if spec["type"] in {"file", "secretfile"}:

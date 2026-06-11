@@ -17,9 +17,9 @@ from functools import cached_property
 from pydantic import BaseModel, Field
 from typing_extensions import Self
 
-from core.config._names import full_name_to_level_names
+from core.config._names import full_name_to_level_names, level_names_to_full_name
 from core.config._spec.parameters import ParameterGroup, SimpleParameter
-from core.config._types import ParameterFullName, ParameterLevelName
+from core.config._types import FullDisplayName, ParameterFullName, ParameterLevelName
 
 
 @dataclass(slots=True)
@@ -139,3 +139,28 @@ class FullSpec(BaseModel):
     @property
     def is_empty(self) -> bool:
         return not self.parameters and not self.groups
+
+    @cached_property
+    def full_display_names(self) -> dict[ParameterFullName, FullDisplayName]:
+        spec_items = self.groups | self.parameters
+        return {name: _build_full_display_name(param=item, spec=self) for name, item in spec_items.items()}
+
+    def get_full_display_name(self, param_full_name: ParameterFullName) -> ParameterFullName | FullDisplayName:
+        """
+        Return the full display name for parameters or groups by its full name.
+        """
+
+        return self.full_display_names.get(param_full_name, param_full_name)
+
+
+def _build_full_display_name(param: SimpleParameter | ParameterGroup, spec: FullSpec) -> FullDisplayName:
+    display_names = []
+
+    levels = full_name_to_level_names(param.identifier.full)
+    for i, level_name in enumerate(levels, start=1):
+        full_name = level_names_to_full_name(levels[:i])
+        spec_item = spec.parameters.get(full_name) or spec.groups.get(full_name)
+        display_name = spec_item.extra.display_name if spec_item is not None else ""
+        display_names.append(display_name or level_name)
+
+    return level_names_to_full_name(display_names)

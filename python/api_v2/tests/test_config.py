@@ -880,6 +880,17 @@ class TestServiceConfig(ADCMDjangoAPISuite):
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
+    def test_json_config_error_with_display_name(self):
+        full_name = "/group/Pretty JSON"
+        config_data = self.client.v2[self.service_2, CONFIGS, self.service_2.config.current].get().json()
+        config_with_wrong_json = config_data | {"config": {"group": {"json": "{"}}}
+
+        expected_message = f"Value of '{full_name}' must be correct json string."
+        response = self.client.v2[self.service_2, CONFIGS].post(data=config_with_wrong_json)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["desc"], expected_message)
+
     def test_adcm_5756_500_on_non_required_field(self):
         service: Service = self.uc.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1)[0]
 

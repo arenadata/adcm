@@ -131,6 +131,7 @@ def get_spec_flat_spec_config_attr_from_prototype_configs(
     config = {}
     attr = {}
     flist = ("default", "required", "type", "limits")
+    prototype_configs = tuple(prototype_configs)
 
     group_prototype_configs = (proto_conf for proto_conf in prototype_configs if proto_conf.type == "group")
     for conf in group_prototype_configs:
@@ -149,11 +150,55 @@ def get_spec_flat_spec_config_attr_from_prototype_configs(
             if conf.type != "group":
                 spec[conf.name] = obj_to_dict(conf, flist)
                 config[conf.name] = get_default(conf, path_resolver=path_resolver)
+                spec[conf.name]["full_display_name"] = _build_full_display_name(flat_spec=flat_spec, key=conf.name)
         else:
             spec[conf.name][conf.subname] = obj_to_dict(conf, flist)
             config[conf.name][conf.subname] = get_default(conf, path_resolver=path_resolver)
+            spec[conf.name][conf.subname]["full_display_name"] = _build_full_display_name(
+                flat_spec=flat_spec, key=conf.name, subkey=conf.subname
+            )
 
     return spec, flat_spec, config, attr
+
+
+def get_full_display_name_from_spec(
+    spec: dict, flat_spec: dict[str, PrototypeConfig], key: str, subkey: str = ""
+) -> str:
+    spec_param = spec[key][subkey] if subkey else spec[key]
+    full_display_name = spec_param.get("full_display_name")
+    if full_display_name is not None:
+        return full_display_name
+
+    if not subkey:
+        key_name = f"{key}/"
+        if flat_spec[key_name].type == "group":
+            return _get_display_name_from_config(config=flat_spec.get(key_name), default_name=key)
+
+    return _build_full_display_name(flat_spec=flat_spec, key=key, subkey=subkey)
+
+
+def _get_display_name_from_config(config: PrototypeConfig | None, default_name: str) -> str:
+    if config is None:
+        return default_name
+
+    return config.display_name or default_name
+
+
+def _build_full_display_name(flat_spec: dict[str, PrototypeConfig], key: str, subkey: str = "") -> str:
+    key_spec_name = f"{key}/"
+    if not subkey:
+        config = flat_spec.get(key_spec_name)
+        return _get_display_name_from_config(config=config, default_name=key)
+
+    subkey_spec_name = f"{key}/{subkey}"
+    group_displ_name = _get_display_name_from_config(config=flat_spec.get(key_spec_name), default_name=key)
+    field_displ_name = _get_display_name_from_config(config=flat_spec.get(subkey_spec_name), default_name=subkey)
+    group_display_name_levels = tuple(group_displ_name.split("/"))
+    field_display_name_levels = tuple(field_displ_name.split("/"))
+    if field_display_name_levels[: len(group_display_name_levels)] == group_display_name_levels:
+        return field_displ_name
+
+    return f"{group_displ_name}/{field_displ_name}"
 
 
 def _merge_config_field(origin_config_fields: dict, host_group_fields: dict, group_keys: dict, spec: dict) -> dict:
@@ -434,11 +479,14 @@ def check_config_spec(
     for key in spec:
         # From discussion with colleagues: most likely type is absent for groups,
         # because spec for their children is in their value
+        key_display_name = get_full_display_name_from_spec(spec=spec, flat_spec=flat_spec, key=key)
+
         if spec[key].get("type", "group") != "group":
             if key not in conf:
                 if key_is_required(obj=obj, key=key, subkey="", spec=spec):
                     raise AdcmEx(
-                        code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})'
+                        code="CONFIG_KEY_ERROR",
+                        msg=f'There is no required key "{key_display_name}" in input config ({ref})',
                     )
 
                 continue
@@ -447,7 +495,7 @@ def check_config_spec(
             if isinstance(config_value, dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
                 raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
-                    msg=f'Key "{key}" in input config should not have any subkeys ({ref})',
+                    msg=f'Key "{key_display_name}" in input config should not have any subkeys ({ref})',
                 )
 
             check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=config_value)
@@ -457,33 +505,38 @@ def check_config_spec(
         # Processing group
         if key not in conf:
             if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
-                raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config')
+                raise AdcmEx(
+                    code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key_display_name}" in input config'
+                )
 
             continue
 
         config_value = conf[key]
         if not isinstance(config_value, dict):
-            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key_display_name}" ({ref})')
 
         if not config_value:
             raise AdcmEx(
                 code="CONFIG_KEY_ERROR",
-                msg=f'Key "{key}" should contain subkeys ({ref}): {list(spec[key].keys())}',
+                msg=f'Key "{key_display_name}" should contain subkeys ({ref}): {list(spec[key].keys())}',
             )
 
         for subkey in config_value:
             if subkey not in spec[key]:
                 raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
-                    msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
+                    msg=f'There is unknown subkey "{subkey}" for key "{key_display_name}" in input config ({ref})',
                 )
 
         for subkey in spec[key]:
             if subkey not in config_value:
                 if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
+                    subkey_name = _get_display_name_from_config(
+                        config=flat_spec.get(f"{key}/{subkey}"), default_name=subkey
+                    )
                     raise AdcmEx(
                         code="CONFIG_KEY_ERROR",
-                        msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
+                        msg=f'There is no required subkey "{subkey_name}" for key "{key_display_name}" ({ref})',
                     )
 
                 continue

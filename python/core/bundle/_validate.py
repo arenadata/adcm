@@ -237,7 +237,9 @@ def check_config_defaults(
 ):
     violations = config_service.validate_configuration_definition(specification=specification, defaults=defaults)
     if violations:
-        violations_list_repr = "; ".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)
+        violations_list_repr = "; ".join(
+            f"- {specification.get_full_display_name(v.parameter)} [{v.check}]: {v.reason}" for v in violations
+        )
         raise BundleValidationError(message=f"object's defaults are invalid: {violations_list_repr}")
 
 

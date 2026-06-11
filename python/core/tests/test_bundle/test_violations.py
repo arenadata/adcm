@@ -16,9 +16,12 @@ from unittest.mock import patch
 
 import yaml
 
+from core import bundle, config
 from core.legacy.bundle_alt.constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
 from core.legacy.bundle_alt.errors import BundleParsingError, BundleValidationError
 from core.legacy.bundle_alt.process import retrieve_bundle_definitions
+from core.tests.doubles.config import build_config_service_with_fakes
+from core.tests.test_config.utils import name_id
 
 
 def fake_get_config_files(*_):
@@ -586,3 +589,61 @@ class TestBundleProcessingErrors(TestCase):
             self.parse(bundle)
 
         self.assertIn("isn't allowed to be desynchronized", err.exception.message)
+
+
+class TestConfigErrorMessages(TestCase):
+    def test_bundle_validate_error_message_with_full_display_name(self):
+        expected_displ_name = "/Group/Test Int"
+        min_value = 10
+        tech_full_name = "/group/integer"
+
+        group_param = config.spec.p.ParameterGroup(
+            identifier=name_id("group"), extra=config.spec.p.ExtraProperties(display_name="Group")
+        )
+        param_with_wrong_default = config.spec.p.NumberParameter(
+            identifier=name_id("group", "integer"),
+            is_float=False,
+            min=min_value,
+            extra=config.spec.p.ExtraProperties(display_name="Test Int"),
+        )
+        specification = config.spec.FullSpec.from_parameters(group_param, param_with_wrong_default)
+
+        wrong_default = config.Defaults(values={tech_full_name: 5})
+        config_service, _ = build_config_service_with_fakes()
+
+        with self.assertRaises(bundle.BundleValidationError) as err:
+            bundle.check_config_defaults(
+                specification=specification, defaults=wrong_default, config_service=config_service
+            )
+
+        self.assertEqual(
+            f"object's defaults are invalid: - {expected_displ_name} [value]: should be greater than {min_value}",
+            err.exception.message,
+        )
+
+    def test_validate_structure_schema_error_message_with_full_display_name(self):
+        """
+        Check messages from config._operations.validate_structure_parameters_schema.
+        """
+
+        expected_displ_name = "/Test Structure"
+        param = config.spec.p.StructureParameter(
+            identifier=name_id("structure"),
+            yspec={},
+            extra=config.spec.p.ExtraProperties(display_name="Test Structure"),
+        )
+        specification = config.spec.FullSpec.from_parameters(param)
+        config_service, _ = build_config_service_with_fakes()
+        config_service.yspec_schema = {
+            "root": {"match": "dict", "required_items": ["root"]},
+        }
+
+        with self.assertRaises(bundle.BundleValidationError) as err:
+            bundle.check_config_defaults(
+                specification=specification, defaults=config.Defaults(), config_service=config_service
+            )
+
+        self.assertIn(
+            f"object's defaults are invalid: - {expected_displ_name} [value]: yspec schema is incorrect:",
+            err.exception.message,
+        )

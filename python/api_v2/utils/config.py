@@ -54,7 +54,8 @@ def convert_values(input_values: dict, specification: core.config.spec.FullSpec)
 
     for name, param in specification.parameters.items():
         if param.type == core.config.spec.p.ParameterType.JSON:
-            convert = partial(_convert_or_raise_error, name=name)
+            display_name = specification.get_full_display_name(name)
+            convert = partial(_convert_or_raise_error, name=display_name)
             core.config.change_by_full_name_skip_missing(name=name, values=values, func=convert)
 
     return values
@@ -118,7 +119,9 @@ def _apply_to_json_fields(
     return values_copy
 
 
-def _convert_or_raise_error(value: Any, name: core.config.ParameterFullName) -> str | None:
+def _convert_or_raise_error(
+    value: Any, name: core.config.ParameterFullName | core.config.FullDisplayName
+) -> str | None:
     if value is None:
         return None
 

@@ -183,6 +183,13 @@
     - name: string_field
       type: string
       default: "string value"
+    - name: group
+      type: group
+      subs:
+        - type: json
+          name: json
+          required: false
+          display_name: Pretty JSON
 
   actions:
     action_1_service_2: *action
