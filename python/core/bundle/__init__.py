@@ -32,7 +32,7 @@ from core.bundle._types import (
     SignatureStatus,
     VersionSupportStatus,
 )
-from core.bundle._validate import ConvertConfigDefinition
+from core.bundle._validate import ConvertConfigDefinition, check_config_defaults
 
 __all__ = [
     "BundleContext",
@@ -47,6 +47,7 @@ __all__ = [
     "BundleValidationError",
     "ComponentKey",
     "ConvertConfigDefinition",
+    "check_config_defaults",
     "SignatureStatus",
     "build_parent_key_safe",
     "constants",

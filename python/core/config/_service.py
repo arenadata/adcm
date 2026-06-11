@@ -315,7 +315,7 @@ class ConfigService:
         )
         match validation_result:
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
         encryption_result = operations.encrypt_secrets(
@@ -347,7 +347,7 @@ class ConfigService:
                 return NewConfigurationResult(encrypted_config=configuration, has_changed=False)
 
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
     def prepare_action_configuration(
@@ -374,7 +374,7 @@ class ConfigService:
         )
         match validation_result:
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
         encryption_result = operations.encrypt_secrets(
@@ -511,8 +511,12 @@ def _choose_file_name_builder(owner: FileOwner) -> Callable[[str], str]:
             )
 
 
-def _format_validation_violations_to_error(violations: Violations) -> ConfigOperationError:
-    violations_list_repr = "\n".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)
+def _format_validation_violations_to_error(
+    violations: Violations, specification: spec.FullSpec
+) -> ConfigOperationError:
+    violations_list_repr = "\n".join(
+        f"- {specification.get_full_display_name(v.parameter)} [{v.check}]: {v.reason}" for v in violations
+    )
     message = f"Configuration doesn't match specification. Following violations detected:\n{violations_list_repr}"
     return ConfigOperationError(message)
 

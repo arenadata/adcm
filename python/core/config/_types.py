@@ -29,6 +29,15 @@ Elements at "root" of configuration will be named like `"/param"`, `"/group"`,
 and elements inside groups `"/groupname/param"`.
 """
 
+FullDisplayName: TypeAlias = str
+"""
+"Flat" display name for nested fields.
+Elements at "root" of configuration will be named like `"/Param"`, `"/Group Name"`,
+and elements inside groups `"/Group Name/Param"`.
+If `display_name` is not defined for a parameter or group, its technical name will be used
+to build the full display name, for example: `"/Group Name/nested/Param"`.
+"""
+
 ParameterLevelName: TypeAlias = str
 """
 Parameter technical name, unique inside one config hierarchy level (root or group).

@@ -10,17 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import TestCase
+
 from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog, Service
+from core import config
 from core.legacy.job.types import Task
+from core.tests.test_config.utils import name_id
 from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.base import CallResult
 from ansible_plugin.errors import PluginTargetError
-from ansible_plugin.executors.config import ADCMConfigPluginExecutor
+from ansible_plugin.executors.config import ADCMConfigPluginExecutor, to_changes
 
 EXECUTOR_MODULE = "ansible_plugin.executors.config"
 
@@ -234,3 +238,24 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         self.assertIsInstance(result.error, PluginTargetError)
         self.assertEqual(result.error.message, "Wrong context. One host can't be changed from another's context.")
+
+
+class TestConfigPluginChanges(TestCase):
+    def test_group_error_with_full_display_name(self):
+        specification = config.spec.FullSpec.from_parameters(
+            config.spec.p.ParameterGroup(
+                identifier=name_id("group"), extra=config.spec.p.ExtraProperties(display_name="Pretty Group")
+            ),
+            config.spec.p.ParameterGroup(
+                identifier=name_id("group", "option"),
+                selection=config.spec.p.Selection(),
+                extra=config.spec.p.ExtraProperties(display_name="Option"),
+            ),
+        )
+
+        inputs = [{"key": "/group/option", "value": "another"}]
+        expected_displ_name = "/Pretty Group/Option"
+        err_message = f'Can\'t change selectable group "{expected_displ_name}" from plugin'
+
+        with self.assertRaisesRegex(ValueError, err_message):
+            to_changes(input_changes=inputs, spec=specification)
