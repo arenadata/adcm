@@ -12,6 +12,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
+from itertools import chain
 from pathlib import Path
 from typing import Annotated, Generic, Literal, NamedTuple, TypeAlias, TypeVar
 from uuid import UUID
@@ -145,7 +146,9 @@ class TaskMappingDelta:
 
     @property
     def is_empty(self) -> bool:
-        return not (self.add or self.remove)
+        host_sets = chain(self.add.values(), self.remove.values())
+
+        return not any(host_sets)
 
 
 class HostComponentChanges(NamedTuple):

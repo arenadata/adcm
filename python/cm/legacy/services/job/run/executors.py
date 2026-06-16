@@ -12,7 +12,7 @@
 
 from pathlib import Path
 from traceback import format_exception
-from typing import Callable
+from typing import Callable, NamedTuple
 
 from core.legacy.job.executors import (
     BundleExecutorConfig,
@@ -27,6 +27,11 @@ from typing_extensions import Self
 
 from cm.errors import AdcmEx
 from cm.legacy.utils import get_env_with_venv_path
+
+
+class InternalScriptResult(NamedTuple):
+    code: int
+    message: str
 
 
 class AnsibleExecutorConfig(BundleExecutorConfig):
@@ -85,15 +90,17 @@ class PythonProcessExecutor(ProcessExecutor):
 class InternalExecutor(Executor, WithErrOutLogsMixin):
     script_type = "internal"
 
-    def __init__(self, config: ExecutorConfig, script: Callable[[], int]):
+    def __init__(self, config: ExecutorConfig, script: Callable[[], InternalScriptResult]):
         super().__init__(config=config)
         self._script = script
 
     def execute(self) -> Self:
-        _, err_log = self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
+        out_log, err_log = self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
 
         try:
-            return_code = self._script()
+            result = self._script()
+            return_code = result.code
+            out_log.write(f"{result.message}\n")
         except Exception as e:  # noqa: BLE001
             if isinstance(e, AdcmEx):
                 message = e.msg

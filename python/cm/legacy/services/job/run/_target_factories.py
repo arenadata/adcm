@@ -50,6 +50,7 @@ from cm.legacy.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
     InternalExecutor,
+    InternalScriptResult,
     PythonProcessExecutor,
 )
 from cm.legacy.services.job.run.repo import JobRepoImpl
@@ -180,7 +181,7 @@ def internal_script_bundle_switch(
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
-) -> int:
+) -> InternalScriptResult:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -207,7 +208,12 @@ def internal_script_bundle_switch(
 
     re_apply_policy_for_jobs(task=task_)
 
-    return 0
+    result_message = _build_result_message(
+        script_name="bundle_switch",
+        full_complete_message="the prototype is switched",
+        with_updates=True,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 @atomic()
@@ -217,7 +223,7 @@ def internal_script_bundle_revert(
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
-) -> int:
+) -> InternalScriptResult:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -256,10 +262,15 @@ def internal_script_bundle_revert(
 
     re_apply_policy_for_jobs(task=task_)
 
-    return 0
+    result_message = _build_result_message(
+        script_name="bundle_revert",
+        full_complete_message="prototype reverted",
+        with_updates=True,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterService) -> int:
+def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterService) -> InternalScriptResult:
     if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         raise AdcmEx(
             code="WRONG_OWNER",
@@ -280,6 +291,7 @@ def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterServi
 
     bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
 
+    with_updates = False
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
 
@@ -295,38 +307,60 @@ def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterServi
             delta_part = _extract_mapping_delta_part(
                 cluster_id=cluster_id, mapping_delta=mapping_delta, hc_apply_rules=hc_apply_rules
             )
-        change_host_component_mapping_no_lock(
-            cluster_id=cluster_id,
-            bundle_id=bundle_id,
-            mapping_delta=delta_part,
-            cluster_service=cluster_service,
-            checks_func=check_nothing,
-        )
 
-    return 0
+        with_updates = not delta_part.is_empty
+        if with_updates:
+            change_host_component_mapping_no_lock(
+                cluster_id=cluster_id,
+                bundle_id=bundle_id,
+                mapping_delta=delta_part,
+                cluster_service=cluster_service,
+                checks_func=check_nothing,
+            )
+
+    result_message = _build_result_message(
+        script_name="hc_apply",
+        full_complete_message="the component mapping is complete",
+        without_updates_message="the component mapping was done",
+        with_updates=with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 def internal_script_config_apply(
     task: Task,
     job: Job,
     update_configuration_from_job: UpdateConfigurationFromJob,
-) -> int:
+) -> InternalScriptResult:
+    with_updates = False
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
-        _apply_config_changes(
+        has_changed = _apply_config_changes(
             job.id,
             changing_object,
             change["parameters"],
             f"{task.action.display_name} process update",
             update_configuration_from_job,
         )
-    return 0
+        # if at least one change has been applied, the script is marked as completed with updates
+        with_updates = has_changed or with_updates
+
+    result_message = _build_result_message(
+        script_name="config_apply",
+        full_complete_message="the configuration updates are done",
+        without_updates_message="the configuration was updated",
+        with_updates=with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 def internal_script_before_upgrade_clean(
-    task: Task, job: Job, cluster_uc: ResetBeforeUpgradeCluster, provider_uc: ResetBeforeUpgradeProvider
-) -> int:
+    task: Task,
+    job: Job,
+    cluster_uc: ResetBeforeUpgradeCluster,
+    provider_uc: ResetBeforeUpgradeProvider,
+) -> InternalScriptResult:
     _ = job
 
     if not task.owner:
@@ -352,7 +386,28 @@ def internal_script_before_upgrade_clean(
         case _:
             raise RuntimeError("misconfigured task runner")
 
-    return 0
+    result_message = _build_result_message(
+        script_name="before_upgrade_clean",
+        full_complete_message='"before_upgrade" section has been cleared',
+        with_updates=True,
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def _build_result_message(
+    script_name: str,
+    full_complete_message: str,
+    with_updates: bool,
+    without_updates_message: str | None = None,
+) -> str:
+    base_template = "The script `{script_name}` completed successfully, {completed_info}."
+
+    if with_updates or without_updates_message is None:
+        complete_info = full_complete_message
+    else:
+        complete_info = f"but {without_updates_message} earlier"
+
+    return base_template.format(script_name=script_name, completed_info=complete_info)
 
 
 def _apply_config_changes(
@@ -361,10 +416,10 @@ def _apply_config_changes(
     parameters: list[dict],
     changes_description: str,
     update_configuration_from_job: UpdateConfigurationFromJob,
-) -> None:
+) -> bool:
     _check_parameters_unique(parameters)
 
-    update_configuration_from_job.do(
+    _, has_changed = update_configuration_from_job.do(
         owner=orm_object_to_core_descriptor(db_object),
         changes_input=parameters,
         convert=_prepare_changes_new,
@@ -372,6 +427,8 @@ def _apply_config_changes(
         description=changes_description,
         owner_orm=db_object,
     )
+
+    return has_changed
 
 
 def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
