@@ -12,6 +12,7 @@
 
 from configparser import ConfigParser
 from pathlib import Path
+from unittest.mock import patch
 import json
 
 from core.cluster import ClusterService
@@ -23,6 +24,7 @@ from core.legacy.job.runners import (
     IntegrationsSettings,
 )
 from core.legacy.job.types import HcAclRule, TaskMappingDelta
+from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
@@ -31,11 +33,13 @@ from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
+from use_cases.transition.config import UpdateConfigurationFromJob
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.legacy.api import add_service_to_cluster
 from cm.legacy.services.job.run._target_factories import (
+    internal_script_config_apply,
     internal_script_hc_apply,
     prepare_ansible_environment,
 )
@@ -485,6 +489,33 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
 
         return task, job
 
+    def get_fake_config_apply_task_job(self, owner: Model, parameter: str, value: object) -> tuple[object, object]:
+        task, job = DummyObject(), DummyObject()
+        owner_ = DummyObject()
+        owner_.id = owner.id
+        owner_.type = orm_object_to_core_type(owner)
+        owner_.prototype_id = owner.prototype_id
+
+        task.owner = owner_
+        task.selector = {ADCMCoreType.CLUSTER.value: {"id": self.cluster.id, "name": self.cluster.name}}
+
+        action = DummyObject()
+        action.display_name = "Config apply"
+        task.action = action
+
+        params = DummyObject()
+        params.changes = [
+            {
+                "object": {"type": ADCMCoreType.CLUSTER.value},
+                "parameters": [{"key": parameter, "value": value}],
+            }
+        ]
+
+        job.id = 111
+        job.params = params
+
+        return task, job
+
     def test_internal_hc_apply(self):
         cluster_service = self.uc.container.get(ClusterService)
         service_name = self.service.prototype.name
@@ -502,10 +533,14 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         rules = [HcAclRule(service=service_name, component=c1_name, action="add")]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
+        result = internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(host.pk, component.pk) for host, component in initial_hc}
         self.assertSetEqual(actual_hc, expected_hc)
+
+        expected_message = "The script `hc_apply` completed successfully, but the component mapping was done earlier."
+        self.assertEqual(result.message, expected_message)
+        self.assertEqual(result.code, 0)
 
         # Case 2. rules specifies changes partially present in mapping_delta
         mapping_delta = TaskMappingDelta(
@@ -517,10 +552,14 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
+        result = internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(self.host_2.pk, self.component_1.pk), (self.host_3.pk, self.component_2.pk)}
         self.assertSetEqual(actual_hc, expected_hc)
+
+        expected_message = "The script `hc_apply` completed successfully, the component mapping is complete."
+        self.assertEqual(result.message, expected_message)
+        self.assertEqual(result.code, 0)
 
         # restore HC
         self.uc.set_hostcomponent(cluster=self.cluster, entries=initial_hc)
@@ -549,3 +588,33 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, rules=rules)
         with self.assertRaises(AdcmEx):
             internal_script_hc_apply(task=task, job=job, cluster_service=cluster_service)
+
+    def test_adcm_7918_internal_config_apply_result(self):
+        update_configuration_from_job = self.uc.container.get(UpdateConfigurationFromJob)
+        expected_value = "changed"
+        parameter = "/string"
+        task, job = self.get_fake_config_apply_task_job(owner=self.cluster, parameter=parameter, value=expected_value)
+
+        with patch("use_cases.transition.config.update_related_configs"):
+            result = internal_script_config_apply(
+                task=task,
+                job=job,
+                update_configuration_from_job=update_configuration_from_job,
+            )
+
+            expected_message = "The script `config_apply` completed successfully, the configuration updates are done."
+            self.assertEqual(result.code, 0)
+            self.assertEqual(result.message, expected_message)
+
+            # check the completed message after an attempt to apply the current configs
+            result = internal_script_config_apply(
+                task=task,
+                job=job,
+                update_configuration_from_job=update_configuration_from_job,
+            )
+
+        expected_message = (
+            "The script `config_apply` completed successfully, but the configuration was updated earlier."
+        )
+        self.assertEqual(result.code, 0)
+        self.assertEqual(result.message, expected_message)
