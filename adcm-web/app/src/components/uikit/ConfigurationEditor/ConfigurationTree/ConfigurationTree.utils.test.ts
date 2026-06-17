@@ -33,6 +33,8 @@ import {
   getDefaultValue,
   getErrorsForTreeRow,
   getOneOfSchemaDefaults,
+  hasFieldDefaultValue,
+  resolveFieldDefaultValue,
   validate,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
@@ -102,6 +104,22 @@ describe('structure node tests', () => {
     const node3: SchemaDefinition = defaultProps;
     const parentNode3: SchemaDefinition = { ...defaultProps, default: { keyName: 'parentValue' } };
     expect(getDefaultValue('keyName', node3, parentNode3)).toBe('parentValue');
+  });
+
+  test('resolveFieldDefaultValue', () => {
+    const fieldSchema: SchemaDefinition = { type: 'string', readOnly: false };
+
+    expect(resolveFieldDefaultValue({ defaultValue: 'from-node', fieldSchema })).toBe('from-node');
+    expect(resolveFieldDefaultValue({ fieldSchema: { ...fieldSchema, default: '' } })).toBe('');
+    expect(resolveFieldDefaultValue({ fieldSchema })).toBeUndefined();
+  });
+
+  test('hasFieldDefaultValue', () => {
+    const fieldSchema: SchemaDefinition = { type: 'string', readOnly: false };
+
+    expect(hasFieldDefaultValue({ defaultValue: '', fieldSchema })).toBe(true);
+    expect(hasFieldDefaultValue({ fieldSchema: { ...fieldSchema, default: '' } })).toBe(true);
+    expect(hasFieldDefaultValue({ fieldSchema })).toBe(false);
   });
 
   test('structure fields', () => {

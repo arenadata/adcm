@@ -8,7 +8,8 @@ import StringControl from '../FieldControls/StringControls/StringControl';
 import MultilineStringControl from '../FieldControls/StringControls/MultilineStringControl';
 import BooleanControl from '../FieldControls/BooleanControl';
 import NumberControl from '../FieldControls/NumberControl';
-import SecretControl from '../FieldControls/StringControls/SecretControl';
+import { resolveFieldDefaultValue } from '../../ConfigurationTree/ConfigurationTree.utils';
+import SecretControl from '@uikit/ConfigurationEditor/Dialogs/FieldControls/StringControls/SecretControl';
 
 export interface ConfigurationEditInputFieldDialogProps {
   node: ConfigurationNodeView;
@@ -46,8 +47,9 @@ const EditConfigurationFieldDialog = ({
   );
 
   const handleResetToDefault = useCallback(() => {
-    handleValueChange(fieldNode.data.defaultValue);
-  }, [handleValueChange, fieldNode.data.defaultValue]);
+    const resetValue = resolveFieldDefaultValue(fieldNode.data);
+    handleValueChange(resetValue);
+  }, [handleValueChange, fieldNode.data]);
 
   const handleCancel = () => {
     onOpenChange(false);
