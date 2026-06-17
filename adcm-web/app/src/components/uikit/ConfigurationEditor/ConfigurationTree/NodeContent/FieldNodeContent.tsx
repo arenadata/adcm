@@ -13,6 +13,7 @@ import type {
   ChangeFieldAttributesHandler,
 } from '../ConfigurationTree.types';
 import { isPrimitiveValueSet } from '@models/json';
+import { hasFieldDefaultValue, resolveFieldDefaultValue } from '../ConfigurationTree.utils';
 import type { FieldErrors } from '@models/adcm';
 import { isWhiteSpaceOnly } from '@utils/validationsUtils';
 import IconButton from '@uikit/IconButton/IconButton';
@@ -88,7 +89,7 @@ const FieldNodeContent = ({
   };
 
   const handleResetToDefaultClick = () => {
-    onChange(node, fieldNodeData.defaultValue);
+    onChange(node, resolveFieldDefaultValue(fieldNodeData));
   };
 
   const handleDragHandleMouseEnter = () => {
@@ -214,8 +215,8 @@ const FieldNodeContent = ({
           />
         )}
         {!fieldNodeData.isReadonly &&
-          fieldNodeData.defaultValue !== undefined &&
-          fieldNodeData.value !== fieldNodeData.defaultValue && (
+          hasFieldDefaultValue(fieldNodeData) &&
+          fieldNodeData.value !== resolveFieldDefaultValue(fieldNodeData) && (
             <IconButton
               className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
               size={28}

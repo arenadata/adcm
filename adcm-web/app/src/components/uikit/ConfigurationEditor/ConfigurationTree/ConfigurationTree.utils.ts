@@ -19,6 +19,7 @@ import type {
   ConfigurationTreeState,
   NodesDictionary,
   ConfigurationSelectableObject,
+  ConfigurationField,
 } from '../ConfigurationEditor.types';
 import {
   DEFAULT_JSON_SCHEMA_ENGINE,
@@ -75,6 +76,23 @@ export const getDefaultValue = (keyName: string, node: SchemaDefinition, parentN
 
   return nodeDefault ?? parentNodeDefault;
 };
+
+export const resolveFieldDefaultValue = (
+  field: Pick<ConfigurationField, 'defaultValue' | 'fieldSchema'>,
+): JSONPrimitive => {
+  if (field.defaultValue !== undefined) {
+    return field.defaultValue;
+  }
+
+  if (field.fieldSchema.default !== undefined) {
+    return field.fieldSchema.default as JSONPrimitive;
+  }
+
+  return undefined;
+};
+
+export const hasFieldDefaultValue = (field: Pick<ConfigurationField, 'defaultValue' | 'fieldSchema'>): boolean =>
+  resolveFieldDefaultValue(field) !== undefined;
 
 const getDefaultFieldSchema = (parentFieldSchema: SchemaDefinition | null): SchemaDefinition => {
   const fieldSchema: SchemaDefinition = {
@@ -421,7 +439,7 @@ const buildObjectNode = (
       isReadonly,
       isDraggable,
       objectType: 'map',
-      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
+      defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
       value: fieldValue,
       fieldAttributes,
     },
@@ -482,7 +500,7 @@ const buildSelectableObjectNode = (
       isDeletable,
       isReadonly,
       isDraggable,
-      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
+      defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
       value: fieldValue,
       fieldAttributes,
     },
@@ -582,7 +600,7 @@ const buildFieldNode = (
       parentNode,
       fieldSchema,
       isNullable,
-      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
+      defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: fieldValue as JSONPrimitive,
       isCleanable,
       isDeletable,
@@ -674,7 +692,7 @@ const buildArrayNode = (
       isCleanable,
       isDeletable,
       isDraggable,
-      defaultValue: getDefaultValue(title, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
+      defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONPrimitive,
       value: array,
       fieldAttributes,
     },
