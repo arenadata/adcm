@@ -147,12 +147,27 @@ const resolvePropertySchemaForObjectKey = (
   return getDefaultFieldSchema(parentFieldSchema);
 };
 
+const isRootReadOnlyLocked = (parentNode: ConfigurationNode): boolean => {
+  let node: ConfigurationNode = parentNode;
+
+  while (node.key !== rootNodeKey) {
+    node = node.data.parentNode;
+  }
+
+  // Root `isReadonly` is set from ConfigurationTree `isReadOnly` (wizard non-current step).
+  return node.data.isReadonly;
+};
+
 const getIsReadonly = (
   fieldSchema: SchemaDefinition,
   fieldAttributes: FieldAttributes,
   parentNode: ConfigurationNode,
 ) => {
   const parentNodeData = parentNode.data as ConfigurationObject | ConfigurationArray;
+
+  if (isRootReadOnlyLocked(parentNode)) {
+    return true;
+  }
 
   const isArrayItem = parentNodeData.fieldSchema.type === 'array';
   const isMapProperty = parentNode.data.type === 'object' && parentNode.data.objectType === 'map';
@@ -167,6 +182,11 @@ const getIsReadonly = (
 
   if (parentNodeData.fieldAttributes?.isSynchronized !== undefined) {
     return parentNodeData.fieldAttributes?.isSynchronized;
+  }
+
+  // selection_group: writable is per-field; do not inherit selection group isReadonly to subs.
+  if (parentNode.data.type === 'selectableObject') {
+    return Boolean(fieldSchema.readOnly);
   }
 
   return fieldSchema.readOnly || parentNodeData.isReadonly;
