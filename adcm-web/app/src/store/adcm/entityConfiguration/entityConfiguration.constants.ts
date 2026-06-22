@@ -181,6 +181,7 @@ export const entityTypeDict: Record<string, string> = {
   settings: 'settings',
   host: 'host',
   'host-provider': 'hostProvider',
+  'host-provider-config-group': 'hostProvider',
   'service-component': 'component',
   'service-component-config-group': 'component',
   'cluster-config-group': 'cluster',
