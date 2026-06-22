@@ -14,6 +14,7 @@ from typing import TypeAlias
 
 from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Cluster, Component, Host, Provider, Service
+from tests.dependencies import StatusEventCall, get_status_scenarios_manager
 from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.base import ADCMAnsiblePluginExecutor
@@ -248,3 +249,50 @@ class TestADCMStatePluginExecutors(ADCMPluginExecutorSuite):
                         executor_class=executor_class,
                         expect_fail=True,
                     )
+
+    def test_adcm_8125_set_and_unset_multi_state_event(self) -> None:
+        status_scenarios_manager = get_status_scenarios_manager()
+        status_scenarios_manager.reset()
+        multi_state = "service multi state"
+        service, *_ = self.uc.add_services_to_cluster(["multi_state_service"], cluster=self.cluster)
+
+        # set a multi state
+        set_multi_st_task = self.prepare_task(owner=service, name="set_multi_state")
+        set_job, *_ = JobRepoImpl.get_task_jobs(set_multi_st_task.id)
+        set_executor = self.prepare_executor(
+            executor_type=ADCMMultiStateSetPluginExecutor,
+            call_arguments={"type": "service", "service_name": service.name, "state": multi_state},
+            call_context=set_job,
+        )
+        set_result = set_executor.execute()
+
+        self.assertTrue(set_result.changed)
+        expected_event = StatusEventCall(obj_id=service.pk, obj_type="service", changes={"multiState": [multi_state]})
+        self.assertEqual(
+            status_scenarios_manager.send_object_update_event_calls,
+            [expected_event],
+        )
+        service.refresh_from_db()
+        self.assertEqual(service.multi_state, [multi_state])
+        status_scenarios_manager.reset()
+
+        # unset a multi state
+        unset_multi_st_task = self.prepare_task(owner=service, name="unset_multi_state")
+        unset_job, *_ = JobRepoImpl.get_task_jobs(unset_multi_st_task.id)
+        unset_executor = self.prepare_executor(
+            executor_type=ADCMMultiStateUnsetPluginExecutor,
+            call_arguments={"type": "service", "service_name": service.name, "state": multi_state},
+            call_context=unset_job,
+        )
+
+        unset_result = unset_executor.execute()
+
+        self.assertTrue(unset_result.changed)
+        unset_expected_event = StatusEventCall(obj_id=service.pk, obj_type="service", changes={"multiState": []})
+        self.assertEqual(
+            status_scenarios_manager.send_object_update_event_calls,
+            [unset_expected_event],
+        )
+
+        service.refresh_from_db()
+        self.assertEqual(service.multi_state, [])

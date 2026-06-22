@@ -14,7 +14,6 @@ from contextlib import suppress
 from typing import Any, Collection
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.status_api import send_object_update_event
 from cm.models import Host, MaintenanceMode
 from cm.transition.status import StatusScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -96,15 +95,13 @@ class ADCMChangeMMExecutor(ADCMAnsiblePluginExecutor[ChangeMaintenanceModeArgume
                 update_fields=["maintenance_mode"] if isinstance(target_object, Host) else ["_maintenance_mode"]
             )
 
+        status_scenarios = self._container.get(StatusScenarios)
         with suppress(Exception):
-            send_object_update_event(
+            status_scenarios.send_object_update_event(
                 obj_id=target_object.pk,
                 obj_type=orm_object_to_core_type(target_object).value,
                 changes={"maintenanceMode": target_object.maintenance_mode},
             )
-
-        with suppress(Exception):
-            status_scenarios = self._container.get(StatusScenarios)
             status_scenarios.reset_objects_in_mm()
 
         return CallResult(value=None, changed=True, error=None)

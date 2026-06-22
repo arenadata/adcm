@@ -82,3 +82,22 @@
 
 - <<: *service
   name: service_2
+
+- type: service
+  name: multi_state_service
+  version: 1
+
+  actions:
+    set_multi_state:
+      type: job
+      script_type: ansible
+      script: ./multi_state_service.yaml
+      params:
+        ansible_tags: set_multi_state
+
+    unset_multi_state:
+      type: job
+      script_type: ansible
+      script: ./multi_state_service.yaml
+      params:
+        ansible_tags: unset_multi_state
