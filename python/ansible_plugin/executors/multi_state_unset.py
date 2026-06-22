@@ -14,7 +14,7 @@ from contextlib import suppress
 from typing import Collection, TypedDict
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.status_api import send_object_update_event
+from cm.transition.status import StatusScenarios
 from core.types import CoreObjectDescriptor
 
 from ansible_plugin.base import (
@@ -69,11 +69,13 @@ class ADCMMultiStateUnsetPluginExecutor(
             )
 
         target_object.unset_multi_state(arguments.state)
+
+        status_scenarios = self._container.get(StatusScenarios)
         with suppress(Exception):
-            send_object_update_event(
+            status_scenarios.send_object_update_event(
                 obj_id=target_object.pk,
                 obj_type=orm_object_to_core_type(target_object).value,
-                changes={"state": arguments.state},
+                changes={"multiState": target_object.multi_state},
             )
 
         return CallResult(value=MultiStateUnsetReturnValue(state=arguments.state), changed=True, error=None)
