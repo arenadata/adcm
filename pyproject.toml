@@ -219,6 +219,7 @@ root_packages = [
     "audit",
     "cm",
     "core",
+    "health",
     "infra",
     "integrations",
     "jobs",

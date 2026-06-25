@@ -10,27 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import adcm
-from core import upgrade
-from core import cluster, provider
-from core import logs
+from rest_framework import serializers
 
-__all__ = [
-    "action",
-    "adcm",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-    "logs",
-]
+
+class CheckResultSerializer(serializers.Serializer):
+    healthy = serializers.BooleanField()
+    detail = serializers.CharField(allow_blank=True)
+
+
+class ReadinessSerializer(serializers.Serializer):
+    status = serializers.CharField()
+    checks = serializers.DictField(child=CheckResultSerializer())
+
+
+class LivenessSerializer(serializers.Serializer):
+    status = serializers.CharField()

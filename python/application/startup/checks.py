@@ -12,11 +12,14 @@
 
 from enum import Enum, auto
 from typing import Callable
+from urllib.parse import urlsplit
 
 from cm.models import Bundle
 from core.bundle import ContractVersion, InstalledBundleVersion
+from core.scenarios.adcm import DefaultURL
 from dishka import Container, Scope
 from django.db import connection
+from integrations.consul import ClientSettings
 from packaging.version import Version
 import core.bundle
 
@@ -60,6 +63,24 @@ def check_contract_version_field_exists() -> CheckStatuses:
         return CheckStatuses.NO_FIELD
 
     return CheckStatuses.SUCCESS
+
+
+def validate_default_adcm_url(*, container: Container, failure_exc: type[BaseException]) -> None:
+    """Validate ``DEFAULT_ADCM_URL`` url. Also, It is mandatory once Consul registration is enabled."""
+    default_adcm_url = container.get(DefaultURL | None)
+    consul_settings = container.get(ClientSettings | None)
+
+    if default_adcm_url is None and consul_settings:
+        message = "DEFAULT_ADCM_URL is mandatory when ADCM is configured to run with Consul (CONSUL_URL is set)"
+        raise failure_exc(message)
+
+    if default_adcm_url:
+        parts = urlsplit(default_adcm_url)
+        if not parts.scheme or not parts.hostname or not parts.port:
+            message = f"DEFAULT_ADCM_URL is not a valid URL: {default_adcm_url!r}"
+            raise failure_exc(message)
+
+    return
 
 
 def check_adcm_start_is_allowed(

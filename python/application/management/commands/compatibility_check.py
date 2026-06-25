@@ -14,7 +14,7 @@ from dishka import make_container
 from django.core.management import BaseCommand, CommandError
 
 from application.di.containers import get_main_providers
-from application.startup.checks import check_adcm_start_is_allowed
+from application.startup.checks import check_adcm_start_is_allowed, validate_default_adcm_url
 
 
 class Command(BaseCommand):
@@ -25,6 +25,8 @@ class Command(BaseCommand):
 
     def handle(self, *_, **_kw):
         container = make_container(*get_main_providers())  # TODO: ADCM-8154
+
+        validate_default_adcm_url(container=container, failure_exc=CommandError)
         check_adcm_start_is_allowed(
             container=container,
             failure_exc=CommandError,
