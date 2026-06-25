@@ -10,27 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt, job  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import adcm
-from core import upgrade
-from core import cluster, provider
-from core import logs
+from dataclasses import dataclass
 
-__all__ = [
-    "action",
-    "adcm",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "job",
-    "mapping",
-    "provider",
-    "upgrade",
-    "logs",
-]
+from core import adcm
+from core.scenarios.adcm import ADCMUUID
+
+from cm.models import ADCM
+
+
+@dataclass(slots=True)
+class ADCMRepo(adcm.ADCMRepoI):
+    def get_uuid(self) -> ADCMUUID | None:
+        # ADCM is a singleton, but the row may be recreated on upgrade: limit to a single value.
+        uuid = ADCM.objects.values_list("uuid", flat=True).first()
+        if uuid:
+            return ADCMUUID(str(uuid))
+
+        return None

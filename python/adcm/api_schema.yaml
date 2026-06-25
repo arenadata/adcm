@@ -536,6 +536,16 @@ components:
       - check
       type: string
       description: '* `check` - check'
+    CheckResult:
+      type: object
+      properties:
+        healthy:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - healthy
+      - detail
     Cluster:
       type: object
       properties:
@@ -1459,6 +1469,13 @@ components:
         * `absent` - absent
         * `accepted` - accepted
         * `unaccepted` - unaccepted
+    Liveness:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
     Login:
       type: object
       properties:
@@ -2625,6 +2642,18 @@ components:
       - concerns
       - isUpgradable
       - mainInfo
+    Readiness:
+      type: object
+      properties:
+        status:
+          type: string
+        checks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CheckResult'
+      required:
+      - status
+      - checks
     Reason:
       type: object
       properties:
@@ -4034,6 +4063,56 @@ components:
       name: Authorization
       description: Token-based authentication with required prefix "Token"
 paths:
+  /api/health/live:
+    get:
+      operationId: getHealthCheck
+      description: Get information about adcm backend health.
+      summary: Liveness probe
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Liveness'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/health/ready:
+    get:
+      operationId: getInitCheck
+      description: Get information about adcm backend initialization status
+      summary: Readiness probe
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v2/adcm/:
     get:
       operationId: getADCMObject

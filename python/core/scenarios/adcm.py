@@ -19,6 +19,7 @@ from core.scenarios.config import ConfigScenarios
 from core.types import BundleID
 
 DefaultURL = NewType("DefaultURL", str)
+ADCMUUID = NewType("ADCMUUID", str)
 
 
 @dataclass(slots=True)

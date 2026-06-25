@@ -16,6 +16,7 @@ import os
 
 from adcm.feature_flags import use_new_job_scheduler
 from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
+from cm.impl.adcm.repo import ADCMRepo
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
@@ -263,3 +264,9 @@ class AuditProvider(Provider):
         return build_name_splitter_settings_from_django_models()
 
     name_half_splitter = provide(NameHalfSplitter)
+
+
+class ADCMProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ADCMRepo, provides=core.adcm.ADCMRepoI)

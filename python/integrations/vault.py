@@ -120,6 +120,13 @@ class VaultSecretsBackend(SecretsBackend):
     def read(self, secret: Secret) -> str:
         return self._read_secret(secret)
 
+    def check_connection(self) -> bool:
+        """Return ``True`` when the Vault server is reachable and responsive."""
+        try:
+            return bool(self.client.sys.is_initialized())
+        except Exception:  # noqa: BLE001
+            return False
+
     def _read_secret(self, secret: Secret) -> str:
         if secret in self._cache:
             return self._cache[secret]

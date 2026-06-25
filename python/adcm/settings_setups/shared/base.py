@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "application",
+    "health",
 ]
 
 MIDDLEWARE = [
@@ -202,8 +203,15 @@ TEMPLATES = [
     },
 ]
 
-# Removal candidates
+# Remove after ensuring that they are not used during config.json forming
 
 CONSUL_URL = os.getenv("CONSUL_URL")
 CONSUL_DATACENTER = os.getenv("CONSUL_DATACENTER")
 CONSUL_CACERT_FILE = os.getenv("CONSUL_CACERT_FILE")
+
+# Consul service registry: health check tuning and status service metadata.
+# Connection credentials are parsed via ConsulSettings in the DI environment provider.
+CONSUL_HEALTH_CHECK_INTERVAL = os.getenv("CONSUL_HEALTH_CHECK_INTERVAL", "10s")
+CONSUL_HEALTH_CHECK_TIMEOUT = os.getenv("CONSUL_HEALTH_CHECK_TIMEOUT", "5s")
+CONSUL_DEREGISTER_CRITICAL_SERVICE_AFTER = os.getenv("CONSUL_DEREGISTER_CRITICAL_SERVICE_AFTER", "5m")
+STATUS_SERVICE_BASE_PATH = os.getenv("STATUS_SERVICE_BASE_PATH", "/status/api/v1/")

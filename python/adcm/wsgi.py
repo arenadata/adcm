@@ -18,7 +18,6 @@ It exposes the WSGI callable as a module-level variable named ``application``.
 For more information on this file, see
 https://docs.djangoproject.com/en/1.11/howto/deployment/wsgi/
 """
-
 import os
 
 from django.core.wsgi import get_wsgi_application
@@ -26,3 +25,10 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings")
 
 application = get_wsgi_application()
+
+# Register ADCM in Consul once the WSGI app (and thus Django) is initialized.
+from api_v2.utils.di import prepare_container
+from application.startup.consul import register_adcm_in_service_discovery_when_consul_configured  # noqa: E402
+
+container = prepare_container()
+register_adcm_in_service_discovery_when_consul_configured(container)
