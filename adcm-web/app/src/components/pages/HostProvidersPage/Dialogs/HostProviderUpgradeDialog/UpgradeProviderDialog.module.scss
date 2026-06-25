@@ -1,10 +1,32 @@
+:global {
+  body.theme-dark {
+    --color-info-soft: rgba(71, 184, 255, 0.24);
+  }
+
+  body.theme-light {
+    --color-info-soft: rgba(71, 184, 255, 0.36);
+  }
+}
+
 .upgradeProviderDialog {
   &__errorMessage {
     border-color: var(--color-light-red);
-    margin: 24px 0;
 
     svg {
       color: var(--color-light-red);
     }
+  }
+
+  &__infoMessage {
+    border-color: var(--color-info-soft);
+
+    svg {
+      color: var(--color-info-soft);
+    }
+  }
+
+  &__errorMessage,
+  &__infoMessage {
+    margin: 24px 0;
   }
 }
