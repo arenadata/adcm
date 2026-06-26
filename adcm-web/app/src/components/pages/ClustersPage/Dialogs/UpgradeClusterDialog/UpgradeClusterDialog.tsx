@@ -85,8 +85,8 @@ const UpgradeClusterDialog = () => {
         <WarningMessage className={s.upgradeClusterDialog__errorMessage}>{startImpossibleReason}</WarningMessage>
       )}
       {!startImpossibleReason && upgradeDetails?.description && (
-        <WarningMessage className={s.upgradeClusterDialog__infoMessage}>
-          <pre>{upgradeDetails.description}</pre>
+        <WarningMessage className={s.upgradeClusterDialog__infoMessage} innerMaxHeight={200}>
+          <div className={s.upgradeClusterDialog__infoMessageContent}>{upgradeDetails.description}</div>
         </WarningMessage>
       )}
     </DialogV2>
