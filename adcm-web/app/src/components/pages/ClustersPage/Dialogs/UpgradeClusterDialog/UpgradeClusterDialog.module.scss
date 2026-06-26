@@ -25,6 +25,10 @@
     }
   }
 
+  &__infoMessageContent {
+    white-space: pre-wrap;
+  }
+
   &__errorMessage, &__infoMessage {
     margin: 24px 0;
   }

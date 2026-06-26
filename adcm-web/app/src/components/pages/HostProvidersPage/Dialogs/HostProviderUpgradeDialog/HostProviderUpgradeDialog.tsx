@@ -67,7 +67,6 @@ const HostProviderUpgradeDialog: React.FC = () => {
 
   return (
     <DialogV2
-      width="auto"
       minWidth="584px"
       title="Upgrade Hostprovider"
       actionButtonLabel="Upgrade"
@@ -81,8 +80,8 @@ const HostProviderUpgradeDialog: React.FC = () => {
         <WarningMessage className={s.upgradeProviderDialog__errorMessage}>{startImpossibleReason}</WarningMessage>
       )}
       {!startImpossibleReason && upgradeDetails?.description && (
-        <WarningMessage className={s.upgradeProviderDialog__infoMessage}>
-          <pre>{upgradeDetails.description}</pre>
+        <WarningMessage className={s.upgradeProviderDialog__infoMessage} innerMaxHeight={200}>
+          <div className={s.upgradeProviderDialog__infoMessageContent}>{upgradeDetails.description}</div>
         </WarningMessage>
       )}
     </DialogV2>
