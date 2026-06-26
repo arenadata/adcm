@@ -36,6 +36,7 @@ export interface AdcmDynamicActionDetails {
   configuration: AdcmDynamicActionConfiguration | null;
   startImpossibleReason: string;
   processes: AdcmActionWizardProcess[] | null;
+  description?: string;
 }
 
 export interface AdcmDynamicActionRunConfig {

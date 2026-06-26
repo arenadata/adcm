@@ -15,6 +15,7 @@ const HostProviderUpgradeDialog: React.FC = () => {
     isValid,
     upgradeDetails,
     formData,
+    startImpossibleReason,
     handleChangeFormData,
     onSubmit,
     onNext,
@@ -33,6 +34,7 @@ const HostProviderUpgradeDialog: React.FC = () => {
         actionDetails={upgradeDetails}
         onCancel={onClose}
         onSubmit={onSubmit}
+        isConcernStepShown={false}
       />
     );
   }
@@ -65,7 +67,6 @@ const HostProviderUpgradeDialog: React.FC = () => {
 
   return (
     <DialogV2
-      width="auto"
       minWidth="584px"
       title="Upgrade Hostprovider"
       actionButtonLabel="Upgrade"
@@ -75,9 +76,12 @@ const HostProviderUpgradeDialog: React.FC = () => {
       dialogControls={dialogControls}
     >
       <SelectUpgradeStep formData={formData} onChange={handleChangeFormData} />
-      {upgradeDetails?.startImpossibleReason && (
-        <WarningMessage className={s.upgradeProviderDialog__errorMessage}>
-          {upgradeDetails.startImpossibleReason}
+      {startImpossibleReason && (
+        <WarningMessage className={s.upgradeProviderDialog__errorMessage}>{startImpossibleReason}</WarningMessage>
+      )}
+      {!startImpossibleReason && upgradeDetails?.description && (
+        <WarningMessage className={s.upgradeProviderDialog__infoMessage} innerMaxHeight={200}>
+          <div className={s.upgradeProviderDialog__infoMessageContent}>{upgradeDetails.description}</div>
         </WarningMessage>
       )}
     </DialogV2>

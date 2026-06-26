@@ -104,6 +104,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         for upgrade in response.json():
             self.assertIn("bundle", upgrade)
+            self.assertIn("description", upgrade)
 
     def test_upgrade_visibility_from_edition_any_success(self):
         response = self.client.v2[self.cluster_2, "upgrades"].get()
@@ -129,6 +130,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
                     "isAllowToTerminate",
                     "disclaimer",
                     "bundle",
+                    "description",
                 }
             )
         )
@@ -138,6 +140,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
+        self.assertEqual(upgrade_data["description"], "This is upgrade!")
+
         service_prototype = Prototype.objects.get(
             bundle=self.cluster_upgrade.bundle, type=ObjectType.SERVICE, name=self.service_1.prototype.name
         )

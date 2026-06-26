@@ -14,7 +14,7 @@
         max: '2.0'
       states: &always_available
         available: any
-
+      description: This is upgrade!
     - name: upgrade_via_action_simple
       versions: *correct_versions
       states: *always_available

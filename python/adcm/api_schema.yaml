@@ -3799,6 +3799,8 @@ components:
         startImpossibleReason:
           type: string
           readOnly: true
+        description:
+          type: string
       required:
       - bundle
       - id
@@ -3859,6 +3861,8 @@ components:
         startImpossibleReason:
           type: string
           readOnly: true
+        description:
+          type: string
       required:
       - id
       - name
@@ -3869,6 +3873,7 @@ components:
       - disclaimer
       - bundle
       - startImpossibleReason
+      - description
     UpgradeRun:
       type: object
       properties:

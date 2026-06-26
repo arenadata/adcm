@@ -11,8 +11,18 @@ import CustomDialogControlsV2 from '@commonComponents/Dialog/CustomDialogControl
 import s from './UpgradeClusterDialog.module.scss';
 
 const UpgradeClusterDialog = () => {
-  const { cluster, isValid, upgradeDetails, formData, handleChangeFormData, onSubmit, onNext, onClose, currentStep } =
-    useUpgradeClusterDialog();
+  const {
+    cluster,
+    isValid,
+    upgradeDetails,
+    formData,
+    startImpossibleReason,
+    handleChangeFormData,
+    onSubmit,
+    onNext,
+    onClose,
+    currentStep,
+  } = useUpgradeClusterDialog();
 
   if (!cluster) return null;
 
@@ -24,6 +34,7 @@ const UpgradeClusterDialog = () => {
         actionDetails={upgradeDetails}
         onCancel={onClose}
         onSubmit={onSubmit}
+        isConcernStepShown={false}
       />
     );
   }
@@ -70,9 +81,12 @@ const UpgradeClusterDialog = () => {
       {currentStep === UpgradeStepKey.ServicesLicenses && (
         <ServicesLicensesStep formData={formData} onChange={handleChangeFormData} />
       )}
-      {upgradeDetails?.startImpossibleReason && (
-        <WarningMessage className={s.upgradeClusterDialog__errorMessage}>
-          {upgradeDetails.startImpossibleReason}
+      {startImpossibleReason && (
+        <WarningMessage className={s.upgradeClusterDialog__errorMessage}>{startImpossibleReason}</WarningMessage>
+      )}
+      {!startImpossibleReason && upgradeDetails?.description && (
+        <WarningMessage className={s.upgradeClusterDialog__infoMessage} innerMaxHeight={200}>
+          <div className={s.upgradeClusterDialog__infoMessageContent}>{upgradeDetails.description}</div>
         </WarningMessage>
       )}
     </DialogV2>

@@ -23,6 +23,7 @@ export const useUpgradeClusterDialog = () => {
 
   const cluster = useStore(({ adcm }) => adcm.clusterUpgrades.dialog.cluster);
   const upgradesDetails = useStore(({ adcm }) => adcm.clusterUpgrades.relatedData.upgradesDetails);
+  const upgradesList = useStore(({ adcm }) => adcm.clusterUpgrades.relatedData.upgradesList);
 
   const [currentStep, setCurrentStep] = useState(UpgradeStepKey.SelectUpgrade);
 
@@ -44,6 +45,14 @@ export const useUpgradeClusterDialog = () => {
   // upgradesDetails load from backend to cache-object (upgradeId => upgradesDetail)
   // upgradesDetail load only one time (while upgrade dialog is open)
   const upgradeDetails = (formData.upgradeId && upgradesDetails[formData.upgradeId]) || null;
+
+  const startImpossibleReason = useMemo(() => {
+    const reasons = upgradesList.map(({ startImpossibleReason }) => startImpossibleReason);
+    const uniqueReasons = new Set(reasons);
+    const [reason] = uniqueReasons;
+
+    return uniqueReasons.size === 1 && reason !== null ? reason : upgradeDetails?.startImpossibleReason;
+  }, [upgradeDetails?.startImpossibleReason, upgradesList]);
 
   // load upgradesDetail after select upgrade
   useEffect(() => {
@@ -138,6 +147,7 @@ export const useUpgradeClusterDialog = () => {
     isValid,
     cluster,
     formData,
+    startImpossibleReason,
     handleChangeFormData,
     upgradeDetails,
     onClose: handleClose,
