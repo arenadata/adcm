@@ -10,27 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import adcm
-from core import upgrade
-from core import cluster, metrics, provider
-from core import logs
+from collections.abc import Iterable
+from typing import Generator, Protocol
 
-__all__ = [
-    "action",
-    "adcm",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "mapping",
-    "metrics",
-    "provider",
-    "upgrade",
-    "logs",
-]
+from core.metrics._types import ClusterMetrics
+from core.types import ClusterID
+
+
+class ClusterMetricsRepoI(Protocol):
+    def get_latest(self, cluster_id: ClusterID) -> ClusterMetrics:
+        ...
+
+    def get_latest_many(self, cluster_ids: Iterable[ClusterID]) -> Generator[ClusterMetrics, None, None]:
+        ...

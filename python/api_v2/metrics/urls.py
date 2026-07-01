@@ -10,27 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# order is important
-from core import config  # noqa
-from core import mapping
-from core.legacy import bundle_alt  # noqa
-from core import bundle  # noqa
-from core import action  # noqa
-from core import adcm
-from core import upgrade
-from core import cluster, metrics, provider
-from core import logs
+from rest_framework.routers import SimpleRouter
 
-__all__ = [
-    "action",
-    "adcm",
-    "bundle",
-    "bundle_alt",
-    "cluster",
-    "config",
-    "mapping",
-    "metrics",
-    "provider",
-    "upgrade",
-    "logs",
-]
+from api_v2.metrics.views import ClusterMetricsViewSet
+
+router = SimpleRouter()
+router.register(prefix="", viewset=ClusterMetricsViewSet, basename="cluster-metrics")
+
+urlpatterns = router.urls

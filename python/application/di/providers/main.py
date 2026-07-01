@@ -23,6 +23,7 @@ from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobClaimer, JobRepo
 from cm.impl.logs.repo import LogsRepo
+from cm.impl.metrics.repo import ClusterMetricsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
@@ -239,6 +240,13 @@ class LogsServiceProvider(Provider):
 
     repo = provide(LogsRepo, provides=core.logs.LogsRepoI)
     service = provide(core.logs.LogsService)
+
+
+class MetricsProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ClusterMetricsRepo, provides=core.metrics.ClusterMetricsRepoI)
+    retrieve_cluster_metrics = provide(core.metrics.RetrieveClusterMetrics)
 
 
 class UseCaseProvider(Provider):

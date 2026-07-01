@@ -67,7 +67,20 @@ class HostOSFacts(TypedDict):
 
 
 class HostFacts(TypedDict):
+    """
+    Hardware and OS facts collected for a host.
+
+    cpu_vcores: Number of virtual CPU cores
+    disk_size: Size of the primary block device in bytes
+    os: Operating system facts
+    ram: RAM in MiB as reported by Ansible facts
+    ram_bytes: RAM in bytes
+    devices: Block devices
+    """
+
     cpu_vcores: int
+    disk_size: int
     os: HostOSFacts
-    ram: int
+    ram: int | str
+    ram_bytes: int
     devices: list[HostDeviceFacts]
