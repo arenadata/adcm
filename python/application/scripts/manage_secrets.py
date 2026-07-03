@@ -24,7 +24,7 @@ from application.startup.secrets import (
     load_secrets,
     migrate_secrets_on_fs_if_required,
 )
-from application.types import MigrationMode
+from application.types import ADCMMaintenanceMode
 from core.result import Fail, Success
 from core.secrets import SecretsBackend
 from core.settings import Directories
@@ -81,14 +81,14 @@ def main(args: argparse.Namespace):
             result = check_all_secrets_are_avialable(backend=backend)
 
         case "init":
-            migration_mode = container.get(MigrationMode)
+            adcm_maintenance_mode = container.get(ADCMMaintenanceMode)
             directories = container.get(Directories)
             target_backend = container.get(SecretsBackend)
             result = initialize_secrets(
                 old_file=directories.secrets / SECRETS_FILENAME_DEPRECATED,
                 new_file=directories.secrets / SECRETS_FILENAME,
                 target_backend=target_backend,
-                migration_mode=migration_mode,
+                adcm_maintenance_mode=adcm_maintenance_mode,
                 overwrite_if_exist=args.force,
             )
 
@@ -106,14 +106,14 @@ def main(args: argparse.Namespace):
                 directories = container.get(Directories)
                 source_file = directories.secrets / SECRETS_FILENAME
 
-            migration_mode = container.get(MigrationMode)
+            adcm_maintenance_mode = container.get(ADCMMaintenanceMode)
             vault_settings = container.get(ClientSettings)
 
             result = load_secrets(
                 source_file=source_file,
                 vault_settings=vault_settings,
                 overwrite_if_exist=args.force,
-                migration_mode=migration_mode,
+                adcm_maintenance_mode=adcm_maintenance_mode,
             )
 
         case unknown_command:

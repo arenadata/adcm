@@ -13,9 +13,7 @@
 
 . /etc/adcmenv
 
-waitforinit
+waitforwsgi
 
-if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
-    echo "Run status server ... "
-    exec "${adcmroot}/go/bin/runstatus" -logfile "${adcmlog}/status.log" > "${adcmlog}/status.out" 2>&1
-fi
+echo "Run status server ... "
+exec "${adcmroot}/go/bin/runstatus" -logfile "${adcmlog}/status.log" > "${adcmlog}/status.out" 2>&1

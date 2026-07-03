@@ -4,8 +4,7 @@
 
 waitforwsgi
 
-if { [ -z "$FEATURE_JOB_SCHEDULER" ] || [ "$FEATURE_JOB_SCHEDULER" != "old" ] ; } && { [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; }
-then
+if [ -z "$FEATURE_JOB_SCHEDULER" ] || [ "$FEATURE_JOB_SCHEDULER" != "old" ]; then
     echo "Run scheduler ... "
     exec "${adcmroot}/python/jobs/scheduler/run.py"
 fi

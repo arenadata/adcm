@@ -1,0 +1,9 @@
+
+server {
+    listen      8443 ssl;
+
+    ssl_certificate         /adcm/data/conf/ssl/cert.pem;
+    ssl_certificate_key     /adcm/data/conf/ssl/key.pem;
+
+    include "http.d/proxy.inc";
+}

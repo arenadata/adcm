@@ -19,15 +19,14 @@ adcmvar="${adcmroot}/data/var"
 adcmtmp="${adcmroot}/data/tmp"
 adcmuserconf="${adcmroot}/data/conf"
 adcmsecretfile="${adcmuserconf}/secret_key.txt"
-initreadyfile="/run/init.done"
 wsgisocketfile="/run/adcm.sock"
-
-waitforinit() {
-  while [ ! -f "${initreadyfile}" ]; do
-        echo "Waiting for init"
-        sleep 1
-  done;
-}
+coderoot="${adcmroot}/python"
+scripts="${coderoot}/application/scripts"
+django_manage_script="${coderoot}/manage.py"
+var_log_dir="/var/log"
+ssl_keys_dir="${adcmuserconf}/ssl"
+ssl_config_dir="/etc/nginx/http.d"
+ssl_config_filename="ssl.conf"
 
 waitforwsgi() {
   while [ ! -S "${wsgisocketfile}" ]; do
@@ -37,12 +36,22 @@ waitforwsgi() {
 }
 
 cleanupwaitstatus() {
-  rm -f "${initreadyfile}"
   rm -f "${wsgisocketfile}"
 }
 
+is_in_maintenance_mode() {
+  MM_LOWERCASE=$(echo "$MAINTENANCE_MODE" | tr '[:upper:]' '[:lower:]')
+
+  case "$MM_LOWERCASE" in
+    "1" | "true" | "yes")
+      echo 1;;
+    *)
+      echo 0;;
+  esac
+}
+
 ensure_directory_structure() {
-  echo "Ensuring required directories exist"
+  echo "Creating directories..."
 
   mkdir -p "${adcmlog}"
   mkdir -p "${adcmrun}"
@@ -55,9 +64,18 @@ ensure_directory_structure() {
   chmod 777 "${adcmtmp}"
   chmod a+t "${adcmtmp}"
   mkdir -p "${adcmuserconf}"
+  mkdir -p "${adcmlog}/nginx"
+  mkdir -p "${adcmuserconf}/ssl"
+
+  [ -d "${var_log_dir}/nginx" ] && rm -r "${var_log_dir}/nginx"
+  [ ! -L  "${var_log_dir}/nginx" ] && ln -s "${adcmlog}/nginx" "${var_log_dir}/"
+
+  echo "Directories: OK"
 }
 
 ensure_mandatory_db_settings_provided() {
+  echo "Checking env variables..."
+
   mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
   missing_vars=""
 
@@ -77,4 +95,74 @@ ensure_mandatory_db_settings_provided() {
     done
     exit 1
   fi
+
+  echo "Env variables: OK"
+}
+
+check_compatibility() {
+  echo "Checking compatibility..."
+
+  "${django_manage_script}" compatibility_check &&
+  echo "Compatibility check: OK" ||
+  exit $?
+}
+
+init_or_migrate_secrets() {
+  echo "Preparing secrets..."
+
+  "${scripts}"/manage_secrets.py migrate &&
+  "${scripts}"/manage_secrets.py init &&
+  echo "Secrets: OK" ||
+  exit $?
+}
+
+migrate_secrets() {
+  echo "Preparing secrets..."
+
+  "${scripts}"/manage_secrets.py migrate &&
+  echo "Secrets: OK" ||
+  exit $?
+}
+
+migrate_db() {
+  echo "Migrating DB..."
+
+  "${adcmroot}"/python/manage.py migrate &&
+  echo "DB migration: OK" ||
+  exit $?
+}
+
+post_migrate_db() {
+  echo "Initializing DB..."
+
+  "${adcmroot}"/python/init_db.py &&
+  echo "DB initialization: OK" ||
+  exit $?
+}
+
+upgrade_roles() {
+  echo "Upgrading roles..."
+
+  "${adcmroot}"/python/manage.py upgraderole &&
+  echo "Roles upgrade: OK" ||
+  exit $?
+}
+
+make_nginx_default_config() {
+  echo "Configuring nginx..."
+
+  TARGET_CONFIG="${ssl_config_dir}/${ssl_config_filename}"
+  DISABLED_TARGET_CONFIG="${TARGET_CONFIG}.disabled"
+
+  [ -f "${TARGET_CONFIG}" ] && rm "${TARGET_CONFIG}"
+
+  if [ -f "${ssl_keys_dir}/cert.pem" ] || [ -f "${ssl_keys_dir}/key.pem" ]; then
+    cp $DISABLED_TARGET_CONFIG $TARGET_CONFIG && chmod 664 $TARGET_CONFIG || exit $?
+  fi
+
+  echo "Nginx configuration: OK"
+}
+
+wait_forever() {
+  while (true); do wait; done;
 }

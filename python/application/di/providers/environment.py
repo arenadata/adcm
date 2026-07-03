@@ -30,7 +30,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import pydantic
 
 from application.constants import SECRETS_FILENAME
-from application.types import MigrationMode, SecretsSource
+from application.types import ADCMMaintenanceMode, SecretsSource
 
 
 # don't know where to put it yet, so keeping close to usage point
@@ -58,15 +58,15 @@ class EnvironmentProvider(Provider):
     scope = Scope.APP
 
     @provide
-    def migration_mode(self) -> MigrationMode:
-        env_var_value = os.environ.get("MIGRATION_MODE", "0")
-        match env_var_value:
-            case "0":
-                return MigrationMode.DISABLED
-            case "1":
-                return MigrationMode.ENABLED
+    def adcm_maintenance_mode(self) -> ADCMMaintenanceMode:
+        env_var_value = os.environ.get("MAINTENANCE_MODE", "0")
+        match env_var_value.lower():
+            case "0" | "false" | "no":
+                return ADCMMaintenanceMode.DISABLED
+            case "1" | "true" | "yes":
+                return ADCMMaintenanceMode.ENABLED
             case _:
-                message = f'Unknown value of migration mode: "{env_var_value}"'
+                message = f'Unknown value of maintenance mode: "{env_var_value}"'
                 raise RuntimeError(message)
 
     @provide
