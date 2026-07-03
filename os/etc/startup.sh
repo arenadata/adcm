@@ -12,39 +12,45 @@
 # limitations under the License.
 
 # load common functions and variables
-
 . /etc/adcmenv
 
-# convenient aliases
-
-coderoot="${adcmroot}/python"
-scripts="${coderoot}/application/scripts"
-django_command="${coderoot}/manage.py"
-
-#  check & prepare environment
+IS_IN_MM=$(is_in_maintenance_mode)
 
 cleanupwaitstatus
-ensure_mandatory_db_settings_provided
+echo "ADCM initialization ..."
+
 ensure_directory_structure
 
-"${scripts}"/manage_secrets.py migrate || exit $?
+if [ "$IS_IN_MM" -ne 1 ]; then
+  make_nginx_default_config &&
+  ensure_mandatory_db_settings_provided &&
+  init_or_migrate_secrets &&
+  check_compatibility &&
+  migrate_db &&
+  post_migrate_db &&
+  upgrade_roles ||
+  exit $?
 
-if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
-    "${scripts}"/manage_secrets.py init || exit $?
-fi
-
-"${django_command}" compatibility_check || exit $?
-
-# initialize services
-
-sv_stop() {
+  sv_stop() {
     for s in nginx wsgi status; do
         /usr/sbin/sv stop /etc/sv/$s
     done
-}
+  }
 
-trap "sv_stop; exit" TERM
-trap "" CHLD
+  trap "sv_stop; exit" TERM
+  trap "" CHLD
 
-runsvdir -P /etc/sv &
-while (true); do wait; done;
+  runsvdir -P /etc/sv &
+
+  echo "ADCM launched."
+  wait_forever
+
+else
+  ensure_mandatory_db_settings_provided &&
+  migrate_secrets ||
+  exit $?
+
+  echo "ADCM [MAINTENANCE_MODE] launched."
+  wait_forever
+
+fi

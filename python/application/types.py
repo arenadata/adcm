@@ -13,7 +13,7 @@
 from enum import Enum, auto
 
 
-class MigrationMode(Enum):
+class ADCMMaintenanceMode(Enum):
     ENABLED = auto()
     DISABLED = auto()
 

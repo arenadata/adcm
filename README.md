@@ -117,12 +117,12 @@ _PostgreSQL must be version 13 or newer - JSONB field used_
    docker stop adcm
    docker rm adcm
    ```
-3. Start container in `MIGRATION_MODE`:
+3. Start container in `MAINTENANCE_MODE`:
    ```shell
    docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data 
    -e DB_HOST="DATABASE_HOSTNAME_OR_IP_ADDRESS" -e DB_PORT="DATABASE_TCP_PORT" 
    -e DB_USER="DATABASE_USERNAME" -e DB_NAME="DATABASE_NAME" 
-   -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=1
+   -e DB_PASS="DATABASE_USER_PASSWORD" -e MAINTENANCE_MODE=1
    --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
    Use `-v /opt/adcm:/adcm/data:Z` for SELinux
@@ -141,7 +141,7 @@ _PostgreSQL must be version 13 or newer - JSONB field used_
    docker run -d --restart=always -p 8000:8000 -v /opt/adcm:/adcm/data 
    -e DB_HOST="DATABASE_HOSTNAME_OR_IP_ADDRESS" -e DB_PORT="DATABASE_TCP_PORT" 
    -e DB_USER="DATABASE_USERNAME" -e DB_NAME="DATABASE_NAME" 
-   -e DB_PASS="DATABASE_USER_PASSWORD" -e MIGRATION_MODE=0
+   -e DB_PASS="DATABASE_USER_PASSWORD" -e MAINTENANCE_MODE=0
    --name adcm hub.arenadata.io/adcm/adcm:latest
    ```
 
