@@ -56,6 +56,7 @@ class ClusterSerializer(WithStatusSerializer):
         model = Cluster
         fields = [
             "id",
+            "uuid",
             "name",
             "description",
             "state",

@@ -199,6 +199,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           $ref: '#/components/schemas/NameEnum'
         state:
@@ -221,6 +225,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - state
       - multiState
@@ -552,6 +557,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           maxLength: 1000
@@ -586,6 +595,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - state
@@ -683,6 +693,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           readOnly: true
@@ -737,6 +751,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - displayName
       - status
@@ -1109,6 +1124,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           description: fully qualified domain name
@@ -1152,6 +1171,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - state
@@ -3200,6 +3220,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           readOnly: true
@@ -3248,6 +3272,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - displayName

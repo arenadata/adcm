@@ -41,6 +41,7 @@ class ComponentSerializer(WithStatusSerializer):
         model = Component
         fields = [
             "id",
+            "uuid",
             "name",
             "display_name",
             "status",

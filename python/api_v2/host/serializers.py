@@ -95,6 +95,7 @@ class HostSerializer(WithStatusSerializer):
         model = Host
         fields = [
             "id",
+            "uuid",
             "name",
             "description",
             "state",
