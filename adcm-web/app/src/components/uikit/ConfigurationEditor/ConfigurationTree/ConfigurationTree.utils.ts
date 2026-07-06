@@ -27,6 +27,7 @@ import {
   type JsonSchemaEngineId,
 } from '@utils/jsonSchema/JsonSchemaValidationService';
 import { discriminatorFieldName, primitiveFieldTypes, rootNodeKey, rootNodeTitle } from './ConfigurationTree.constants';
+import { isObject } from '@utils/objectUtils';
 
 const getIndex = (nodeArr?: ConfigurationNode[]) => (nodeArr && nodeArr.length > 0 ? nodeArr.at(-1)!.index + 1 : 0);
 
@@ -998,7 +999,7 @@ export const determineSelectableFieldSchema = (
   fieldSchema: SchemaDefinition,
   value: JSONValue,
 ): SchemaDefinition | null => {
-  if (value === null || fieldSchema.oneOf === undefined) {
+  if (!isObject(value) || fieldSchema.oneOf === undefined) {
     return null;
   }
 
