@@ -34,6 +34,7 @@ import configurationValidationData from './__fixtures__/configurationValidationD
 import {
   buildConfigurationNodes,
   buildConfigurationTree,
+  determineSelectableFieldSchema,
   getDefaultValue,
   getErrorsForTreeRow,
   getOneOfSchemaDefaults,
@@ -722,6 +723,58 @@ describe('selection groups', () => {
 
     expect(groupNode.data.isReadonly).toBe(true);
     expect(stringNode.data.isReadonly).toBe(true);
+  });
+
+  test('does not throw when selectable object value is undefined', () => {
+    const tree = buildConfigurationNodes(selectableObjectSchema, {}, {});
+    const selectionGroupNode = tree.children?.[0]!;
+
+    expect(selectionGroupNode.data.type).toBe('selectableObject');
+    expect(
+      (
+        selectionGroupNode.data as {
+          selectedFieldSchema: SchemaDefinition | null;
+        }
+      ).selectedFieldSchema,
+    ).toBeNull();
+  });
+
+  test('does not throw when selectable object value is null', () => {
+    const tree = buildConfigurationNodes(selectableObjectSchema, { selectable_no_default_required: null }, {});
+    const selectionGroupNode = tree.children?.[0]!;
+
+    expect(selectionGroupNode.data.type).toBe('selectableObject');
+    expect(
+      (
+        selectionGroupNode.data as {
+          selectedFieldSchema: SchemaDefinition | null;
+        }
+      ).selectedFieldSchema,
+    ).toBeNull();
+  });
+});
+
+describe('determineSelectableFieldSchema', () => {
+  const selectableFieldSchema = selectableObjectSchema.properties!.selectable_no_default_required as SchemaDefinition;
+
+  test('returns null for null, undefined, and non-object values', () => {
+    expect(determineSelectableFieldSchema(selectableFieldSchema, null)).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, undefined)).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, 'string')).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, [])).toBeNull();
+  });
+
+  test('returns matching oneOf branch by discriminator value', () => {
+    const value: JSONObject = { _selection: 'a', a: { plain: 2 } };
+    const result = determineSelectableFieldSchema(selectableFieldSchema, value);
+
+    expect(result?.properties?.a).toBeDefined();
+    expect(result?.properties?.b).toBeUndefined();
+  });
+
+  test('returns null when discriminator value does not match any branch', () => {
+    const value: JSONObject = { _selection: 'unknown' };
+    expect(determineSelectableFieldSchema(selectableFieldSchema, value)).toBeNull();
   });
 });
 
