@@ -233,7 +233,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         )
 
     def test_provider_create_fail(self):
-        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=Cluster) / "config-groups").post(
+        response = (self.client.v2 / "hostproviders" / self.get_non_existent_pk(model=Provider) / "config-groups").post(
             data={"name": "group-config-new", "description": "group-config-new"},
         )
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
