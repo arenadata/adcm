@@ -12,7 +12,7 @@
 
 from unittest import TestCase
 
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from core.action._context.groups import (
     GroupOverrides,
@@ -32,21 +32,22 @@ def _component(component_id: int, name: str) -> ComponentTopology:
     return ComponentTopology(info=ShortObjectInfo(id=component_id, name=name), hosts={})
 
 
-class TestHostGroupHostsDistribution(TestCase):
-    @parameterized.expand(
-        (
-            ("empty", {}, {}),
-            ("best-case", {1: [1, 2], 2: [2, 1], 3: [4, 3]}, {(1, 2): {1, 2}, (3,): {3, 4}}),
-            ("worst-case", {1: [1, 2, 3], 2: [2], 3: [3]}, {(1,): {1}, (1, 2): {2}, (1, 3): {3}}),
+class TestHostGroupHostsDistribution(ParametrizedTestCase, TestCase):
+    @parametrize(
+        ("data", "expected"),
+        [
+            ({}, {}),
+            ({1: [1, 2], 2: [2, 1], 3: [4, 3]}, {(1, 2): {1, 2}, (3,): {3, 4}}),
+            ({1: [1, 2, 3], 2: [2], 3: [3]}, {(1,): {1}, (1, 2): {2}, (1, 3): {3}}),
             (
-                "srs",
                 {1: [1, 2, 3], 2: [4, 5], 3: [1, 2, 5, 6]},
                 {(1, 3): {1, 2}, (1,): {3}, (2,): {4}, (2, 3): {5}, (3,): {6}},
             ),
-            ("leftover", {3: [1, 4, 3], 1: [1, 2], 2: [1, 2]}, {(1, 2, 3): {1}, (1, 2): {2}, (3,): {3, 4}}),
-        )
+            ({3: [1, 4, 3], 1: [1, 2], 2: [1, 2]}, {(1, 2, 3): {1}, (1, 2): {2}, (3,): {3, 4}}),
+        ],
+        ids=["empty", "best_case", "worst_case", "srs", "leftover"],
     )
-    def test_by_common_host_groups(self, _, data: dict, expected: dict):
+    def test_by_common_host_groups(self, data: dict, expected: dict):
         result = group_hosts_by_common_host_groups(data)
 
         self.assertDictEqual(result, expected)

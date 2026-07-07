@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from operator import attrgetter, itemgetter
-from typing import Iterable, NamedTuple, TypeAlias
+from typing import NamedTuple, TypeAlias
 
 from cm.converters import orm_object_to_core_type
 from cm.models import Cluster, Component, ConfigHostGroup, ConfigLog, Host, Provider, Service

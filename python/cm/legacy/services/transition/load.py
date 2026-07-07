@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import deque
-from typing import Callable, Iterable, Literal, TypeAlias
+from collections.abc import Callable, Iterable
+from typing import Literal, TypeAlias
 
 from api_v2.host.utils import create_host
 from application.di.containers import get_main_providers

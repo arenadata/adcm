@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Collection
 from functools import wraps
-from typing import Callable, Collection
 
 from cm.converters import core_type_to_model, host_group_type_to_model
 from cm.errors import AdcmEx

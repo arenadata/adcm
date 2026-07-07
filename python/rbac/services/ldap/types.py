@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Mapping, Pattern, TypeAlias
+from collections.abc import Mapping
+from re import Pattern
+from typing import TypeAlias
 import re
 
 from pydantic import BaseModel, ConfigDict, Field

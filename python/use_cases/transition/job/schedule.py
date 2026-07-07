@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, NamedTuple, Protocol, TypeAlias, cast
+from typing import Any, NamedTuple, Protocol, TypeAlias, cast
 
 from cm.converters import (
     orm_object_to_action_target_descriptor,
@@ -123,7 +124,7 @@ class _ActionLaunchObjects:
         self.target = target
         self.object_to_lock = self.target  # pyright: ignore [reportAttributeAccessIssue]
 
-        if isinstance(target, (Cluster, Service, Component)):
+        if isinstance(target, Cluster | Service | Component):
             self.owner = target
             self.cluster = target if isinstance(target, Cluster) else target.cluster
         elif action.host_action and isinstance(target, Host):
@@ -262,7 +263,7 @@ class _ScheduleTask(ABC):
                     topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
 
                     # it's actually an incorrect possibility for target, should be resolved earlier
-                    if isinstance(action_objects.target, (ADCM, Provider)):
+                    if isinstance(action_objects.target, ADCM | Provider):
                         message = f"Can't render scripts for target of type {type(action_objects.target)}"
                         raise TypeError(message)
 

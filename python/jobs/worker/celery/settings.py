@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
 from json import JSONDecodeError
-from typing import Generator
 import os
 import json
 

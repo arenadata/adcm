@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal, Mapping, TypedDict
+from typing import Literal, TypedDict
 
 from core import config
 from core.action import wizard

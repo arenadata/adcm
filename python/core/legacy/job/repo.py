@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Collection, ContextManager, Iterable, Protocol
+from collections.abc import Collection, Iterable
+from contextlib import AbstractContextManager
+from typing import Any, Protocol
 
 from core.legacy.job.dto import JobUpdateDTO, LogCreateDTO, TaskMutableFieldsDTO, TaskPayloadDTO, TaskUpdateDTO
 from core.legacy.job.types import ActionInfo, AssociatedProcess, CallingProcess, Job, JobSpec, Task
@@ -76,7 +78,7 @@ class JobRepoInterface(Protocol):
         ...
 
     @classmethod
-    def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
+    def retrieve_and_lock_first_created_task(cls) -> AbstractContextManager[TaskID | None]:
         ...
 
 

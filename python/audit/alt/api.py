@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from abc import ABC
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Callable, Iterable, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from rest_framework.response import Response
 from typing_extensions import Self

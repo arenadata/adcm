@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Any, Collection, Literal
+from collections.abc import Collection
+from typing import Any, Literal
 
 from cm.legacy.api import get_hc
 from cm.legacy.services.mapping import change_host_component_mapping

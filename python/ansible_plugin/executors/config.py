@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Collection, TypeAlias, TypedDict
+from collections.abc import Collection
+from typing import Any, TypeAlias, TypedDict
 import re
 
 from cm.converters import core_type_to_model

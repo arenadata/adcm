@@ -18,7 +18,6 @@ from operator import itemgetter
 from cm.converters import model_to_core_type, orm_object_to_core_type
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.models import Action, ActionHostGroup, Cluster, Component, ConcernItem, Host, Service, TaskLog
-from parameterized import parameterized
 from rbac.models import Role
 from rbac.services.group import create
 from rbac.services.policy import policy_create
@@ -32,6 +31,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
 
 ACTION_HOST_GROUPS = "action-host-groups"
 
@@ -146,28 +146,31 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
             self.assertEqual(response.json()["code"], "CREATE_CONFLICT")
             self.assertEqual(ActionHostGroup.objects.filter(name=name).count(), 1)
 
-    @parameterized.expand(
-        (f"{owner}_{data_name}", owner, payload, expected)
-        for owner in ("cluster", "service", "component")
-        for data_name, payload, expected in (
-            ("name_only", {"name": "changed"}, {"name": "changed", "description": ""}),
-            ("description_only", {"description": "changed"}, {"name": "init", "description": "changed"}),
-            (
-                "name_and_description_new",
-                {"name": "changed", "description": "desc"},
-                {"name": "changed", "description": "desc"},
-            ),
-            ("name_and_description_same", {"name": "init", "description": ""}, {"name": "init", "description": ""}),
-            ("nothing", {}, {"name": "init", "description": ""}),
-        )
+    @parametrize(
+        ("owner_var_name", "payload", "expected"),
+        [
+            param(owner, payload, expected, id=f"{owner}_{data_name}")
+            for owner in ("cluster", "service", "component")
+            for data_name, payload, expected in (
+                ("name_only", {"name": "changed"}, {"name": "changed", "description": ""}),
+                ("description_only", {"description": "changed"}, {"name": "init", "description": "changed"}),
+                (
+                    "name_and_description_new",
+                    {"name": "changed", "description": "desc"},
+                    {"name": "changed", "description": "desc"},
+                ),
+                ("name_and_description_same", {"name": "init", "description": ""}, {"name": "init", "description": ""}),
+                ("nothing", {}, {"name": "init", "description": ""}),
+            )
+        ],
     )
-    def test_update_success(self, _, owner_var_name: str, payload: dict, expected: dict) -> None:
+    def test_update_success(self, owner_var_name: str, payload: dict, expected: dict) -> None:
         group = getattr(self, f"{owner_var_name}_ahg_1")
 
         response = self.client.v2[group].patch(data=payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertDictContainsSubset(expected, response.json())
+        self.assertTrue(all(item in response.json().items() for item in expected.items()))
         self.assert_fields_in_ahg(group.pk, expected)
         self.check_last_audit_record(
             operation_name=f"{group.name} action host group updated",
@@ -176,7 +179,7 @@ class TestActionHostGroup(ADCMDjangoAPISuite):
             **self.prepare_audit_object_arguments(expected_object=group.object),
         )
 
-    @parameterized.expand(owner for owner in ("cluster", "service", "component"))
+    @parametrize("owner_var_name", ["cluster", "service", "component"])
     def test_update_to_taken_name_fail(self, owner_var_name: str) -> None:
         payload = {"name": "second"}
         expected = {"name": "init", "description": ""}

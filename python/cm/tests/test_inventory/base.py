@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable, Mapping
 from functools import reduce
 from pathlib import Path
-from typing import Any, Iterable, Literal, Mapping, TypeAlias
+from typing import Any, Literal, TypeAlias
 import json
 
 from core.cluster import ClusterService

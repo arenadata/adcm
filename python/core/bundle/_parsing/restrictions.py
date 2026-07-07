@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, Iterable
+from collections.abc import Collection, Iterable
 
 from adcm_version import compare_adcm_versions
 

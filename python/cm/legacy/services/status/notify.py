@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from functools import wraps
-from typing import Iterable
 
 from core.cluster import ClusterService
 from core.types import HostID, MaintenanceModeState

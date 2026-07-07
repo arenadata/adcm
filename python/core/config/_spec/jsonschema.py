@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from collections.abc import Callable, Generator
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Literal, TypeAlias, TypedDict, Union
+from typing import Any, Literal, TypeAlias, TypedDict, Union
 import json
 
 from typing_extensions import NotRequired, Self

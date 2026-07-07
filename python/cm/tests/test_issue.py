@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from operator import attrgetter
-from typing import Iterable
 from unittest.mock import patch
 
 from rbac.scenarios import RBACScenarios

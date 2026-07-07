@@ -68,7 +68,7 @@ class TarFileWithJSONFileStorage(Storage[JSONFile]):
         if not self:
             raise StorageError("No JSON files to gather")
 
-        today_date = datetime.datetime.now(tz=datetime.timezone.utc).strftime(self.date_format)
+        today_date = datetime.datetime.now(tz=datetime.UTC).strftime(self.date_format)
         archive_name = self.tmp_dir / f"{today_date}_statistics.tar.gz"
         archive_path = Path(archive_name)
 

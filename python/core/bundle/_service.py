@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Collection
 
 from core import action, config, mapping
 from core.bundle import parsing

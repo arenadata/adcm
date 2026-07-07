@@ -12,9 +12,10 @@
 
 # Topology
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterator, TypeAlias
+from typing import TypeAlias
 
 from core.types import (
     ClusterID,

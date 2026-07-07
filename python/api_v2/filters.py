@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection, Generator
 from itertools import chain
-from typing import Collection, Generator
 
 from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ADCMEntityStatus, Cluster, Component, Host, Service

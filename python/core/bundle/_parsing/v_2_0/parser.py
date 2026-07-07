@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import Final, Iterable, Literal
+from typing import Final, Literal
 
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._parsing.shared.conversion import convert_object

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from enum import Enum
-from typing import Collection
 
 from cm.legacy.services.concern.flags import (
     BuiltInFlag,

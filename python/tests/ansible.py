@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, NamedTuple, TypeVar
+from collections.abc import Collection
+from typing import NamedTuple, TypeVar
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,

@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from collections import deque
+from collections.abc import Iterable
 from functools import partial
-from typing import Iterable
 
 from core.legacy.bundle.types import (
     ComponentRestrictionOwner,

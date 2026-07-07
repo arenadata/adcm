@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Protocol
+from collections.abc import Iterable
+from typing import Protocol
 
 from core.legacy.job.dto import LogCreateDTO, TaskCreateDTO, TaskUpdateMainFieldsDTO
 from core.legacy.job.types import Job, JobSpec

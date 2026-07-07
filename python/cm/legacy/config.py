@@ -27,7 +27,7 @@ from cm.models import (
 #
 # signature refers to original `init_object_config`
 def init_object_config(proto: Prototype, obj: MainObject) -> ObjectConfig | None:  # noqa: ARG001
-    if not isinstance(obj, (ADCM, MainObject)):
+    if not isinstance(obj, ADCM | MainObject):
         raise TypeError(f"Unexpected type {type(obj)}")
 
     service = get_config_service()

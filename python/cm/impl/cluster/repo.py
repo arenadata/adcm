@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Collection, Generator, Iterable, cast
+from collections.abc import Collection, Generator, Iterable
+from typing import cast
 
 from core import cluster
 from core.types import (

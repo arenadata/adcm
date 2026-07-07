@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Iterable
 from unittest.mock import patch
 from uuid import uuid4
 import os

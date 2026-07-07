@@ -287,7 +287,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BaseTestCase):
 
         for host_component in new_hc_items:
             hc_values = HostComponent.objects.filter(**host_component).values_list(*hc_fields).first()
-            hc_request_data.append(dict(zip(hc_fields, hc_values)))
+            hc_request_data.append(dict(zip(hc_fields, hc_values, strict=False)))
 
         return hc_request_data
 

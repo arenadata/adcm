@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from itertools import chain
 from pathlib import Path
-from typing import Callable, TypeAlias
+from typing import TypeAlias
 import os
 import sys
 import argparse

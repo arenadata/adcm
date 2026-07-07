@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection, Generator, Iterable
 from copy import copy
 from dataclasses import dataclass
-from typing import Any, Collection, Generator, Iterable, Protocol
+from typing import Any, Protocol
 
 from core.legacy.cluster.rules import (
     HostCandidateDTO,

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from itertools import chain
-from typing import Iterable
 
 from drf_spectacular.generators import SchemaGenerator
 from rest_framework.request import Request

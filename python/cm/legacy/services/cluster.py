@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Collection, Generator, Iterable, Protocol
+from collections.abc import Collection, Generator, Iterable
+from typing import Protocol
 
 from core.legacy.cluster.operations import (
     HostClusterDBProtocol,
@@ -162,7 +163,7 @@ def retrieve_multiple_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Gen
 def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component | Host) -> ClusterTopology:
     if isinstance(orm_object, Cluster):
         cluster_id = orm_object.id
-    elif isinstance(orm_object, (Service, Component, Host)) and orm_object.cluster_id:
+    elif isinstance(orm_object, Service | Component | Host) and orm_object.cluster_id:
         cluster_id = orm_object.cluster_id
     else:
         message = f"Can't detect cluster variables for {orm_object}"

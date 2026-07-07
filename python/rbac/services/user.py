@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from functools import partial
 from operator import attrgetter
-from typing import Any, Iterable
+from typing import Any
 
 from cm.legacy.services.adcm import retrieve_password_requirements
 from cm.transition.status import StatusScenarios

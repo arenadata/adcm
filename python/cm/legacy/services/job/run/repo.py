@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from collections import defaultdict
-from contextlib import contextmanager, suppress
+from collections.abc import Collection, Iterable
+from contextlib import AbstractContextManager, contextmanager, suppress
 from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Collection, ContextManager, Iterable, TypeAlias
+from typing import TypeAlias
 import operator
 
 from core.errors import NotFoundError
@@ -311,7 +312,7 @@ class JobRepoImpl(JobRepoInterface):
 
     @classmethod
     @contextmanager
-    def retrieve_and_lock_first_created_task(cls) -> ContextManager[TaskID | None]:
+    def retrieve_and_lock_first_created_task(cls) -> AbstractContextManager[TaskID | None]:
         yield (
             TaskLog.objects.select_for_update(skip_locked=True)
             .filter(status=JobStatus.CREATED)
@@ -362,7 +363,7 @@ class JobRepoImpl(JobRepoInterface):
             #  but not sure we can validate it now on config.yaml load
             #  see https://tracker.yandex.ru/ADCM-5325
             ansible_tags = ""
-            if isinstance(ansible_tags, (list, tuple)):
+            if isinstance(ansible_tags, list | tuple):
                 ansible_tags = ",".join(map(str, ansible_tags))
 
         return Job(

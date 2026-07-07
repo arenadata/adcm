@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection
+from collections.abc import Collection
 from unittest.mock import patch
 
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag

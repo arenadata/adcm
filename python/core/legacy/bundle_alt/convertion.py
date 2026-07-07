@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal, cast
+from typing import Any, Literal, cast
 import re
 
 import yaml

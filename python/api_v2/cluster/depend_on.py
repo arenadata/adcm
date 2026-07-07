@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from functools import reduce
 from operator import or_
-from typing import Iterable, TypeAlias
+from typing import TypeAlias
 
 from cm.models import ObjectType, Prototype
 from core.legacy.bundle.operations import RequiresDependencies

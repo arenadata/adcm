@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Collection, Iterable, Literal, Protocol, TypeAlias
+from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap

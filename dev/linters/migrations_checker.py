@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, NamedTuple
+from typing import NamedTuple
 import os
 import ast
 import sys
@@ -69,7 +70,7 @@ def check_files(migration_files: Iterable[Path]) -> Iterable[CheckResult]:
 
 
 def check_imports(module: ast.Module) -> Iterable[tuple[ast.Import | ast.ImportFrom, tuple[str, ...]]]:
-    for import_node in filter(lambda node: isinstance(node, (ast.Import, ast.ImportFrom)), ast.walk(module)):
+    for import_node in filter(lambda node: isinstance(node, ast.Import | ast.ImportFrom), ast.walk(module)):
         if isinstance(import_node, ast.Import):
             roots = (import_.name.split(".")[0] for import_ in import_node.names)
         else:

@@ -140,7 +140,7 @@ class ADCMModel(models.Model):
         instance._state.adding = False
         instance._state.db = db
         # customization to store the original field values on the instance
-        instance._loaded_values = dict(zip(field_names, values))
+        instance._loaded_values = dict(zip(field_names, values, strict=False))
         return instance
 
     def save(self, *args, **kwargs):
@@ -952,7 +952,7 @@ class ConfigHostGroup(ADCMModel):
     def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
-        if isinstance(self.object, (Cluster, Provider)):
+        if isinstance(self.object, Cluster | Provider):
             hosts = self.object.host_set.order_by("id")
         elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()

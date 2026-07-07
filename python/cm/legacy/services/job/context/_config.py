@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import reduce
-from typing import Any, Iterable, NamedTuple
+from typing import Any, NamedTuple
 
 from core.cluster import ClusterTopology
 from core.config import ConfigDict

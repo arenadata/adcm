@@ -12,7 +12,7 @@
 
 from copy import deepcopy
 
-from parameterized import parameterized
+from unittest_parametrize import param, parametrize
 
 from core.config._operations import prepare_initial_config_of_host_group, update_config_of_host_group
 from core.config._spec.parameters import Activation, ParameterGroup, Selection, StringParameter
@@ -54,13 +54,14 @@ class TestPrepareInitialConfigOfHostGroup(ConfigTestCase):
 
 
 class TestUpdateConfigOfHostGroup(ConfigTestCase):
-    @parameterized.expand(
-        (
-            ("desynced_copies_host_value", False, "host"),
-            ("synced_keeps_main_value", True, "main"),
-        )
+    @parametrize(
+        ("is_synced", "expected_value"),
+        [
+            param(False, "host", id="desynced_copies_host_value"),
+            param(True, "main", id="synced_keeps_main_value"),
+        ],
     )
-    def test_sync_flag_behavior_for_regular_parameter(self, _: str, is_synced: bool, expected_value: str):
+    def test_sync_flag_behavior_for_regular_parameter(self, is_synced: bool, expected_value: str):
         spec = FullSpec.from_parameters(
             ParameterGroup(identifier=name_id("g")),
             StringParameter(identifier=name_id("g", "p"), is_desyncable=True),

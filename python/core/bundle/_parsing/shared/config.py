@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal, Sequence, TypeAlias, Union
+from collections.abc import Sequence
+from typing import Annotated, Any, Literal, TypeAlias, Union
 
 from pydantic import (
     AfterValidator,

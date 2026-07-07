@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import deque
+from collections.abc import Iterable
 from operator import attrgetter
-from typing import Iterable, Literal, NamedTuple, TypeAlias
+from typing import Literal, NamedTuple, TypeAlias
 
 from core.converters import named_mapping_from_topology
 from core.legacy.bundle.types import BundleRestrictions, MappingRestrictions, ServiceDependencies

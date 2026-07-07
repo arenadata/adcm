@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from tests.base import BaseTestCase
+from tests.utils import assert_dict_contains_subset
 from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
@@ -213,7 +214,7 @@ class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
             perform_operation.do(process_id=process_id, payload=payload, context=context)
 
         ctx = self.get_process_context(process_id, cluster.id)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
             {f"{stage_name}_stage": {} for stage_name in ("second", "third", "fourth")}, ctx["stages"]
         )
 
@@ -221,7 +222,7 @@ class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
         self.assertEqual(set(first_step.keys()), {"config"})
 
         actual_config = first_step["config"]
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
             {"integer_field": config["integer_field"], "string_field": config["string_field"]}, actual_config
         )
 

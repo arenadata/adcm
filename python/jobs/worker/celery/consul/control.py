@@ -33,11 +33,12 @@ On the caller (Django / scheduler) side:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import cached_property
 from time import monotonic, sleep
-from typing import Any, Iterable
+from typing import Any
 from uuid import uuid4
 
 from celery.app.control import Control, Inspect

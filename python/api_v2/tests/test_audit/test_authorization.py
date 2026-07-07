@@ -15,12 +15,12 @@ from datetime import datetime, timedelta
 from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditSessionLoginResult, AuditUser
 from cm.models import ADCM, ConfigLog
 from core.legacy.rbac.dto import UserUpdateDTO
-from parameterized import parameterized
 from rbac.models import User
 from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from tests.dependencies import SkipStatusScenarios
 from tests.suites import ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
 import pytz
 
 
@@ -292,26 +292,25 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
                     self.assertEqual(response.status_code, HTTP_200_OK)
                     self.assertEqual(response.json()["count"], partial_items_found)
 
-    @parameterized.expand(
+    @parametrize(
+        ("username", "password", "login_result"),
         [
-            ("Find a success login record", "user", "user", AuditSessionLoginResult.SUCCESS),
-            (
-                "Find a record of an attempt to login as a non-existent user",
+            param("user", "user", AuditSessionLoginResult.SUCCESS, id="find_a_success_login_record"),
+            param(
                 "nonexistent_user",
                 "nonexistent",
                 AuditSessionLoginResult.USER_NOT_FOUND,
+                id="find_a_record_of_an_attempt_to_login_as_a_non_existent_user",
             ),
-            (
-                "Find a disabled account record",
+            param(
                 "disabled_user",
                 "disabled_passw",
                 AuditSessionLoginResult.ACCOUNT_DISABLED,
+                id="find_a_disabled_account_record",
             ),
-        ]
+        ],
     )
-    def test_adcm_6048_filtering_login_users(
-        self, _, username: str, password: str, login_result: AuditSessionLoginResult
-    ):
+    def test_adcm_6048_filtering_login_users(self, username: str, password: str, login_result: AuditSessionLoginResult):
         if login_result == AuditSessionLoginResult.ACCOUNT_DISABLED:
             disabled_user = self.create_user(username=username, password=password)
             disabled_user.is_active = False

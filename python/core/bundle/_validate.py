@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path
-from typing import Callable, Collection, Final, Iterable, TypeAlias, cast
-
 from graphlib import CycleError, TopologicalSorter
+from pathlib import Path
+from typing import Final, TypeAlias, cast
+
 import jinja2
 
 from core import action, config

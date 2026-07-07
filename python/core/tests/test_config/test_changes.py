@@ -14,7 +14,7 @@ from copy import deepcopy
 from operator import attrgetter
 from unittest import TestCase
 
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from core.config._config import detect_changes
 from core.config._spec.parameters import (
@@ -32,7 +32,7 @@ from core.config._types import ChangeType as ChT
 from core.tests.test_config.utils import name_id
 
 
-class TestChangesDiff(TestCase):
+class TestChangesDiff(ParametrizedTestCase, TestCase):
     maxDiff = None
 
     @classmethod
@@ -84,7 +84,11 @@ class TestChangesDiff(TestCase):
         sorted_expected = sorted(expected, key=by_name)
         self.assertListEqual(sorted_actual, sorted_expected)
 
-    @parameterized.expand(("minimal_config", "config_with_selected_one"))
+    @parametrize(
+        "var_name",
+        ["minimal_config", "config_with_selected_one"],
+        ids=["minimal_config", "config_with_selected_one"],
+    )
     def test_no_changes(self, var_name: str):
         config = getattr(self, var_name)
 

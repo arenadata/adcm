@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
-from pathlib import Path
-from typing import Callable, Collection, Iterable, cast
-
+from collections.abc import Callable, Collection, Iterable
 from graphlib import CycleError, TopologicalSorter
+from pathlib import Path
+from typing import cast
+
 import jinja2
 
 from core.errors import localize_error

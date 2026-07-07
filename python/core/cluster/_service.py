@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from core.cluster._maintenance_mode import calculate_maintenance_mode_for_cluster_objects
 from core.cluster._operations import find_children_excluding_hosts

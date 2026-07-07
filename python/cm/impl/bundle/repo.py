@@ -11,10 +11,10 @@
 # limitations under the License.
 
 from collections import deque
+from collections.abc import Generator, Iterable
 from functools import partial
 from operator import attrgetter, itemgetter
 from pathlib import Path
-from typing import Generator, Iterable
 import json
 import hashlib
 

@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from abc import abstractmethod
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Collection, Generic, Literal, Mapping, ParamSpec, Protocol, TypeAlias, TypeVar
+from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVar
 import fcntl
 import traceback
 

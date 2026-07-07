@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generator, Sequence
+from collections.abc import Generator, Sequence
 
 from adcm.settings_setups.shared.constants import (
     ADCM_HOST_TURN_OFF_MM_ACTION_NAME,

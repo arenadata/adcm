@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from functools import partial
 from operator import itemgetter
-from typing import Collection, Literal, TypeAlias
+from typing import Literal, TypeAlias
 from unittest.mock import patch
 import json
 import unittest
@@ -38,7 +39,6 @@ from core.action.operations import ActionStartImpossibleReason
 from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ADCMCoreType, CoreObjectDescriptor, TaskID
-from parameterized import parameterized
 from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
@@ -52,6 +52,7 @@ from rest_framework.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from unittest_parametrize import parametrize
 
 from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
 
@@ -1020,172 +1021,231 @@ class TestActionStartImpossibleReason(ADCMDjangoAPISuite):
             name="component_on_host", prototype=cls.component_1.prototype, host_action=True
         )
 
-    @parameterized.expand(
+    @parametrize(
+        ("in_mm", "target", "action", "expected_msg"),
         [
             # suite_name, (objects_in_mm, ...), action_target, action, start_impossible_reason
             # suite1: not mapped host in cluster in mm
-            ("suite1_cluster_action", ("free_host",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
-            ("suite1_service_action", ("free_host",), "service", "service_action", None),
-            ("suite1_component_action", ("free_host",), "component_1", "component_1_action", None),
-            ("suite1_action_on_host", ("free_host",), "host_1", "host_1_action", None),
-            ("suite1_action_on_free_host", ("free_host",), "free_host", "free_host_action", "msg_hosts_in_mm"),
+            (("free_host",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            (("free_host",), "service", "service_action", None),
+            (("free_host",), "component_1", "component_1_action", None),
+            (("free_host",), "host_1", "host_1_action", None),
+            (("free_host",), "free_host", "free_host_action", "msg_hosts_in_mm"),
             # suite2: one of two hosts on component in mm
-            ("suite2_cluster_action", ("host_2",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
-            ("suite2_service_action", ("host_2",), "service", "service_action", "msg_hosts_in_mm"),
-            ("suite2_component_action", ("host_2",), "component_1", "component_1_action", "msg_hosts_in_mm"),
-            ("suite2_action_on_host", ("host_2",), "host_1", "host_1_action", None),
-            ("suite2_action_on_free_host", ("host_2",), "free_host", "free_host_action", None),
+            (("host_2",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            (("host_2",), "service", "service_action", "msg_hosts_in_mm"),
+            (("host_2",), "component_1", "component_1_action", "msg_hosts_in_mm"),
+            (("host_2",), "host_1", "host_1_action", None),
+            (("host_2",), "free_host", "free_host_action", None),
             # suite3: host in second service in mm (indirect second service in MM)
-            ("suite3_cluster_action", ("control_host",), "cluster_1", "cluster_action", "msg_services_in_mm"),
-            ("suite3_service_action", ("control_host",), "service", "service_action", None),
-            ("suite3_component_action", ("control_host",), "component_1", "component_1_action", None),
-            ("suite3_action_on_host", ("control_host",), "host_1", "host_1_action", None),
-            ("suite3_action_on_free_host", ("control_host",), "free_host", "free_host_action", None),
+            (("control_host",), "cluster_1", "cluster_action", "msg_services_in_mm"),
+            (("control_host",), "service", "service_action", None),
+            (("control_host",), "component_1", "component_1_action", None),
+            (("control_host",), "host_1", "host_1_action", None),
+            (("control_host",), "free_host", "free_host_action", None),
             # suite4: host in second component in mm
-            ("suite4_cluster_action", ("host_3",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
-            ("suite4_service_action", ("host_3",), "service", "service_action", "msg_hosts_in_mm"),
-            ("suite4_component_action", ("host_3",), "component_1", "component_1_action", None),
-            ("suite4_action_on_host", ("host_3",), "host_1", "host_1_action", None),
-            ("suite4_action_on_free_host", ("host_3",), "free_host", "free_host_action", None),
+            (("host_3",), "cluster_1", "cluster_action", "msg_hosts_in_mm"),
+            (("host_3",), "service", "service_action", "msg_hosts_in_mm"),
+            (("host_3",), "component_1", "component_1_action", None),
+            (("host_3",), "host_1", "host_1_action", None),
+            (("host_3",), "free_host", "free_host_action", None),
             # suite5: all component hosts in mm (indirect component in MM)
-            ("suite5_cluster_action", ("host_1", "host_2"), "cluster_1", "cluster_action", "msg_components_in_mm"),
-            ("suite5_service_action", ("host_1", "host_2"), "service", "service_action", "msg_components_in_mm"),
+            (("host_1", "host_2"), "cluster_1", "cluster_action", "msg_components_in_mm"),
+            (("host_1", "host_2"), "service", "service_action", "msg_components_in_mm"),
             (
-                "suite5_component_action",
                 ("host_1", "host_2"),
                 "component_1",
                 "component_1_action",
                 "msg_components_in_mm",
             ),
-            ("suite5_action_on_host", ("host_1", "host_2"), "host_1", "host_1_action", "msg_hosts_in_mm"),
-            ("suite5_action_on_free_host", ("host_1", "host_2"), "free_host", "free_host_action", None),
+            (("host_1", "host_2"), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            (("host_1", "host_2"), "free_host", "free_host_action", None),
             # suite6: one of components in mm
-            ("suite6_cluster_action", ("component_1",), "cluster_1", "cluster_action", "msg_components_in_mm"),
-            ("suite6_service_action", ("component_1",), "service", "service_action", "msg_components_in_mm"),
-            ("suite6_component_action", ("component_1",), "component_1", "component_1_action", "msg_components_in_mm"),
-            ("suite6_action_on_host", ("component_1",), "host_1", "host_1_action", None),
-            ("suite6_action_on_free_host", ("component_1",), "free_host", "free_host_action", None),
+            (("component_1",), "cluster_1", "cluster_action", "msg_components_in_mm"),
+            (("component_1",), "service", "service_action", "msg_components_in_mm"),
+            (("component_1",), "component_1", "component_1_action", "msg_components_in_mm"),
+            (("component_1",), "host_1", "host_1_action", None),
+            (("component_1",), "free_host", "free_host_action", None),
             # suite7: all components in mm (indirect service in MM)
             (
-                "suite7_cluster_action",
                 ("component_1", "component_2", "component_3"),
                 "cluster_1",
                 "cluster_action",
                 "msg_services_in_mm",
             ),
             (
-                "suite7_service_action",
                 ("component_1", "component_2", "component_3"),
                 "service",
                 "service_action",
                 "msg_services_in_mm",
             ),
             (
-                "suite7_component_action",
                 ("component_1", "component_2", "component_3"),
                 "component_1",
                 "component_1_action",
                 "msg_components_in_mm",
             ),
-            ("suite7_action_on_host", ("component_1", "component_2", "component_3"), "host_1", "host_1_action", None),
+            (("component_1", "component_2", "component_3"), "host_1", "host_1_action", None),
             (
-                "suite7_action_on_free_host",
                 ("component_1", "component_2", "component_3"),
                 "free_host",
                 "free_host_action",
                 None,
             ),
             # suite8: service in mm
-            ("suite8_cluster_action", ("service",), "cluster_1", "cluster_action", "msg_services_in_mm"),
-            ("suite8_service_action", ("service",), "service", "service_action", "msg_services_in_mm"),
-            ("suite8_component_action", ("service",), "component_1", "component_1_action", "msg_components_in_mm"),
-            ("suite8_action_on_host", ("service",), "host_1", "host_1_action", None),
-            ("suite8_action_on_free_host", ("service",), "free_host", "free_host_action", None),
+            (("service",), "cluster_1", "cluster_action", "msg_services_in_mm"),
+            (("service",), "service", "service_action", "msg_services_in_mm"),
+            (("service",), "component_1", "component_1_action", "msg_components_in_mm"),
+            (("service",), "host_1", "host_1_action", None),
+            (("service",), "free_host", "free_host_action", None),
             # suite9: host_action, host (target) in MM
-            ("suite9_host_1_action", ("host_1",), "host_1", "host_1_action", "msg_hosts_in_mm"),
-            ("suite9_action_from_cluster", ("host_1",), "host_1", "action_from_cluster", "msg_hosts_in_mm"),
-            ("suite9_action_from_service", ("host_1",), "host_1", "action_from_service", "msg_hosts_in_mm"),
-            ("suite9_action_from_component", ("host_1",), "host_1", "action_from_component", "msg_hosts_in_mm"),
+            (("host_1",), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            (("host_1",), "host_1", "action_from_cluster", "msg_hosts_in_mm"),
+            (("host_1",), "host_1", "action_from_service", "msg_hosts_in_mm"),
+            (("host_1",), "host_1", "action_from_component", "msg_hosts_in_mm"),
             # suite10: host_action, service in MM
-            ("suite10_host_1_action", ("service",), "host_1", "host_1_action", None),
-            ("suite10_action_from_cluster", ("service",), "host_1", "action_from_cluster", None),
-            ("suite10_action_from_service", ("service",), "host_1", "action_from_service", None),
-            ("suite10_action_from_component", ("service",), "host_1", "action_from_component", None),
+            (("service",), "host_1", "host_1_action", None),
+            (("service",), "host_1", "action_from_cluster", None),
+            (("service",), "host_1", "action_from_service", None),
+            (("service",), "host_1", "action_from_component", None),
             # suite11: host_action, component in MM
-            ("suite11_host_1_action", ("component_1",), "host_1", "host_1_action", None),
-            ("suite11_action_from_cluster", ("component_1",), "host_1", "action_from_cluster", None),
-            ("suite11_action_from_service", ("component_1",), "host_1", "action_from_service", None),
-            ("suite11_action_from_component", ("component_1",), "host_1", "action_from_component", None),
+            (("component_1",), "host_1", "host_1_action", None),
+            (("component_1",), "host_1", "action_from_cluster", None),
+            (("component_1",), "host_1", "action_from_service", None),
+            (("component_1",), "host_1", "action_from_component", None),
             # suite12: host_action, host (target) and one other object in MM
-            ("suite12_host_1_action_service", ("host_1", "service"), "host_1", "host_1_action", "msg_hosts_in_mm"),
+            (("host_1", "service"), "host_1", "host_1_action", "msg_hosts_in_mm"),
             (
-                "suite12_action_from_cluster_service",
                 ("host_1", "service"),
                 "host_1",
                 "action_from_cluster",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_action_from_service_service",
                 ("host_1", "service"),
                 "host_1",
                 "action_from_service",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_action_from_component_service",
                 ("host_1", "service"),
                 "host_1",
                 "action_from_component",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_host_1_action_component_1",
                 ("host_1", "component_1"),
                 "host_1",
                 "host_1_action",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_action_from_cluster_component_1",
                 ("host_1", "component_1"),
                 "host_1",
                 "action_from_cluster",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_action_from_service_component_1",
                 ("host_1", "component_1"),
                 "host_1",
                 "action_from_service",
                 "msg_hosts_in_mm",
             ),
             (
-                "suite12_action_from_component_component_1",
                 ("host_1", "component_1"),
                 "host_1",
                 "action_from_component",
                 "msg_hosts_in_mm",
             ),
             # suite13: actions on AHG
-            ("suite13_clAHG_host_1", ("host_1",), "cluster_ahg", "cluster_action", "msg_hosts_in_mm"),
-            ("suite13_clAHG_service", ("service",), "cluster_ahg", "cluster_action", "msg_services_in_mm"),
-            ("suite13_clAHG_component_1", ("component_1",), "cluster_ahg", "cluster_action", "msg_components_in_mm"),
-            ("suite13_seAHG_host_1", ("host_1",), "service_ahg", "service_action", "msg_hosts_in_mm"),
-            ("suite13_seAHG_service", ("service",), "service_ahg", "service_action", "msg_services_in_mm"),
-            ("suite13_seAHG_component_1", ("component_1",), "service_ahg", "service_action", "msg_components_in_mm"),
-            ("suite13_coAHG_host_3", ("host_3",), "component_ahg", "component_2_action", "msg_hosts_in_mm"),
-            ("suite13_coAHG_service", ("service",), "component_ahg", "component_2_action", "msg_components_in_mm"),
+            (("host_1",), "cluster_ahg", "cluster_action", "msg_hosts_in_mm"),
+            (("service",), "cluster_ahg", "cluster_action", "msg_services_in_mm"),
+            (("component_1",), "cluster_ahg", "cluster_action", "msg_components_in_mm"),
+            (("host_1",), "service_ahg", "service_action", "msg_hosts_in_mm"),
+            (("service",), "service_ahg", "service_action", "msg_services_in_mm"),
+            (("component_1",), "service_ahg", "service_action", "msg_components_in_mm"),
+            (("host_3",), "component_ahg", "component_2_action", "msg_hosts_in_mm"),
+            (("service",), "component_ahg", "component_2_action", "msg_components_in_mm"),
             (
-                "suite13_coAHG_component_2",
                 ("component_2",),
                 "component_ahg",
                 "component_2_action",
                 "msg_components_in_mm",
             ),
-        ]
+        ],
+        ids=[
+            "suite1_cluster_action",
+            "suite1_service_action",
+            "suite1_component_action",
+            "suite1_action_on_host",
+            "suite1_action_on_free_host",
+            "suite2_cluster_action",
+            "suite2_service_action",
+            "suite2_component_action",
+            "suite2_action_on_host",
+            "suite2_action_on_free_host",
+            "suite3_cluster_action",
+            "suite3_service_action",
+            "suite3_component_action",
+            "suite3_action_on_host",
+            "suite3_action_on_free_host",
+            "suite4_cluster_action",
+            "suite4_service_action",
+            "suite4_component_action",
+            "suite4_action_on_host",
+            "suite4_action_on_free_host",
+            "suite5_cluster_action",
+            "suite5_service_action",
+            "suite5_component_action",
+            "suite5_action_on_host",
+            "suite5_action_on_free_host",
+            "suite6_cluster_action",
+            "suite6_service_action",
+            "suite6_component_action",
+            "suite6_action_on_host",
+            "suite6_action_on_free_host",
+            "suite7_cluster_action",
+            "suite7_service_action",
+            "suite7_component_action",
+            "suite7_action_on_host",
+            "suite7_action_on_free_host",
+            "suite8_cluster_action",
+            "suite8_service_action",
+            "suite8_component_action",
+            "suite8_action_on_host",
+            "suite8_action_on_free_host",
+            "suite9_host_1_action",
+            "suite9_action_from_cluster",
+            "suite9_action_from_service",
+            "suite9_action_from_component",
+            "suite10_host_1_action",
+            "suite10_action_from_cluster",
+            "suite10_action_from_service",
+            "suite10_action_from_component",
+            "suite11_host_1_action",
+            "suite11_action_from_cluster",
+            "suite11_action_from_service",
+            "suite11_action_from_component",
+            "suite12_host_1_action_service",
+            "suite12_action_from_cluster_service",
+            "suite12_action_from_service_service",
+            "suite12_action_from_component_service",
+            "suite12_host_1_action_component_1",
+            "suite12_action_from_cluster_component_1",
+            "suite12_action_from_service_component_1",
+            "suite12_action_from_component_component_1",
+            "suite13_clAHG_host_1",
+            "suite13_clAHG_service",
+            "suite13_clAHG_component_1",
+            "suite13_seAHG_host_1",
+            "suite13_seAHG_service",
+            "suite13_seAHG_component_1",
+            "suite13_coAHG_host_3",
+            "suite13_coAHG_service",
+            "suite13_coAHG_component_2",
+        ],
     )
-    def test_sir_cluster(self, _, in_mm, target, action, expected_msg):
+    def test_sir_cluster(self, in_mm: tuple[str, ...], target: str, action: str, expected_msg: str):
         for object_in_mm_name in in_mm:
             self.set_mm(object_=getattr(self, object_in_mm_name), value="on")
 
@@ -1195,7 +1255,7 @@ class TestActionStartImpossibleReason(ADCMDjangoAPISuite):
             expected_sir=getattr(self, expected_msg) if expected_msg else None,
         )
 
-    @parameterized.expand([True, False])
+    @parametrize("all_provider_hosts_in_mm", [True, False], ids=["true", "false"])
     def test_sir_provider(self, all_provider_hosts_in_mm):
         if all_provider_hosts_in_mm:
             for host in Host.objects.filter(provider=self.provider):

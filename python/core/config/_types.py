@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import Any, Literal, NamedTuple, TypeAlias, TypedDict
 
 from typing_extensions import Self
 
@@ -159,7 +160,9 @@ class ConfigurationWithInfo(Configuration):
     # keep that way while it's direct dataclass descendant of `Configuration`
     # for inheritance simplicity
     id: ConfigID = 0
-    extra_info: ConfigurationExtraInfo = ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
+    extra_info: ConfigurationExtraInfo = field(
+        default_factory=lambda: ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
+    )
 
 
 @dataclass(slots=True)

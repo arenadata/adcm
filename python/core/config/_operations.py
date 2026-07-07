@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Callable, Generator
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial, reduce
 from itertools import chain, filterfalse
 from pathlib import Path
-from typing import Any, Callable, Final, Generator, Literal, TypeAlias, TypeVar
+from typing import Any, Final, Literal, TypeAlias, TypeVar
 
 from core.config import _yspec, spec
 from core.config._config import (

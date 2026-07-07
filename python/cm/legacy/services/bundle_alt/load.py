@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from contextlib import contextmanager
 from dataclasses import asdict
 from functools import cache
 from operator import methodcaller
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Iterable, NamedTuple
+from typing import NamedTuple
 import os
 import fcntl
 import shutil
@@ -299,7 +300,9 @@ def verify_signature(bundle_signature: SignatureStatus, verified_signature_only:
     if bundle_signature != SignatureStatus.VALID and verified_signature_only:
         raise AdcmEx(
             code="BUNDLE_SIGNATURE_VERIFICATION_ERROR",
-            msg=(f"Upload rejected due to failed bundle verification: bundle's signature is '{bundle_signature}'"),
+            msg=(
+                f"Upload rejected due to failed bundle verification: bundle's signature is '{bundle_signature.value}'"
+            ),
         )
 
 
