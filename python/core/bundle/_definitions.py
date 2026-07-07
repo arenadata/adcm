@@ -142,8 +142,8 @@ class ActionDefinition:
 
 @dataclass(slots=True)
 class VersionBound:
-    value: str
-    is_strict: bool
+    value: str = ""
+    is_strict: bool = False
 
 
 @dataclass(slots=True)
@@ -151,15 +151,15 @@ class ImportDefinition:
     name: str
     is_required: bool = False
     is_multibind_allowed: bool = False
-    min_version: VersionBound = VersionBound(value="", is_strict=False)
-    max_version: VersionBound = VersionBound(value="", is_strict=False)
+    min_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
+    max_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
     default: list[str] | None = None
 
 
 @dataclass(slots=True)
 class UpgradeRestrictions:
-    min_version: VersionBound = VersionBound(value="", is_strict=False)
-    max_version: VersionBound = VersionBound(value="", is_strict=False)
+    min_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
+    max_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
     from_editions: list[str] = field(default_factory=partial(list, ("community",)))
 
 

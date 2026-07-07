@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection, TypedDict
+from collections.abc import Collection
+from typing import TypedDict
 
 from cm.legacy.api import add_host
 from cm.legacy.services.job.run import create_related_configs

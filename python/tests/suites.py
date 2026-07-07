@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Final, Literal, TypeVar
+from typing import Any, Final, Literal, TypeVar
 import json
 import datetime
 
@@ -68,6 +69,7 @@ from init_db import init
 from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK
+from unittest_parametrize import ParametrizedTestCase
 import yaml
 import dishka
 import django.test
@@ -250,7 +252,7 @@ class ADCMPluginExecutorSuite(
         return _executor_func
 
 
-class ADCMDjangoAPISuite(_ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
+class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
     # is required for correct type detection in test cases
     client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
     client_class = ADCMTestClient

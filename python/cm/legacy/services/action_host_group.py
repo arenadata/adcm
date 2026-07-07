@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, NamedTuple, TypeAlias
+from typing import NamedTuple, TypeAlias
 
 from core.types import (
     ADCMCoreType,

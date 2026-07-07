@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from itertools import chain
-from typing import Callable, Iterable
 
 from pydantic_core import ErrorDetails
 

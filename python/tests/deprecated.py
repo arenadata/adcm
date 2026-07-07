@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypeAlias
+from typing import Any, TypeAlias
 import tarfile
 
 from api_v2.prototype.utils import accept_license

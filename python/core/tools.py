@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from functools import reduce
-from typing import Any, Iterable
+from typing import Any
 
 
 def get_nested(source: dict, path: Iterable[str]) -> Any:

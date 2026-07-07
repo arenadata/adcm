@@ -12,28 +12,36 @@ WORKDIR /code
 RUN . build.sh
 
 
-FROM python:3.10-alpine AS python_builder
+FROM python:3.10-alpine3.24 AS python_builder
 
-ENV PYTHONBUFFERED=1
+RUN apk add --no-cache --virtual .build-deps \
+    build-base \
+    linux-headers \
+    openldap-dev
 
-ENV POETRY_VERSION=1.8.3
-ENV POETRY_HOME=/opt/poetry
-ENV POETRY_VENV=/opt/poetry-venv
-ENV POETRY_CACHE_DIR=/opt/poetry-cache
-ENV POETRY_VIRTUALENVS_CREATE=0
+ENV UV_PYTHON_INSTALL_DIR=/python
 
-RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache build-base linux-headers openldap-dev
+# Install Python 3.12
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    uv python install 3.12
 
-COPY poetry.lock pyproject.toml /adcm/
+WORKDIR /adcm
 
-RUN python -m venv $POETRY_VENV && \
-    $POETRY_VENV/bin/pip install --no-cache-dir poetry==$POETRY_VERSION && \
-    $POETRY_VENV/bin/poetry --no-cache --directory=/adcm install --no-root --with run
+# Prepare venv Python 3.12 for ADCM
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --python 3.12 --group run --locked
+
+# Prepare venv Python 3.10 for Ansible 2.16
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=bind,source=ansible-2.16-python3.10-dependencies.txt,target=ansible-2.16-python3.10-dependencies.txt \
+    uv venv -p 3.10 /venv/2.16 && \
+    source /venv/2.16/bin/activate && \
+    uv pip install -p 3.10 -r ansible-2.16-python3.10-dependencies.txt
 
 
-FROM python:3.10-alpine
+FROM python:3.10-alpine3.24
 
 RUN apk update && \
     apk upgrade && \
@@ -50,34 +58,32 @@ RUN apk update && \
     sshpass && \
     apk cache clean --purge
 
-RUN python -m pip install -U setuptools && \
-    python -m pip uninstall -y pip && \
+RUN python3.10 -m pip install -U setuptools && \
+    python3.10 -m pip uninstall -y pip && \
     rm -rf /root/.cache/pip
-
-RUN ln -s /usr/local/bin/python3 /usr/bin/python3 && \
-    ln -s /usr/bin/python3 /usr/bin/python
 
 COPY os/etc /etc
 COPY os/etc/crontabs/root /var/spool/cron/crontabs/root
 COPY --from=go_builder /code/bin/runstatus /adcm/go/bin/runstatus
 COPY --from=ui_builder /wwwroot /adcm/wwwroot
-COPY --from=python_builder /usr/local/bin /usr/local/bin
-COPY --from=python_builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
-COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
+COPY --from=python_builder /python /python
+COPY --from=python_builder /adcm/.venv /adcm/.venv
+COPY --from=python_builder /venv/2.16 /venv/2.16
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-release-1-2-0 /venv/2.16 /venv/2.16
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-release-1-2-0 /root/.ansible/collections /root/.ansible/collections
 COPY conf /adcm/conf
 COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
 COPY python/ansible_collections/arenadata/adcm /root/.ansible/collections/ansible_collections/arenadata/adcm
 COPY python /adcm/python
 
-RUN ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py
+RUN ln -s -f /usr/local/bin/python3 /usr/bin/python3 && \
+    ln -s -f /usr/bin/python3 /usr/bin/python
 
-RUN python -m pip uninstall -y pip && \
-    rm -rf /root/.cache/pip
+RUN ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py
 
 RUN mkdir -p /adcm/data/log
 
-RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build python /adcm/python/manage.py collectstatic --noinput
+RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput
 
 ENV PYTHONPATH=/adcm/python
 

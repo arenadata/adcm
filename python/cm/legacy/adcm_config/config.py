@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from collections.abc import Collection
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Collection
+from typing import Any
 import re
 import copy
 import json
@@ -103,7 +104,7 @@ def get_prototype_config(
 def _get_prototype_configs_from_config_template(
     prototype: Prototype, action: Action, target: ADCMEntity, context_gatherer: ContextGatherer
 ) -> list[PrototypeConfig]:
-    if not isinstance(target, (Cluster, Service, Component, Host)):
+    if not isinstance(target, Cluster | Service | Component | Host):
         message = f"Incorrect type for template rendering: {type(target)}"
         raise TypeError(message)
 
@@ -312,7 +313,7 @@ def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, de
         config_log = update_host_group(host_group=obj, config=config_log)
         config_log.save()
         obj.prepare_files_for_config(config=config_log.config)
-    elif isinstance(obj, (Cluster, Service, Component, Provider)):
+    elif isinstance(obj, Cluster | Service | Component | Provider):
         config_log.save()
         update_host_groups_by_primary_object(object_=obj, config=config_log)
     else:

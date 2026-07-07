@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Generator, Iterable
 from configparser import ConfigParser
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Generator, Iterable, Literal
+from typing import Any, Literal
 import json
 import traceback
 

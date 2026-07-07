@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import deque
-from typing import Iterable, TypeAlias
+from collections.abc import Iterable
+from typing import TypeAlias
 
 from core.legacy.bundle.types import (
     BundleRestrictions,

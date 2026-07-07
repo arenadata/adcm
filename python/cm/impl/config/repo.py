@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict, deque
+from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Iterable, Literal, overload
+from typing import Literal, overload
 
 from core import config
 from core.files.local import LocalPathResolver

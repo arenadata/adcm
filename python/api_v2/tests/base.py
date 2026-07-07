@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from contextlib import suppress
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Collection, TypeAlias
+from typing import TypeAlias
 import uuid
 import tarfile
 

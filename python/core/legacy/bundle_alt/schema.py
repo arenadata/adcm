@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Sequence
 from functools import partial
-from typing import Annotated, Any, Literal, Optional, Sequence, TypeAlias, Union
+from typing import Annotated, Any, Literal, TypeAlias, Union
 
 from pydantic import (
     AfterValidator,
@@ -953,7 +954,7 @@ TASK_WIZARD_SCRIPTS_TEMPLATE_SCHEMA = Annotated[
 
 
 class TaskSchema(_BaseTaskSchema):
-    scripts: Optional[list[TASK_SCRIPTS_SCHEMA]] = None
+    scripts: list[TASK_SCRIPTS_SCHEMA] | None = None
     scripts_jinja: str | None = None
     scripts_template: ScriptsTemplate | None = None
 

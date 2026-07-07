@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Generator, Iterable
 from datetime import datetime
 from functools import partial
-from typing import Any, Callable, Generator, Iterable, NamedTuple
+from typing import Any, NamedTuple
 
 from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig

@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, Literal, Protocol, TypeVar
+from typing import Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
 from core.config._config import detect_active_groups, detect_changes, nested_to_flat

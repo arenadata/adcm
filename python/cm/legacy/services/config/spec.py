@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import OrderedDict, defaultdict
-from typing import Any, Iterable, NamedTuple, TypeAlias
+from collections.abc import Iterable
+from typing import Any, NamedTuple, TypeAlias
 
 from core.types import PrototypeID
 from typing_extensions import Self

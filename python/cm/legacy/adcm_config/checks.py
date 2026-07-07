@@ -205,7 +205,7 @@ def check_config_type(
         return
 
     if (
-        isinstance(value, (list, dict))
+        isinstance(value, list | dict)
         and spec["type"] not in settings.STACK_COMPLEX_FIELD_TYPES
         and spec["type"] != "group"
     ):
@@ -277,7 +277,7 @@ def check_config_type(
     if spec["type"] == "integer" and not isinstance(value, int):
         raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be integer"))
 
-    if spec["type"] == "float" and not isinstance(value, (int, float)):
+    if spec["type"] == "float" and not isinstance(value, int | float):
         raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format("should be float"))
 
     if spec["type"] == "integer" or spec["type"] == "float":

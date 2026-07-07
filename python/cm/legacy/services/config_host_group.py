@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection, Iterable
 from functools import reduce
 from operator import or_
-from typing import Collection, Iterable, TypeAlias
+from typing import TypeAlias
 
 from core.action import context
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ObjectID, ShortObjectInfo

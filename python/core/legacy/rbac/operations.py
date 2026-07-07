@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Iterable, Protocol
+from collections.abc import Iterable
+from typing import Any, Protocol
 
 from core.legacy.rbac.dto import UserCreateDTO, UserUpdateDTO
 from core.legacy.rbac.errors import EmailTakenError, UsernameTakenError

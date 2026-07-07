@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from secrets import token_hex
 from traceback import format_exception
-from typing import Annotated, Iterable, Literal
+from typing import Annotated, Literal
 import os
 
 from core import secrets

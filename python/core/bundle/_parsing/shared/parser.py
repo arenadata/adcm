@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Collection, Iterable
 from functools import partial
 from pathlib import Path
-from typing import Collection, Generic, Iterable, Literal, TypeAlias, TypeVar
+from typing import Generic, Literal, TypeAlias, TypeVar
 
 from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap

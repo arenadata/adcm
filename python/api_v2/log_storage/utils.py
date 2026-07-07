@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 import io
 import tarfile
@@ -44,7 +44,7 @@ def get_task_download_archive_name(task: TaskLog) -> str:
         action_name = str_remove_non_alnum(value=task.action.prototype.display_name or task.action.prototype.name)
         archive_name = f"{action_name}_{archive_name}"
 
-    if isinstance(task.task_object, (Service, Component)):
+    if isinstance(task.task_object, Service | Component):
         object_name = task.task_object.cluster.display_name
     elif isinstance(task.task_object, ActionHostGroup):
         object_name = task.task_object.name
@@ -91,7 +91,7 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
                     # using `or ""` here to avoid passing None to `bytes`
                     body = io.BytesIO(bytes(log_storage.body or "", settings.ENCODING_UTF_8))
                     tarinfo.size = body.getbuffer().nbytes
-                    tarinfo.mtime = datetime.now(tz=timezone.utc).timestamp()
+                    tarinfo.mtime = datetime.now(tz=UTC).timestamp()
                     tar_file.addfile(tarinfo=tarinfo, fileobj=body)
 
     return file_handler

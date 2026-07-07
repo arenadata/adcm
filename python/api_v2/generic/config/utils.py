@@ -12,7 +12,7 @@
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Any, TypeAlias, Union
+from typing import Any, TypeAlias
 import json
 
 from cm.converters import orm_object_to_core_descriptor
@@ -44,7 +44,7 @@ import core
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.utils.di import inject
 
-ParentObject: TypeAlias = Union[Cluster, Service, Component, Provider, Host, ConfigHostGroup]
+ParentObject: TypeAlias = Cluster | Service | Component | Provider | Host | ConfigHostGroup
 
 
 class Field(ABC):

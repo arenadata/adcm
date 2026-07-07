@@ -12,9 +12,10 @@
 
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR

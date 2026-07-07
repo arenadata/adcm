@@ -64,7 +64,7 @@ class TestAPISchema(ADCMDjangoAPISuite):
             if len(current_schema) != len(previous_schema):
                 diffs.append((path, "list length differs", (len(current_schema), len(previous_schema))))
             else:
-                for i, (av, bv) in enumerate(zip(current_schema, previous_schema)):
+                for i, (av, bv) in enumerate(zip(current_schema, previous_schema, strict=False)):
                     diffs.extend(self.compare_schema_dicts(av, bv, path + (str(i),)))
             return diffs
 

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Callable
 
 from core.config._config import detect_active_groups
 from core.config._operations import (

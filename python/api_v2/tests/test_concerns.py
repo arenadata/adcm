@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag

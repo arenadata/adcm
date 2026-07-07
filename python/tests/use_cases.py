@@ -10,10 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from operator import itemgetter
 from pathlib import Path
-from typing import Iterable
 import tarfile
 
 from api_v2.prototype.utils import accept_license

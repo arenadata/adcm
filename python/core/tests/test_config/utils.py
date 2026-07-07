@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from operator import attrgetter
-from typing import Any, Iterable, TypeVar
+from typing import Any, TypeVar
 from unittest import TestCase
+
+from unittest_parametrize import ParametrizedTestCase
 
 from core import result as r
 from core.config import spec
@@ -49,7 +52,7 @@ class ConstantPatternValidator(PatternValidator):
         return self.ret
 
 
-class ConfigTestCase(TestCase):
+class ConfigTestCase(ParametrizedTestCase, TestCase):
     def get_name_and_full_name(self, *names: str) -> tuple[ParameterLevelName, ParameterFullName]:
         *_, own_name = names
 

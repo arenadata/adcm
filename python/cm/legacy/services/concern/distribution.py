@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from copy import copy
 from itertools import chain
 from operator import itemgetter
-from typing import Iterable, TypeAlias
+from typing import TypeAlias
 
 from core.legacy.cluster.types import ClusterTopology
 from core.types import (
@@ -355,7 +356,7 @@ def _distribute_by_hosts(targets: ConcernRelatedObjects) -> None:
     )
 
     if queryset:
-        service_ids, component_ids = zip(*queryset)
+        service_ids, component_ids = zip(*queryset, strict=False)
 
         targets[ADCMCoreType.COMPONENT].update(component_ids)
         targets[ADCMCoreType.SERVICE].update(service_ids)

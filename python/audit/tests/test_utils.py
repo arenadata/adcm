@@ -12,7 +12,7 @@
 
 
 from django.test import TestCase as DjangoTestCase
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, parametrize
 
 from audit.alt.core import (
     AuditConfigurationError,
@@ -38,41 +38,37 @@ class TestAuditUtilsWithDB(DjangoTestCase):
         self.assertEqual(settings.delimiter, ", ")
 
 
-class TestAuditUtils(DjangoTestCase):
+class TestAuditUtils(ParametrizedTestCase, DjangoTestCase):
     splitter = NameHalfSplitter(NameSplitterSettings(operation_name_max_len=50))
 
-    @parameterized.expand(
+    @parametrize(
+        ("template", "names", "expected_operation_names", "expected_error"),
         [
             (
-                "single name, no changes",
                 "[{}] object(s) audited.",
                 ("object-name",),
                 ["[object-name] object(s) audited."],
                 None,
             ),
             (
-                "three names, fits in one operation name",
                 "[{}] object(s) audited.",
                 ("objname1", "objname2", "objname3"),
                 ["[objname1, objname2, objname3] object(s) audited."],
                 None,
             ),
             (
-                "three names, splits in two operation names",
                 "[{}] object(s) audited.",
                 (f"{'obj'*5}1", f"{'obj'*2}2", f"{'obj'*2}3"),
                 [f"[{'obj'*5}1] object(s) audited.", f"[{'obj'*2}2, {'obj'*2}3] object(s) audited."],
                 None,
             ),
             (
-                "one name, truncated",
                 "[{}] object(s) audited.",
                 ("very_long_object_name_version_1_edition_2",),
                 ["[very_long_objec...<truncated>] object(s) audited."],
                 None,
             ),
             (
-                "template and truncated_msg are longer than field limit, expect error",
                 "[{}] object(s) audited and it's names are stored in ridiculously long operation name.",
                 ("objectname",),
                 [],
@@ -81,11 +77,17 @@ class TestAuditUtils(DjangoTestCase):
                     "Adjust some of the following: template_len=83, truncated_msg_len=14, operation_name_len=50"
                 ),
             ),
-        ]
+        ],
+        ids=[
+            "single_name_no_changes",
+            "three_names_fits_in_one_operation_name",
+            "three_names_splits_in_two_operation_names",
+            "one_name_truncated",
+            "template_and_truncated_msg_are_longer_than_field_limit_expect_error",
+        ],
     )
     def test_name_splitter_with_template(
         self,
-        _,
         template: str,
         names: tuple[str, ...],
         expected_operation_names: list[str],

@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection
 from hashlib import md5
-from typing import Collection, Literal
+from typing import Literal
 
 from core.types import BundleID, ClusterID
 from django.db.models import Count, F, Q

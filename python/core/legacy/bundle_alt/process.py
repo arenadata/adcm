@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Callable, Hashable, Iterable, Protocol, TypeAlias, runtime_checkable
+from typing import Any, Protocol, TypeAlias, runtime_checkable
 import warnings
 import collections.abc
 

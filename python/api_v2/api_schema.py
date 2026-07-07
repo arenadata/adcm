@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, TypeAlias
+from collections.abc import Iterable
+from typing import TypeAlias
 
 from adcm.serializers import EmptySerializer
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter

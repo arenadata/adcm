@@ -12,57 +12,57 @@
 
 from unittest import TestCase
 
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from core.config import Change
 from core.config import ChangeType as ChT
 from core.config._operations import changes_to_revision_diff
 
 
-class TestDiffFormatting(TestCase):
+class TestDiffFormatting(ParametrizedTestCase, TestCase):
     maxDiff = None
 
-    @parameterized.expand(
+    @parametrize(
+        ("changes", "expected"),
         [
-            ("no_changes", [], {"diff": {}, "attr_diff": {}}),
-            (
-                "value_root",
+            param([], {"diff": {}, "attr_diff": {}}, id="no_changes"),
+            param(
                 [Change(parameter="/simple", type=ChT.VALUE, old="a", new="b")],
                 {"diff": {"simple": {"value": ["a", "b"]}}, "attr_diff": {}},
+                id="value_root",
             ),
-            (
-                "value_nested",
+            param(
                 [Change(parameter="/root_group/b", type=ChT.VALUE, old=True, new=False)],
                 {"diff": {"root_group": {"b": {"value": [True, False]}}}, "attr_diff": {}},
+                id="value_nested",
             ),
-            (
-                "activation_root",
+            param(
                 [Change(parameter="/root_act", type=ChT.ACTIVATION, old=True, new=False)],
                 {"diff": {}, "attr_diff": {"root_act": {"active": {"value": [True, False]}}}},
+                id="activation_root",
             ),
-            (
-                "activation_nested",
+            param(
                 [Change(parameter="/root_sel/one/ag", type=ChT.ACTIVATION, old=False, new=True)],
                 {"diff": {}, "attr_diff": {"root_sel/one/ag": {"active": {"value": [False, True]}}}},
+                id="activation_nested",
             ),
-            (
-                "synchronization_ignored",
+            param(
                 [
                     Change(parameter="/simple", type=ChT.SYNCHRONIZATION, old=True, new=False),
                     Change(parameter="/root_group/b", type=ChT.SYNCHRONIZATION, old=False, new=True),
                 ],
                 {"diff": {}, "attr_diff": {}},
+                id="synchronization_ignored",
             ),
-            (
-                "activation_and_synchronization",
+            param(
                 [
                     Change(parameter="/root_act", type=ChT.ACTIVATION, old=False, new=True),
                     Change(parameter="/root_act", type=ChT.SYNCHRONIZATION, old=True, new=False),
                 ],
                 {"diff": {}, "attr_diff": {"root_act": {"active": {"value": [False, True]}}}},
+                id="activation_and_synchronization",
             ),
-            (
-                "selection_none_to_chosen",
+            param(
                 [
                     Change(parameter="/root_sel", type=ChT.SELECTION, old=None, new="one"),
                     Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=None, new=["3", "1", "2"]),
@@ -87,9 +87,9 @@ class TestDiffFormatting(TestCase):
                         "root_sel/one/ag": {"active": {"value": [None, False]}},
                     },
                 },
+                id="selection_none_to_chosen",
             ),
-            (
-                "selection_chosen_to_none",
+            param(
                 [
                     Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new=None),
                     Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=None),
@@ -114,9 +114,9 @@ class TestDiffFormatting(TestCase):
                         "root_sel/one/ag": {"active": {"value": [False, None]}},
                     },
                 },
+                id="selection_chosen_to_none",
             ),
-            (
-                "selection_changed",
+            param(
                 [
                     Change(parameter="/root_sel", type=ChT.SELECTION, old="one", new="two"),
                     Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=None),
@@ -143,19 +143,20 @@ class TestDiffFormatting(TestCase):
                         "root_sel/one/ag": {"active": {"value": [False, None]}},
                     },
                 },
+                id="selection_changed",
             ),
-            (
-                "value_in_selection",
+            param(
                 [Change(parameter="/root_sel/one/l", type=ChT.VALUE, old=["3", "1", "2"], new=["4"])],
                 {"diff": {"root_sel": {"one": {"l": {"value": [["3", "1", "2"], ["4"]]}}}}, "attr_diff": {}},
+                id="value_in_selection",
             ),
-            (
-                "activation_in_selection",
+            param(
                 [Change(parameter="/root_sel/one/ag", type=ChT.ACTIVATION, old=False, new=True)],
                 {"diff": {}, "attr_diff": {"root_sel/one/ag": {"active": {"value": [False, True]}}}},
+                id="activation_in_selection",
             ),
-            (
-                "collision_leaf_then_branch",  # hypothetical case
+            # hypothetical case
+            param(
                 [
                     Change(parameter="/root", type=ChT.VALUE, old=1, new=2),
                     Change(parameter="/root/child", type=ChT.VALUE, old="a", new="b"),
@@ -164,9 +165,10 @@ class TestDiffFormatting(TestCase):
                     "diff": {"root": {"value": [1, 2], "child": {"value": ["a", "b"]}}},
                     "attr_diff": {},
                 },
+                id="collision_leaf_then_branch",
             ),
-            (
-                "collision_branch_then_leaf",  # hypothetical case
+            # hypothetical case
+            param(
                 [
                     Change(parameter="/root/child", type=ChT.VALUE, old="a", new="b"),
                     Change(parameter="/root", type=ChT.VALUE, old=1, new=2),
@@ -175,9 +177,9 @@ class TestDiffFormatting(TestCase):
                     "diff": {"root": {"child": {"value": ["a", "b"]}, "value": [1, 2]}},
                     "attr_diff": {},
                 },
+                id="collision_branch_then_leaf",
             ),
-            (
-                "collision_two_leafs",
+            param(
                 [
                     Change(parameter="/root/child1", type=ChT.VALUE, old="a", new="b"),
                     Change(parameter="/root/child2", type=ChT.VALUE, old=1, new=2),
@@ -186,9 +188,9 @@ class TestDiffFormatting(TestCase):
                     "diff": {"root": {"child1": {"value": ["a", "b"]}, "child2": {"value": [1, 2]}}},
                     "attr_diff": {},
                 },
+                id="collision_two_leafs",
             ),
-            (
-                "collision_value_key",
+            param(
                 [
                     Change(parameter="/root/child1", type=ChT.VALUE, old="a", new="b"),
                     Change(parameter="/root/value", type=ChT.VALUE, old=1, new=2),
@@ -197,9 +199,10 @@ class TestDiffFormatting(TestCase):
                     "diff": {"root": {"child1": {"value": ["a", "b"]}, "value": {"value": [1, 2]}}},
                     "attr_diff": {},
                 },
+                id="collision_value_key",
             ),
-            (
-                "collision_node_value",  # hypothetical, but will work strange
+            # hypothetical, but will work strange
+            param(
                 [
                     Change(parameter="/root/value", type=ChT.VALUE, old=1, new=2),
                     Change(parameter="/root", type=ChT.VALUE, old="a", new="b"),
@@ -208,10 +211,11 @@ class TestDiffFormatting(TestCase):
                     "diff": {"root": {"value": ["a", "b"]}},
                     "attr_diff": {},
                 },
+                id="collision_node_value",
             ),
-        ]
+        ],
     )
-    def test_format_from_changes(self, _, changes: list[Change], expected: dict) -> None:
+    def test_format_from_changes(self, changes: list[Change], expected: dict) -> None:
         result = changes_to_revision_diff(changes)
 
         self.assertEqual(set(result.keys()), {"diff", "attr_diff"})

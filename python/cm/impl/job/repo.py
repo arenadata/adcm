@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
-from typing import Final, Iterable, cast
+from typing import Final, cast
 import operator
 
 from core.legacy.job.types import ExecutionStatus, Job, JobParams, JobSpec, ScriptType, StateChanges, TaskMappingDelta
@@ -234,7 +235,7 @@ def _job_log_to_job(job: JobLog) -> Job:
         #  but not sure we can validate it now on config.yaml load
         #  see https://tracker.yandex.ru/ADCM-5325
         ansible_tags = ""
-        if isinstance(ansible_tags, (list, tuple)):
+        if isinstance(ansible_tags, list | tuple):
             ansible_tags = ",".join(map(str, ansible_tags))
 
     return Job(
@@ -275,7 +276,7 @@ def _get_selector_for_core_object(target: CoreObjectDescriptor, owner: CoreObjec
             provider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
             values = Provider.objects.values(**_SELECTOR_FIELDS_MAP[Provider]).filter(id=provider_id)
             # todo ??? stabs for django doesn't cover that case?
-            query = query.union(values)  # pyright: ignore[reportArgumentType]
+            query = query.union(values)
 
         case (ADCMCoreType.HOST, ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT):
             query = query.union(_get_host_related_selector(host_id=target.id, owner=owner))
@@ -283,13 +284,13 @@ def _get_selector_for_core_object(target: CoreObjectDescriptor, owner: CoreObjec
         case (ADCMCoreType.SERVICE, _):
             cluster_id = Service.objects.values_list("cluster_id", flat=True).get(id=target.id)
             values = Cluster.objects.values(**_SELECTOR_FIELDS_MAP[Cluster]).filter(id=cluster_id)
-            query = query.union(values)  # pyright: ignore[reportArgumentType]
+            query = query.union(values)
 
         case (ADCMCoreType.COMPONENT, _):
             cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=target.id)
             cluster_qs = Cluster.objects.values(**_SELECTOR_FIELDS_MAP[Cluster]).filter(id=cluster_id)
             service_qs = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=service_id)
-            query = query.union(cluster_qs).union(service_qs)  # pyright: ignore[reportArgumentType]
+            query = query.union(cluster_qs).union(service_qs)
 
     return {entry["type_name"]: {"id": entry["object_id"], "name": entry["object_name"]} for entry in query.all()}
 
@@ -306,13 +307,13 @@ def _get_host_related_selector(host_id: HostID, owner: CoreObjectDescriptor) -> 
 
     if owner.type == ADCMCoreType.SERVICE:
         values = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=owner.id, cluster_id=cluster_id)
-        query = query.union(values)  # pyright: ignore[reportArgumentType]
+        query = query.union(values)
     elif owner.type == ADCMCoreType.COMPONENT:
         service_id, component_id = Component.objects.values_list("service_id", "id").get(
             cluster_id=cluster_id, id=owner.id
         )
         service_values = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=service_id)
         component_values = Component.objects.values(**_SELECTOR_FIELDS_MAP[Component]).filter(id=component_id)
-        query = query.union(service_values).union(component_values)  # pyright: ignore[reportArgumentType]
+        query = query.union(service_values).union(component_values)
 
     return query

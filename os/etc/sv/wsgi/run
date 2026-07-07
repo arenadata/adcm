@@ -19,4 +19,4 @@ exec 2>>"${adcmlog}/service_wsgi.err"
 
 cd "${adcmroot}/python"
 touch /run/uwsgi.pid
-uwsgi --ini /etc/adcm/adcm.cfg
+$adcmvenv/uwsgi --ini /etc/adcm/adcm.cfg

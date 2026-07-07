@@ -27,6 +27,7 @@ var_log_dir="/var/log"
 ssl_keys_dir="${adcmuserconf}/ssl"
 ssl_config_dir="/etc/nginx/http.d"
 ssl_config_filename="ssl.conf"
+adcmvenv="${adcmroot}/.venv/bin"
 
 waitforwsgi() {
   while [ ! -S "${wsgisocketfile}" ]; do
@@ -102,7 +103,7 @@ ensure_mandatory_db_settings_provided() {
 check_compatibility() {
   echo "Checking compatibility..."
 
-  "${django_manage_script}" compatibility_check &&
+  "${adcmvenv}"/python "${django_manage_script}" compatibility_check &&
   echo "Compatibility check: OK" ||
   exit $?
 }
@@ -110,8 +111,8 @@ check_compatibility() {
 init_or_migrate_secrets() {
   echo "Preparing secrets..."
 
-  "${scripts}"/manage_secrets.py migrate &&
-  "${scripts}"/manage_secrets.py init &&
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py migrate &&
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py init &&
   echo "Secrets: OK" ||
   exit $?
 }
@@ -119,7 +120,7 @@ init_or_migrate_secrets() {
 migrate_secrets() {
   echo "Preparing secrets..."
 
-  "${scripts}"/manage_secrets.py migrate &&
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py migrate &&
   echo "Secrets: OK" ||
   exit $?
 }
@@ -127,7 +128,7 @@ migrate_secrets() {
 migrate_db() {
   echo "Migrating DB..."
 
-  "${adcmroot}"/python/manage.py migrate &&
+  "${adcmvenv}"/python "${django_manage_script}" migrate &&
   echo "DB migration: OK" ||
   exit $?
 }
@@ -135,7 +136,7 @@ migrate_db() {
 post_migrate_db() {
   echo "Initializing DB..."
 
-  "${adcmroot}"/python/init_db.py &&
+  "${adcmvenv}"/python "${adcmroot}"/python/init_db.py &&
   echo "DB initialization: OK" ||
   exit $?
 }
@@ -143,7 +144,7 @@ post_migrate_db() {
 upgrade_roles() {
   echo "Upgrading roles..."
 
-  "${adcmroot}"/python/manage.py upgraderole &&
+  "${adcmvenv}"/python "${django_manage_script}" upgraderole &&
   echo "Roles upgrade: OK" ||
   exit $?
 }

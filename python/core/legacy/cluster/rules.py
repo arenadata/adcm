@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
 from operator import attrgetter
-from typing import Collection, Iterable, Literal
+from typing import Literal
 
 from core.legacy.cluster.errors import (
     ClusterAddHostError,

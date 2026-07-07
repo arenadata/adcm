@@ -32,6 +32,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_dict_contains_subset
 
 from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
@@ -106,7 +107,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                     },
                 )
 
-                self.assertDictContainsSubset(expected_response, response_data)
+                assert_dict_contains_subset(expected_response, response_data)
 
                 flags = ConcernItem.objects.filter(
                     owner_id=self.cluster_1.pk,

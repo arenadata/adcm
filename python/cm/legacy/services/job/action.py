@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Sequence, TypeAlias
+from collections.abc import Iterable, Sequence
+from typing import TypeAlias
 
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
@@ -94,11 +95,11 @@ def prepare_task_for_action(
             message = "Internal script 'config_apply' can't be used for jinja action"
             raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
     elif action_info.scripts_template:
-        if not isinstance(orm_target, (Cluster, Service, Component, Host, ActionHostGroup)):
+        if not isinstance(orm_target, Cluster | Service | Component | Host | ActionHostGroup):
             message = f"Can't render scripts for target of type {type(target)}"
             raise TypeError(message)
 
-        if not isinstance(orm_owner, (Cluster, Service, Component, Host)):
+        if not isinstance(orm_owner, Cluster | Service | Component | Host):
             message = f"Can't render scripts for owner of type {type(orm_owner)}"
             raise TypeError(message)
 

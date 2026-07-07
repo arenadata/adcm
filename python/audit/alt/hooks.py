@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import deque
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Literal, Protocol
+from typing import Literal, Protocol
 
 from django.contrib.auth.models import User as DjangoUser
 from django.core.handlers.wsgi import WSGIRequest
@@ -249,7 +250,7 @@ def extract_current_from_response(*fields: str, **named_fields: str) -> AuditHoo
             if not isinstance(self.result, Response):
                 return
 
-            fields_ = (*tuple(zip(fields, fields)), *named_fields.items())
+            fields_ = (*tuple(zip(fields, fields, strict=False)), *named_fields.items())
 
             data = self.result.data
             response_data = {audit_field: data[data_field] for audit_field, data_field in fields_ if data_field in data}

@@ -21,7 +21,6 @@ from cm.models import (
     Upgrade,
 )
 from core.types import TaskID
-from parameterized import parameterized
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_204_NO_CONTENT,
@@ -29,6 +28,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import ADCMDjangoAPISuite
+from unittest_parametrize import parametrize
 
 from api_v2.prototype.utils import accept_license
 
@@ -458,13 +458,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
 
-    @parameterized.expand(
-        input=[
-            ("incorrect value", "incorrect value"),
-            ("Empty value", ""),
-        ]
-    )
-    def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, _, config_type_strict):
+    @parametrize("config_type_strict", ["incorrect value", ""], ids=["incorrect_value", "empty_value"])
+    def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, config_type_strict):
         checked_configuration = "variant_config_type_strict"
         response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
             data={

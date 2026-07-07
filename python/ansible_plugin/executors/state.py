@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from contextlib import suppress
-from typing import Collection, TypedDict
+from typing import TypedDict
 
 from cm.converters import orm_object_to_core_type
 from cm.transition.status import StatusScenarios

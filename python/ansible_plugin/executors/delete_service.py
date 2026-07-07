@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Collection
+from collections.abc import Collection
 
 from cm.legacy.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
 from cm.models import ClusterBind, HostComponent, Prototype, Service

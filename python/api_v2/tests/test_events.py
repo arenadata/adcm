@@ -23,6 +23,7 @@ from tests.base import WithPreparedFSAndInitADCM
 from tests.client import ADCMTestClient
 from tests.dependencies import get_status_scenarios_manager
 from tests.deprecated import BusinessLogicMixin
+from tests.utils import assert_dict_contains_subset
 import django.test
 
 
@@ -118,4 +119,4 @@ class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM
                     patched_obj_type = "-".join(patched_obj.__class__.__name__.lower().split("host"))
 
                 self.assertEqual(obj_type, patched_obj_type)
-                self.assertDictContainsSubset(camelize(params), changes)
+                assert_dict_contains_subset(camelize(params), changes)

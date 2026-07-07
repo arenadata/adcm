@@ -93,3 +93,13 @@ def extract_from_nested_structure(data: list, value_path: str) -> list:
         result.extend(_extract(item, keys))
 
     return result
+
+
+def assert_dict_contains_subset(subset, superset):
+    """
+    Check if subset contains superset, suitable only for flat dictionaries.
+    Returns True if all the keys of the subset are contained in the superset.
+    """
+
+    missing_items = [item for item in subset.items() if item not in superset.items()]
+    assert not any(missing_items), f"Missing items in superset: {', '.join([key for key, _ in missing_items])}"  # noqa: S101

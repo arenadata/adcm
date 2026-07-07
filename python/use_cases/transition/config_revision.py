@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection
 from dataclasses import dataclass
-from typing import Collection, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 from cm.converters import core_type_to_model
 from cm.legacy.services.config import retrieve_configs_with_revision

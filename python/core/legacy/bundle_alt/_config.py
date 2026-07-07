@@ -20,9 +20,10 @@ when bundle rework feature will come to a conclusion.
 """
 
 
+from collections.abc import Callable
 from functools import partial
 from operator import methodcaller
-from typing import Any, Callable, TypeAlias
+from typing import Any, TypeAlias
 
 from core.errors import ConfigValueError, localize_error
 from core.legacy.bundle_alt._pattern import Pattern
@@ -154,7 +155,7 @@ def _check_config_values(
 
                 # check unsuitable for type based check,
                 # left for backward compatibility
-                if type_ not in STACK_COMPLEX_FIELD_TYPES and isinstance(value, (list, dict)):
+                if type_ not in STACK_COMPLEX_FIELD_TYPES and isinstance(value, list | dict):
                     raise _ValueCheckFailedError("should be flat")
 
                 checks_for_type = value_checks.get(type_, ())

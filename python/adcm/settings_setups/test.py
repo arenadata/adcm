@@ -54,4 +54,5 @@ DEFAULT_DISHKA_PROVIDERS = "tests.dependencies.get_default_overridden_providers"
 
 # Strictly for tests
 
-TEST_RUNNER = "tests.runner.SubTestParallelRunner"
+# TODO: delete it as part of the task ADCM-8184
+# TEST_RUNNER = "tests.runner.SubTestParallelRunner"

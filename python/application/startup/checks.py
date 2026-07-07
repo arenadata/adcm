@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import Callable
 from urllib.parse import urlsplit
 
 from cm.models import Bundle

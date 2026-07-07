@@ -119,7 +119,7 @@ class CHGViewSet(
         self._check_parent_permissions(parent_object=parent_object)
 
         # taken from ConfigHostGroup.host_candidate
-        if isinstance(parent_object, (Cluster, Provider)):
+        if isinstance(parent_object, Cluster | Provider):
             hosts_qs = parent_object.host_set
         elif isinstance(parent_object, Service):
             hosts_qs = Host.objects.filter(

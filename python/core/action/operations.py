@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterator
 from enum import Enum
-from typing import Iterator, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 from core.cluster import ClusterTopology
 from core.cluster._operations import find_children

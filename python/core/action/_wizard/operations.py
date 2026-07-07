@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, TypeAlias
+from collections.abc import Iterable
+from typing import TypeAlias
 from uuid import UUID, uuid4
 
 from core.action._wizard._types import Stage, StepDefinition, StepState

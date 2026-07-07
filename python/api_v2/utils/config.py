@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
-from typing import Any, Callable
+from typing import Any
 import json
 
 from cm.errors import AdcmEx

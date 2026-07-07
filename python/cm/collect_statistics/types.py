@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Collection
 from pathlib import Path
-from typing import Collection, Generic, Protocol, TypedDict, TypeVar
+from typing import Generic, Protocol, TypedDict, TypeVar
 
 T = TypeVar("T")
 

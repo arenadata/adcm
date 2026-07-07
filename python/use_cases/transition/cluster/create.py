@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from cm import errors, models
 from cm.converters import orm_object_to_core_descriptor

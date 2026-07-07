@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Generator
+from collections.abc import Generator
 
 import core
 

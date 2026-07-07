@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import chain
-from typing import Iterable, Protocol
+from typing import Protocol
 
 from core.cluster import ClusterService
 from core.legacy.bundle.types import BundleRestrictions

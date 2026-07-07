@@ -13,27 +13,27 @@ build:
 
 unittests:
 	time docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
-	time poetry install --no-root --with unittests
+	time uv sync --inexact --group unittests
 	DJANGO_SETTINGS_MODULE=adcm.settings_setups.test \
 	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
-	time poetry run python/manage.py test python -v 2 --parallel --keepdb
+	time uv run python/manage.py test python -v 2 --parallel --keepdb
 	docker stop postgres
 
 pretty:
-	poetry install --no-root --with lint
-	poetry run ruff format $(PY_FILES)
-	poetry run ruff check --fix $(PY_FILES)
-	poetry run ruff format $(PY_FILES)
-	poetry run python dev/linters/license_checker.py --fix --folders $(PY_FILES) go
+	uv sync --inexact --group lint
+	uv run ruff format $(PY_FILES)
+	uv run ruff check --fix $(PY_FILES)
+	uv run ruff format $(PY_FILES)
+	uv run python dev/linters/license_checker.py --fix --folders $(PY_FILES) go
 
 lint:
-	poetry install --no-root --with lint
-	poetry run ruff check $(PY_FILES)
-	poetry run ruff format --check $(PY_FILES)
-	poetry run pyright --project pyproject.toml
-	env PYTHONPATH=python poetry run lint-imports --verbose
-	poetry run python dev/linters/license_checker.py --folders $(PY_FILES) go
-	poetry run python dev/linters/migrations_checker.py python
+	uv sync --inexact --group lint
+	uv run ruff check $(PY_FILES)
+	uv run ruff format --check $(PY_FILES)
+	uv run pyright --project pyproject.toml
+	env PYTHONPATH=python uv run lint-imports --verbose
+	uv run python dev/linters/license_checker.py --folders $(PY_FILES) go
+	uv run python dev/linters/migrations_checker.py python
 
 version:
 	@echo $(ADCM_VERSION)

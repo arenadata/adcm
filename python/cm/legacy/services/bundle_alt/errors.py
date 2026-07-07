@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from core.bundle import BundleParsingError, BundleProcessingError, BundleValidationError
 from core.config import ConfigOperationError, DefaultFileMissingError

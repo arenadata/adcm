@@ -595,9 +595,7 @@ class TestStorage(ADCMDjangoAPISuite):
 
     def test_storage_one_file_success(self):
         community_storage = TarFileWithJSONFileStorage()
-        expected_name = (
-            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
-        )
+        expected_name = f"{datetime.datetime.now(tz=datetime.UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
 
         community_storage.add(
             JSONFile(
@@ -615,9 +613,7 @@ class TestStorage(ADCMDjangoAPISuite):
 
     def test_storage_archive_written_twice_success(self):
         community_storage = TarFileWithJSONFileStorage()
-        expected_name = (
-            f"{datetime.datetime.now(tz=datetime.timezone.utc).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
-        )
+        expected_name = f"{datetime.datetime.now(tz=datetime.UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
 
         community_storage.add(
             JSONFile(
@@ -647,7 +643,7 @@ class TestStorage(ADCMDjangoAPISuite):
             )
         community_archive = community_storage.gather()
 
-        for content, expected_data in zip(self.read_tar(community_archive), full_stat):
+        for content, expected_data in zip(self.read_tar(community_archive), full_stat, strict=False):
             self.assertDictEqual(content, expected_data)
 
     def test_storage_clear_fail(self):

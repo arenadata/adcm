@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from pathlib import Path
 from traceback import format_exception
-from typing import Callable, NamedTuple
+from typing import NamedTuple
 
 from core.legacy.job.executors import (
     BundleExecutorConfig,

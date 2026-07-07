@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Generic, Iterable, TypeVar
+from typing import Generic, TypeVar
 
 from cm.errors import HTTP_409_CONFLICT
 from cm.models import Action, Process, ProcessStep

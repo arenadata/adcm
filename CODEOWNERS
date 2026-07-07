@@ -15,6 +15,6 @@ Dockerfile @v.remizov @arenadata/teams/python/adcm
 LICENSE @v.remizov @arenadata/teams/python/adcm
 license_checker.py @arenadata/teams/python/adcm
 Makefile @arenadata/teams/python/adcm
-poetry.lock  @arenadata/teams/python/adcm
+uv.lock  @arenadata/teams/python/adcm
 pyproject.toml @arenadata/teams/python/adcm
 README.md @v.remizov @d.bardin @k.fedorenko @arenadata/teams/python/adcm

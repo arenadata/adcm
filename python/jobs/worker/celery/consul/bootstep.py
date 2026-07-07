@@ -19,7 +19,8 @@ back to the response KV path and finally removes the original command.
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from celery import bootsteps
 from celery.utils.collections import AttributeDict

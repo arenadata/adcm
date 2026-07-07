@@ -85,7 +85,7 @@ class RetrieveStartImpossibleReason:
                     case operations.ActionStartImpossibleReason.LDAP_OFF:
                         msg = reason.value
                     case operations.ActionStartImpossibleReason.MAINTENANCE_MODE:
-                        msg = reason.value.format(entity_type="Action", violator_type=f"{type_}s")
+                        msg = reason.value.format(entity_type="Action", violator_type=f"{type_.value}s")
 
                 return {id_: None if is_allowed_in_mm else msg for id_, is_allowed_in_mm in allowed_in_mm.items()}
 
@@ -110,4 +110,4 @@ class RetrieveStartImpossibleReason:
             case Success():
                 return None
             case Fail(value=(reason, type_)):
-                return reason.value.format(entity_type="Upgrade", violator_type=f"{type_}s")
+                return reason.value.format(entity_type="Upgrade", violator_type=f"{type_.value}s")

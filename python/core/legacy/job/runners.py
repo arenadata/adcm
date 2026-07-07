@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, NamedTuple, Protocol
+from typing import NamedTuple, Protocol
 
 from core.cluster import ClusterService
 from core.legacy.job.executors import Executor

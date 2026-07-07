@@ -57,7 +57,7 @@ class APINode:
         self._node_class = node_class
 
     def __truediv__(self, other: str | int | WithID):
-        if isinstance(other, (str, int)):
+        if isinstance(other, str | int):
             return self._node_class(*self._path, str(other), client=self._client, node_class=self._node_class)
 
         return self._node_class(*self._path, str(other.id), client=self._client, node_class=self._node_class)
@@ -126,7 +126,7 @@ class V2RootNode(RootNode):
     def __getitem__(self, item: PathObject | tuple[PathObject | str | int | WithID | Model, ...]) -> APINode:
         if isinstance(item, tuple):
             path_object, *tail_ = item
-            tail = tuple(str(entry) if isinstance(entry, (str, int)) else str(entry.id) for entry in tail_)
+            tail = tuple(str(entry) if isinstance(entry, str | int) else str(entry.id) for entry in tail_)
         else:
             path_object, tail = item, ()
 

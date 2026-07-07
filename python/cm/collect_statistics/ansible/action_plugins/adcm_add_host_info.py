@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import md5
 from typing import NamedTuple
 import re
@@ -150,7 +150,7 @@ class ActionModule(ActionBase):
             hosts_with_up_to_date_facts.append(host_id)
 
         # for each batch to have the same datetime
-        date = datetime.now(tz=timezone.utc)
+        date = datetime.now(tz=UTC)
 
         for_update: set[HostID] = set(facts).difference(hosts_with_up_to_date_facts)
 
