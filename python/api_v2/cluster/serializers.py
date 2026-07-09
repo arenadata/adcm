@@ -193,13 +193,13 @@ class RelatedServicesStatusesSerializer(WithStatusSerializer):
 
     class Meta:
         model = Service
-        fields = ["id", "name", "display_name", "status", "components"]
+        fields = ["id", "name", "display_name", "status", "maintenance_mode", "components"]
 
 
 class RelatedHostsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Host
-        fields = ["id", "name", "status"]
+        fields = ["id", "name", "status", "maintenance_mode"]
 
 
 class ClusterStatusSerializer(WithStatusSerializer):

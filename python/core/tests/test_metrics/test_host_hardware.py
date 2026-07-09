@@ -90,6 +90,18 @@ class TestHostHardware(TestCase):
                 CapacityUnit.BYTES,
                 ResourceValue(value=0, unit=CapacityUnit.BYTES),
             ),
+            (
+                "kib_size_with_min_repr_unit_bytes_with_round",
+                12345,
+                CapacityUnit.BYTES,
+                ResourceValue(value=12.06, unit=CapacityUnit.KIB),
+            ),
+            (
+                "below_gib_size_with_min_repr_unit_bytes",
+                512 * 1024**2,
+                CapacityUnit.BYTES,
+                ResourceValue(value=512, unit=CapacityUnit.MIB),
+            ),
         ]
 
         for case_name, size_bytes, min_repr_unit, expected in cases:

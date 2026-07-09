@@ -250,11 +250,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             OpenApiParameter(
                 name="ordering",
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=int,
-                enum=[
+                enum=(
                     "id",
                     "-id",
-                ],
+                ),
                 default="id",
             ),
         ],
@@ -287,11 +286,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             OpenApiParameter(
                 name="ordering",
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=int,
-                enum=[
+                enum=(
                     "id",
                     "-id",
-                ],
+                ),
                 default="id",
             ),
         ],

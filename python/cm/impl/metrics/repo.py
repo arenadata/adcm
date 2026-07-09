@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
-from typing import Generator
+from collections.abc import Generator, Iterable
 
 from core.metrics import ClusterMetrics, ClusterMetricsRepoI, ClusterResources, format_size_from_bytes
 from core.types import ClusterID

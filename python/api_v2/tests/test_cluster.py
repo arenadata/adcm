@@ -21,6 +21,8 @@ from cm.models import (
     Cluster,
     Component,
     ConfigHostGroup,
+    Host,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     Service,
@@ -943,9 +945,16 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
     def get_name_status_pairs(entries: list[dict]) -> set[tuple[int, str]]:
         return {(entry["name"], entry["status"]) for entry in entries}
 
+    @staticmethod
+    def _set_maintenance_mode(obj: Host | Service, value: MaintenanceMode) -> None:
+        obj.maintenance_mode = value
+        update_field = "_maintenance_mode" if isinstance(obj, Service) else "maintenance_mode"
+        obj.save(update_fields=[update_field])
+
     def test_services_statuses_success(self) -> None:
         manager = get_status_scenarios_manager()
         manager.set_status_map(self.status_map)
+        self._set_maintenance_mode(obj=self.service_12, value=MaintenanceMode.ON)
         response = (self.client.v2[self.cluster_1] / "statuses" / "services").get()
 
         manager.expect_called("retrieve_status_map")
@@ -957,6 +966,8 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
             self.get_name_status_pairs(services), {(self.service_11.name, "down"), (self.service_12.name, "up")}
         )
         service_1, service_2 = sorted(services, key=lambda i: i["id"])
+        self.assertEqual(service_1["maintenanceMode"], MaintenanceMode.OFF)
+        self.assertEqual(service_2["maintenanceMode"], MaintenanceMode.ON)
         self.assertEqual(len(service_1["components"]), 2)
         self.assertSetEqual(
             self.get_name_status_pairs(service_1["components"]),
@@ -971,6 +982,7 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
     def test_hosts_statuses_success(self) -> None:
         manager = get_status_scenarios_manager()
         manager.set_status_map(self.status_map)
+        self._set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
         response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get()
 
         manager.expect_called("retrieve_status_map")
@@ -979,6 +991,9 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
         entries = response.json()["results"]
         self.assertEqual(len(entries), 2)
         self.assertSetEqual(self.get_name_status_pairs(entries), {(self.host_1.name, "up"), (self.host_2.name, "down")})
+        host_1, host_2 = sorted(entries, key=lambda i: i["id"])
+        self.assertEqual(host_1["maintenanceMode"], MaintenanceMode.OFF)
+        self.assertEqual(host_2["maintenanceMode"], MaintenanceMode.ON)
 
     def test_components_of_service_statuses_success(self) -> None:
         manager = get_status_scenarios_manager()

@@ -43,12 +43,15 @@ class ClusterMetricsViewSet(ADCMGenericViewSet):
         retrieve_cluster_metrics: FromDishka[RetrieveClusterMetrics],
         **__,
     ) -> Response:
-        cluster_ids = tuple(
-            get_objects_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster).values_list("id", flat=True)
+        cluster_ids_queryset = (
+            get_objects_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster)
+            .order_by("id")
+            .values_list("id", flat=True)
         )
+        cluster_ids = self.paginate_queryset(cluster_ids_queryset)
         metrics = retrieve_cluster_metrics.retrieve_metrics_many(cluster_ids=cluster_ids)
 
-        serializer_data = self.get_serializer(self.paginate_queryset(metrics), many=True).data
+        serializer_data = self.get_serializer(metrics, many=True).data
         return self.get_paginated_response(data=serializer_data)
 
     @inject

@@ -2886,10 +2886,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          $ref: '#/components/schemas/MaintenanceModeEnum'
       required:
       - id
       - name
       - status
+      - maintenanceMode
     RelatedServicesStatuses:
       type: object
       properties:
@@ -2906,6 +2909,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          allOf:
+          - $ref: '#/components/schemas/MaintenanceModeEnum'
+          readOnly: true
         components:
           type: array
           items:
@@ -2915,6 +2922,7 @@ components:
       - name
       - displayName
       - status
+      - maintenanceMode
       - components
     RelatedUser:
       type: object
@@ -18659,7 +18667,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
@@ -18723,7 +18731,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
