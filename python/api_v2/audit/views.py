@@ -17,7 +17,7 @@ from audit.models import (
 )
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rest_framework.permissions import AllowAny, DjangoObjectPermissions
+from rest_framework.permissions import DjangoObjectPermissions, IsAuthenticated
 from rest_framework.routers import APIRootView
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
@@ -28,7 +28,7 @@ from api_v2.views import ADCMReadOnlyModelViewSet
 
 
 class AuditRoot(APIRootView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     api_root_dict = {
         "operations": "auditlog-list",
         "logins": "auditsession-list",
