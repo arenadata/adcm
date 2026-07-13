@@ -11,6 +11,8 @@
     scgi_temp_path /tmp/nginx_scgi_temp;
 
     location / {
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';" always;
+
         if ($arg_nocache) {
             add_header Cache-Control no-cache;
         }
