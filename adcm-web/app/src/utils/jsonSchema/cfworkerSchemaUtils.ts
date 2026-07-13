@@ -4,6 +4,7 @@
 import type { Schema } from '@cfworker/json-schema';
 import { type OutputUnit, Validator } from '@cfworker/json-schema';
 import { deepClone, getValueByPath } from '@utils/objectUtils';
+
 export type SchemaLike = Schema | object | boolean;
 
 function isSchema(x: unknown): x is Schema {
@@ -670,6 +671,54 @@ function schemaAllowsNull(schema: Schema | undefined): boolean {
   return false;
 }
 
+function isPropertyNullableBySchema(parentSchema: Schema, propName: string): boolean {
+  const props = parentSchema.properties;
+  const fromProperties =
+    props && typeof props === 'object' && !Array.isArray(props)
+      ? (props as Record<string, unknown>)[propName]
+      : undefined;
+
+  const propSchema = isSchema(fromProperties) ? fromProperties : parentSchema;
+
+  if (schemaAllowsNull(propSchema)) return true;
+
+  const { oneOf } = propSchema;
+  if (!Array.isArray(oneOf)) return false;
+
+  return oneOf.some((branch) => isSchema(branch) && branch.type === 'null');
+}
+
+function isRequiredOptionalNullableProperty(parentSchema: Schema, propName: string): boolean {
+  const required = parentSchema.required;
+  if (!Array.isArray(required) || !required.includes(propName)) return false;
+  return isPropertyNullableBySchema(parentSchema, propName);
+}
+
+function isContainerLevelRequiredError(err: ValidationError, parentSchema: Schema): boolean {
+  if (err.keyword !== KEYWORDS.required || !Array.isArray(parentSchema.required)) return false;
+  if (err.params?.missingProperty) return true;
+
+  const lastSegment = err.instancePath.split('/').filter(Boolean).at(-1);
+  if (!lastSegment) return true;
+
+  return !parentSchema.required.includes(lastSegment);
+}
+
+function isSkippableRequiredMissingError(err: ValidationError): boolean {
+  if (err.keyword !== KEYWORDS.required) return false;
+
+  const parentSchema = err.parentSchema;
+  if (!parentSchema || !isSchema(parentSchema)) return false;
+
+  const propName =
+    (typeof err.params?.missingProperty === 'string' ? err.params.missingProperty : undefined) ??
+    err.instancePath.split('/').filter(Boolean).at(-1);
+
+  if (!propName) return false;
+
+  return isPropertyNullableBySchema(parentSchema, propName);
+}
+
 /**
  * cfworker sometimes validates `oneOf` even when `type` allows `null` (e.g. `type: ['object','null']`).
  * AJV treats such values as valid and does not evaluate discriminator/oneOf branches.
@@ -861,13 +910,15 @@ function enrichMissingPropertyErrors(errors: ValidationError[]): ValidationError
   for (const err of errors) {
     // `required`: expand to one error per missing property for leaf highlighting.
     const parentSchema = err.parentSchema;
-    if (err.keyword === KEYWORDS.required && parentSchema && Array.isArray(parentSchema.required)) {
-      const requiredProps = parentSchema.required;
+
+    if (isSchema(parentSchema) && isContainerLevelRequiredError(err, parentSchema)) {
+      const requiredProps = parentSchema.required as string[];
       const valueObj = asPlainObjectRecord(err.data) ?? {};
       let didExpand = false;
 
       for (const prop of requiredProps) {
-        if (prop in valueObj) continue;
+        if (prop in valueObj || isPropertyNullableBySchema(parentSchema, prop)) continue;
+
         didExpand = true;
         result.push({
           ...err,
@@ -878,7 +929,12 @@ function enrichMissingPropertyErrors(errors: ValidationError[]): ValidationError
         });
       }
 
-      if (!didExpand) result.push(err);
+      if (!didExpand) {
+        const hasBlockingMissing = requiredProps.some(
+          (prop) => !(prop in valueObj) && !isPropertyNullableBySchema(parentSchema, prop),
+        );
+        if (hasBlockingMissing) result.push(err);
+      }
       continue;
     }
 
@@ -910,7 +966,9 @@ function enrichMissingPropertyErrors(errors: ValidationError[]): ValidationError
       continue;
     }
 
-    result.push(err);
+    if (!isSkippableRequiredMissingError(err)) {
+      result.push(err);
+    }
   }
 
   return result;
@@ -935,17 +993,13 @@ type DiscriminatedCtx = {
 };
 
 // Find discriminator context for a oneOf error (selected branch, discriminator name/value, etc.).
-function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): DiscriminatedCtx | null {
-  const schema = oneOfError.parentSchema;
-  if (!isSchema(schema)) return null;
-
+function buildDiscriminatorContext(schema: Schema, value: unknown, path: string): DiscriminatedCtx | null {
   const discName = getDiscriminatorPropertyName(schema);
-  if (!discName) return null;
+  if (!discName || !Array.isArray(schema.oneOf)) return null;
 
-  const value = oneOfError.data;
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return {
-      path: oneOfError.instancePath,
+      path,
       discName,
       discValue: '',
       selectionKind: 'missing_or_unknown',
@@ -957,7 +1011,7 @@ function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): Dis
   const discValue = valueObj[discName];
   if (typeof discValue !== 'string') {
     return {
-      path: oneOfError.instancePath,
+      path,
       discName,
       discValue: '',
       selectionKind: 'missing_or_unknown',
@@ -965,17 +1019,14 @@ function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): Dis
     };
   }
 
-  const branches = schema.oneOf;
-  if (!Array.isArray(branches)) return null;
-
-  const selected = branches.find((b): b is Schema => {
+  const selected = schema.oneOf.find((b): b is Schema => {
     if (!isSchema(b)) return false;
     const prop = b.properties?.[discName];
     return isSchema(prop) && 'const' in prop && prop.const === discValue;
   });
   if (!selected) {
     return {
-      path: oneOfError.instancePath,
+      path,
       discName,
       discValue,
       selectionKind: 'missing_or_unknown',
@@ -985,12 +1036,59 @@ function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): Dis
 
   const props = selected.properties ? Object.keys(selected.properties) : [];
   return {
-    path: oneOfError.instancePath,
+    path,
     discName,
     discValue,
     selectionKind: 'known',
     selectedBranchProps: new Set(props),
   };
+}
+
+function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): DiscriminatedCtx | null {
+  const schema = oneOfError.parentSchema;
+  if (!isSchema(schema)) return null;
+  return buildDiscriminatorContext(schema, oneOfError.data, oneOfError.instancePath);
+}
+
+function collectDiscriminatorContextsInData(schema: SchemaLike, data: unknown, instancePath = ''): DiscriminatedCtx[] {
+  if (!isSchema(schema)) return [];
+
+  const result: DiscriminatedCtx[] = [];
+
+  if (Array.isArray(schema.oneOf) && getDiscriminatorPropertyName(schema)) {
+    const ctx = buildDiscriminatorContext(schema, data, instancePath);
+    if (ctx) result.push(ctx);
+  }
+
+  const obj =
+    data !== null && typeof data === 'object' && !Array.isArray(data) ? (data as Record<string, unknown>) : null;
+  if (!obj) return result;
+
+  const branch = branchForDiscriminatedOneOf(schema, obj);
+  const childSchemas = branch?.properties ?? schema.properties;
+  if (!childSchemas || typeof childSchemas !== 'object') return result;
+
+  for (const [key, propSchema] of Object.entries(childSchemas)) {
+    if (!isSchema(propSchema)) continue;
+    if (!(key in obj)) continue;
+    const childPath = instancePath === '' ? `/${key}` : `${instancePath}/${key}`;
+    result.push(...collectDiscriminatorContextsInData(propSchema, obj[key], childPath));
+  }
+
+  return result;
+}
+
+/** True when `instancePath` is under a non-selected oneOf branch root (e.g. `/group/b` while `a` is selected). */
+function isErrorOnNonSelectedBranchRoot(ctx: DiscriminatedCtx, instancePath: string): boolean {
+  if (ctx.selectionKind !== 'known') return false;
+  if (instancePath === ctx.path) return false;
+  if (!isStrictDescendantPath(ctx.path, instancePath)) return false;
+
+  const relative = instancePath.slice(ctx.path.length + 1);
+  const topSegment = relative.split('/')[0];
+  if (!topSegment || topSegment === ctx.discName) return false;
+
+  return !ctx.selectedBranchProps.has(topSegment);
 }
 
 /**
@@ -1001,22 +1099,38 @@ function findDiscriminatorContextForOneOfError(oneOfError: ValidationError): Dis
  * - **Branch restriction**: when selection is known, drop errors that belong only to other branches.
  * - **Marker visibility**: when selection is missing/unknown, keep parent oneOf marker and drop descendants that would hide it.
  */
-function normalizeDiscriminatorOneOfErrors(errors: ValidationError[]): ValidationError[] {
+function normalizeDiscriminatorOneOfErrors(
+  errors: ValidationError[],
+  schema?: SchemaLike,
+  data?: unknown,
+): ValidationError[] {
   const oneOfErrors = errors.filter((e) => e.keyword === KEYWORDS.oneOf);
-  if (oneOfErrors.length === 0) return errors;
 
-  const contexts: DiscriminatedCtx[] = oneOfErrors
+  const contextsFromErrors = oneOfErrors
     .map(findDiscriminatorContextForOneOfError)
     .filter((x): x is DiscriminatedCtx => x !== null);
 
+  const contextsFromData =
+    schema !== undefined && data !== undefined && isSchema(schema)
+      ? collectDiscriminatorContextsInData(schema, data)
+      : [];
+
+  const contextByPath = new Map<string, DiscriminatedCtx>();
+  for (const ctx of [...contextsFromErrors, ...contextsFromData]) {
+    if (!contextByPath.has(ctx.path)) contextByPath.set(ctx.path, ctx);
+  }
+
+  const contexts = [...contextByPath.values()];
   if (contexts.length === 0) return errors;
-  const contextByPath = new Map<string, DiscriminatedCtx>(contexts.map((c) => [c.path, c]));
+
   const knownContexts = contexts.filter((c) => c.selectionKind === 'known');
 
   // 1) Branch restriction (selection known): drop errors from non-selected branches.
   const branchRestricted = errors.filter((e) => {
     for (const ctx of knownContexts) {
       if (!isStrictDescendantPath(ctx.path, e.instancePath) && e.instancePath !== ctx.path) continue;
+
+      if (isErrorOnNonSelectedBranchRoot(ctx, e.instancePath)) return false;
 
       // Drop discriminator const mismatches from non-selected branches.
       if (e.keyword === KEYWORDS.const && e.instancePath === `${ctx.path}/${ctx.discName}`) {
@@ -1042,6 +1156,8 @@ function normalizeDiscriminatorOneOfErrors(errors: ValidationError[]): Validatio
     }
     return true;
   });
+
+  if (oneOfErrors.length === 0) return branchRestricted;
 
   // 2) Marker visibility (selection missing/unknown): keep the parent oneOf marker and drop descendants
   // that would hide it in the tree (getErrorsForTreeRow).
@@ -1093,7 +1209,7 @@ function normalizeCfworkerValidationErrors(
   const containsEnriched = enrichContainsErrors(nullAligned, schema, data);
 
   // 8) Normalize discriminator-based oneOf behavior (cfworker emits non-selected-branch noise)
-  return normalizeDiscriminatorOneOfErrors(containsEnriched);
+  return normalizeDiscriminatorOneOfErrors(containsEnriched, schema, data);
 }
 
 // Validate data with cfworker and return normalized (AJV-like) errors, or null when valid.
@@ -1129,11 +1245,17 @@ export const validateWithCfWorker = (schema: SchemaLike, data: unknown): Validat
   if (valid || !errors || errors.length === 0) {
     const containsErrors = collectContainsConstraintErrors(schema, data);
     if (containsErrors.length === 0) return null;
-    return normalizeDiscriminatorOneOfErrors(enrichContainsErrors(containsErrors, schema, data));
+    return finalizeCfworkerValidationResult(
+      normalizeDiscriminatorOneOfErrors(enrichContainsErrors(containsErrors, schema, data), schema, data),
+    );
   }
 
-  return normalizeCfworkerValidationErrors(errors, schema, data);
+  return finalizeCfworkerValidationResult(normalizeCfworkerValidationErrors(errors, schema, data));
 };
+
+function finalizeCfworkerValidationResult(errors: ValidationError[]): ValidationError[] | null {
+  return errors.length === 0 ? null : errors;
+}
 
 // Run cfworker validation and return raw OutputUnit[] (no normalization).
 export const validateWithCfWorkerLibrary = (schema: SchemaLike, data: unknown): OutputUnit[] | null => {
@@ -1284,6 +1406,7 @@ function generateFromObjectProperties<T>(schema: Schema): T {
     if (!isSchema(propSchema) || result[key] !== undefined) continue;
 
     const value = generateFromSchemaWithCfWorker(propSchema);
+    const materializeNullable = isRequiredOptionalNullableProperty(schema, key);
 
     if (value && typeof value === 'object' && Array.isArray(propSchema.oneOf)) {
       const valueObj = value as Record<string, unknown>;
@@ -1296,7 +1419,14 @@ function generateFromObjectProperties<T>(schema: Schema): T {
       }
     }
 
-    if (value !== null && value !== undefined) result[key] = value;
+    if (value !== undefined && value !== null) {
+      result[key] = value;
+      continue;
+    }
+
+    if (materializeNullable) {
+      result[key] = null;
+    }
   }
 
   return result as T;

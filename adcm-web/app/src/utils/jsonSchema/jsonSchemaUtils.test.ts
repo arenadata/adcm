@@ -498,6 +498,116 @@ describe('validate', () => {
     expect(keys.has('false-schema:/section/sub')).toBe(false);
   });
 
+  test('cfworker: required skips oneOf+null optional properties (ADCM integer_no_req)', () => {
+    const innerGroupSchema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        integer_no_req: {
+          oneOf: [{ type: 'integer', default: null }, { type: 'null' }],
+          default: null,
+        },
+        integer_req: {
+          type: 'integer',
+          default: null,
+        },
+      },
+      required: ['integer_no_req', 'integer_req'],
+    };
+
+    const schema: SchemaLike = {
+      type: 'object',
+      properties: {
+        selection_group_req_no_req: {
+          type: 'object',
+          discriminator: { propertyName: '_selection' },
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                _selection: { const: 'selection_group_no_req' },
+                selection_group_no_req: innerGroupSchema,
+              },
+              required: ['_selection', 'selection_group_no_req'],
+            },
+          ],
+        },
+      },
+    };
+
+    const data = {
+      selection_group_req_no_req: {
+        _selection: 'selection_group_no_req',
+        selection_group_no_req: {},
+      },
+    };
+
+    const errors = validate(schema, data);
+    expect(errors).not.toBe(null);
+
+    const requiredPaths = (errors ?? []).filter((e) => e.keyword === 'required').map((e) => e.instancePath);
+
+    expect(requiredPaths).toContain('/selection_group_req_no_req/selection_group_no_req/integer_req');
+    expect(requiredPaths).not.toContain('/selection_group_req_no_req/selection_group_no_req/integer_no_req');
+  });
+
+  test('cfworker: drop required on non-selected discriminator branch (two branches)', () => {
+    const innerGroupSchema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        integer_no_req: {
+          oneOf: [{ type: 'integer', default: null }, { type: 'null' }],
+          default: null,
+        },
+        integer_req: { type: 'integer', default: null },
+      },
+      required: ['integer_no_req', 'integer_req'],
+    };
+
+    const schema: SchemaLike = {
+      type: 'object',
+      properties: {
+        selection_group_req_no_req: {
+          type: 'object',
+          discriminator: { propertyName: '_selection' },
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                _selection: { const: 'selection_group_req' },
+                selection_group_req: innerGroupSchema,
+              },
+              required: ['_selection', 'selection_group_req'],
+            },
+            {
+              type: 'object',
+              properties: {
+                _selection: { const: 'selection_group_no_req' },
+                selection_group_no_req: innerGroupSchema,
+              },
+              required: ['_selection', 'selection_group_no_req'],
+            },
+          ],
+        },
+      },
+    };
+
+    const data = {
+      selection_group_req_no_req: {
+        _selection: 'selection_group_no_req',
+        selection_group_no_req: { integer_req: 2 },
+      },
+    };
+
+    const errors = validate(schema, data);
+    const requiredPaths = (errors ?? []).map((e) => e.instancePath);
+
+    expect(requiredPaths).not.toContain('/selection_group_req_no_req/selection_group_req');
+    expect(requiredPaths).not.toContain('/selection_group_req_no_req/selection_group_no_req/integer_no_req');
+    expect(errors).toBe(null);
+  });
+
   test('cfworker: drop false-schema when concrete error exists at same path', () => {
     const schema: SchemaLike = {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -686,6 +796,72 @@ describe('generateFromSchema', () => {
     expect(result).toStrictEqual(undefined);
   });
 
+  test('materializes optional oneOf+null required properties as null (ADCM integer_no_req)', () => {
+    const schema: Schema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        integer_no_req: {
+          oneOf: [{ type: 'integer', default: null }, { type: 'null' }],
+          default: null,
+        },
+        integer_req: {
+          type: 'integer',
+          default: null,
+        },
+      },
+      required: ['integer_no_req', 'integer_req'],
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toEqual({ integer_no_req: null });
+  });
+
+  test('discriminator branch defaults include optional nullable keys', () => {
+    const innerGroupSchema: Schema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        integer_no_req: {
+          oneOf: [{ type: 'integer', default: null }, { type: 'null' }],
+          default: null,
+        },
+        integer_req: {
+          type: 'integer',
+          default: null,
+        },
+      },
+      required: ['integer_no_req', 'integer_req'],
+    };
+
+    const schema: Schema = {
+      type: 'object',
+      properties: {
+        selection_group_req_no_req: {
+          type: 'object',
+          discriminator: { propertyName: '_selection' },
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                _selection: { const: 'selection_group_no_req' },
+                selection_group_no_req: innerGroupSchema,
+              },
+              required: ['_selection', 'selection_group_no_req'],
+            },
+          ],
+        },
+      },
+    };
+
+    const result = generateFromSchema(schema);
+    expect(result).toEqual({
+      selection_group_req_no_req: {
+        selection_group_no_req: { integer_no_req: null },
+      },
+    });
+  });
+
   test('validate user scenario with required + nullable branches', () => {
     const schema = {
       title: 'Configuration',
@@ -743,10 +919,12 @@ describe('generateFromSchema', () => {
     const errors = validate(schema, data);
     expect(errors).not.toBeNull();
     expect(errors?.length).toBeGreaterThan(0);
-    const paths = errors!.map((e) => e.instancePath);
-    expect(paths).toContain('/float');
-    expect(paths).toContain('/string');
-    expect(paths).toContain('/password');
+    const requiredPaths = (errors ?? []).filter((e) => e.keyword === 'required').map((e) => e.instancePath);
+    // optional fields (oneOf + null) must not surface `required` when keys are absent.
+    expect(requiredPaths).not.toContain('/float');
+    expect(requiredPaths).not.toContain('/string');
+    expect(requiredPaths).not.toContain('/password');
+    expect((errors ?? []).some((e) => e.keyword === 'additionalProperties')).toBe(true);
   });
 
   test('generate object with discriminator', () => {
