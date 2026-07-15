@@ -14,7 +14,6 @@ from operator import itemgetter
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ActionHostGroup, Component, HostComponent
 from core.types import CoreObjectDescriptor
 from tests.suites import ADCMPluginExecutorSuite
@@ -51,7 +50,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 )
 
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
 
                 executor = self.prepare_executor(
                     executor_type=ADCMHostComponentPluginExecutor,
@@ -82,7 +81,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         expected_hc = [hostcomponent[0]]
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         extra_arg_outer = f"""
         test: arg
@@ -138,7 +137,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         )
 
         task = self.prepare_task(owner=object_, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMHostComponentPluginExecutor,
@@ -183,7 +182,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMHostComponentPluginExecutor,
                     call_arguments={"operations": []},
@@ -203,7 +202,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         object_ = self.cluster
 
         task = self.prepare_task(owner=object_, name="with_hc")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMHostComponentPluginExecutor,
@@ -231,7 +230,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         expected_hc = self.get_current_hc_dicts()
 
         task = self.prepare_task(owner=object_, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMHostComponentPluginExecutor,
@@ -273,7 +272,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         action_host_group_service.add_hosts_to_group(group_id=action_group_2.id, hosts=[self.host_2.id])
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMHostComponentPluginExecutor,
@@ -303,7 +302,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         expected_hc = self.get_current_hc_dicts()
 
         task = self.prepare_task(owner=object_, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMHostComponentPluginExecutor,

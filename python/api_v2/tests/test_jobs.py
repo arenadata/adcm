@@ -20,6 +20,7 @@ from cm.models import (
     ObjectType,
     Prototype,
 )
+from core.action import ExecutionStatus
 from django.conf import settings
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 from tests.deprecated import TaskTestMixin
@@ -196,8 +197,8 @@ class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
     def test_job_terminate_success(self):
         _, job = self.simulate_running_task(object_=self.cluster_1, action=self.cluster_1_action)
 
-        with patch("cm.models.os.kill") as kill_mock:
-            response = self.client.v2[job, "terminate"].post(data={})
+        response = self.client.v2[job, "terminate"].post(data={})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        kill_mock.assert_called()
+        job.refresh_from_db()
+        self.assertEqual(job.status, ExecutionStatus.REVOKING)

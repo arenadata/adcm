@@ -13,9 +13,9 @@
 from logging import Logger
 from typing import Protocol
 
+from core.action import Task
 from core.cluster import ClusterService
-from core.legacy.job.types import Task
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, Descriptor
 from django.conf import settings
 
 from cm.converters import core_type_to_model, orm_object_to_core_type
@@ -58,7 +58,7 @@ def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logge
     )
 
 
-def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType):
+def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCoreType]):
     """
     If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
     """

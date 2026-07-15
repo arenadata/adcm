@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, MaintenanceMode
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -42,7 +41,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
             with self.subTest(arguments["type"]):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
 
                 executor = self.prepare_executor(
                     executor_type=ADCMChangeMMExecutor,
@@ -66,7 +65,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         with self.subTest("component-from-host"):
             task = self.prepare_task(owner=self.component_1, name="on_host", host=self.host_1)
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            job, *_ = self.get_task_jobs(task.id)
 
             executor = self.prepare_executor(
                 executor_type=ADCMChangeMMExecutor,
@@ -89,7 +88,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         with self.subTest("service-from-component"):
             task = self.prepare_task(owner=self.component_1, name="dummy")
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            job, *_ = self.get_task_jobs(task.id)
 
             executor = self.prepare_executor(
                 executor_type=ADCMChangeMMExecutor,
@@ -114,7 +113,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         for type_ in ("cluster", "provider"):
             with self.subTest(type_):
                 task = self.prepare_task(owner=self.component_1, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMChangeMMExecutor,
                     call_arguments=f"""
@@ -134,7 +133,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.host_1.save()
 
         task = self.prepare_task(owner=self.host_1, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMChangeMMExecutor,

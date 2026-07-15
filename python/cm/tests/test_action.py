@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 import json
 
+from core.action import HcAclRule, TaskMappingDelta
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -23,7 +24,6 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.legacy.job.types import HcAclRule, TaskMappingDelta
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Model
@@ -37,13 +37,13 @@ from use_cases.transition.config import UpdateConfigurationFromJob
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
+from cm.impl.job.repo import JobRepo
 from cm.legacy.api import add_service_to_cluster
 from cm.legacy.services.job.run._target_factories import (
     internal_script_config_apply,
     internal_script_hc_apply,
     prepare_ansible_environment,
 )
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
 from cm.tests.utils import (
     gen_action,
@@ -305,8 +305,8 @@ class TestActionParams(ADCMDjangoAPISuite):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task = JobRepoImpl.get_task(id=response.json()["id"])
-        job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
+        task = JobRepo().get_task(id=response.json()["id"])
+        job, *_ = JobRepo().get_task_jobs(task_id=task.id)
 
         job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)

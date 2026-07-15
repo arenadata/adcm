@@ -14,14 +14,18 @@
 from adcm.permissions import VIEW_JOBLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
+from cm.errors import AdcmEx
 from cm.models import JobLog
+from core.errors import NotFoundError
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
+from django.db.transaction import atomic
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -29,6 +33,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+import core
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.job.filters import JobFilter
@@ -36,7 +41,7 @@ from api_v2.job.permissions import JobPermissions
 from api_v2.job.serializers import JobRetrieveSerializer
 from api_v2.task.serializers import JobListSerializer
 from api_v2.utils.audit import detect_object_for_job, set_job_name
-from api_v2.views import ADCMGenericViewSet
+from api_v2.views import ADCMGenericViewSet, inject
 
 
 @extend_schema_view(
@@ -89,8 +94,19 @@ class JobViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGe
 
     @audit_update(name="{job_name} terminated", object_=detect_object_for_job).attach_hooks(on_collect=set_job_name)
     @action(methods=["post"], detail=True)
-    def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        job = self.get_object()
-        job.cancel()
+    @inject
+    def terminate(self, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__) -> Response:
+        # for pemission checks
+        self.get_object()
+
+        try:
+            with atomic():
+                job_service.terminate_job(job_id=int(pk))
+        except core.action.job.errors.JobValidationError as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
+        except core.action.job.errors.JobTerminationError as e:
+            raise AdcmEx("JOB_TERMINATION_ERROR", e.message) from None
+        except NotFoundError:
+            raise NotFound() from None
 
         return Response(status=HTTP_200_OK)

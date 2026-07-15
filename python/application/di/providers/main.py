@@ -14,7 +14,6 @@ from functools import partial
 from pathlib import Path
 import os
 
-from adcm.feature_flags import use_new_job_scheduler
 from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
 from cm.impl.adcm.repo import ADCMRepo
 from cm.impl.bundle.definition import definition_to_full_spec
@@ -35,6 +34,11 @@ from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
+from core.action.job._termination import (
+    DirectOSTerminationSignaller,
+    IndirectRepoTerminationSignaller,
+    TerminationSignaller,
+)
 from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
@@ -69,6 +73,8 @@ from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess,
 import core
 import yaml
 
+from application.types import TaskRunnerMode
+
 
 class PathResolverProvider(Provider):
     scope = Scope.APP
@@ -101,8 +107,28 @@ class ConfigProvider(Provider):
 class JobProvider(Provider):
     scope = Scope.APP
 
-    repo = provide(JobRepo, provides=core.job.JobRepoI)
-    service = provide(core.job.JobService)
+    repo = provide(JobRepo, provides=core.action.job.JobRepoI)
+    service = provide(core.action.job.JobService)
+
+    @provide
+    def termination_signaller(
+        self, task_runner_mode: TaskRunnerMode, repo: core.action.job.JobRepoI
+    ) -> TerminationSignaller:
+        match task_runner_mode:
+            case TaskRunnerMode.SCHEDULLER:
+                return IndirectRepoTerminationSignaller(repo)
+
+            case TaskRunnerMode.INSTANT:
+                return DirectOSTerminationSignaller()
+
+    @provide
+    def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:
+        match task_runner_mode:
+            case TaskRunnerMode.SCHEDULLER:
+                return lambda _: None
+
+            case TaskRunnerMode.INSTANT:
+                return start_task
 
 
 class WizardProvider(Provider):
@@ -172,17 +198,6 @@ class UtilsProvider(Provider):
 
     context_gatherer = provide(ContextGatherer, provides=ContextGathererI[ActionArgs, TaskArgs])
     bundle_renderer = provide(BundleRenderer[ActionArgs, TaskArgs], provides=BundleRenderer[ActionArgs, TaskArgs])
-
-
-class TaskStarterProvider(Provider):
-    scope = Scope.APP
-
-    @provide
-    def task_starter(self) -> TaskStarter:
-        if use_new_job_scheduler():
-            return lambda _: None
-
-        return start_task
 
 
 class ScenariosProvider(Provider):

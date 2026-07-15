@@ -15,10 +15,9 @@ from unittest import TestCase
 from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job.run import create_related_configs
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog, Service
 from core import config
-from core.legacy.job.types import Task
+from core.action import Task
 from core.tests.test_config.utils import name_id
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -58,7 +57,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         return ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=object_.config.current))
 
     def execute_plugin(self, task: Task, call_arguments: str | dict) -> CallResult:
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         create_related_configs(job_id=job.id, owner=task.owner)
 
         executor = self.prepare_executor(

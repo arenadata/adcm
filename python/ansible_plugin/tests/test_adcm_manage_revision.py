@@ -15,7 +15,6 @@ from unittest.mock import patch
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.services.config import retrieve_primary_configs
 from cm.legacy.services.hierarchy import retrieve_object_hierarchy
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCMEntity, ConfigRevision
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -43,7 +42,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
     def test_set_revisions_success(self, mock_get_related_configs):
         mock_get_related_configs.return_value = self.get_related_configs(self.cluster)
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         self.assertEqual(ConfigRevision.objects.count(), 0)
 
@@ -80,7 +79,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
         ConfigRevision.objects.bulk_create([ConfigRevision(configlog_id=id_) for id_ in current_config_ids])
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         self.change_configuration(
             target=self.cluster,
@@ -181,7 +180,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_arguments_validation(self):
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMManageRevisionPluginExecutor,

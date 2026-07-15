@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal, NamedTuple, Protocol, TypeAlias
 
-from core.legacy.job.types import JobSpec
+from core.action import JobSpec
 from core.templates import Template
 
 

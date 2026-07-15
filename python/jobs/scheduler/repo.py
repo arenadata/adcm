@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from collections.abc import Generator, Sequence
+from contextlib import contextmanager
 
 from adcm.settings_setups.shared.constants import (
     ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
@@ -19,11 +20,12 @@ from adcm.settings_setups.shared.constants import (
     ADCM_TURN_ON_MM_ACTION_NAME,
 )
 from cm.models import UNFINISHED_STATUS, Action, ConcernItem, ConcernType, JobLog, JobStatus, TaskLog
-from core.legacy.job.types import ExecutionStatus
+from core.action import ExecutionStatus
 from core.types import ActionID, ConcernID, JobID, TaskID
 
-from jobs.scheduler._types import ActionShortInfo, TaskShortInfo
+from jobs.scheduler._types import ActionShortInfo, JobShortInfo, TaskShortInfo
 
+_WAITING_TO_TERMINATE_STATUS = ExecutionStatus.REVOKING
 _FIELDS = ("id", "executor", "status", "lock_id", "action_id", "action__name")
 MM_ACTION_NAMES = {
     ADCM_TURN_ON_MM_ACTION_NAME,
@@ -45,17 +47,19 @@ def retrieve_task(task_id: TaskID) -> TaskShortInfo:
     return next(retrieve_tasks(id=task_id))
 
 
+def retrieve_job(job_id: JobID) -> JobShortInfo:
+    record_fields = (
+        JobLog.objects.filter(id=job_id, status=_WAITING_TO_TERMINATE_STATUS)
+        .order_by("id")
+        .values_list("id", "executor", "status")
+        .get()
+    )
+    return _from_fields_to_job_short_info(record_fields)
+
+
 def retrieve_tasks(**kwargs) -> Generator[TaskShortInfo, None, None]:
-    for id_, executor, status, lock_id, action_id, action_name in TaskLog.objects.filter(**kwargs).values_list(
-        *_FIELDS
-    ):
-        yield TaskShortInfo(
-            id=id_,
-            worker=executor,
-            status=ExecutionStatus[status.upper()],
-            lock_id=lock_id,
-            action=ActionShortInfo(id=action_id, is_mm_action=action_name in MM_ACTION_NAMES),
-        )
+    for record_fields in TaskLog.objects.filter(**kwargs).values_list(*_FIELDS):
+        yield _from_fields_to_task_short_info(record_fields)
 
 
 def retrieve_unfinished_tasks() -> Generator[TaskShortInfo, None, None]:
@@ -78,3 +82,49 @@ def retrieve_concern_tasks(
     type_: ConcernType = ConcernType.LOCK,
 ) -> Generator[tuple[ConcernID, TaskID | None], None, None]:
     yield from ConcernItem.objects.filter(type=type_).values_list("id", "tasklog")
+
+
+# TERMINATION
+def get_planned_for_termination() -> tuple[tuple[JobID, ...], tuple[TaskID, ...]]:
+    jobs_qs = JobLog.objects.filter(status=_WAITING_TO_TERMINATE_STATUS).values_list("id", flat=True)
+    tasks_qs = TaskLog.objects.filter(status=_WAITING_TO_TERMINATE_STATUS).values_list("id", flat=True)
+    return tuple(jobs_qs), tuple(tasks_qs)
+
+
+@contextmanager
+def lock_job_for_termination(job_id: JobID) -> Generator[JobID | None, None, None]:
+    yield (
+        JobLog.objects.select_for_update(skip_locked=True)
+        .filter(id=job_id, status=_WAITING_TO_TERMINATE_STATUS)
+        .values_list("id", flat=True)
+        .first()
+    )
+
+
+@contextmanager
+def lock_task_for_termination(task_id: TaskID) -> Generator[TaskID | None, None, None]:
+    yield (
+        TaskLog.objects.select_for_update(skip_locked=True)
+        .filter(id=task_id, status=_WAITING_TO_TERMINATE_STATUS)
+        .values_list("id", flat=True)
+        .first()
+    )
+
+
+# Utilities
+
+
+def _from_fields_to_task_short_info(fields: tuple) -> TaskShortInfo:
+    id_, executor, status, lock_id, action_id, action_name = fields
+    return TaskShortInfo(
+        id=id_,
+        worker=executor,
+        status=ExecutionStatus(status.lower()),
+        lock_id=lock_id,
+        action=ActionShortInfo(id=action_id, is_mm_action=action_name in MM_ACTION_NAMES),
+    )
+
+
+def _from_fields_to_job_short_info(fields: tuple) -> JobShortInfo:
+    id_, executor, status = fields
+    return JobShortInfo(id=id_, worker=executor, status=ExecutionStatus(status.lower()))

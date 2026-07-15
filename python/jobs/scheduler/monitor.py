@@ -13,7 +13,7 @@
 import os
 import time
 
-from core.legacy.job.types import ExecutionStatus
+from core.action import ExecutionStatus
 
 from jobs.scheduler import repo, settings
 from jobs.scheduler._types import CELERY_RUNNING_STATES, CeleryTaskState, TaskRunnerEnvironment, TaskShortInfo

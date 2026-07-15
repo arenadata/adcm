@@ -252,7 +252,7 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         payload = UpgradeActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.job.dto.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
+            launch=core.action.job.LaunchOptions(is_blocking=True, is_verbose=data["is_verbose"]),
         )
 
         result = upgrade_object.do(target=parent_orm, upgrade=upgrade, payload=payload)

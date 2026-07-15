@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.action import TaskMappingDelta
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName
 
 from cm.legacy.services.job.context._constants import MAINTENANCE_MODE_GROUP_SUFFIX

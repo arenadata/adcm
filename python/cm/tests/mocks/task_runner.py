@@ -15,10 +15,10 @@ from datetime import datetime
 from functools import partial
 from typing import Any, NamedTuple
 
+from core.action import Job, ScriptType, Task
 from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
-from core.legacy.job.types import Job, ScriptType, Task
 from core.logs import LogsService
 from core.scenarios.config import ConfigScenarios
 from django.utils import timezone
@@ -28,9 +28,9 @@ from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.config import UpdateConfigurationFromJob
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.executors import InternalScriptResult
-from cm.legacy.services.job.run.repo import JobRepoImpl
 
 
 def do_nothing(*_, **__):
@@ -214,7 +214,6 @@ class SubprocessRunnerMockEnvironment:
         return timezone.now()
 
 
-class JobImplRunnerMock(JobRepoImpl):
-    @staticmethod
-    def close_old_connections() -> None:
+class JobImplRunnerMock(JobRepo):
+    def close_old_connections(self) -> None:
         return

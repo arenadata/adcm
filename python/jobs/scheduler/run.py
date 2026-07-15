@@ -28,6 +28,7 @@ from jobs.scheduler.launcher import run_launcher_in_loop
 from jobs.scheduler.logger import logger
 from jobs.scheduler.monitor import run_monitor_in_loop
 from jobs.scheduler.recover import actualize_locks
+from jobs.scheduler.killer import run_killer_in_loop
 
 
 def main() -> None:
@@ -39,8 +40,12 @@ def main() -> None:
     retrieve_sir = container.get(RetrieveStartImpossibleReason)
 
     processes = [
-        Process(target=run_launcher_in_loop, args=(retrieve_sir,)),
+        Process(
+            target=run_launcher_in_loop,
+            args=(retrieve_sir,),
+        ),
         Process(target=run_monitor_in_loop, args=()),
+        Process(target=run_killer_in_loop, args=(container,)),
     ]
 
     # psycopg connections are not fork-safe. `actualize_locks()` and container

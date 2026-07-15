@@ -18,6 +18,7 @@ from typing import cast
 
 import jinja2
 
+from core.action import JobSpec, ScriptType
 from core.errors import localize_error
 from core.legacy.bundle_alt._config import key_to_str
 from core.legacy.bundle_alt._yspec import FormatError, check_rule, process_rule
@@ -32,7 +33,6 @@ from core.legacy.bundle_alt.types import (
     ImportDefinition,
     UpgradeDefinition,
 )
-from core.legacy.job.types import JobSpec, ScriptType
 from core.templates import RendererEnv, Template, get_renderer
 
 # This section should be in sort of global consts module

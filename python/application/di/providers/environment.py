@@ -17,6 +17,7 @@ Keep here providers that aren't Django-dependant, so they can be used during sta
 from pathlib import Path
 import os
 
+from adcm.feature_flags import use_new_job_scheduler
 from core import secrets
 from core.ext_utils.pydantic import represent_missing_and_others_errors_without_description
 from core.files.directories import ADCMBundleDir, BundlesDir
@@ -30,7 +31,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import pydantic
 
 from application.constants import SECRETS_FILENAME
-from application.types import ADCMMaintenanceMode, SecretsSource
+from application.types import ADCMMaintenanceMode, SecretsSource, TaskRunnerMode
 
 
 # don't know where to put it yet, so keeping close to usage point
@@ -109,6 +110,13 @@ class EnvironmentProvider(Provider):
             case _:
                 message = f"Unexpected secrets backend: {env_var_name}={secret_backend_env_value}"
                 raise secrets.SecretBaseError(message)
+
+    @provide
+    def task_runner_mode(self) -> TaskRunnerMode:
+        if use_new_job_scheduler():
+            return TaskRunnerMode.SCHEDULLER
+
+        return TaskRunnerMode.INSTANT
 
     @provide
     def vault_settings(self) -> vault.ClientSettings:

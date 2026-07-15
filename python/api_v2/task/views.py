@@ -13,13 +13,18 @@
 from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
+from cm.errors import AdcmEx
 from cm.models import ProcessStepInput, TaskLog
+from core.errors import NotFoundError
+from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import OuterRef, QuerySet, Subquery
+from django.db.transaction import atomic
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -30,6 +35,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+import core
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.log_storage.utils import (
@@ -40,7 +46,7 @@ from api_v2.task.filters import TaskFilter
 from api_v2.task.permissions import TaskPermissions
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.audit import detect_object_for_task, set_task_name
-from api_v2.views import ADCMGenericViewSet
+from api_v2.views import ADCMGenericViewSet, inject
 
 
 @extend_schema_view(
@@ -140,11 +146,20 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
 
     @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
     @action(methods=["post"], detail=True, serializer_class=EmptySerializer)
-    def terminate(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
-        task = self.get_object()
-        task.cancel()
+    @inject
+    def terminate(self, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__) -> Response:
+        # for pemission checks
+        self.get_object()
 
-        return Response(status=HTTP_200_OK, data=TaskListSerializer(instance=task).data)
+        try:
+            with atomic():
+                job_service.terminate_task(task_id=int(pk))
+        except (core.action.job.errors.JobValidationError, core.action.job.errors.JobTerminationError) as e:
+            raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
+        except NotFoundError:
+            raise NotFound() from None
+
+        return Response(status=HTTP_200_OK)
 
     @action(methods=["get"], detail=True, url_path="logs/download")
     def download(self, request: Request, *args, **kwargs):  # noqa: ARG001, ARG002

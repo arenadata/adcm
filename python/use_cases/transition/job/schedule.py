@@ -52,16 +52,12 @@ from cm.models import (
 )
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
+from core.action import AssociatedProcess, ScriptType, TaskMappingDelta
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.legacy.job.types import (
-    AssociatedProcess,
-    ScriptType,
-    TaskMappingDelta,
-)
 from core.templates import parse_template
 from core.types import (
     ActionID,
@@ -152,7 +148,7 @@ class _ActionLaunchObjects:
 
 @dataclass(slots=True)
 class _ScheduleTask(ABC):
-    job_service: core.job.JobService
+    job_service: core.action.job.JobService
     config_service: core.config.ConfigService
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
@@ -182,10 +178,10 @@ class _ScheduleTask(ABC):
                 case _:
                     target_descriptor = orm_object_to_core_descriptor(action_objects.target)
 
-            task_extra = core.job.dto.TaskExtraInfo(
+            task_extra = core.action.job.TaskExtraInfo(
                 name=action_orm.name, display_name=action_orm.display_name, description=payload.description
             )
-            create_dto = core.job.dto.TaskCreateDTO(
+            create_dto = core.action.job.TaskCreateDTO(
                 action_id=action_orm.pk,
                 owner=descriptor,
                 target=target_descriptor,
@@ -306,7 +302,7 @@ class _ScheduleTask(ABC):
             self.job_service.create_jobs(task_id=task_id, scripts=scripts)
 
             if config_to_set is not None or delta is not None:
-                update_dto = core.job.dto.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
+                update_dto = core.action.job.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
                 self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
@@ -491,7 +487,7 @@ def _resolve_scripts(
     bundle_context: core.bundle.BundleContext,
     task_args: TaskArgs,
     is_upgrade_action: bool,
-    job_service: core.job.JobService,
+    job_service: core.action.job.JobService,
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> tuple[core.action.JobSpec, ...]:

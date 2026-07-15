@@ -15,6 +15,7 @@ from collections.abc import Iterable
 from itertools import chain
 from typing import Protocol
 
+from core.action import TaskMappingDelta
 from core.cluster import ClusterService
 from core.legacy.bundle.types import BundleRestrictions
 from core.legacy.cluster.operations import (
@@ -27,7 +28,6 @@ from core.legacy.cluster.types import (
     HostComponentEntry,
     TopologyHostDiff,
 )
-from core.legacy.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic

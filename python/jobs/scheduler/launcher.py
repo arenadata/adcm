@@ -18,15 +18,15 @@ import adcm.init_django  # noqa: F401, isort:skip
 
 from cm.converters import orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
+from cm.impl.job.repo import JobRepo, TaskTargetCoreObject
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
 from cm.legacy.services.job.run import distribute_concerns
-from cm.legacy.services.job.run.repo import JobRepoImpl, JobRepoInterface, TaskTargetCoreObject
 from cm.models import Cluster
 from cm.transition.action import RetrieveStartImpossibleReason
+from core.action import ExecutionStatus, Task
+from core.action.job import JobRepoI, TaskUpdateDTO
 from core.legacy.cluster.operations import construct_mapping_from_delta
-from core.legacy.job.dto import TaskUpdateDTO
-from core.legacy.job.types import ExecutionStatus, Task
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
 
@@ -43,7 +43,7 @@ from jobs.scheduler.utils import (
 
 
 def run_launcher_in_loop(retrieve_sir: RetrieveStartImpossibleReason) -> None:
-    job_repo: JobRepoInterface = JobRepoImpl
+    job_repo: JobRepoI = JobRepo()
     scheduler_repo: ModuleType = repo
     queuer = QUEUER_REGISTRY[settings.DEFAULT_JOB_EXECUTION_ENVIRONMENT]()
 
@@ -81,7 +81,7 @@ def schedule_task(
     *,
     task_id: TaskID,
     env_type: TaskRunnerEnvironment,
-    job_repo: JobRepoInterface,
+    job_repo: JobRepoI,
     scheduler_repo: ModuleType,
     retrieve_sir: RetrieveStartImpossibleReason,
 ) -> bool:
@@ -107,7 +107,7 @@ def schedule_task(
 @set_status_on_fail(status=ExecutionStatus.REVOKED, errors=LauncherError)
 @set_status_on_success(status=ExecutionStatus.QUEUED)
 @clear_concerns_on_error
-def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoInterface) -> None:
+def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoI) -> None:
     worker_info = queuer.queue(task_id)
     job_repo.update_task(id=task_id, data=TaskUpdateDTO(executor=worker_info))
 
@@ -117,7 +117,7 @@ def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoInterfac
 def validate(
     task_id: TaskID,
     target_orm: TaskTargetCoreObject,
-    job_repo: JobRepoInterface,
+    job_repo: JobRepoI,
     scheduler_repo: ModuleType,
     retrieve_sir: RetrieveStartImpossibleReason,
 ) -> None:

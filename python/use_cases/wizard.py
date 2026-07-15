@@ -41,11 +41,11 @@ from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag, raise_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
 from cm.models import TaskLog
 from cm.transition.status import StatusScenarios
+from core.action import CallingProcess
+from core.action.job import JobService
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job import JobService
-from core.legacy.job.types import CallingProcess
 from core.scenarios.wizard import FillWizardStepSpec
 from core.types import (
     ActionID,
@@ -337,12 +337,12 @@ class PerformWizardProcessOperation:
                     raise RuntimeError(message)
 
                 task_display_name = f"{action.action_display_name} ({step.extra.display_name})"
-                task_extra = core.job.dto.TaskExtraInfo(
+                task_extra = core.action.job.TaskExtraInfo(
                     name=action.action_name,
                     display_name=task_display_name,
                     description="",
                 )
-                task_payload = core.job.dto.TaskCreateDTO(
+                task_payload = core.action.job.TaskCreateDTO(
                     owner=action.owner,
                     target=action.target,
                     action_id=action.action_id,

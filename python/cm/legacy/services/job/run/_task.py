@@ -19,9 +19,9 @@ from core.types import PID
 from django.conf import settings
 
 from cm.converters import orm_object_to_core_descriptor
+from cm.impl.job.repo import TaskTargetCoreObject
 from cm.legacy.services.concern.distribution import distribute_concern_on_related_objects
 from cm.legacy.services.concern.locks import create_task_flag_concern, create_task_lock_concern
-from cm.legacy.services.job.run.repo import TaskTargetCoreObject
 from cm.legacy.status_api import notify_about_new_concern
 from cm.legacy.utils import get_env_with_venv_path
 from cm.models import ActionHostGroup, TaskLog

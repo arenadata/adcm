@@ -13,18 +13,17 @@
 from audit.alt.core import AuditSignature, Hooks, NameHalfSplitter, OperationAuditContext
 from audit.alt.object_retrievers import ignore_object_search
 from audit.models import AuditLogOperationResult, AuditLogOperationType, AuditObject, AuditObjectType
-from core.legacy.job.types import ExecutionStatus, Task
+from core.action import ExecutionStatus, Task
 from core.types import ADCMCoreType
-from dishka import Container
 
 
-def audit_task_finish(task: Task, task_result: ExecutionStatus, container: Container) -> None:
+def audit_task_finish(task: Task, task_result: ExecutionStatus, name_splitter: NameHalfSplitter) -> None:
     audit_context = OperationAuditContext(
         signature=AuditSignature(id="Action completion", type=AuditLogOperationType.UPDATE),
         default_name=f"{task.action.display_name} {'upgrade' if task.action.is_upgrade else 'action'} completed",
         retrieve_object=ignore_object_search,
         custom_hooks=Hooks(),
-        name_splitter=container.get(NameHalfSplitter),
+        name_splitter=name_splitter,
     )
     audit_context.result = (
         AuditLogOperationResult.SUCCESS if task_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL

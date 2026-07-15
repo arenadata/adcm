@@ -15,7 +15,6 @@ from core.types import TaskID
 
 from jobs.scheduler import repo
 from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment, WorkerInfo
-from jobs.worker.tasks import run_task
 
 # TODO: restart
 
@@ -34,7 +33,9 @@ class CeleryTaskQueuer(TaskQueuer):
     env = TaskRunnerEnvironment.CELERY
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        result = run_task.delay(task_id=task_id)  # pyright: ignore [reportFunctionMemberAccess]
+        from jobs.worker.tasks import run_scheduled_task
+
+        result = run_scheduled_task.delay(task_id=task_id)  # pyright: ignore [reportFunctionMemberAccess]
 
         return WorkerInfo(environment=self.env.value, worker_id=result.id)
 

@@ -35,6 +35,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.action import ExecutionStatus
 from core.action.operations import ActionStartImpossibleReason
 from core.cluster import ClusterService
 from core.config import ConfigService
@@ -371,6 +372,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
+        non_terminatable_status = ExecutionStatus.QUEUED
+
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
@@ -381,6 +384,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         task_id = self.task_runner.expect_task_launched().id
         job = JobLog.objects.filter(task_id=task_id).first()
+        job.status = non_terminatable_status
+        job.save(update_fields=["status"])
 
         response = self.client.v2[job, "terminate"].post(data={})
 
@@ -388,8 +393,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "JOB_TERMINATION_ERROR",
-                "desc": f"Can't terminate job #{job.id}, pid: 0 with status created",
+                "code": "NOT_ALLOWED_TERMINATION",
+                "desc": f"Job #{job.id} termination is not allowed due to status: {non_terminatable_status.value}",
                 "level": "error",
             },
         )

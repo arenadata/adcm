@@ -23,8 +23,8 @@ from cm.models import (
     HostComponent,
 )
 from cm.transition.action import RetrieveStartImpossibleReason
+from core.action import AssociatedProcess
 from core.legacy.cluster.types import HostComponentEntry
-from core.legacy.job.types import AssociatedProcess
 from core.types import ADCMCoreType, ExtraActionTargetType
 from dishka import FromDishka
 from django.conf import settings
@@ -269,7 +269,7 @@ class ActionViewSet(
         payload = RunActionDTO(
             configuration=configuration,
             mapping=mapping,
-            launch=core.job.dto.LaunchOptions(
+            launch=core.action.job.LaunchOptions(
                 is_blocking=data["should_block_object"],
                 is_verbose=data["is_verbose"],
             ),

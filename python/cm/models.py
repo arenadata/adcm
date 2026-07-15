@@ -19,8 +19,8 @@ import time
 import signal
 import os.path
 
+from core.action import ScriptType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
-from core.legacy.job.types import ScriptType
 from core.logs import Severity
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
 from django.conf import settings
@@ -1381,6 +1381,7 @@ class JobLog(AbstractSubAction):
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
     objects_related_configs = models.JSONField(null=True, default=None)
+    executor = models.JSONField(default=dict)
 
     __error_code__ = "JOB_NOT_FOUND"
 

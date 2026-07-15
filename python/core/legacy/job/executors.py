@@ -19,7 +19,7 @@ import subprocess
 from pydantic import BaseModel
 from typing_extensions import Self
 
-from core.legacy.job.types import BundleInfo
+from core.action import BundleInfo
 
 
 class ExecutionResult(NamedTuple):

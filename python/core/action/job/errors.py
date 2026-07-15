@@ -10,19 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum, auto
+from core.errors import OperationError
 
 
-class ADCMMaintenanceMode(Enum):
-    ENABLED = auto()
-    DISABLED = auto()
+class JobOperationError(OperationError):
+    ...
 
 
-class SecretsSource(Enum):
-    FILE_SYSTEM = auto()
-    VAULT = auto()
+class TaskCreateError(JobOperationError):
+    ...
 
 
-class TaskRunnerMode(Enum):
-    INSTANT = auto()
-    SCHEDULLER = auto()
+class JobValidationError(JobOperationError):
+    ...
+
+
+class JobTerminationError(JobOperationError):
+    ...

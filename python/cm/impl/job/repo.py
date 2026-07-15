@@ -10,14 +10,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
+from collections import defaultdict
+from collections.abc import Collection, Generator, Iterable
+from contextlib import contextmanager, suppress
 from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
-from typing import Final, cast
+from pathlib import Path
+from typing import Final, TypeAlias, cast
 import operator
 
-from core.legacy.job.types import ExecutionStatus, Job, JobParams, JobSpec, ScriptType, StateChanges, TaskMappingDelta
+from core.action import (
+    ActionInfo,
+    AssociatedProcess,
+    BundleInfo,
+    CallingProcess,
+    ExecutionEnvironment,
+    ExecutionStatus,
+    HcAclRule,
+    HostComponentChanges,
+    Job,
+    JobParams,
+    JobSpec,
+    RelatedObjects,
+    ScriptType,
+    StateChanges,
+    Task,
+    TaskActionInfo,
+    TaskMappingDelta,
+    TaskOwner,
+)
+from core.action.job import (
+    JobRepoI,
+    JobUpdateDTO,
+    LogCreateDTO,
+    TaskCreateDTO,
+    TaskMutableFieldsDTO,
+    TaskUpdateDTO,
+    TaskUpdateMainFieldsDTO,
+)
+from core.errors import NotFoundError
 from core.types import (
     ActionID,
     ActionTargetDescriptor,
@@ -25,12 +57,24 @@ from core.types import (
     ExtraActionTargetType,
     HostGroupDescriptor,
     HostID,
+    JobID,
+    NamedActionObject,
+    NamedCoreObjectWithPrototype,
+    PrototypeDescriptor,
     TaskID,
 )
-from django.db.models import F, Value
-import core
+from django.conf import settings
+from django.db import close_old_connections
+from django.db.models import F, ObjectDoesNotExist, Value
+from pydantic import TypeAdapter
 
-from cm.converters import core_type_to_model, model_name_to_core_type, orm_object_to_core_descriptor
+from cm.converters import (
+    core_type_to_model,
+    db_record_type_to_core_type,
+    model_name_to_core_type,
+    orm_object_to_action_target_type,
+    orm_object_to_core_descriptor,
+)
 from cm.models import (
     ADCM,
     Action,
@@ -47,6 +91,7 @@ from cm.models import (
     Service,
     SubAction,
     TaskLog,
+    Upgrade,
 )
 
 # need to filter out "unsupported" values, because no guarantee DB have correct ones
@@ -68,14 +113,92 @@ _SELECTOR_FIELDS_MAP: Final = {
     Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
 }
 
+TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
+_RelatedWizardProcess = TypeAdapter(CallingProcess | AssociatedProcess)
 
-class JobRepo(core.job.JobRepoI):
+
+class JobRepo(JobRepoI):
     # retrieve
+
+    def get_task(self, id: int) -> Task:  # noqa: A002
+        try:
+            task_record: TaskLog = (
+                TaskLog.objects.select_related("action__prototype").prefetch_related("task_object").get(id=id)
+            )
+        except ObjectDoesNotExist:
+            message = f"Can't find task identified by {id}"
+            raise NotFoundError(message) from None
+
+        if not task_record.action:
+            message = f"Task identified by {id} doesn't have linked action"
+            raise RuntimeError(message)
+
+        action_prototype = task_record.action.prototype
+        target_ = bundle = None
+        if target := task_record.task_object:
+            target_ = NamedActionObject(
+                id=target.pk, type=orm_object_to_action_target_type(object_=target), name=target.name
+            )
+            if action_prototype.type == "adcm":
+                bundle = BundleInfo(root=settings.BASE_DIR / "conf" / "adcm", config_dir=Path())
+            else:
+                bundle = BundleInfo(
+                    root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
+                )
+
+        return Task(
+            id=id,
+            target=target_,
+            owner=_get_task_owner(task_record=task_record),
+            status=ExecutionStatus(task_record.status),
+            is_termination_allowed=task_record.action.allow_to_terminate,
+            selector=task_record.selector,
+            action=TaskActionInfo(
+                id=int(task_record.action_id),  # pyright: ignore[reportAttributeAccessIssue]
+                name=task_record.action.name,
+                display_name=task_record.action.display_name,
+                venv=task_record.action.venv,
+                hc_acl=[HcAclRule(**rule) for rule in task_record.action.hostcomponentmap],
+                is_upgrade=Upgrade.objects.filter(action=task_record.action).exists(),
+                is_host_action=task_record.action.host_action,
+            ),
+            action_process=task_record.process,
+            bundle=bundle,
+            verbose=task_record.verbose,
+            config=task_record.config,
+            hostcomponent=HostComponentChanges(
+                post_upgrade=task_record.post_upgrade_hc_map,
+                mapping_delta=_restore_delta_from_db_format(task_delta=task_record.hostcomponentmap),
+            ),
+            execution_env=ExecutionEnvironment(pid=task_record.pid),
+            on_success=StateChanges(
+                state=task_record.action.state_on_success,
+                multi_state_set=tuple(task_record.action.multi_state_on_success_set or ()),
+                multi_state_unset=tuple(task_record.action.multi_state_on_success_unset or ()),
+            ),
+            on_fail=StateChanges(
+                state=task_record.action.state_on_fail,
+                multi_state_set=tuple(task_record.action.multi_state_on_fail_set or ()),
+                multi_state_unset=tuple(task_record.action.multi_state_on_fail_unset or ()),
+            ),
+            is_blocking=task_record.is_blocking,
+            description=task_record.description,
+        )
+
+    def get_job(self, id: int) -> Job:  # noqa: A002
+        with suppress(ObjectDoesNotExist):
+            return _job_from_job_log(_job_log_qs().filter(id=id).get())
+
+        message = f"Can't find job with id {id}"
+        raise NotFoundError(message)
 
     def find_jobs_of_task(self, task_id: TaskID) -> tuple[Job, ...]:
         query = _job_log_qs()
         filtered_by_task_id = query.filter(task_id=task_id)
         return tuple(map(_job_log_to_job, filtered_by_task_id))
+
+    def get_task_jobs(self, task_id: int) -> Iterable[Job]:
+        return self.find_jobs_of_task(task_id)
 
     def find_scripts_of_action(self, action_id: ActionID) -> tuple[JobSpec, ...]:
         query = (
@@ -135,9 +258,33 @@ class JobRepo(core.job.JobRepoI):
             case _:  # cluster, service, component, provider
                 return CoreObjectDescriptor(id=target.id, type=target.type)
 
+    def get_related_wizard_process(self, job_id: JobID) -> CallingProcess | AssociatedProcess | None:
+        process_data = JobLog.objects.values_list("task__process", flat=True).get(id=job_id)
+        if process_data is None:
+            return None
+
+        return _RelatedWizardProcess.validate_python(process_data)
+
+    def get_task_mutable_fields(self, id: int) -> TaskMutableFieldsDTO:  # noqa: A002
+        task_row = TaskLog.objects.values("hostcomponentmap", "post_upgrade_hc_map").get(id=id)
+        return TaskMutableFieldsDTO(
+            hostcomponent=HostComponentChanges(
+                post_upgrade=task_row["post_upgrade_hc_map"],
+                mapping_delta=_restore_delta_from_db_format(task_delta=task_row["hostcomponentmap"]),
+            )
+        )
+
+    def get_target_orm(self, task_id: TaskID) -> TaskTargetCoreObject:
+        target = TaskLog.objects.get(id=task_id).task_object
+
+        if isinstance(target, ActionHostGroup):
+            return cast(TaskTargetCoreObject, ActionHostGroup.objects.get(id=target.pk).object)
+
+        return cast(TaskTargetCoreObject, target)
+
     # create
 
-    def create_task(self, payload: core.job.dto.TaskCreateDTO) -> TaskID:
+    def create_task(self, payload: TaskCreateDTO) -> TaskID:
         match payload.target:
             case CoreObjectDescriptor(type=ADCMCoreType.ADCM):
                 selector = {"adcm": {"id": payload.target.id, "name": "adcm"}}
@@ -183,22 +330,102 @@ class JobRepo(core.job.JobRepoI):
             for script in scripts
         )
 
-    def create_logs(self, logs: Iterable[core.job.dto.LogCreateDTO]) -> None:
+    def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
         LogStorage.objects.bulk_create(
             LogStorage(job_id=log.job_id, name=log.name, type=log.type, format=log.format) for log in logs
         )
 
     # update
 
-    def fill_task_mapping_and_configuration(
-        self, task_id: TaskID, payload: core.job.dto.TaskUpdateMainFieldsDTO
+    def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None:
+        core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(state=state)
+
+    def update_owner_multi_states(
+        self, owner: CoreObjectDescriptor, add_multi_states: Collection[str], remove_multi_states: Collection[str]
     ) -> None:
+        current_multi_state: dict = (
+            core_type_to_model(core_type=owner.type).objects.values_list("_multi_state", flat=True).get(id=owner.id)
+        )
+
+        current_multi_state |= {state: 1 for state in add_multi_states}
+        for remove_key in remove_multi_states:
+            current_multi_state.pop(remove_key, None)
+
+        core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
+
+    def fill_task_mapping_and_configuration(self, task_id: TaskID, payload: TaskUpdateMainFieldsDTO) -> None:
         fields_to_update = {
             "hostcomponentmap": _mapping_delta_to_db_dict(payload.mapping_delta),
             "config": payload.configuration,
         }
 
         TaskLog.objects.filter(id=task_id).update(**fields_to_update)
+
+    def update_task(self, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
+        if "status" in fields_to_change:
+            fields_to_change["status"] = fields_to_change["status"].value
+        if "hostcomponentmap" in fields_to_change:
+            fields_to_change["hostcomponentmap"] = _convert_delta_to_db_format(fields_to_change["hostcomponentmap"])
+
+        TaskLog.objects.filter(id=id).update(**fields_to_change)
+
+    def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
+        fields_to_change: dict = data.model_dump(exclude_unset=True)
+        if "status" in fields_to_change:
+            fields_to_change["status"] = fields_to_change["status"].value
+
+        JobLog.objects.filter(id=id).update(**fields_to_change)
+
+    def change_task_status(self, id: TaskID, previous: ExecutionStatus, new: ExecutionStatus) -> bool:  # noqa: A002
+        updated = TaskLog.objects.filter(id=id, status=previous).update(status=new)
+        return bool(updated)
+
+    def change_job_status(self, id: JobID, previous: ExecutionStatus, new: ExecutionStatus) -> bool:  # noqa: A002
+        updated = JobLog.objects.filter(id=id, status=previous).update(status=new)
+        return bool(updated)
+
+    # misc
+
+    def close_old_connections(self) -> None:
+        close_old_connections()
+
+    @contextmanager
+    def retrieve_and_lock_first_created_task(self) -> Generator[TaskID | None, None, None]:
+        yield (
+            TaskLog.objects.select_for_update(skip_locked=True)
+            .filter(status=ExecutionStatus.CREATED)
+            .order_by("id")
+            .values_list("id", flat=True)
+            .first()
+        )
+
+    # from action repo
+
+    def get_action(self, id: ActionID) -> ActionInfo:  # noqa: A002
+        action = Action.objects.values(
+            "id",
+            "name",
+            "prototype_id",
+            "prototype__type",
+            "scripts_jinja",
+            "wizard_template",
+            "scripts_template",
+        ).get(id=id)
+        return ActionInfo(
+            id=action["id"],
+            name=action["name"],
+            owner_prototype=PrototypeDescriptor(
+                id=action["prototype_id"], type=db_record_type_to_core_type(db_record_type=action["prototype__type"])
+            ),
+            scripts_jinja=action["scripts_jinja"],
+            scripts_template=action["scripts_template"],
+            wizard_template=action["wizard_template"],
+        )
+
+    def get_job_specs(self, id: ActionID) -> Iterable[JobSpec]:  # noqa: A002
+        query = _qs_with_spec_values(SubAction.objects.filter(action_id=id)).order_by("id")
+        return list(map(_from_entry_to_spec, query))
 
 
 # conversions
@@ -227,6 +454,18 @@ def _dict_to_job_spec(entry: dict) -> JobSpec:
     return JobSpec(**entry, params=source_params)
 
 
+def _from_entry_to_spec(entry: dict) -> JobSpec:
+    # in db it can be dict, list or anything else actually
+    source_params = entry.pop("params", {}) or {}
+    # try to fix if it's not dict here, until
+    if isinstance(source_params, list) and all(isinstance(entry, dict) for entry in source_params):
+        source_params = reduce(operator.or_, source_params, {})
+    elif not isinstance(source_params, dict):
+        source_params = {}
+
+    return JobSpec(**entry, params=source_params)
+
+
 def _job_log_to_job(job: JobLog) -> Job:
     params = deepcopy(job.params)
     ansible_tags = params.pop("ansible_tags", "") or ""
@@ -244,6 +483,7 @@ def _job_log_to_job(job: JobLog) -> Job:
         name=job.name,
         type=ScriptType(job.script_type),
         status=ExecutionStatus(job.status),
+        is_termination_allowed=job.allow_to_terminate,
         script=job.script,
         params=JobParams(ansible_tags=ansible_tags, **params),
         on_fail=StateChanges(
@@ -251,10 +491,25 @@ def _job_log_to_job(job: JobLog) -> Job:
             multi_state_set=tuple(job.multi_state_on_fail_set or ()),
             multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
         ),
+        execution_env=ExecutionEnvironment(pid=job.pid),
     )
 
 
 # queries
+
+
+def _qs_with_spec_values(query: QuerySet) -> QuerySet:
+    return query.values(
+        "name",
+        "display_name",
+        "script",
+        "script_type",
+        "allow_to_terminate",
+        "state_on_fail",
+        "multi_state_on_fail_set",
+        "multi_state_on_fail_unset",
+        "params",
+    )
 
 
 def _job_log_qs() -> QuerySet[JobLog]:
@@ -317,3 +572,155 @@ def _get_host_related_selector(host_id: HostID, owner: CoreObjectDescriptor) -> 
         query = query.union(service_values).union(component_values)
 
     return query
+
+
+def _get_task_owner(task_record: TaskLog) -> TaskOwner | None:
+    if not (task_record.owner_type and task_record.owner_id):
+        return None
+
+    owner_type = ADCMCoreType(task_record.owner_type)
+    owner_model = core_type_to_model(core_type=owner_type)
+    # object can be deleted at any point, so if it doesn't exist anymore, owner should be None
+    if not owner_model.objects.filter(id=task_record.owner_id).exists():
+        return None
+
+    owner_id = task_record.owner_id
+
+    related_cluster_values = ("cluster_id", "cluster__prototype_id", "cluster__name")
+    related_service_values = ("service_id", "service__prototype_id", "service__prototype__name")
+    related_provider_values = ("provider_id", "provider__prototype_id", "provider__name")
+
+    match owner_type:
+        case ADCMCoreType.ADCM | ADCMCoreType.CLUSTER | ADCMCoreType.PROVIDER:
+            return TaskOwner(
+                id=owner_id,
+                type=owner_type,
+                **owner_model.objects.values("name", "prototype_id").get(id=owner_id),
+                related_objects=RelatedObjects(),
+            )
+        case ADCMCoreType.SERVICE:
+            data = owner_model.objects.values("prototype__name", "prototype_id", *related_cluster_values).get(
+                id=owner_id
+            )
+            cluster = NamedCoreObjectWithPrototype(
+                id=data["cluster_id"],
+                prototype_id=data["cluster__prototype_id"],
+                type=ADCMCoreType.CLUSTER,
+                name=data["cluster__name"],
+            )
+            return TaskOwner(
+                id=owner_id,
+                type=ADCMCoreType.SERVICE,
+                prototype_id=data["prototype_id"],
+                name=data["prototype__name"],
+                related_objects=RelatedObjects(cluster=cluster),
+            )
+        case ADCMCoreType.COMPONENT:
+            data = owner_model.objects.values(
+                "prototype__name", "prototype_id", *related_cluster_values, *related_service_values
+            ).get(id=owner_id)
+            cluster = NamedCoreObjectWithPrototype(
+                id=data["cluster_id"],
+                prototype_id=data["cluster__prototype_id"],
+                type=ADCMCoreType.CLUSTER,
+                name=data["cluster__name"],
+            )
+            service = NamedCoreObjectWithPrototype(
+                id=data["service_id"],
+                prototype_id=data["service__prototype_id"],
+                type=ADCMCoreType.SERVICE,
+                name=data["service__prototype__name"],
+            )
+            return TaskOwner(
+                id=owner_id,
+                type=ADCMCoreType.COMPONENT,
+                prototype_id=data["prototype_id"],
+                name=data["prototype__name"],
+                related_objects=RelatedObjects(cluster=cluster, service=service),
+            )
+        case ADCMCoreType.HOST:
+            data = owner_model.objects.values(
+                "prototype_id",
+                *related_cluster_values,
+                *related_provider_values,
+                name=F("fqdn"),
+            ).get(id=owner_id)
+            cluster = (
+                NamedCoreObjectWithPrototype(
+                    id=data["cluster_id"],
+                    prototype_id=data["cluster__prototype_id"],
+                    type=ADCMCoreType.CLUSTER,
+                    name=data["cluster__name"],
+                )
+                if data["cluster_id"]
+                else None
+            )
+            provider = NamedCoreObjectWithPrototype(
+                id=data["provider_id"],
+                prototype_id=data["provider__prototype_id"],
+                type=ADCMCoreType.PROVIDER,
+                name=data["provider__name"],
+            )
+            return TaskOwner(
+                id=owner_id,
+                type=ADCMCoreType.HOST,
+                prototype_id=data["prototype_id"],
+                name=data["name"],
+                related_objects=RelatedObjects(cluster=cluster, provider=provider),
+            )
+        case _:
+            message = f"Can't detect owner of type {owner_type}"
+            raise NotImplementedError(message)
+
+
+def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta | None:
+    if task_delta is None:
+        return None
+
+    to_add, to_remove = defaultdict(set), defaultdict(set)
+    for component_id, host_ids in task_delta.get("add", {}).items():
+        to_add[int(component_id)].update(host_ids)
+    for component_id, host_ids in task_delta.get("remove", {}).items():
+        to_remove[int(component_id)].update(host_ids)
+
+    return TaskMappingDelta(add=to_add, remove=to_remove)
+
+
+def _job_from_job_log(job: JobLog) -> Job:
+    params = deepcopy(job.params)
+    ansible_tags = params.pop("ansible_tags", "") or ""
+    if not isinstance(ansible_tags, str):
+        # todo I don't like to fix it here,
+        #  but not sure we can validate it now on config.yaml load
+        #  see https://tracker.yandex.ru/ADCM-5325
+        ansible_tags = ""
+        if isinstance(ansible_tags, list | tuple):
+            ansible_tags = ",".join(map(str, ansible_tags))
+
+    return Job(
+        id=job.pk,
+        pid=job.pid,
+        name=job.name,
+        type=ScriptType(job.script_type),
+        status=ExecutionStatus(job.status),
+        is_termination_allowed=job.allow_to_terminate,
+        script=job.script,
+        params=JobParams(ansible_tags=ansible_tags, **params),
+        on_fail=StateChanges(
+            state=job.state_on_fail,
+            multi_state_set=tuple(job.multi_state_on_fail_set or ()),
+            multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
+        ),
+        execution_env=ExecutionEnvironment(pid=job.pid),
+    )
+
+
+def _convert_delta_to_db_format(
+    mapping_delta: TaskMappingDelta | dict[str, dict[int, set[int]]] | None,
+) -> dict[str, dict[int, list[int]]] | None:
+    if mapping_delta is None:
+        return None
+
+    delta = asdict(mapping_delta) if is_dataclass(mapping_delta) else mapping_delta
+
+    return {key: {k: sorted(v) for k, v in value.items()} for key, value in delta.items()}

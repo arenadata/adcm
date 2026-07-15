@@ -13,7 +13,7 @@
 from copy import deepcopy
 from uuid import UUID
 
-from core.legacy.job.dto import LaunchOptions, TaskPayloadDTO
+from core.action.job import LaunchOptions, TaskPayloadDTO
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -21,17 +21,17 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.types import CoreObjectDescriptor
+from core.types import ActionTargetDescriptor
 from django.conf import settings
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
 from cm.converters import model_name_to_core_type
+from cm.impl.job.repo import JobRepo
 from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component, ConcernItem, TaskLog
 from cm.tests.test_action_host_group import ScheduleTask
@@ -168,8 +168,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
             task_id = self.task_runner.expect_task_launched().id
 
-            task = JobRepoImpl.get_task(id=task_id)
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            task = JobRepo().get_task(id=task_id)
+            job, *_ = JobRepo().get_task_jobs(task.id)
 
             with self.subTest(f"Own Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
@@ -221,8 +221,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
             task_id = self.task_runner.expect_task_launched().id
 
-            task = JobRepoImpl.get_task(id=task_id)
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            task = JobRepo().get_task(id=task_id)
+            job, *_ = JobRepo().get_task_jobs(task.id)
 
             with self.subTest(f"Host Action for {object_.__class__.__name__}"):
                 expected_data = self.render_json_template(
@@ -265,8 +265,8 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertIn("__ansible_vault", task.config["rolepass"])
         self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
 
-        task = JobRepoImpl.get_task(id=task.id)
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        task = JobRepo().get_task(id=task.id)
+        job, *_ = JobRepo().get_task_jobs(task.id)
         job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
@@ -295,9 +295,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertIn("__ansible_vault", task.config["rolepass"])
         self.assertEqual(ansible_decrypt(task.config["rolepass"]["__ansible_vault"]), raw_value)
 
-        job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
+        job, *_ = JobRepo().get_task_jobs(task_id=task.id)
         job_config = prepare_ansible_job_config(
-            task=JobRepoImpl.get_task(task.id),
+            task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
             topology=retrieve_cluster_topology(self.cluster.pk),
@@ -333,9 +333,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertEqual(ansible_decrypt(task.config["reqsec"]["another"]["__ansible_vault"]), raw_value["another"])
         self.assertEqual(task.config["secretval"], None)
 
-        job, *_ = JobRepoImpl.get_task_jobs(task_id=task.id)
+        job, *_ = JobRepo().get_task_jobs(task_id=task.id)
         job_config = prepare_ansible_job_config(
-            task=JobRepoImpl.get_task(task.id),
+            task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
             topology=retrieve_cluster_topology(self.cluster.pk),
@@ -384,7 +384,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
         for action_name in ("job_proto_relative", "job_bundle_relative", "task_mixed"):
             for object_, type_name in ((self.cluster, "cluster"), (self.service_1, "service")):
                 action = Action.objects.filter(prototype=object_.prototype, name=action_name).first()
-                target = CoreObjectDescriptor(
+                target = ActionTargetDescriptor(
                     id=object_.pk, type=model_name_to_core_type(object_.__class__.__name__.lower())
                 )
                 task = prepare_task_for_action(
@@ -395,7 +395,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                     payload=TaskPayloadDTO(),
                 )
 
-                for job in JobRepoImpl.get_task_jobs(task_id=task.id):
+                for job in JobRepo().get_task_jobs(task_id=task.id):
                     prefix = f"{action_name}_{job.name if action_name == 'task_mixed' else ''}".strip("_")
                     with self.subTest(
                         f"Action {action_name} for {object_.__class__.__name__} {object_.name} [{prefix}]"
@@ -405,7 +405,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                             context={**self.context, "job_id": job.id},
                         )
                         job_config = prepare_ansible_job_config(
-                            task=JobRepoImpl.get_task(task.id),
+                            task=JobRepo().get_task(task.id),
                             job=job,
                             configuration=self.configuration,
                             topology=retrieve_cluster_topology(self.cluster.pk),

@@ -14,8 +14,11 @@ from pathlib import Path
 import os
 import logging
 
+from jobs.scheduler._types import TaskRunnerEnvironment
+
 TASK_HEALTHCHECK_INTERVAL = int(os.environ.get("TASK_HEALTHCHECK_INTERVAL", 60))
-DEFAULT_JOB_EXECUTION_ENVIRONMENT = os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local")
+JOB_TERMINATION_POLL_INTERVAL = int(os.environ.get("JOB_TERMINATION_POLL_INTERVAL", 5))
+DEFAULT_JOB_EXECUTION_ENVIRONMENT = TaskRunnerEnvironment(os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local"))
 LAUNCHER_ITERATION_INTERVAL = 1
 
 LOG_DIR = Path(__file__).absolute().parent.parent.parent.parent / "data" / "log"

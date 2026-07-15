@@ -14,8 +14,8 @@ from collections.abc import Iterable
 from itertools import chain
 from operator import itemgetter
 
+from core.action import RelatedObjects, Task, TaskMappingDelta
 from core.cluster import ClusterService, ClusterTopology
-from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,

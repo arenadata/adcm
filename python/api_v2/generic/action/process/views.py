@@ -28,7 +28,6 @@ from cm.legacy.services.action_process.errors import (
 from cm.legacy.services.action_process.operations import OperationContext
 from cm.legacy.services.action_process.schema_validation import Configuration
 from cm.legacy.services.action_process.types import ProcessContext, Step
-from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -39,7 +38,7 @@ from cm.models import (
     ProcessStepInput,
     TaskLog,
 )
-from core.legacy.job import JobService
+from core.action.job import JobService
 from core.types import ActionProcessID, CoreObjectDescriptor
 from dishka import FromDishka
 from django.conf import settings
@@ -154,7 +153,7 @@ class ActionProcessViewSet(
     def get_process_context(self, job_service: JobService) -> ProcessContext:
         target_orm = self.get_parent_object(raise_=NotFound("Parent object not found"))
         action_orm = self.retrieve_action(target=target_orm)
-        action = ActionRepoImpl.get_action(id=action_orm.id)
+        action = job_service.repo.get_action(id=action_orm.id)
 
         if not action.wizard_template:
             raise AdcmEx(

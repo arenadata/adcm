@@ -15,9 +15,10 @@ from typing import Any, Protocol
 import os
 import signal
 
+from audit.alt.core import NameHalfSplitter
+from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
+from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
 from core.cluster import ClusterService
-from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
-from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.runners import (
     ExecutionTarget,
     ExternalSettings,
@@ -26,7 +27,6 @@ from core.legacy.job.runners import (
     RunnerRuntime,
     TaskRunner,
 )
-from core.legacy.job.types import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -83,13 +83,10 @@ class JobSequenceRunner(TaskRunner):
         container: dishka.Container,
         job_processor: JobProcessor,
         settings: ExternalSettings,
-        repo: JobRepoInterface,
-        action_repo: ActionRepoInterface,
+        repo: JobRepoI,
         environment: RunnerEnvironment,
     ):
-        super().__init__(
-            job_processor=job_processor, settings=settings, repo=repo, action_repo=action_repo, environment=environment
-        )
+        super().__init__(job_processor=job_processor, settings=settings, repo=repo, environment=environment)
 
         self._notifier = notifier
         self._status_server = status_server
@@ -216,12 +213,15 @@ class JobSequenceRunner(TaskRunner):
 
         target.executor.execute()
 
+        pid = getattr(target.executor.process, "pid", NO_PROCESS_PID)
+
         self._repo.update_job(
             id=target.job.id,
             data=JobUpdateDTO(
-                pid=getattr(target.executor.process, "pid", NO_PROCESS_PID),
+                pid=pid,
                 status=ExecutionStatus.RUNNING,
                 start_date=self._environment.now(),
+                executor={"environment": "local", "worker_id": pid},
             ),
         )
 
@@ -288,7 +288,7 @@ class JobSequenceRunner(TaskRunner):
         else:
             delete_task_flag_concern(task_id=task.id)
 
-        audit_task_finish(task=task, task_result=task_result, container=self._container)
+        audit_task_finish(task=task, task_result=task_result, name_splitter=self._container.get(NameHalfSplitter))
 
         finished_task = self._repo.get_task(id=task.id)
         if finished_task.action_process and isinstance(finished_task.action_process, CallingProcess):
@@ -389,7 +389,7 @@ class JobSequenceRunner(TaskRunner):
         owner = CoreObjectDescriptor(id=task_owner.id, type=task_owner.type)
         target = ActionTargetDescriptor(id=task.target.id, type=task.target.type)
         process_context = ProcessContext(
-            action=self._action_repo.get_action(id=task.action.id),
+            action=self._repo.get_action(id=task.action.id),
             action_orm=Action.objects.get(id=task.action.id),
             owner=owner,
             owner_orm=core_type_to_model(owner.type).objects.get(id=owner.id),

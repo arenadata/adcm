@@ -16,11 +16,11 @@ from functools import wraps
 import os
 import errno
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.status_api import send_task_status_update_event
-from core.legacy.job.dto import JobUpdateDTO, TaskUpdateDTO
-from core.legacy.job.types import ExecutionStatus
+from core.action import ExecutionStatus
+from core.action.job import JobUpdateDTO, TaskUpdateDTO
 from core.types import (
     PID,
 )
@@ -32,7 +32,6 @@ from psycopg import errors as pg_errors
 from jobs.scheduler import repo
 from jobs.scheduler._types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, TaskShortInfo, WorkerID
 from jobs.scheduler.logger import logger
-from jobs.worker.celery.worker import app
 
 
 def set_status_on_success(status: ExecutionStatus):
@@ -107,6 +106,8 @@ def clear_concerns_on_error(func):
 
 
 def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
+    from jobs.worker.celery.worker import app
+
     table = "celery_taskmeta"
     fields = "status, worker"
     condition = f"task_id = '{worker_id}'"
@@ -147,7 +148,7 @@ def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
 def finalize_task(task: TaskShortInfo, status: ExecutionStatus):
     """Set `status` to task and all it's unfinished jobs, remove locks/flags"""
 
-    job_repo = JobRepoImpl
+    job_repo = JobRepo()
     scheduler_repo = repo
 
     now = datetime.now(tz=UTC)

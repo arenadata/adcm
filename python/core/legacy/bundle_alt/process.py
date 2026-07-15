@@ -22,6 +22,7 @@ from adcm_version import compare_adcm_versions
 from ruyaml.error import ReusedAnchorWarning
 import yaml
 
+from core.action import JobSpec
 from core.errors import localize_error
 from core.legacy.bundle_alt.bundle_load import get_config_files
 from core.legacy.bundle_alt.convertion import extract_scripts, schema_entry_to_definition
@@ -47,7 +48,6 @@ from core.legacy.bundle_alt.schema import (
 )
 from core.legacy.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.legacy.bundle_alt.validation import check_definitions_are_valid
-from core.legacy.job.types import JobSpec
 
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema
