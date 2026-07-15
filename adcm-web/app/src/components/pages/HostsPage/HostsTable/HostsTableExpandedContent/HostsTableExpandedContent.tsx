@@ -1,5 +1,5 @@
 import Concern from '@commonComponents/Concern/Concern';
-import type { AdcmHostDuplicate } from '@models/adcm';
+import type { AdcmHost, AdcmHostDuplicate } from '@models/adcm';
 import { FlexGroup, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import type React from 'react';
@@ -19,16 +19,16 @@ const HostsTableExpandedContent: React.FC<HostsTableExpandedContentProps> = ({ d
 
   const handleClickMaintenanceMode = (host: AdcmHostDuplicate) => () => {
     if (host.isMaintenanceModeAvailable) {
-      dispatch(openMaintenanceModeDialog(host));
+      dispatch(openMaintenanceModeDialog(host as AdcmHost));
     }
   };
 
   const getHandleDeleteClick = (host: AdcmHostDuplicate) => () => {
-    dispatch(openDeleteDialog(host));
+    dispatch(openDeleteDialog([host as AdcmHost]));
   };
 
   const handleUpdateClick = (host: AdcmHostDuplicate) => {
-    dispatch(openUpdateDialog(host));
+    dispatch(openUpdateDialog(host as AdcmHost));
   };
 
   return (
