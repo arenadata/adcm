@@ -1,58 +1,63 @@
 import { DialogV2, FormField, FormFieldsContainer, Select } from '@uikit';
-import { useLinkHostForm } from './useLinkHostForm';
 import { useDispatch, useStore } from '@hooks';
-import { useEffect } from 'react';
-import { closeLinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { closeLinkDialog, linkHostsWithUpdate, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
 
 const LinkHostDialog = () => {
   const dispatch = useDispatch();
+  const hosts = useStore(({ adcm }) => adcm.hostsActions.linkDialog.hosts);
+  const clusters = useStore(({ adcm }) => adcm.hostsActions.relatedData.clusters);
 
-  const host = useStore(({ adcm }) => adcm.hostsActions.linkDialog.host);
+  const [clusterId, setClusterId] = useState<number | null>(null);
 
-  const {
-    formData,
-    submit,
-    reset,
-    onChangeFormData,
-    loadRelatedData,
-    relatedData: { clustersOptions },
-    isValid,
-  } = useLinkHostForm();
+  const clustersOptions = useMemo(() => {
+    return clusters.map(({ name, id }) => ({ value: id, label: name }));
+  }, [clusters]);
+
+  const reset = useCallback(() => {
+    setClusterId(null);
+  }, []);
 
   useEffect(() => {
     reset();
-    if (host) {
-      loadRelatedData();
-      onChangeFormData({ hostId: host.id });
+
+    if (hosts.length > 0) {
+      dispatch(loadClusters());
     }
-  }, [host, reset, loadRelatedData, onChangeFormData]);
+  }, [dispatch, hosts, reset]);
 
-  if (!host) return null;
-
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     dispatch(closeLinkDialog());
-  };
+  }, [dispatch]);
 
-  const handleClusterChange = (value: number | null) => {
-    onChangeFormData({ clusterId: value });
-  };
+  const handleConfirmDialog = useCallback(() => {
+    if (!clusterId) {
+      return;
+    }
+
+    dispatch(
+      linkHostsWithUpdate({
+        clusterId,
+        hostIds: hosts.map(({ id }) => id),
+      }),
+    );
+  }, [clusterId, dispatch, hosts]);
+
+  if (hosts.length === 0) {
+    return null;
+  }
 
   return (
     <DialogV2
-      title="Link host"
-      onAction={submit}
+      title={hosts.length === 1 ? 'Link host' : 'Link hosts'}
+      onAction={handleConfirmDialog}
       onCancel={handleCloseDialog}
-      isActionDisabled={!isValid}
+      isActionDisabled={!clusterId}
       actionButtonLabel="Link"
     >
       <FormFieldsContainer>
         <FormField label="Cluster">
-          <Select
-            placeholder="Select cluster"
-            value={formData.clusterId}
-            onChange={handleClusterChange}
-            options={clustersOptions}
-          />
+          <Select placeholder="Select cluster" value={clusterId} onChange={setClusterId} options={clustersOptions} />
         </FormField>
       </FormFieldsContainer>
     </DialogV2>

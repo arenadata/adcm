@@ -13,21 +13,40 @@
   align-items: center;
   padding: 8px 12px;
   gap: 12px;
-  border: 1px solid var(--color-orangex);
+  border: 1px solid var(--warning-border-color);
   border-radius: 4px;
   width: 100%;
   box-sizing: border-box;
+  background: var(--warning-background-color);
+
+  &_warning {
+    --warning-border-color: var(--color-orangex);
+    --warning-icon-color: var(--color-orangex);
+    --warning-background-color: transparent;
+  }
+
+  &_info {
+    --warning-border-color: var(--color-xblue);
+    --warning-icon-color: var(--color-xblue);
+    --warning-background-color: transparent;
+  }
 
   &__icon {
-    color: var(--color-orangex);
+    color: var(--warning-icon-color);
     flex-shrink: 0;
   }
 
   &__text {
+    flex: 1;
+    min-width: 0;
     color: var(--warning-text-color);
     font-size: 15px;
     max-height: 104px;
     overflow: auto;
-    width: 100%;
+  }
+
+  &__action {
+    flex-shrink: 0;
+    margin-left: auto;
   }
 }

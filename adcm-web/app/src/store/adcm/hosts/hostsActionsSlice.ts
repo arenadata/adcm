@@ -1,3 +1,5 @@
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import { getHosts, setHostMaintenanceMode } from '@store/adcm/hosts/hostsSlice';
 import { showError, showInfo, showSuccess } from '@store/notificationsSlice';
@@ -14,9 +16,8 @@ import type {
 } from '@models/adcm';
 import { AdcmMaintenanceMode } from '@models/adcm';
 import type { SortParams } from '@models/table';
-import type { ModalState } from '@models/modal';
-import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 import { unlimitedRequestItems } from '@constants';
+import { arePromisesResolved } from '@utils/promiseUtils';
 
 const loadClusters = createAsyncThunk('adcm/hostsActions/loadClusters', async (_arg, thunkAPI) => {
   try {
@@ -42,43 +43,40 @@ const loadHostProviders = createAsyncThunk('adcm/hostsActions/hostProviders', as
   }
 });
 
-interface LinkHostTogglePayload {
-  hostId: number[];
+interface LinkHostsPayload {
   clusterId: number;
+  hostIds: number[];
 }
 
-interface UnlinkHostTogglePayload {
-  hostId: number;
-  clusterId: number;
-}
+const unlinkHosts = createAsyncThunk('adcm/hostsActions/unlinkHosts', async (hosts: AdcmHost[], thunkAPI) => {
+  try {
+    arePromisesResolved(
+      await Promise.allSettled(hosts.map(({ id: hostId, cluster }) => AdcmClustersApi.unlinkHost(cluster.id, hostId))),
+    );
+    const message = hosts.length > 1 ? 'All selected hosts have been unlinked' : 'The host has been unlinked';
+    thunkAPI.dispatch(showSuccess({ message }));
+  } catch (error) {
+    thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+    return thunkAPI.rejectWithValue(error);
+  }
+});
 
-const unlinkHost = createAsyncThunk(
-  'adcm/hostsActions/unlinkHost',
-  async ({ hostId, clusterId }: UnlinkHostTogglePayload, thunkAPI) => {
-    try {
-      await AdcmClustersApi.unlinkHost(clusterId, hostId);
-      thunkAPI.dispatch(showSuccess({ message: 'The host has been unlinked' }));
-    } catch (error) {
-      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const unlinkHostWithUpdate = createAsyncThunk(
-  'adcm/hostsActions/unlinkHostWithUpdate',
-  async (arg: UnlinkHostTogglePayload, thunkAPI) => {
-    await thunkAPI.dispatch(unlinkHost(arg)).unwrap();
+const unlinkHostsWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/unlinkHostsWithUpdate',
+  async (hosts: AdcmHost[], thunkAPI) => {
+    // Do not use .unwrap() so getHosts() runs even on partial failure
+    await thunkAPI.dispatch(unlinkHosts(hosts));
     thunkAPI.dispatch(getHosts());
   },
 );
 
-const linkHost = createAsyncThunk(
-  'adcm/hostsActions/linkHost',
-  async ({ hostId, clusterId }: LinkHostTogglePayload, thunkAPI) => {
+const linkHosts = createAsyncThunk(
+  'adcm/hostsActions/linkHosts',
+  async ({ clusterId, hostIds }: LinkHostsPayload, thunkAPI) => {
     try {
-      await AdcmClustersApi.linkHost(clusterId, hostId);
-      thunkAPI.dispatch(showSuccess({ message: 'The host has been linked' }));
+      await AdcmClustersApi.linkHost(clusterId, hostIds);
+      const message = hostIds.length > 1 ? 'All selected hosts have been linked' : 'The host has been linked';
+      thunkAPI.dispatch(showSuccess({ message }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -86,10 +84,10 @@ const linkHost = createAsyncThunk(
   },
 );
 
-const linkHostWithUpdate = createAsyncThunk(
-  'adcm/hostsActions/linkHostWithUpdate',
-  async (arg: LinkHostTogglePayload, thunkAPI) => {
-    await thunkAPI.dispatch(linkHost(arg)).unwrap();
+const linkHostsWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/linkHostsWithUpdate',
+  async (arg: LinkHostsPayload, thunkAPI) => {
+    await thunkAPI.dispatch(linkHosts(arg)).unwrap();
     thunkAPI.dispatch(getHosts());
   },
 );
@@ -163,20 +161,22 @@ const toggleMaintenanceMode = createAsyncThunk(
   },
 );
 
-const deleteHost = createAsyncThunk('adcm/hostsActions/deleteHost', async (hostId: number, thunkAPI) => {
+const deleteHosts = createAsyncThunk('adcm/hostsActions/deleteHosts', async (hostIds: number[], thunkAPI) => {
   try {
-    await AdcmHostsApi.deleteHost(hostId);
-    thunkAPI.dispatch(showSuccess({ message: 'The host has been deleted' }));
+    arePromisesResolved(await Promise.allSettled(hostIds.map((hostId) => AdcmHostsApi.deleteHost(hostId))));
+    const message = hostIds.length > 1 ? 'All selected hosts have been deleted' : 'The host has been deleted';
+    thunkAPI.dispatch(showSuccess({ message }));
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);
   }
 });
 
-const deleteHostWithUpdate = createAsyncThunk(
-  'adcm/hostsActions/deleteHostWithUpdate',
-  async (arg: number, thunkAPI) => {
-    await thunkAPI.dispatch(deleteHost(arg)).unwrap();
+const deleteHostsWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/deleteHostsWithUpdate',
+  async (hostIds: number[], thunkAPI) => {
+    // Do not use .unwrap() so getHosts() runs even on partial failure
+    await thunkAPI.dispatch(deleteHosts(hostIds));
     thunkAPI.dispatch(getHosts());
   },
 );
@@ -198,7 +198,7 @@ const updateHostWithUpdate = createAsyncThunk(
   },
 );
 
-interface AdcmHostsActionsState extends ModalState<AdcmHost, 'host'> {
+interface AdcmHostsActionsState {
   createDialog: {
     isOpen: boolean;
   };
@@ -206,16 +206,16 @@ interface AdcmHostsActionsState extends ModalState<AdcmHost, 'host'> {
     host: AdcmHost | null;
   };
   deleteDialog: {
-    host: AdcmHost | null;
+    hosts: AdcmHost[];
   };
   maintenanceModeDialog: {
     host: AdcmHost | null;
   };
   linkDialog: {
-    host: AdcmHost | null;
+    hosts: AdcmHost[];
   };
   unlinkDialog: {
-    host: AdcmHost | null;
+    hosts: AdcmHost[];
   };
   hostSharingDialog: {
     host: AdcmHost | null;
@@ -224,6 +224,7 @@ interface AdcmHostsActionsState extends ModalState<AdcmHost, 'host'> {
     clusters: AdcmCluster[];
     hostProviders: AdcmHostProvider[];
   };
+  selectedItemsIds: number[];
   isActionInProgress: boolean;
 }
 
@@ -235,16 +236,16 @@ const createInitialState = (): AdcmHostsActionsState => ({
     host: null,
   },
   deleteDialog: {
-    host: null,
+    hosts: [],
   },
   maintenanceModeDialog: {
     host: null,
   },
   linkDialog: {
-    host: null,
+    hosts: [],
   },
   unlinkDialog: {
-    host: null,
+    hosts: [],
   },
   hostSharingDialog: {
     host: null,
@@ -253,37 +254,64 @@ const createInitialState = (): AdcmHostsActionsState => ({
     clusters: [],
     hostProviders: [],
   },
+  selectedItemsIds: [],
   isActionInProgress: false,
 });
 
-const hostsActionsSlice = createCrudSlice({
+const hostsActionsSlice = createSlice({
   name: 'adcm/hostsActions',
-  entityName: 'host',
-  createInitialState,
+  initialState: createInitialState,
   reducers: {
-    openMaintenanceModeDialog(state, action) {
+    setIsActionInProgress(state, action: PayloadAction<boolean>) {
+      state.isActionInProgress = action.payload;
+    },
+    openCreateDialog(state) {
+      state.createDialog.isOpen = true;
+    },
+    closeCreateDialog(state) {
+      state.createDialog.isOpen = false;
+    },
+    openUpdateDialog(state, action: PayloadAction<AdcmHost>) {
+      state.updateDialog.host = action.payload;
+    },
+    closeUpdateDialog(state) {
+      state.updateDialog.host = null;
+    },
+    openDeleteDialog(state, action: PayloadAction<AdcmHost[]>) {
+      state.deleteDialog.hosts = action.payload;
+    },
+    closeDeleteDialog(state) {
+      state.deleteDialog.hosts = [];
+    },
+    cleanupActions() {
+      return createInitialState();
+    },
+    openMaintenanceModeDialog(state, action: PayloadAction<AdcmHost>) {
       state.maintenanceModeDialog.host = action.payload;
     },
     closeMaintenanceModeDialog(state) {
       state.maintenanceModeDialog.host = null;
     },
-    openLinkDialog(state, action) {
-      state.linkDialog.host = action.payload;
+    openLinkDialog(state, action: PayloadAction<AdcmHost[]>) {
+      state.linkDialog.hosts = action.payload;
     },
     closeLinkDialog(state) {
-      state.linkDialog.host = null;
+      state.linkDialog.hosts = [];
     },
-    openUnlinkDialog(state, action) {
-      state.unlinkDialog.host = action.payload;
+    openUnlinkDialog(state, action: PayloadAction<AdcmHost[]>) {
+      state.unlinkDialog.hosts = action.payload;
     },
     closeUnlinkDialog(state) {
-      state.unlinkDialog.host = null;
+      state.unlinkDialog.hosts = [];
     },
     openHostSharingDialog(state, action) {
       state.hostSharingDialog.host = action.payload;
     },
     closeHostSharingDialog(state) {
       state.hostSharingDialog.host = null;
+    },
+    setSelectedItemsIds(state, action) {
+      state.selectedItemsIds = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -293,17 +321,20 @@ const hostsActionsSlice = createCrudSlice({
     builder.addCase(createHostDuplicate.pending, (state) => {
       hostsActionsSlice.caseReducers.closeHostSharingDialog(state);
     });
-    builder.addCase(unlinkHost.pending, (state) => {
-      hostsActionsSlice.caseReducers.closeUnlinkDialog(state);
-    });
-    builder.addCase(linkHost.fulfilled, (state) => {
-      hostsActionsSlice.caseReducers.closeLinkDialog(state);
-    });
     builder.addCase(createHost.fulfilled, (state) => {
       hostsActionsSlice.caseReducers.closeCreateDialog(state);
     });
-    builder.addCase(deleteHost.pending, (state) => {
+    builder.addCase(deleteHosts.pending, (state) => {
+      state.selectedItemsIds = [];
       hostsActionsSlice.caseReducers.closeDeleteDialog(state);
+    });
+    builder.addCase(unlinkHosts.pending, (state) => {
+      state.selectedItemsIds = [];
+      hostsActionsSlice.caseReducers.closeUnlinkDialog(state);
+    });
+    builder.addCase(linkHosts.pending, (state) => {
+      state.selectedItemsIds = [];
+      hostsActionsSlice.caseReducers.closeLinkDialog(state);
     });
     builder.addCase(updateHost.fulfilled, () => {
       return createInitialState();
@@ -311,6 +342,9 @@ const hostsActionsSlice = createCrudSlice({
     builder.addCase(getHosts.pending, () => {
       // hide actions dialogs, when load new hosts list (not silent refresh)
       hostsActionsSlice.caseReducers.cleanupActions();
+    });
+    builder.addCase(getHosts.fulfilled, (state) => {
+      state.selectedItemsIds = [];
     });
     builder.addCase(loadClusters.fulfilled, (state, action) => {
       state.relatedData.clusters = action.payload;
@@ -343,17 +377,19 @@ export const {
   setIsActionInProgress,
   openHostSharingDialog,
   closeHostSharingDialog,
+  setSelectedItemsIds,
+  cleanupActions,
 } = hostsActionsSlice.actions;
 
 export {
-  unlinkHostWithUpdate,
-  linkHostWithUpdate,
+  unlinkHostsWithUpdate,
+  linkHostsWithUpdate,
   loadClusters,
   loadHostProviders,
   createHost,
   createHostWithUpdate,
-  deleteHost,
-  deleteHostWithUpdate,
+  deleteHosts,
+  deleteHostsWithUpdate,
   toggleMaintenanceMode,
   updateHostWithUpdate as updateHost,
   createHostDuplicateWithUpdate as createHostDuplicate,
