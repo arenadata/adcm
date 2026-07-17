@@ -69,8 +69,8 @@ COPY --from=ui_builder /wwwroot /adcm/wwwroot
 COPY --from=python_builder /python /python
 COPY --from=python_builder /adcm/.venv /adcm/.venv
 COPY --from=python_builder /venv/2.16 /venv/2.16
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-release-1-2-0 /venv/2.16 /venv/2.16
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-release-1-2-0 /root/.ansible/collections /root/.ansible/collections
+COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
+COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /root/.ansible/collections
 COPY conf /adcm/conf
 COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
 COPY python/ansible_collections/arenadata/adcm /root/.ansible/collections/ansible_collections/arenadata/adcm
