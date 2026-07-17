@@ -14,14 +14,14 @@
 # load common functions and variables
 . /etc/adcmenv
 
-IS_IN_MM=$(is_in_maintenance_mode)
+is_in_mm=$(is_in_maintenance_mode)
 
 cleanupwaitstatus
 echo "ADCM initialization ..."
 
 ensure_directory_structure
 
-if [ "$IS_IN_MM" -ne 1 ]; then
+if [ "$is_in_mm" -ne 1 ]; then
   make_nginx_default_config &&
   ensure_mandatory_db_settings_provided &&
   init_or_migrate_secrets &&
@@ -33,12 +33,20 @@ if [ "$IS_IN_MM" -ne 1 ]; then
 
   sv_stop() {
     for s in nginx wsgi status; do
-        /usr/sbin/sv stop /etc/sv/$s
+      /usr/sbin/sv stop "/etc/sv/${s}"
     done
   }
 
   trap "sv_stop; exit" TERM
   trap "" CHLD
+
+  # Each /etc/sv/<svc>/supervise is a symlink into the ephemeral run dir
+  # (/adcm/run/runit/<svc>, see Dockerfile) so /etc/sv stays read-only /
+  # root-owned; create the writable targets first.
+  runit_base="${adcmrun}/runit"
+  for svc_dir in /etc/sv/*/; do
+    mkdir -p "${runit_base}/$(basename "${svc_dir}")"
+  done
 
   runsvdir -P /etc/sv &
 

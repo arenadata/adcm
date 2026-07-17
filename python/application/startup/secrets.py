@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from collections.abc import Iterable
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from secrets import token_hex
@@ -155,6 +156,14 @@ class _ADCMSecretsDeprecated(BaseModel):
 
 
 def migrate_secrets_on_fs_if_required(*, source_file: Path, target_file: Path) -> Success[str]:
+    # Secrets files created by older versions may carry default (umask)
+    # permissions; re-restrict them to the owner even when no content
+    # migration is required. Best-effort: if the file is not owned by the
+    # running user, reading it fails later with a clear error anyway.
+    for secrets_file in (source_file, target_file):
+        with suppress(OSError):
+            secrets_file.chmod(0o600)
+
     if target_file.is_file():
         return Success(f"Secrets migration skipped: target file exists: {target_file}.")
 

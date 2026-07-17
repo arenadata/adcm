@@ -11,9 +11,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Non-root periodic task runner.
+# Replaces BusyBox crond, which requires root: it setuid()s to each crontab's
+# owner per job, so when the container runs as a non-root user it schedules and
+# fires nothing.
+#
+# Daily jobs are stamp-based instead of exact "HH:MM" matches: a job fires on
+# the first tick at or after its scheduled time and is stamped for the day, so
+# a tick delayed by load (or a restart later in the day) cannot skip it, and
+# it never fires twice. Stamps live on the data volume, surviving restarts.
+
 . /etc/adcmenv
 
 waitforwsgi
 
-echo "Run cron ..."
-crond -f -l 2
+cd "${adcmroot}/python" || exit 1
+
+run() {
+    # ADCM lives in its own venv; bare `python` is the system interpreter
+    # without the app dependencies. Keep success quiet, but surface the
+    # command's own error output on failure so it stays diagnosable.
+    if ! output="$("${adcmvenv}/python" manage.py "$@" 2>&1)"; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') periodic task failed: manage.py $*" >&2
+        printf '%s\n' "${output}" | tail -n 5 >&2
+    fi
+}
+
+# Stamps must survive restarts, so they live on the data volume — not in
+# ${adcmrun}, which is ephemeral rootfs/tmpfs state.
+stampdir="${adcmvar}/cron"
+
+# daily <HHMM> <stamp-name> <manage.py args...>
+# Runs once per calendar day, on the first tick at or after HHMM.
+# The stamp is written before the command so a job running longer than a
+# minute is not fired again by the next tick.
+daily() {
+    _at="$1"; _name="$2"; shift 2
+    [ "$(date +%H%M)" -lt "${_at}" ] && return 0
+
+    _today="$(date +%Y-%m-%d)"
+    _stamp="${stampdir}/${_name}"
+    [ "$(cat "${_stamp}" 2>/dev/null)" = "${_today}" ] && return 0
+    echo "${_today}" > "${_stamp}"
+
+    run "$@"
+}
+
+echo "Run periodic task scheduler ..."
+
+while true; do
+    # Sleep to the start of the next minute so each minute gets a tick.
+    # ${sec#0} strips the leading zero: "08"/"09" would otherwise be parsed
+    # as (invalid) octal by the shell's arithmetic expansion.
+    sec="$(date +%S)"
+    sleep "$((60 - ${sec#0}))"
+
+    # every minute
+    run run_ldap_sync
+
+    daily 0800 logrotate logrotate --target all
+    daily 1000 clearaudit clearaudit
+    daily 0000 collect_statistics collect_statistics --mode send
+    # weekly: Monday evening
+    [ "$(date +%u)" = "1" ] && daily 2200 gather_host_facts gather_host_facts
+done

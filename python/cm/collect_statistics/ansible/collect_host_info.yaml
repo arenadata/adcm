@@ -11,7 +11,7 @@
       ignore_errors: yes
     - set_fact:
         disk_command_out: "{{ lshw_result.stdout }}"
-      when: "{{ lshw_result }}"
+      when: lshw_result.stdout is defined
     - name: Save hosts info to DB
       adcm_add_host_info:
       run_once: true

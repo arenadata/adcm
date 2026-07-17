@@ -12,6 +12,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+import os
 import json
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -48,7 +49,10 @@ class FSSecretsBackend(SecretsBackend):
 
     def write_all(self, secrets: ADCMSecrets) -> None:
         secrets_as_json = SecretsFileModel(adcm=secrets).model_dump_json()
-        self.path.write_text(secrets_as_json)
+        fd = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=0o600)
+        with os.fdopen(fd, "w") as file:
+            file.write(secrets_as_json)
+        self.path.chmod(0o600)
         self._secrets = None
 
     def read_all(

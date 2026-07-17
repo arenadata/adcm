@@ -3,12 +3,9 @@
     root /adcm/wwwroot;
 
     client_max_body_size 100M;
-    client_body_temp_path /tmp/nginx_client_temp 1 2;
     client_body_timeout 300s;
-    proxy_temp_path  /tmp/nginx_proxy_temp;
-    fastcgi_temp_path /tmp/nginx_fastcgi_temp;
-    uwsgi_temp_path /tmp/nginx_uwsgi_temp;
-    scgi_temp_path /tmp/nginx_scgi_temp;
+    # temp paths are configured globally in nginx.conf (http context);
+    # server-level copies here would silently override them.
 
     location / {
         if ($arg_nocache) {
