@@ -1,4 +1,4 @@
-FROM golang:1.23 AS go_builder
+FROM golang:1.26 AS go_builder
 COPY ./go /code
 WORKDIR /code
 RUN sh -c "make"
