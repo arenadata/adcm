@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
+from datetime import timezone as tz
 from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
@@ -36,7 +37,6 @@ from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.transition.cluster.delete import DeleteService
-import pytz
 
 
 class TestTask(ADCMDjangoAPISuite):
@@ -180,7 +180,7 @@ class TestTask(ADCMDjangoAPISuite):
             if ordering_field in ("startTime", "endTime"):
                 keyword = "startTime" if ordering_field == "startTime" else "endTime"
                 return [
-                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=tz.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]
