@@ -20,8 +20,6 @@ echo "Run Nginx ..."
 exec 1>"${adcmlog}/nginx/service_nginx.out"
 exec 2>"${adcmlog}/nginx/service_nginx.err"
 
-# Cleanup tmp dir during restart of nginx.
-# That dir is for uploading bundles cache.
-# This is for old existing installations
-rm -rf ${adcmtmp}/nginx_client_temp || true
-exec /usr/sbin/nginx -c /etc/nginx/nginx.conf  -g "daemon off;"
+# -e sets the error-log path before the config is parsed, so nginx never falls
+# back to its compiled default under /var/lib/nginx (which points at /var/log/nginx).
+exec /usr/sbin/nginx -e "${adcmlog}/nginx/error.log" -c /etc/nginx/nginx.conf -g "daemon off;"

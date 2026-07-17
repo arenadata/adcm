@@ -13,4 +13,4 @@
 
 . /etc/adcmenv
 
-$adcmvenv/uwsgi --stop /run/uwsgi.pid
+$adcmvenv/uwsgi --ini /etc/adcm/adcm.cfg --stop

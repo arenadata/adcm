@@ -16,7 +16,7 @@ from dataclasses import asdict
 from functools import cache
 from operator import methodcaller
 from pathlib import Path
-from tempfile import gettempdir
+from tempfile import TemporaryDirectory, gettempdir
 from typing import NamedTuple
 import os
 import fcntl
@@ -201,29 +201,33 @@ def _calculate_bundle_verification_status(
     bundle_archive: Path, signature_file: Path, files_dir: Path
 ) -> SignatureStatus:
     # TAKEN FROM cm.bundle.get_verification_status
-    gpg = GPG(gpgbinary=os.popen("which gpg").read().strip())  # noqa: S605, S607
-    gpg.encoding = "utf-8"
-    # TODO raw taken from "cook_file_type_name", but there should be an alternative way
-    #  ALSO find a way to avoid requesting ADCM ID
-    #  MAYBE make it a cached function?
-    adcm_id = ADCM.objects.values_list("id", flat=True).get()
-    key_filepath = files_dir / f"adcm.{adcm_id}.global.verification_public_key"
+    # The keyring lives in a throwaway home: the default (~/.gnupg) is not
+    # writable under a read-only rootfs, and importing the key needs a
+    # writable keyring anyway.
+    with TemporaryDirectory(prefix="bundle_verification_gpg_") as gpg_home:
+        gpg = GPG(gpgbinary=os.popen("which gpg").read().strip(), gnupghome=gpg_home)  # noqa: S605, S607
+        gpg.encoding = "utf-8"
+        # TODO raw taken from "cook_file_type_name", but there should be an alternative way
+        #  ALSO find a way to avoid requesting ADCM ID
+        #  MAYBE make it a cached function?
+        adcm_id = ADCM.objects.values_list("id", flat=True).get()
+        key_filepath = files_dir / f"adcm.{adcm_id}.global.verification_public_key"
 
-    try:
-        res = gpg.import_keys_file(key_path=key_filepath)
-    except (PermissionError, FileNotFoundError):
-        logger.warning("Can't read public key file: %s", key_filepath)
-        return SignatureStatus.INVALID
+        try:
+            res = gpg.import_keys_file(key_path=key_filepath)
+        except (PermissionError, FileNotFoundError):
+            logger.warning("Can't read public key file: %s", key_filepath)
+            return SignatureStatus.INVALID
 
-    if res.returncode != 0:
-        logger.warning("Bad gpg key: %s", res.stderr)
-        return SignatureStatus.INVALID
+        if res.returncode != 0:
+            logger.warning("Bad gpg key: %s", res.stderr)
+            return SignatureStatus.INVALID
 
-    with open(signature_file, mode="rb") as sign_stream:
-        if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=str(bundle_archive))):
-            return SignatureStatus.VALID
+        with open(signature_file, mode="rb") as sign_stream:
+            if bool(gpg.verify_file(fileobj_or_path=sign_stream, data_filename=str(bundle_archive))):
+                return SignatureStatus.VALID
 
-        return SignatureStatus.INVALID
+            return SignatureStatus.INVALID
 
 
 # Utils
