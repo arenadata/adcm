@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Any
@@ -33,7 +33,6 @@ from rest_framework.status import (
 )
 from tests.suites import ADCMDjangoAPISuite
 from tests.use_cases import prepare_bundle_file
-import pytz
 
 
 class TestBundleDelete(ADCMDjangoAPISuite):
@@ -374,7 +373,7 @@ class TestBundle(ADCMDjangoAPISuite):
         def get_response_results(response, ordering_field):
             if ordering_field == "uploadTime":
                 return [
-                    datetime.fromisoformat(item["uploadTime"][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item["uploadTime"][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]

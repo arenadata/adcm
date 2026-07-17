@@ -58,7 +58,7 @@ RUN apk update && \
     sshpass && \
     apk cache clean --purge
 
-RUN python3.10 -m pip install -U setuptools && \
+RUN python3.10 -m pip install -U setuptools wheel && \
     python3.10 -m pip uninstall -y pip && \
     rm -rf /root/.cache/pip
 

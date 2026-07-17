@@ -17,7 +17,6 @@ from cm.models import ADCM, ConfigLog
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 from tests.suites import ADCMDjangoAPISuite
-import pytz
 
 
 class TestLoginAudit(ADCMDjangoAPISuite):
@@ -133,7 +132,7 @@ class TestLoginAudit(ADCMDjangoAPISuite):
         ).delete()
 
         # edit blocked_at, check now user can log in
-        self.test_user.blocked_at = datetime.datetime(year=2000, month=1, day=1, tzinfo=pytz.UTC)
+        self.test_user.blocked_at = datetime.datetime(year=2000, month=1, day=1, tzinfo=datetime.timezone.utc)
         self.test_user.save(update_fields=["blocked_at"])
 
         response = (self.client.v2 / "login").post(data=self.test_user_credentials)

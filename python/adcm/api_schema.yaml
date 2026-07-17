@@ -1024,7 +1024,9 @@ components:
           items:
             $ref: '#/components/schemas/RelatedUser'
         type:
-          $ref: '#/components/schemas/OriginType'
+          allOf:
+          - $ref: '#/components/schemas/OriginType'
+          default: local
       required:
       - id
       - name
@@ -1719,6 +1721,9 @@ components:
         * `ldap` - ldap
     PaginatedActionHostGroupList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1739,6 +1744,9 @@ components:
             $ref: '#/components/schemas/ActionHostGroup'
     PaginatedAuditLogList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1759,6 +1767,9 @@ components:
             $ref: '#/components/schemas/AuditLog'
     PaginatedAuditSessionList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1779,6 +1790,9 @@ components:
             $ref: '#/components/schemas/AuditSession'
     PaginatedBundleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1799,6 +1813,9 @@ components:
             $ref: '#/components/schemas/Bundle'
     PaginatedCHGList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1819,6 +1836,9 @@ components:
             $ref: '#/components/schemas/CHG'
     PaginatedClusterList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1839,6 +1859,9 @@ components:
             $ref: '#/components/schemas/Cluster'
     PaginatedComponentList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1859,6 +1882,9 @@ components:
             $ref: '#/components/schemas/Component'
     PaginatedConfigLogListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1879,6 +1905,9 @@ components:
             $ref: '#/components/schemas/ConfigLogList'
     PaginatedGroupList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1899,6 +1928,9 @@ components:
             $ref: '#/components/schemas/Group'
     PaginatedHostComponentList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1919,6 +1951,9 @@ components:
             $ref: '#/components/schemas/HostComponent'
     PaginatedHostList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1939,6 +1974,9 @@ components:
             $ref: '#/components/schemas/Host'
     PaginatedImportList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1959,6 +1997,9 @@ components:
             $ref: '#/components/schemas/Import'
     PaginatedJobListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1979,6 +2020,9 @@ components:
             $ref: '#/components/schemas/JobList'
     PaginatedPrototypeList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1999,6 +2043,9 @@ components:
             $ref: '#/components/schemas/Prototype'
     PaginatedProviderSchemaList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2019,6 +2066,9 @@ components:
             $ref: '#/components/schemas/ProviderSchema'
     PaginatedRelatedHostsStatusesList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2039,6 +2089,9 @@ components:
             $ref: '#/components/schemas/RelatedHostsStatuses'
     PaginatedRelatedServicesStatusesList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2059,6 +2112,9 @@ components:
             $ref: '#/components/schemas/RelatedServicesStatuses'
     PaginatedRoleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2079,6 +2135,9 @@ components:
             $ref: '#/components/schemas/Role'
     PaginatedSchemaPolicyList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2099,6 +2158,9 @@ components:
             $ref: '#/components/schemas/SchemaPolicy'
     PaginatedServiceRetrieveList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2119,6 +2181,9 @@ components:
             $ref: '#/components/schemas/ServiceRetrieve'
     PaginatedTaskListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2139,6 +2204,9 @@ components:
             $ref: '#/components/schemas/TaskList'
     PaginatedUserList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2852,6 +2920,7 @@ components:
           readOnly: true
         displayName:
           type: string
+          default: ''
           maxLength: 1000
         isBuiltIn:
           type: boolean
@@ -2900,6 +2969,7 @@ components:
           readOnly: true
         displayName:
           type: string
+          default: ''
           maxLength: 1000
         isBuiltIn:
           type: boolean

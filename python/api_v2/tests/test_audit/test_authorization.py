@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditSessionLoginResult, AuditUser
 from cm.models import ADCM, ConfigLog
@@ -21,7 +21,6 @@ from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_N
 from tests.dependencies import SkipStatusScenarios
 from tests.suites import ADCMDjangoAPISuite
 from unittest_parametrize import param, parametrize
-import pytz
 
 
 class TestAuthorizationAudit(ADCMDjangoAPISuite):
@@ -152,7 +151,7 @@ class TestAuthorizationAudit(ADCMDjangoAPISuite):
                 return [item["user"]["name"] for item in response.json()["results"]]
             elif ordering_field in ("time", "loginTime"):
                 return [
-                    datetime.fromisoformat(item["time"][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item["time"][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             elif ordering_field == "loginResult":
@@ -183,7 +182,7 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
         self.user = User.objects.create_superuser(self.username, "user@example.com", self.password)
         User.objects.create_superuser("second_user", "second_user@example.com", self.password)
         User.objects.create_superuser("third_user", "third_user@example.com", self.password)
-        current_datetime = datetime.now(pytz.utc)
+        current_datetime = datetime.now(timezone.utc)
         self.time_from = (current_datetime - timedelta(minutes=1)).isoformat()
         self.time_to = (current_datetime + timedelta(minutes=1)).isoformat()
 
@@ -376,7 +375,7 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
                 return [item["user"]["name"] for item in response.json()["results"]]
             elif ordering_field == "time":
                 return [
-                    datetime.fromisoformat(item[ordering_field][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item[ordering_field][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]
