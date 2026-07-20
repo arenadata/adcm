@@ -26,6 +26,8 @@ from core.types import (
 )
 from django.db import connection
 from django.db.transaction import atomic
+from django.db.utils import ProgrammingError
+from psycopg import errors as pg_errors
 
 from jobs.scheduler import repo
 from jobs.scheduler._types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, TaskShortInfo, WorkerID
@@ -109,9 +111,17 @@ def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
     fields = "status, worker"
     condition = f"task_id = '{worker_id}'"
 
-    with connection.cursor() as cursor:
-        cursor.execute(f"SELECT {fields} FROM {table} WHERE {condition};")  # noqa: S608
-        row = cursor.fetchone()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(f"SELECT {fields} FROM {table} WHERE {condition};")  # noqa: S608
+            row = cursor.fetchone()
+    except ProgrammingError as error:
+        if not isinstance(error.__cause__, pg_errors.UndefinedTable):
+            raise
+        # Table is created lazily by celery's result backend (its SessionManager.prepare_models, race-safe via retry)
+        # on first use; it's absent only when no worker has ever stored a result in this database,
+        # which carries the same meaning as "no row for this task".
+        row = None
 
     if not row:
         return CeleryTaskState.ADCM_UNREACHABLE
@@ -120,8 +130,15 @@ def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
 
     status = CeleryTaskState(status_raw.upper())
 
-    if status in CELERY_RUNNING_STATES and hostname not in app.ping():
-        return CeleryTaskState.FAILURE
+    if status in CELERY_RUNNING_STATES:
+        # ping() returns one single-entry dict per responding worker, keyed by its hostname:
+        # [{"celery@host1": {"ok": "pong"}}, {"celery@host2": {"ok": "pong"}}]
+        alive_workers: set[str] = set()
+        for reply in app.control.ping():
+            alive_workers.update(reply.keys())
+
+        if hostname not in alive_workers:
+            return CeleryTaskState.FAILURE
 
     return status
 

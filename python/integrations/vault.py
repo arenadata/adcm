@@ -29,6 +29,7 @@ from core.secrets import (
     UpdateError,
     get_secret_from_adcm_secrets,
 )
+from requests import RequestException
 from typing_extensions import Self
 import hvac.exceptions
 
@@ -124,7 +125,7 @@ class VaultSecretsBackend(SecretsBackend):
         """Return ``True`` when the Vault server is reachable and responsive."""
         try:
             return bool(self.client.sys.is_initialized())
-        except Exception:  # noqa: BLE001
+        except (hvac.exceptions.VaultError, RequestException):
             return False
 
     def _read_secret(self, secret: Secret) -> str:

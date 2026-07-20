@@ -133,7 +133,7 @@ class EnvironmentProvider(Provider):
         """Return a Consul backend if configured, otherwise None."""
         if settings is None:
             return None
-        return ConsulBackend.initialize(settings)
+        return ConsulBackend(settings)
 
     @provide
     def ansible_vault(self, backend: secrets.SecretsBackend) -> secrets.AnsibleVault:

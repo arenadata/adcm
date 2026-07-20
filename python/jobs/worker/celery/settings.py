@@ -10,40 +10,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Generator
-from json import JSONDecodeError
-import os
-import json
+from dataclasses import dataclass
+from typing import Annotated
+
+from integrations.consul import ConsulBackend
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _get_env_variables(*args) -> Generator[str | None, None, None]:
-    for arg in args:
-        yield os.environ.get(arg.upper())
+class EnvDBSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="db_")
+
+    user: str
+    # prefix looks to be ignored when alias is used
+    password: Annotated[SecretStr, Field(alias="db_pass")]
+    name: str
+    host: str
+    port: str
+
+    options: Annotated[dict, Field(default_factory=dict)]
 
 
-def get_db_options() -> str:
-    db_options = os.getenv("DB_OPTIONS", "{}")
-    try:
-        parsed = json.loads(db_options)
-    except JSONDecodeError as json_error:
-        raise RuntimeError("Failed to decode DB_OPTIONS as JSON") from json_error
-    if not isinstance(parsed, dict):
-        raise RuntimeError("DB_OPTIONS should be dict")  # noqa: TRY004
+@dataclass(slots=True)
+class CelerySettings:
+    # Connections
+    db_url: str
+    broker_url: str
+    result_backend: str
+    consul: ConsulBackend | None
 
-    return "&".join((f"{key}={value}" for key, value in parsed.items()))
+    # ADCM specifics
+    default_adcm_url: str | None
+    status_service_base_path: str
 
-
-DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME = _get_env_variables("DB_USER", "DB_PASS", "DB_HOST", "DB_PORT", "DB_NAME")
-db_url = f"postgresql+psycopg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-if _options := get_db_options():
-    db_url = f"{db_url}?{_options}"
-
-########################
-# Celery Worker settings
-########################
-
-broker_url = f"sqla+{db_url}"
-result_backend = f"db+{db_url}"
-result_extended = True
-broker_connection_retry_on_startup = True
-timezone = "UTC"
+    # Various
+    result_extended: bool = True
+    broker_connection_retry_on_startup: bool = True
+    timezone: str = "UTC"

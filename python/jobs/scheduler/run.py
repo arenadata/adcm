@@ -22,6 +22,7 @@ sys.path.append("/adcm/python")
 import adcm.init_django  # noqa
 from application.di.containers import get_main_providers
 from cm.transition.action import RetrieveStartImpossibleReason
+from django.db import connections
 
 from jobs.scheduler.launcher import run_launcher_in_loop
 from jobs.scheduler.logger import logger
@@ -37,16 +38,21 @@ def main() -> None:
     container = make_container(*get_main_providers())
     retrieve_sir = container.get(RetrieveStartImpossibleReason)
 
-    launcher_proc = Process(
-        target=run_launcher_in_loop,
-        args=(retrieve_sir,),
-    )
-    launcher_proc.start()
+    processes = [
+        Process(target=run_launcher_in_loop, args=(retrieve_sir,)),
+        Process(target=run_monitor_in_loop, args=()),
+    ]
 
-    monitor_proc = Process(target=run_monitor_in_loop, args=())
-    monitor_proc.start()
+    # psycopg connections are not fork-safe. `actualize_locks()` and container
+    # setup above opened Django's DB connection in this parent process; if we
+    # fork now, every child inherits and shares that same socket, corrupting its
+    # transaction state. Close it so each child opens its own.
+    connections.close_all()
 
-    for proc in (launcher_proc, monitor_proc):
+    for proc in processes:
+        proc.start()
+
+    for proc in processes:
         proc.join()
 
 

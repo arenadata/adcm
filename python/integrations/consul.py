@@ -13,23 +13,24 @@
 """
 Consul service registry integration for the ADCM backend.
 
-:class:`ConsulBackend` is a process-wide singleton that owns a pooled
-``requests.Session`` (so TCP/TLS connections are recycled) built from
-:class:`ClientSettings`. It supports ACL token authentication as well as TLS /
-mutual-TLS for ``https``.
+:class:`ConsulBackend` owns a pooled ``requests.Session`` (so TCP/TLS
+connections are recycled) built from :class:`ClientSettings`. It supports ACL
+token authentication as well as TLS / mutual-TLS for ``https``. Its lifecycle
+is managed by the DI container (one APP-scoped instance).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from threading import Lock
-from typing import Any, ClassVar
+from typing import Any
+from urllib.parse import urlsplit
 
 from requests import RequestException, Session
 from requests.adapters import HTTPAdapter
 
 DEFAULT_HEALTH_CHECK_INTERVAL = "10s"
 DEFAULT_HEALTH_CHECK_TIMEOUT = "5s"
+DEFAULT_HEALTH_CHECK_TTL = "30s"
 DEFAULT_DEREGISTER_CRITICAL_SERVICE_AFTER = "5m"
 DEFAULT_HTTP_TIMEOUT = 5.0
 DEFAULT_POOL_SIZE = 10
@@ -53,6 +54,13 @@ class ClientSettings:
     client_cert_file: str | None = None
     client_key_file: str | None = None
 
+    # service registration health check tuning
+
+    health_check_interval: str = DEFAULT_HEALTH_CHECK_INTERVAL
+    health_check_timeout: str = DEFAULT_HEALTH_CHECK_TIMEOUT
+    health_check_ttl: str = DEFAULT_HEALTH_CHECK_TTL
+    deregister_critical_service_after: str = DEFAULT_DEREGISTER_CRITICAL_SERVICE_AFTER
+
     # transport tuning
 
     http_timeout: float = DEFAULT_HTTP_TIMEOUT
@@ -61,18 +69,26 @@ class ClientSettings:
 
 @dataclass(slots=True)
 class ServiceRegistration:
-    """Payload describing the ADCM service to register in Consul."""
+    """Payload describing a service (ADCM backend or Celery worker) to register in Consul.
+    Two health check flavours are supported:
+    * an HTTP check (``health_check_url``) - Consul polls the endpoint itself;
+    * a TTL check (``health_check_ttl``) - the service keeps the check alive by
+      periodically calling :meth:`ConsulBackend.pass_check`."""
 
     service_id: str
-    address: str
-    port: int
-    health_check_url: str
     name: str
+    address: str | None = None
+    port: int | None = None
     datacenter: str | None = None
     tags: list[str] = field(default_factory=list)
     meta: dict[str, str] = field(default_factory=dict)
+    # HTTP check
+    health_check_url: str | None = None
     check_interval: str = DEFAULT_HEALTH_CHECK_INTERVAL
     check_timeout: str = DEFAULT_HEALTH_CHECK_TIMEOUT
+    # TTL check (takes precedence over the HTTP check when set)
+    health_check_ttl: str | None = None
+    check_id: str | None = None
     deregister_critical_service_after: str = DEFAULT_DEREGISTER_CRITICAL_SERVICE_AFTER
 
     def to_payload(self) -> dict[str, Any]:
@@ -80,28 +96,46 @@ class ServiceRegistration:
             "ID": self.service_id,
             "Name": self.name,
             "Tags": list(self.tags),
-            "Address": self.address,
-            "Port": self.port,
             "Meta": dict(self.meta),
-            "Checks": [
-                {
-                    "HTTP": self.health_check_url,
-                    "Interval": self.check_interval,
-                    "Timeout": self.check_timeout,
-                    "DeregisterCriticalServiceAfter": self.deregister_critical_service_after,
-                }
-            ],
+            "Checks": [self._build_check()],
         }
+        if self.address is not None:
+            payload["Address"] = self.address
+        if self.port is not None:
+            payload["Port"] = self.port
         if self.datacenter:
             payload["Datacenter"] = self.datacenter
         return payload
 
+    def _build_check(self) -> dict[str, Any]:
+        if self.health_check_ttl is not None:
+            check: dict[str, Any] = {
+                "TTL": self.health_check_ttl,
+                "DeregisterCriticalServiceAfter": self.deregister_critical_service_after,
+            }
+        else:
+            check = {
+                "HTTP": self.health_check_url,
+                "Interval": self.check_interval,
+                "Timeout": self.check_timeout,
+                "DeregisterCriticalServiceAfter": self.deregister_critical_service_after,
+            }
+        if self.check_id:
+            check["CheckID"] = self.check_id
+        return check
+
+
+def url_with_base_path(url: str, base_path: str) -> str:
+    """``scheme://netloc`` of `url` joined with `base_path` (any path of `url` is dropped)."""
+    parts = urlsplit(url)
+    base_url = f"{parts.scheme}://{parts.netloc}"
+    if not base_path:
+        return base_url
+    return f"{base_url.rstrip('/')}/{base_path.lstrip('/')}"
+
 
 class ConsulBackend:
-    """Process-wide Consul client owning a shared, TLS/token-aware HTTP session."""
-
-    _instance: ClassVar[ConsulBackend | None] = None
-    _lock: ClassVar[Lock] = Lock()
+    """Consul client owning a pooled, TLS/token-aware HTTP session."""
 
     def __init__(self, settings: ClientSettings) -> None:
         self._settings = settings
@@ -122,28 +156,6 @@ class ConsulBackend:
     @property
     def settings(self) -> ClientSettings:
         return self._settings
-
-    @classmethod
-    def initialize(cls, settings: ClientSettings) -> ConsulBackend:
-        """Create (or replace) the shared backend instance."""
-        with cls._lock:
-            if cls._instance is not None:
-                cls._instance.close()
-            cls._instance = cls(settings)
-            return cls._instance
-
-    @classmethod
-    def instance(cls) -> ConsulBackend | None:
-        """Return the shared backend instance or ``None`` if not initialized."""
-        return cls._instance
-
-    @classmethod
-    def reset(cls) -> None:
-        """Drop the cached instance (closes its session)."""
-        with cls._lock:
-            if cls._instance is not None:
-                cls._instance.close()
-                cls._instance = None
 
     def register(self, registration: ServiceRegistration) -> None:
         url = f"{self._base_url}/v1/agent/service/register"
@@ -169,6 +181,44 @@ class ConsulBackend:
         if not response.ok:
             raise ConsulError(
                 f"Failed to deregister service in Consul: status={response.status_code} body={response.text!r}"
+            )
+
+    def discover(self, name: str, *, tag: str | None = None, passing_only: bool = True) -> list[dict[str, Any]]:
+        """Return health service entries registered in Consul under ``name``."""
+        url = f"{self._base_url}/v1/health/service/{name}"
+        params = self._query()
+        if passing_only:
+            params["passing"] = "true"
+        if tag:
+            params["tag"] = tag
+
+        try:
+            response = self._session.get(url, params=params, timeout=self._timeout)
+        except RequestException as error:
+            raise ConsulError(f"Failed to discover service {name!r} in Consul: {error}") from error
+
+        if not response.ok:
+            raise ConsulError(
+                f"Failed to discover service {name!r} in Consul: status={response.status_code} body={response.text!r}"
+            )
+
+        return response.json() or []
+
+    def pass_check(self, check_id: str, *, note: str | None = None) -> None:
+        """Mark a TTL check as passing, keeping the associated service healthy."""
+        url = f"{self._base_url}/v1/agent/check/pass/{check_id}"
+        params = self._query()
+        if note:
+            params["note"] = note
+
+        try:
+            response = self._session.put(url, params=params, timeout=self._timeout)
+        except RequestException as error:
+            raise ConsulError(f"Failed to pass Consul check {check_id!r}: {error}") from error
+
+        if not response.ok:
+            raise ConsulError(
+                f"Failed to pass Consul check {check_id!r}: status={response.status_code} body={response.text!r}"
             )
 
     def check_connection(self) -> bool:
