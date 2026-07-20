@@ -17,9 +17,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from cm.logger import logger
 from core import secrets
 from core.scenarios.adcm import ADCMUUID
-from django.db import DatabaseError, connection
+from django.db import OperationalError, connection
 from django.db.migrations.executor import MigrationExecutor
 from integrations.consul import ConsulBackend
 from integrations.vault import VaultSecretsBackend
@@ -37,8 +38,12 @@ class CheckResult:
 def check_db_connectivity() -> CheckResult:
     try:
         connection.ensure_connection()
-    except DatabaseError as error:
-        return CheckResult(name="database", healthy=False, detail=str(error))
+    except OperationalError:
+        return CheckResult(name="database", healthy=False, detail="DB connectivity check failed")
+    except Exception:  # noqa: BLE001
+        logger.exception("DB connectivity check failed")
+        return CheckResult(name="database", healthy=False, detail="DB connectivity check failed unexpectedly")
+
     return CheckResult(name="database", healthy=True)
 
 
@@ -58,23 +63,20 @@ def check_db_migrations() -> CheckResult:
                 healthy=False,
                 detail=f"{pending} migration(s) pending",
             )
-    except Exception as error:  # noqa: BLE001
-        return CheckResult(
-            name="migrations",
-            healthy=False,
-            detail=f"Failed to check migrations: {error}",
-        )
+    except OperationalError:
+        return CheckResult(name="migrations", healthy=False, detail="DB migration check failed")
+    except Exception:  # noqa: BLE001
+        logger.exception("DB migration check failed")
+        return CheckResult(name="migrations", healthy=False, detail="DB migration check failed unexpectedly")
+
     return CheckResult(name="migrations", healthy=True, detail="")
 
 
 def check_adcm_uuid(adcm_uuid: ADCMUUID | None) -> CheckResult:
     """Check that the ADCM UUID is configured."""
     if adcm_uuid is None:
-        return CheckResult(
-            name="adcm_uuid",
-            healthy=False,
-            detail="ADCM UUID is not configured",
-        )
+        return CheckResult(name="adcm_uuid", healthy=False, detail="ADCM UUID is not configured")
+
     return CheckResult(name="adcm_uuid", healthy=True, detail="")
 
 
@@ -85,8 +87,9 @@ def check_vault(secrets_backend: secrets.SecretsBackend) -> CheckResult | None:
 
     try:
         healthy = secrets_backend.check_connection()
-    except Exception as error:  # noqa: BLE001
-        return CheckResult(name="vault", healthy=False, detail=str(error))
+    except Exception:  # noqa: BLE001
+        logger.exception("Vault health check failed")
+        return CheckResult(name="vault", healthy=False, detail="Vault health check failed unexpectedly")
 
     return CheckResult(name="vault", healthy=healthy, detail="" if healthy else "Vault is not reachable")
 
@@ -96,7 +99,12 @@ def check_consul(consul_backend: ConsulBackend | None) -> CheckResult | None:
     if consul_backend is None:
         return None
 
-    healthy = consul_backend.check_connection()
+    try:
+        healthy = consul_backend.check_connection()
+    except Exception:  # noqa: BLE001
+        logger.exception("Consul health check failed")
+        return CheckResult(name="consul", healthy=False, detail="Consul health check failed unexpectedly")
+
     return CheckResult(name="consul", healthy=healthy, detail="" if healthy else "Consul is not reachable")
 
 

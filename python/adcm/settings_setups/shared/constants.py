@@ -15,7 +15,8 @@ import string
 
 ENCODING_UTF_8 = "utf-8"
 
-API_URL = "http://localhost:8020/api/v1/"
+# Status service URL used in process (Django backend). External components (Celery workers) resolve their own URL.
+INTERNAL_STATUS_SERVICE_URL = "http://localhost:8020/api/v1/"
 
 LATIN_LETTERS_DIGITS = f"{string.ascii_letters}{string.digits}"
 
