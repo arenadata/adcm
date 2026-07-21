@@ -116,7 +116,7 @@ class JobRepoImpl(JobRepoInterface):
     }
 
     @classmethod
-    def get_task(cls, id: int) -> Task:  # noqa: A002
+    def get_task(cls, id: TaskID) -> Task:  # noqa: A002
         try:
             task_record: TaskLog = (
                 TaskLog.objects.select_related("action__prototype").prefetch_related("task_object").get(id=id)
