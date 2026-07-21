@@ -245,6 +245,10 @@ class Task(BaseModel):
 
     description: str
 
+    @property
+    def is_operation_step_task(self) -> bool:
+        return isinstance(self.action_process, CallingProcess)
+
 
 # it is validated, because we want to fail here on incorrect data
 # rather than when we will use it
