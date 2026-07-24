@@ -14,7 +14,7 @@ from collections.abc import Collection, Iterable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Literal, Protocol, TypeAlias
 
 from pydantic import BaseModel, Field
 
@@ -33,6 +33,7 @@ from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, H
 
 PreparedConfigValues: TypeAlias = dict[str, Any]
 HasChanged: TypeAlias = bool
+ChangedAmount: TypeAlias = int
 
 
 @dataclass(slots=True)
@@ -181,6 +182,14 @@ class JobRepoI(Protocol):
         """
         ...
 
+    def change_status_of_task_jobs(
+        self, task_id: TaskID, previous: ExecutionStatus, new: ExecutionStatus
+    ) -> ChangedAmount:
+        """
+        Change status of all jobs in task from `previous` to `new` returning amount of records changed
+        """
+        ...
+
     def update_task(self, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
         ...
 
@@ -204,7 +213,12 @@ class JobRepoI(Protocol):
         ...
 
     # NEED REVIEW, probably shouldn't be here, infra level
-    def retrieve_and_lock_first_created_task(self) -> AbstractContextManager[TaskID | None]:
+    def retrieve_and_lock_first_scheduled_or_created_task(
+        self,
+    ) -> AbstractContextManager[tuple[TaskID, Literal[ExecutionStatus.SCHEDULED, ExecutionStatus.CREATED]] | None]:
+        """
+        Must lock record by id, returning task id and status in order: SCHEDULED, CREATED
+        """
         ...
 
     # NEED REVIEW, breaks isolation levels

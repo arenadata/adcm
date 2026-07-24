@@ -10,16 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from operator import attrgetter, itemgetter
+from typing import Protocol, TypeAlias
 import os
 import time
-import signal
 
+from celery import Celery
 from core.action import ExecutionStatus
-from core.action.job import JobRepoI
+from core.action.job import ExecutorTerminator, JobRepoI, TaskRunnerTerminator
 from django.db.transaction import atomic
 import dishka
 
@@ -58,19 +59,74 @@ class Clock:
         self.next_tick_after = now + self.period
 
 
-TASK_KILLER_REGISTRY: dict[TaskRunnerEnvironment, Callable[[TaskShortInfo], Any]] = {
-    TaskRunnerEnvironment.LOCAL: lambda x: os.kill(int(x.worker["worker_id"]), signal.SIGTERM),
-}
+# NOTE:
+#   "Killer" as term is colliding with "Terminator" one,
+#   rethink them in case of uni/core-fication
 
-JOB_KILLER_REGISTRY: dict[TaskRunnerEnvironment, Callable[[JobShortInfo], Any]] = {
-    TaskRunnerEnvironment.LOCAL: lambda x: os.kill(int(x.worker["worker_id"]), signal.SIGTERM),
-}
+
+class Killer(Protocol):
+    def terminate_task(self, task: TaskShortInfo) -> None:
+        ...
+
+    def terminate_job(self, job: JobShortInfo) -> None:
+        ...
+
+
+KillerRegistry: TypeAlias = Mapping[TaskRunnerEnvironment, Killer]
+
+
+@dataclass(slots=True)
+class LocalKiller(Killer):
+    task_runner_terminator: TaskRunnerTerminator
+    executor_terminator: ExecutorTerminator
+
+    def terminate_task(self, task: TaskShortInfo) -> None:
+        self.task_runner_terminator.terminate(int(task.worker["worker_id"]))
+
+    def terminate_job(self, job: JobShortInfo) -> None:
+        self.executor_terminator.terminate(int(job.worker["worker_id"]))
+
+
+@dataclass(slots=True)
+class CeleryKiller(Killer):
+    app: Celery
+    repo: JobRepoI
+
+    def terminate_task(self, task: TaskShortInfo) -> None:
+        with atomic():
+            self.repo.change_status_of_task_jobs(
+                task_id=task.id, previous=ExecutionStatus.CREATED, new=ExecutionStatus.REVOKED
+            )
+
+        jobs = self.repo.find_jobs_of_task(task.id)
+        # we assume that jobs can't be in scheduled/queued statuses,
+        # when REVOKING/TERMINATING is uninteresting for this process,
+        # it should be independent (at least I see it like that for now)
+        running_jobs = tuple(job for job in jobs if job.status == ExecutionStatus.RUNNING)
+        job_id_celery_task_id_pairs = tuple(map(attrgetter("id", "execution_env.worker_id"), running_jobs))
+
+        celery_task_ids = list(filter(None, map(itemgetter(1), job_id_celery_task_id_pairs)))
+        if celery_task_ids:
+            self.app.control.revoke(task_id=celery_task_ids)
+
+        # there should be exactly 1 running job, so it isn't big N+1 problem
+        for job_id, celery_task_id in job_id_celery_task_id_pairs:
+            self.send_stop_executor_signal_for_job(job_id=job_id, celery_task_id=celery_task_id)
+
+    def terminate_job(self, job: JobShortInfo) -> None:
+        self.send_stop_executor_signal_for_job(job_id=job.id, celery_task_id=job.worker["worker_id"])
+
+    def send_stop_executor_signal_for_job(self, job_id: int, celery_task_id: str | int | None) -> None:
+        self.app.control.broadcast(
+            "stop_executor", arguments={"task_id": celery_task_id, "adcm_job_id": str(job_id or "")}
+        )
 
 
 def run_killer_in_loop(container: dishka.Container) -> None:
     logger.info("Job killer started (pid: %s)", os.getpid())
 
     repo: JobRepoI = container.get(JobRepoI)
+    registry = container.get(KillerRegistry)
 
     from jobs.scheduler import settings
 
@@ -87,18 +143,40 @@ def run_killer_in_loop(container: dishka.Container) -> None:
                     if not job_id:
                         continue
 
+                    logger.debug("Scheduler.Killer terminating job with id=%d started", job_id)
+
                     job = retrieve_job(job_id=job_id)
-                    JOB_KILLER_REGISTRY[job.worker["environment"]](job)
-                    repo.change_job_status(id=job_id, previous=job.status, new=ExecutionStatus.TERMINATING)
+                    killer = registry[job.worker["environment"]]
+                    killer.terminate_job(job)
+                    status_changed = repo.change_job_status(
+                        id=job_id, previous=job.status, new=ExecutionStatus.TERMINATING
+                    )
+
+                    logger.debug(
+                        "Scheduler.Killer terminating job with id=%d finished, status changed = %s",
+                        job_id,
+                        status_changed,
+                    )
 
             for task_id in tasks_to_terminate:
                 with atomic(), lock_task_for_termination(task_id) as task_id:
                     if not task_id:
                         continue
 
+                    logger.debug("Scheduler.Killer terminating task with id=%d started", task_id)
+
                     task = retrieve_task(task_id=task_id)
-                    TASK_KILLER_REGISTRY[task.worker["environment"]](task)
-                    repo.change_task_status(id=task_id, previous=task.status, new=ExecutionStatus.TERMINATING)
+                    killer = registry[task.worker["environment"]]
+                    killer.terminate_task(task)
+                    status_changed = repo.change_task_status(
+                        id=task_id, previous=task.status, new=ExecutionStatus.TERMINATING
+                    )
+
+                    logger.debug(
+                        "Scheduler.Killer terminating task with id=%d finished, status changed = %s",
+                        task_id,
+                        status_changed,
+                    )
 
         except Exception:  # noqa: BLE001
             logger.exception("Job killer iteration failed")

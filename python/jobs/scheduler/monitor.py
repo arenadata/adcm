@@ -51,10 +51,14 @@ def run_monitor_in_loop() -> None:
     while True:
         time.sleep(settings.TASK_HEALTHCHECK_INTERVAL)
         try:
-            for running_task in scheduler_repo.retrieve_running_tasks():
-                if not running_task.worker or not ALIVE_CHECKS_REGISTRY[running_task.worker["environment"]](
-                    task=running_task
-                ):
+            for running_task in scheduler_repo.retrieve_tasks_for_monitoring():
+                logger.debug("Scheduler.Monitor checking task id=%d", running_task.id)
+
+                is_alive = ALIVE_CHECKS_REGISTRY[running_task.worker["environment"]]
+                if not running_task.worker or not is_alive(task=running_task):
+                    logger.debug("Scheduler.Monitor task id=%d is considered dead, finalizing", running_task.id)
                     finalize_task(task=running_task, status=ExecutionStatus.ABORTED)
+                else:
+                    logger.debug("Scheduler.Monitor task id=%d is alive", running_task.id)
         except Exception:  # noqa: BLE001
             logger.exception("Skipping monitor iteration due to exception:")

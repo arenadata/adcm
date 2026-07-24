@@ -17,7 +17,7 @@ from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from functools import reduce
 from pathlib import Path
-from typing import Final, TypeAlias, cast
+from typing import Final, Literal, TypeAlias, cast
 import operator
 
 from core.action import (
@@ -170,7 +170,7 @@ class JobRepo(JobRepoI):
                 post_upgrade=task_record.post_upgrade_hc_map,
                 mapping_delta=_restore_delta_from_db_format(task_delta=task_record.hostcomponentmap),
             ),
-            execution_env=ExecutionEnvironment(pid=task_record.pid),
+            execution_env=ExecutionEnvironment(pid=task_record.pid, worker_id=task_record.executor.get("worker_id")),
             on_success=StateChanges(
                 state=task_record.action.state_on_success,
                 multi_state_set=tuple(task_record.action.multi_state_on_success_set or ()),
@@ -385,20 +385,34 @@ class JobRepo(JobRepoI):
         updated = JobLog.objects.filter(id=id, status=previous).update(status=new)
         return bool(updated)
 
+    def change_status_of_task_jobs(self, task_id: TaskID, previous: ExecutionStatus, new: ExecutionStatus) -> int:
+        return JobLog.objects.filter(task_id=task_id, status=previous).update(status=new)
+
     # misc
 
     def close_old_connections(self) -> None:
         close_old_connections()
 
     @contextmanager
-    def retrieve_and_lock_first_created_task(self) -> Generator[TaskID | None, None, None]:
-        yield (
+    def retrieve_and_lock_first_scheduled_or_created_task(
+        self,
+    ) -> Generator[tuple[TaskID, Literal[ExecutionStatus.SCHEDULED, ExecutionStatus.CREATED]] | None]:
+        result = None
+
+        fields = (
             TaskLog.objects.select_for_update(skip_locked=True)
-            .filter(status=ExecutionStatus.CREATED)
-            .order_by("id")
-            .values_list("id", flat=True)
+            .filter(status__in=(ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED))
+            .order_by("-status", "id")
+            .values_list("id", "status")
             .first()
         )
+        if fields:
+            parsed_status = cast(
+                Literal[ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED], ExecutionStatus(fields[1])
+            )
+            result = (int(fields[0]), parsed_status)
+
+        yield result
 
     # from action repo
 
@@ -491,7 +505,7 @@ def _job_log_to_job(job: JobLog) -> Job:
             multi_state_set=tuple(job.multi_state_on_fail_set or ()),
             multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
         ),
-        execution_env=ExecutionEnvironment(pid=job.pid),
+        execution_env=ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
     )
 
 
@@ -711,7 +725,7 @@ def _job_from_job_log(job: JobLog) -> Job:
             multi_state_set=tuple(job.multi_state_on_fail_set or ()),
             multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
         ),
-        execution_env=ExecutionEnvironment(pid=job.pid),
+        execution_env=ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
     )
 
 

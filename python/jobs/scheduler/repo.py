@@ -19,7 +19,7 @@ from adcm.settings_setups.shared.constants import (
     ADCM_TURN_OFF_MM_ACTION_NAME,
     ADCM_TURN_ON_MM_ACTION_NAME,
 )
-from cm.models import UNFINISHED_STATUS, Action, ConcernItem, ConcernType, JobLog, JobStatus, TaskLog
+from cm.models import UNFINISHED_STATUS, Action, ConcernItem, ConcernType, JobLog, TaskLog
 from core.action import ExecutionStatus
 from core.types import ActionID, ConcernID, JobID, TaskID
 
@@ -70,8 +70,8 @@ def retrieve_unfinished_task_jobs(task_id: TaskID) -> set[JobID]:
     return set(JobLog.objects.filter(task_id=task_id, status__in=UNFINISHED_STATUS).values_list("id", flat=True))
 
 
-def retrieve_running_tasks() -> Generator[TaskShortInfo, None, None]:
-    yield from retrieve_tasks(status=JobStatus.RUNNING)
+def retrieve_tasks_for_monitoring() -> Generator[TaskShortInfo, None, None]:
+    yield from retrieve_tasks(status__in=(ExecutionStatus.RUNNING, ExecutionStatus.TERMINATING))
 
 
 def delete_concerns(ids: Sequence[ConcernID]) -> None:

@@ -34,9 +34,11 @@ from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
-from core.action.job._termination import (
+from core.action.job import (
     DirectOSTerminationSignaller,
+    ExecutorTerminator,
     IndirectRepoTerminationSignaller,
+    TaskRunnerTerminator,
     TerminationSignaller,
 )
 from core.bundle import VersionSupportStatus
@@ -110,16 +112,25 @@ class JobProvider(Provider):
     repo = provide(JobRepo, provides=core.action.job.JobRepoI)
     service = provide(core.action.job.JobService)
 
+    task_runner_terminator = provide(TaskRunnerTerminator)
+    executor_terminator = provide(ExecutorTerminator)
+
     @provide
     def termination_signaller(
-        self, task_runner_mode: TaskRunnerMode, repo: core.action.job.JobRepoI
+        self,
+        task_runner_mode: TaskRunnerMode,
+        repo: core.action.job.JobRepoI,
+        executor_terminator: ExecutorTerminator,
+        task_runner_terminator: TaskRunnerTerminator,
     ) -> TerminationSignaller:
         match task_runner_mode:
             case TaskRunnerMode.SCHEDULLER:
                 return IndirectRepoTerminationSignaller(repo)
 
             case TaskRunnerMode.INSTANT:
-                return DirectOSTerminationSignaller()
+                return DirectOSTerminationSignaller(
+                    task_runner_terminator=task_runner_terminator, executor_terminator=executor_terminator
+                )
 
     @provide
     def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:

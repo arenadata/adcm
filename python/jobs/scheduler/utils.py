@@ -20,7 +20,7 @@ from cm.impl.job.repo import JobRepo
 from cm.legacy.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from cm.legacy.status_api import send_task_status_update_event
 from core.action import ExecutionStatus
-from core.action.job import JobUpdateDTO, TaskUpdateDTO
+from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
 from core.types import (
     PID,
 )
@@ -34,19 +34,20 @@ from jobs.scheduler._types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, T
 from jobs.scheduler.logger import logger
 
 
-def set_status_on_success(status: ExecutionStatus):
+def set_status_on_success(from_status: ExecutionStatus, to_status: ExecutionStatus):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             task_id = kwargs["task_id"]
-            job_repo = kwargs["job_repo"]
+            job_repo: JobRepoI = kwargs["job_repo"]
 
             res = func(*args, **kwargs)
-            job_repo.update_task(id=task_id, data=TaskUpdateDTO(status=status))
-            logger.info(f"Task #{task_id} is {status}")
+            updated = job_repo.change_task_status(id=task_id, previous=from_status, new=to_status)
+            if updated:
+                logger.info(f"Task #{task_id} is {to_status.value}")
 
-            with suppress(Exception):
-                send_task_status_update_event(task_id=task_id, status=status.value)
+                with suppress(Exception):
+                    send_task_status_update_event(task_id=task_id, status=to_status.value)
 
             return res
 
@@ -56,7 +57,10 @@ def set_status_on_success(status: ExecutionStatus):
 
 
 def set_status_on_fail(
-    status: ExecutionStatus, errors: type[Exception] | tuple[type[Exception]], return_: bool = False
+    to_status: ExecutionStatus,
+    errors: type[Exception] | tuple[type[Exception]],
+    return_: bool = False,
+    from_status: ExecutionStatus | None = None,
 ):
     if not isinstance(errors, tuple):
         errors = (errors,)
@@ -65,16 +69,27 @@ def set_status_on_fail(
         @wraps(func)
         def wrapper(*args, **kwargs):
             task_id = kwargs["task_id"]
-            job_repo = kwargs["job_repo"]
+            job_repo: JobRepoI = kwargs["job_repo"]
 
             try:
                 return func(*args, **kwargs)
             except errors:
-                job_repo.update_task(id=task_id, data=TaskUpdateDTO(status=status))
-                logger.exception(f"Task #{task_id} is {status}")
+                logger.exception("Something gone wrong, status of task #%d will be set to %s", task_id, to_status)
 
-                with suppress(Exception):
-                    send_task_status_update_event(task_id=task_id, status=status.value)
+                status_set = None
+                if from_status:
+                    updated = job_repo.change_task_status(id=task_id, previous=from_status, new=to_status)
+                    if updated:
+                        status_set = to_status
+                else:
+                    job_repo.update_task(id=task_id, data=TaskUpdateDTO(status=to_status))
+                    status_set = to_status
+
+                if status_set:
+                    logger.info("Task #%d is %s", task_id, to_status)
+
+                    with suppress(Exception):
+                        send_task_status_update_event(task_id=task_id, status=to_status.value)
 
                 return return_
 

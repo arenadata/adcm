@@ -29,23 +29,56 @@ class TerminationSignaller(Protocol):
 
 
 @dataclass(slots=True)
-class DirectOSTerminationSignaller(TerminationSignaller):
-    def signal_termination_for_task(self, task: Task) -> Success[None] | Fail[str]:
-        return self.terminate_local_process(task.execution_env.pid)
+class TaskRunnerTerminator:
+    """
+    Wrapper for sending correct termination signals for task runner process
+    """
 
-    def signal_termination_for_job(self, job: Job) -> Success[None] | Fail[str]:
-        return self.terminate_local_process(job.execution_env.pid)
-
-    def terminate_local_process(self, pid: int) -> Success[None] | Fail[str]:
-        if pid == 0:
-            return Fail("termination is too early, try to execute later")
-
+    def terminate(self, pid: int) -> Success[None] | Fail[str]:
         try:
             os.kill(pid, signal.SIGTERM)
         except OSError as e:
             return Fail(f"failed to terminate process: {e}")
 
         return Success(None)
+
+
+@dataclass(slots=True)
+class ExecutorTerminator:
+    """
+    Wrapper for sending correct termination signals for ansible/python executor process
+    """
+
+    def terminate(self, pid: int) -> Success[None] | Fail[str]:
+        try:
+            pgroup = os.getpgid(pid)
+            os.killpg(pgroup, signal.SIGTERM)
+        except OSError as e:
+            return Fail(f"failed to terminate process: {e}")
+
+        return Success(None)
+
+
+@dataclass(slots=True)
+class DirectOSTerminationSignaller(TerminationSignaller):
+    task_runner_terminator: TaskRunnerTerminator
+    executor_terminator: ExecutorTerminator
+
+    def signal_termination_for_task(self, task: Task) -> Success[None] | Fail[str]:
+        pid = task.execution_env.pid
+
+        if pid == 0:
+            return Fail("termination is too early, try to execute later")
+
+        return self.task_runner_terminator.terminate(pid)
+
+    def signal_termination_for_job(self, job: Job) -> Success[None] | Fail[str]:
+        pid = job.execution_env.pid
+
+        if pid == 0:
+            return Fail("termination is too early, try to execute later")
+
+        return self.executor_terminator.terminate(pid)
 
 
 @dataclass(slots=True)
