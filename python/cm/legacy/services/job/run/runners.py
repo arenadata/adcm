@@ -12,12 +12,11 @@
 
 from logging import Logger
 from typing import Any, Protocol
-import os
-import signal
 
 from audit.alt.core import NameHalfSplitter
 from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
 from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action.job._termination import ExecutorTerminator
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ExecutionTarget,
@@ -27,6 +26,7 @@ from core.legacy.job.runners import (
     RunnerRuntime,
     TaskRunner,
 )
+from core.result import Fail
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -84,6 +84,7 @@ class JobSequenceRunner(TaskRunner):
         job_processor: JobProcessor,
         settings: ExternalSettings,
         repo: JobRepoI,
+        executor_terminator: ExecutorTerminator,
         environment: RunnerEnvironment,
     ):
         super().__init__(job_processor=job_processor, settings=settings, repo=repo, environment=environment)
@@ -91,6 +92,7 @@ class JobSequenceRunner(TaskRunner):
         self._notifier = notifier
         self._status_server = status_server
         self._logger = logger
+        self._executor_terminator = executor_terminator
 
         self._container = container
 
@@ -101,11 +103,9 @@ class JobSequenceRunner(TaskRunner):
             self._repo.get_task_jobs(task_id=self._runtime.task_id),
         ):
             self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {job_to_terminate.pid}")
-            try:
-                pgroup = os.getpgid(job_to_terminate.pid)
-                os.killpg(pgroup, signal.SIGTERM)
-            except OSError:
-                self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {job_to_terminate.pid}")
+            match self._executor_terminator.terminate(job_to_terminate.pid):
+                case Fail():
+                    self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {job_to_terminate.pid}")
 
     def consider_broken(self) -> None:
         # special value is used to avoid handling NPEs

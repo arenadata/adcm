@@ -37,9 +37,8 @@ from core.cluster import ClusterService
 from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
 from django.db.transaction import atomic
-import core
-
 from use_cases.wizard import CompleteWizardOperationStep
+import core
 
 # NOTE:
 #  Type checker errors are ignored for now, because it's problematic to resolve it now reasonably
@@ -82,10 +81,13 @@ class RunJob:
 
     def do(
         self, task_id: TaskID, job_id: JobID, environment: RunnerEnvironment
-    ) -> Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.ABORTED]:
+    ) -> Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.REVOKED, ExecutionStatus.ABORTED]:
         with atomic():
             task = self.repo.get_task(id=task_id)
             job = self.repo.get_job(id=job_id)
+
+            if job.status == ExecutionStatus.REVOKED:
+                return job.status
 
             execute_target, *_ = self.target_factory(task=task, jobs=(job,), configuration=self.external_settings)
             executor = execute_target.executor
@@ -178,9 +180,10 @@ class FinalizeTask:
             task = self.job_repo.get_task(id=task_id)
             jobs = tuple(self.job_repo.get_task_jobs(task_id=task_id))
 
-            # ! TERMINATION IS UNHANDLED
+            task_is_aborted = task.status == ExecutionStatus.TERMINATING
+
             task_result = core.action.job.operations.calculate_task_final_status(
-                last_job_status=jobs[-1].status, task_is_aborted=False
+                last_job_status=jobs[-1].status, task_is_aborted=task_is_aborted
             )
 
             if task.is_blocking:

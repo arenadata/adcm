@@ -63,6 +63,7 @@ class ExecutionStatus(str, Enum):
 @dataclass(slots=True)
 class ExecutionEnvironment:
     pid: int
+    worker_id: int | str | None
 
 
 class JobSpec(BaseModel):

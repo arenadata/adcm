@@ -35,11 +35,7 @@ from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
 from jobs.scheduler.errors import LauncherError
 from jobs.scheduler.logger import logger
 from jobs.scheduler.queuers import QUEUER_REGISTRY
-from jobs.scheduler.utils import (
-    clear_concerns_on_error,
-    set_status_on_fail,
-    set_status_on_success,
-)
+from jobs.scheduler.utils import clear_concerns_on_error, set_status_on_fail, set_status_on_success
 
 
 def run_launcher_in_loop(retrieve_sir: RetrieveStartImpossibleReason) -> None:
@@ -53,29 +49,32 @@ def run_launcher_in_loop(retrieve_sir: RetrieveStartImpossibleReason) -> None:
         time.sleep(settings.LAUNCHER_ITERATION_INTERVAL)
 
         try:
-            scheduled = False
-            with atomic(), job_repo.retrieve_and_lock_first_created_task() as task_id:
-                if task_id is None:
+            with atomic(), job_repo.retrieve_and_lock_first_scheduled_or_created_task() as locked:
+                if locked is None:
                     continue
 
-                scheduled = schedule_task(
-                    task_id=task_id,
-                    env_type=queuer.env,
-                    job_repo=job_repo,
-                    scheduler_repo=scheduler_repo,
-                    retrieve_sir=retrieve_sir,
-                )
+                task_id, task_status = locked
+                match task_status:
+                    case ExecutionStatus.CREATED:
+                        schedule_task(
+                            task_id=task_id,
+                            env_type=queuer.env,
+                            job_repo=job_repo,
+                            scheduler_repo=scheduler_repo,
+                            retrieve_sir=retrieve_sir,
+                        )
 
-            if scheduled:
-                with atomic():
-                    queue_task(queuer=queuer, task_id=task_id, job_repo=job_repo)
+                    case ExecutionStatus.SCHEDULED:
+                        queue_task(queuer=queuer, task_id=task_id, job_repo=job_repo)
+
         except Exception:  # noqa: BLE001
             logger.exception(f"{queuer.env.capitalize()} launcher encountered an error. Skipping iteration.")
 
 
-@set_status_on_fail(status=ExecutionStatus.BROKEN, errors=Exception)
-@set_status_on_fail(status=ExecutionStatus.REVOKED, errors=LauncherError)
-@set_status_on_success(status=ExecutionStatus.SCHEDULED)
+# we don't set from_status for broken, because it should indicate the level or error even if it'll be overwritten
+@set_status_on_fail(to_status=ExecutionStatus.BROKEN, errors=Exception)
+@set_status_on_fail(from_status=ExecutionStatus.CREATED, to_status=ExecutionStatus.REVOKED, errors=LauncherError)
+@set_status_on_success(from_status=ExecutionStatus.CREATED, to_status=ExecutionStatus.SCHEDULED)
 @clear_concerns_on_error
 def schedule_task(
     *,
@@ -103,9 +102,10 @@ def schedule_task(
     return True
 
 
-@set_status_on_fail(status=ExecutionStatus.BROKEN, errors=Exception)
-@set_status_on_fail(status=ExecutionStatus.REVOKED, errors=LauncherError)
-@set_status_on_success(status=ExecutionStatus.QUEUED)
+# we don't set from_status for broken, because it should indicate the level or error even if it'll be overwritten
+@set_status_on_fail(to_status=ExecutionStatus.BROKEN, errors=Exception)
+@set_status_on_fail(from_status=ExecutionStatus.SCHEDULED, to_status=ExecutionStatus.REVOKED, errors=LauncherError)
+@set_status_on_success(from_status=ExecutionStatus.SCHEDULED, to_status=ExecutionStatus.QUEUED)
 @clear_concerns_on_error
 def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoI) -> None:
     worker_info = queuer.queue(task_id)
