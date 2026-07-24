@@ -226,6 +226,10 @@ class Task(BaseModel):
 
     execution_env: ExecutionEnvironment
 
+    @property
+    def is_operation_step_task(self) -> bool:
+        return isinstance(self.action_process, CallingProcess)
+
 
 class ActionInfo(BaseModel):
     id: ActionID
