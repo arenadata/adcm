@@ -86,13 +86,15 @@ def schedule_task(
 ) -> bool:
     target_orm = job_repo.get_target_orm(task_id)
 
-    validate(
-        task_id=task_id,
-        target_orm=target_orm,
-        job_repo=job_repo,
-        scheduler_repo=scheduler_repo,
-        retrieve_sir=retrieve_sir,
-    )
+    # operation step's task should not be validated
+    if not job_repo.get_task(id=task_id).is_operation_step_task:
+        validate(
+            task_id=task_id,
+            target_orm=target_orm,
+            job_repo=job_repo,
+            scheduler_repo=scheduler_repo,
+            retrieve_sir=retrieve_sir,
+        )
 
     task_orm = scheduler_repo.retrieve_task_orm(task_id=task_id)
     distribute_concerns(task=task_orm, target=target_orm)
