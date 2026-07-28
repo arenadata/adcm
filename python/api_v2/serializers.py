@@ -13,15 +13,7 @@
 from collections.abc import Callable
 from typing import Literal, TypedDict, TypeVar
 
-from cm.legacy.services.status.client import FullStatusMap
-from cm.legacy.services.status.convert import (
-    convert_to_component_status,
-    convert_to_entity_status,
-    convert_to_host_component_status,
-    convert_to_service_status,
-)
 from cm.models import (
-    ADCMEntityStatus,
     ADCMModel,
     Cluster,
     Component,
@@ -30,13 +22,22 @@ from cm.models import (
     Service,
 )
 from cm.transition.status import StatusScenarios
+from core.status import (
+    EntityStatus,
+    FullStatusMap,
+    RawStatus,
+    convert_to_component_status,
+    convert_to_entity_status,
+    convert_to_host_component_status,
+    convert_to_service_status,
+)
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 T = TypeVar("T")
 
 
-_MODEL_RETRIEVAL_FUNC_MAP: dict[type[T], Callable[[FullStatusMap, T], ADCMEntityStatus]] = {
+_MODEL_RETRIEVAL_FUNC_MAP: dict[type[T], Callable[[FullStatusMap, T], RawStatus | None]] = {
     Cluster: lambda status_map, cluster: status_map.get_for_cluster(cluster_id=cluster.pk),
     Service: lambda status_map, service: status_map.get_for_service(
         cluster_id=service.cluster_id, service_id=service.pk
@@ -54,7 +55,7 @@ _MODEL_RETRIEVAL_FUNC_MAP: dict[type[T], Callable[[FullStatusMap, T], ADCMEntity
 class WithStatusSerializer(ModelSerializer):
     status = SerializerMethodField()
 
-    def get_status(self, instance: ADCMModel) -> ADCMEntityStatus:
+    def get_status(self, instance: ADCMModel) -> EntityStatus:
         status = self.context.get("status")
         if status is None:
             status_map: FullStatusMap | None = self.context.get("status_map")

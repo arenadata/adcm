@@ -14,11 +14,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from core.cluster import ClusterService
+from core.status import FullStatusMap
 from core.types import ConcernID, CoreObjectDescriptor, Descriptor, HostID
 from requests import Response
 
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
-from cm.legacy.services.status.client import FullStatusMap
 from cm.legacy.services.status.client import retrieve_status_map as legacy_retrieve_status_map
 from cm.legacy.services.status.notify import (
     register_all_duplicates as legacy_register_all_duplicates,

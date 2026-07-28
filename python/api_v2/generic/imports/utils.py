@@ -12,8 +12,8 @@
 
 from cm.errors import raise_adcm_ex
 from cm.legacy.api import is_version_suitable
-from cm.legacy.services.status.convert import convert_to_entity_status
 from cm.models import (
+    ADCMEntityStatus,
     Cluster,
     ClusterBind,
     ObjectType,
@@ -23,6 +23,7 @@ from cm.models import (
     Service,
 )
 from cm.transition.status import StatusScenarios
+from core.status import convert_to_entity_status
 from django.db.models import QuerySet
 
 from api_v2.generic.imports.types import (
@@ -200,8 +201,8 @@ def get_imports(obj: Cluster | Service, status_scenarios: StatusScenarios) -> li
                 cluster=UICluster(
                     id=cluster_candidate.pk,
                     name=cluster_candidate.name,
-                    status=convert_to_entity_status(
-                        raw_status=status_map.get_for_cluster(cluster_id=cluster_candidate.pk)
+                    status=ADCMEntityStatus(
+                        convert_to_entity_status(raw_status=status_map.get_for_cluster(cluster_id=cluster_candidate.pk))
                     ),
                     state=cluster_candidate.state,
                 ),

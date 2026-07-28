@@ -13,9 +13,9 @@
 from collections.abc import Collection, Generator
 from itertools import chain
 
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ADCMEntityStatus, Cluster, Component, Host, Service
 from cm.transition.status import StatusScenarios
+from core.status import FullStatusMap
 from django.db.models import Q, QuerySet
 from django_filters import BaseInFilter, CharFilter, NumberFilter
 from django_filters.filterset import BaseFilterSet, FilterSetMetaclass

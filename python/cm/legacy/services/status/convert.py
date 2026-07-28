@@ -10,34 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Literal, TypeAlias
 
-from cm.legacy.services.status.client import RawStatus
-from cm.models import ADCMEntityStatus
-
-_MonitoringType: TypeAlias = Literal["active", "passive"]
-
-
-def convert_to_entity_status(raw_status: RawStatus | None) -> ADCMEntityStatus:
-    return ADCMEntityStatus.UP if raw_status == 0 else ADCMEntityStatus.DOWN
-
-
-def convert_to_service_status(raw_status: RawStatus | None, monitoring: _MonitoringType) -> ADCMEntityStatus:
-    return _convert_to_status_considering_monitoring(raw_status=raw_status, monitoring=monitoring)
-
-
-def convert_to_component_status(raw_status: RawStatus | None, monitoring: _MonitoringType) -> ADCMEntityStatus:
-    return _convert_to_status_considering_monitoring(raw_status=raw_status, monitoring=monitoring)
-
-
-def convert_to_host_component_status(
-    raw_status: RawStatus | None, component_monitoring: _MonitoringType
-) -> ADCMEntityStatus:
-    return _convert_to_status_considering_monitoring(raw_status=raw_status, monitoring=component_monitoring)
-
-
-def _convert_to_status_considering_monitoring(raw_status: RawStatus | None, monitoring: _MonitoringType):
-    if monitoring == "passive":
-        return ADCMEntityStatus.UP
-
-    return convert_to_entity_status(raw_status=raw_status)

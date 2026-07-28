@@ -10,58 +10,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Generator, Iterable
+from collections.abc import Iterable
 
-from core.metrics import ClusterMetrics, ClusterMetricsRepoI, ClusterResources, format_size_from_bytes
-from core.types import ClusterID
-from django.db.models import BigIntegerField, QuerySet, Sum
+from core.metrics import ClusterMetricsRepoI, ClusterResources, format_size_from_bytes
+from core.metrics._types import ClusterIdResourcesDict, ObjectsMonitoring
+from core.types import ClusterID, ComponentID, ServiceID
+from django.db.models import BigIntegerField, ObjectDoesNotExist, QuerySet, Sum
 from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Coalesce
 
-from cm.models import HostInfo
+from cm.models import Component, HostInfo, Service
 
 
 class ClusterMetricsRepo(ClusterMetricsRepoI):
     _host_info_fields = ("host__cluster_id", "cpu_vcores", "ram", "disk")
 
-    def get_latest(self, cluster_id: ClusterID) -> ClusterMetrics:
-        queryset = HostInfo.objects.filter(host__cluster_id=cluster_id, host__original_id__isnull=True)
-        row = _hardware_info_query(queryset=queryset).values_list(*self._host_info_fields).get()
-
-        cluster_id, cpu_vcores, ram, disk = row
-
-        return ClusterMetrics(
-            id=cluster_id,
-            resources=ClusterResources(
-                cpu_vcores=cpu_vcores,
-                ram=format_size_from_bytes(ram),
-                disk=format_size_from_bytes(disk),
-            ),
-        )
-
-    def get_latest_many(self, cluster_ids: Iterable[ClusterID]) -> Generator[ClusterMetrics, None, None]:
+    def get_resources(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterIdResourcesDict]:
         queryset = HostInfo.objects.filter(host__cluster_id__in=cluster_ids, host__original_id__isnull=True)
-        rows = _hardware_info_query(queryset=queryset).values_list(*self._host_info_fields)
+        rows = _hardware_info_query(queryset=queryset)
 
-        return (
-            ClusterMetrics(
-                id=cluster_id,
-                resources=ClusterResources(
-                    cpu_vcores=cpu_vcores,
-                    ram=format_size_from_bytes(ram),
-                    disk=format_size_from_bytes(disk),
-                ),
+        resources = (
+            {
+                cluster_id: {
+                    "cpu_vcores": cpu_vcores,
+                    "ram": format_size_from_bytes(ram),
+                    "disk": format_size_from_bytes(disk),
+                }
+                for cluster_id, cpu_vcores, ram, disk in rows.values_list(*self._host_info_fields)
+            }
+            if rows
+            else {}
+        )
+
+        return {
+            cluster_id: ClusterIdResourcesDict(
+                id=cluster_id,  # empty dict is for typechecker
+                resources=ClusterResources(**resources.get(cluster_id, {})) if resources.get(cluster_id) else None,
             )
-            for cluster_id, cpu_vcores, ram, disk in rows
+            for cluster_id in cluster_ids
+        }
+
+    def get_monitorings(
+        self, services: Iterable[ServiceID] = (), components: Iterable[ComponentID] = ()
+    ) -> ObjectsMonitoring:
+        _values = ("id", "prototype__monitoring")
+
+        services_qs = Service.objects.filter(id__in=services).values(*_values)
+        components_qs = Component.objects.filter(id__in=components).values(*_values)
+
+        return ObjectsMonitoring(
+            services={s["id"]: s["prototype__monitoring"] for s in services_qs},
+            components={c["id"]: c["prototype__monitoring"] for c in components_qs},
         )
 
 
-def _hardware_info_query(queryset: QuerySet[HostInfo]) -> QuerySet:
-    return queryset.values("host__cluster_id").annotate(
-        cpu_vcores=_sum_from_json("cpu_vcores"),
-        ram=_sum_from_json("ram_bytes"),
-        disk=_sum_from_json("disk_size"),
-    )
+def _hardware_info_query(queryset: QuerySet[HostInfo]) -> QuerySet | None:
+    try:
+        return queryset.values("host__cluster_id").annotate(
+            cpu_vcores=_sum_from_json("cpu_vcores"),
+            ram=_sum_from_json("ram_bytes"),
+            disk=_sum_from_json("disk_size"),
+        )
+    except ObjectDoesNotExist:
+        return None
 
 
 def _sum_from_json(key: str) -> Sum:

@@ -12,6 +12,7 @@
 
 from adcm.permissions import VIEW_CLUSTER_PERM, get_object_for_user
 from cm.models import Cluster
+from cm.transition.status import StatusScenarios
 from core.metrics import RetrieveClusterMetrics
 from dishka import FromDishka
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -41,6 +42,7 @@ class ClusterMetricsViewSet(ADCMGenericViewSet):
         request: Request,
         *_,
         retrieve_cluster_metrics: FromDishka[RetrieveClusterMetrics],
+        status_scenarios: FromDishka[StatusScenarios],
         **__,
     ) -> Response:
         cluster_ids_queryset = (
@@ -49,7 +51,8 @@ class ClusterMetricsViewSet(ADCMGenericViewSet):
             .values_list("id", flat=True)
         )
         cluster_ids = self.paginate_queryset(cluster_ids_queryset)
-        metrics = retrieve_cluster_metrics.retrieve_metrics_many(cluster_ids=cluster_ids)
+        status_map = status_scenarios.retrieve_status_map()
+        metrics = retrieve_cluster_metrics.retrieve_metrics_many(cluster_ids=cluster_ids, status_map=status_map)
 
         serializer_data = self.get_serializer(metrics, many=True).data
         return self.get_paginated_response(data=serializer_data)
@@ -60,12 +63,14 @@ class ClusterMetricsViewSet(ADCMGenericViewSet):
         request: Request,
         *_,
         retrieve_cluster_metrics: FromDishka[RetrieveClusterMetrics],
+        status_scenarios: FromDishka[StatusScenarios],
         **kwargs,
     ) -> Response:
         cluster = get_object_for_user(
             user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["cluster_id"]
         )
-        metrics = retrieve_cluster_metrics.retrieve_metrics(cluster_id=cluster.id)
+        status_map = status_scenarios.retrieve_status_map()
+        metrics = retrieve_cluster_metrics.retrieve_metrics(cluster_id=cluster.id, status_map=status_map)
         serializer = self.get_serializer(metrics)
 
         return Response(serializer.data)

@@ -41,13 +41,13 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer
+from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer, PrototypeWithEditionRelatedSerializer
 from api_v2.prototype.utils import get_license_text
 from api_v2.serializers import DependOnDict, WithStatusSerializer
 
 
 class ClusterSerializer(WithStatusSerializer):
-    prototype = PrototypeRelatedSerializer()
+    prototype = PrototypeWithEditionRelatedSerializer()
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()

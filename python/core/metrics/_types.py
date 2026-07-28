@@ -12,7 +12,10 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict
+
+from core.status import MonitoringType
+from core.types import ComponentID, ServiceID
 
 
 class CapacityUnit(str, Enum):
@@ -37,6 +40,32 @@ class ClusterResources:
 
 
 @dataclass(frozen=True, slots=True)
+class MetricsCounts:
+    count: int
+    up: int
+    down: int
+    maintenance_mode: int
+
+
+@dataclass(frozen=True, slots=True)
 class ClusterMetrics:
     id: int
-    resources: ClusterResources
+    resources: ClusterResources | None
+    services: MetricsCounts
+    hosts: MetricsCounts
+
+
+class ClusterIdResourcesDict(TypedDict):
+    id: int
+    resources: ClusterResources | None
+
+
+class ClusterCountsDict(TypedDict):
+    services: MetricsCounts
+    hosts: MetricsCounts
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectsMonitoring:
+    services: dict[ServiceID, MonitoringType]
+    components: dict[ComponentID, MonitoringType]

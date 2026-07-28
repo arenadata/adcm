@@ -12,7 +12,6 @@
 
 from unittest.mock import patch
 
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import (
     Action,
     ActionHostGroup,
@@ -29,6 +28,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.utils import gen_component, gen_host, gen_prototype, gen_service, generate_hierarchy
+from core.status import FullStatusMap
 from core.types import TaskID
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import GroupObjectPermission
@@ -63,6 +63,7 @@ class TestCluster(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
+        self.assertSetEqual({cl["prototype"]["edition"] for cl in response.json()["results"]}, {"community"})
         manager.expect_not_called("get_raw_status")
         manager.expect_called("retrieve_status_map")
 
@@ -88,6 +89,7 @@ class TestCluster(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.cluster_1.pk)
+        self.assertEqual(response.json()["prototype"]["edition"], "community")
 
         manager.expect_called_once("get_raw_status")
         manager.expect_not_called("retrieve_status_map")
@@ -979,6 +981,55 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
             {(self.component_121.name, "up"), (self.component_122.name, "down")},
         )
 
+    def test_filter_services_statuses_by_mm_success(self):
+        # distribute hosts:
+        #   service_11 - host_1
+        #   service_12 - host_2
+        # set host_2 MM to ON (indirect service_12 MM = ON)
+        self.uc.set_hostcomponent(
+            cluster=self.cluster_1,
+            entries=[
+                *((self.host_1, component) for component in self.service_11.components.all()),
+                *((self.host_2, component) for component in self.service_12.components.all()),
+            ],
+        )
+        self._set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get(query={"maintenanceMode": "on"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], self.service_12.pk)
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get(query={"maintenanceMode": "off"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], self.service_11.pk)
+
+    def test_filter_services_statuses_by_name_success(self):
+        # set prototypes' display_names
+        for i, service in enumerate(self.cluster_1.services.all()):
+            prototype = service.prototype
+            prototype.display_name = f"Service {i} test"
+            prototype.save(update_fields=["display_name"])
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get(query={"displayName": "SERVICE"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == self.cluster_1.services.count())
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "services").get(query={"displayName": "SeRvIcE 0"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        target_service = self.cluster_1.services.get(prototype__display_name="Service 0 test")
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], target_service.id)
+
     def test_hosts_statuses_success(self) -> None:
         manager = get_status_scenarios_manager()
         manager.set_status_map(self.status_map)
@@ -994,6 +1045,33 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
         host_1, host_2 = sorted(entries, key=lambda i: i["id"])
         self.assertEqual(host_1["maintenanceMode"], MaintenanceMode.OFF)
         self.assertEqual(host_2["maintenanceMode"], MaintenanceMode.ON)
+
+    def test_filter_hosts_statuses_by_mm_success(self):
+        self._set_maintenance_mode(obj=self.host_2, value=MaintenanceMode.ON)
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get(query={"maintenanceMode": "on"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], self.host_2.id)
+
+        response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get(query={"maintenanceMode": "off"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], self.host_1.id)
+
+    def test_filter_hosts_statuses_by_name_success(self):
+        response = (self.client.v2[self.cluster_1] / "statuses" / "hosts").get(
+            query={"name": self.host_1.fqdn[:-2].upper()}
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        response = response.json()
+        self.assertTrue(response["count"] == len(response["results"]) == 1)
+        self.assertEqual(response["results"][0]["id"], self.host_1.id)
 
     def test_components_of_service_statuses_success(self) -> None:
         manager = get_status_scenarios_manager()

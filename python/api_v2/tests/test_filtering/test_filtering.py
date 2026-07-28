@@ -12,9 +12,9 @@
 
 from unittest.mock import patch
 
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ObjectType
 from core.bundle import AvailableContractVersions, ContractVersionStatus, VersionInfo
+from core.status import FullStatusMap
 from rbac.models import Role, User
 from tests.client import APINode
 from tests.dependencies import get_status_scenarios_manager

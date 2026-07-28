@@ -31,6 +31,9 @@ class ClusterService:
     def retrieve_topology(self, cluster_id: ClusterID) -> ClusterTopology:
         return self.repo.get_topology_for_cluster(cluster_id=cluster_id)
 
+    def retrieve_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
+        return self.repo.get_clusters_topologies(cluster_ids=cluster_ids)
+
     def find_objects_in_hierarchy(
         self, start_from: ClusterObjectDesc, topology: ClusterTopology
     ) -> tuple[ClusterObjectDesc, ...]:

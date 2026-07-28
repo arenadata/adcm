@@ -10,18 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
-from typing import Protocol
+from core.status._convert import (
+    convert_to_component_status,
+    convert_to_entity_status,
+    convert_to_host_component_status,
+    convert_to_service_status,
+)
+from core.status._types import EntityStatus, FullStatusMap, MonitoringType, RawStatus
 
-from core.metrics._types import ClusterIdResourcesDict, ObjectsMonitoring
-from core.types import ClusterID, ComponentID, ServiceID
-
-
-class ClusterMetricsRepoI(Protocol):
-    def get_resources(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterIdResourcesDict]:
-        ...
-
-    def get_monitorings(
-        self, services: Iterable[ServiceID] = (), components: Iterable[ComponentID] = ()
-    ) -> ObjectsMonitoring:
-        ...
+__all__ = [
+    "FullStatusMap",
+    "RawStatus",
+    "EntityStatus",
+    "convert_to_component_status",
+    "convert_to_service_status",
+    "convert_to_host_component_status",
+    "convert_to_entity_status",
+    "MonitoringType",
+]

@@ -41,6 +41,11 @@ class ClusterRepo(cluster.ClusterRepoI):
         topologies = retrieve_multiple_topologies(cluster_ids=(cluster_id,))
         return next(topologies)
 
+    def get_clusters_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, cluster.ClusterTopology]:
+        topologies = retrieve_multiple_topologies(cluster_ids=cluster_ids)
+
+        return {topology.cluster_id: topology for topology in topologies}
+
     def get_related_cluster_id(self, object_: ClusterObjectDesc | HostDesc) -> ClusterID:
         match object_:
             case Descriptor(type=ADCMCoreType.CLUSTER):

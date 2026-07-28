@@ -29,6 +29,15 @@ class ClusterResourcesSerializer(Serializer):
     disk = ResourceValueSerializer()
 
 
+class MetricsCountsSerializer(Serializer):
+    count = IntegerField()
+    up = IntegerField()
+    down = IntegerField()
+    maintenance_mode = IntegerField()
+
+
 class ClusterMetricsSerializer(Serializer):
     id = IntegerField()
-    resources = ClusterResourcesSerializer()
+    resources = ClusterResourcesSerializer(allow_null=True)
+    services = MetricsCountsSerializer()
+    hosts = MetricsCountsSerializer()

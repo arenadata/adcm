@@ -54,14 +54,6 @@ class MaintenanceMode(models.TextChoices):
     CHANGING = "changing", "changing"
 
 
-MAINTENANCE_MODE_BOTH_CASES_CHOICES = (
-    ("on", "on"),
-    ("off", "off"),
-    ("ON", "ON"),
-    ("OFF", "OFF"),
-)
-
-
 class SignatureStatus(models.TextChoices):
     VALID = "valid", "valid"
     INVALID = "invalid", "invalid"
