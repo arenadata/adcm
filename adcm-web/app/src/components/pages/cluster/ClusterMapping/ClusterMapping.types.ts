@@ -99,3 +99,8 @@ export type ComponentAvailabilityErrors = {
   addingHostsNotAllowedError?: string;
   removingHostsNotAllowedError?: string;
 };
+
+export type ComponentsMappingObject = {
+  componentsMapping: ComponentMapping[];
+  unmappedHostsId: number[];
+};
