@@ -1,12 +1,12 @@
 import type { AdcmHostShortView, AdcmMapping, AdcmMappingComponent, NotAddedServicesDictionary } from '@models/adcm';
 import { useDispatch } from '@hooks';
 import type {
-  ComponentMapping,
   ComponentsDictionary,
   HostMapping,
   HostsDictionary,
   MappingFilter,
   ServiceMapping,
+  ComponentsMappingObject,
 } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { arrayToHash } from '@utils/arrayUtils';
@@ -25,6 +25,13 @@ import {
   cleanupClustersWizardMapping,
   setHostComponentMapDelta,
 } from '@store/adcm/clusters/clustersWizardMappingSlice';
+import { showInfo } from '@store/notificationsSlice.ts';
+import type { AdcmActionProcessMappingStep } from '@models/adcm/wizard.ts';
+
+const defaultComponentMappingObject: ComponentsMappingObject = {
+  componentsMapping: [],
+  unmappedHostsId: [],
+};
 
 export const useActionWizardMapping = (
   mapping: AdcmMapping[],
@@ -32,6 +39,7 @@ export const useActionWizardMapping = (
   components: AdcmMappingComponent[],
   notAddedServicesDictionary: NotAddedServicesDictionary,
   isLoaded: boolean,
+  step: AdcmActionProcessMappingStep,
 ) => {
   const dispatch = useDispatch();
   const hostsDictionary: HostsDictionary = useMemo(() => arrayToHash(hosts, (h) => h.id), [hosts]);
@@ -81,10 +89,20 @@ export const useActionWizardMapping = (
     return { add, remove };
   }, [mapping, localMapping]);
 
-  const componentsMapping: ComponentMapping[] = useMemo(
-    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : []),
+  const { componentsMapping, unmappedHostsId }: ComponentsMappingObject = useMemo(
+    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : defaultComponentMappingObject),
     [components, hostsDictionary, isLoaded, localMapping],
   );
+
+  const unmappedHostsIdStringHash = JSON.stringify(unmappedHostsId);
+
+  useEffect(() => {
+    if (!unmappedHostsId.length) {
+      return;
+    }
+
+    dispatch(showInfo({ message: `Unmapped connection at step ${step.displayName}` }));
+  }, [unmappedHostsIdStringHash]);
 
   const hostsMapping: HostMapping[] = useMemo(() => {
     if (!isLoaded) return [];
