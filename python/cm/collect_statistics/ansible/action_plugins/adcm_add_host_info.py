@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import deque
-from datetime import UTC, datetime
+from datetime import datetime
 from hashlib import md5
 from typing import NamedTuple
 import re
@@ -20,6 +20,7 @@ import json
 import traceback
 
 from ansible.plugins.action import ActionBase
+from core.shortcuts import UTC
 
 sys.path.append("/adcm/python")
 

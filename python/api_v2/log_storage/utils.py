@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 import io
 import tarfile
@@ -26,6 +26,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.shortcuts import UTC
 from django.conf import settings
 
 
