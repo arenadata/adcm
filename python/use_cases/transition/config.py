@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Protocol, TypeAlias, TypeVar
 
 from cm import converters
+from cm.errors import AdcmEx
 from cm.legacy.services.concern import delete_issue
 from cm.legacy.services.job.run import update_related_configs
 from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog, MainObject
@@ -234,3 +235,67 @@ class UpdateConfigurationFromJob:
 # bad, but can't skip it for now
 def _get_config_log(id_: ConfigID) -> ConfigLog:
     return ConfigLog.objects.get(id=id_)
+
+
+def apply_config_changes(
+    job_id: JobID,
+    db_object: ADCM | MainObject,
+    parameters: list[dict],
+    changes_description: str,
+    update_configuration_from_job: UpdateConfigurationFromJob,
+) -> HasChanged:
+    _check_parameters_unique(parameters)
+
+    _, has_changed = update_configuration_from_job.do(
+        owner=converters.orm_object_to_core_descriptor(db_object),
+        changes_input=parameters,
+        convert=prepare_config_change_requests,
+        job_id=job_id,
+        description=changes_description,
+        owner_orm=db_object,
+    )
+
+    return has_changed
+
+
+def prepare_config_change_requests(
+    parameters: list[dict], spec: core.config.spec.FullSpec
+) -> list[core.config.ChangeRequest]:
+    changes = []
+
+    for parameter_change in parameters:
+        full_name = core.config.names.ensure_full_name(parameter_change["key"])
+        value = parameter_change["value"]
+
+        if full_name not in spec.groups:
+            change = core.config.ChangeRequest.for_value(name=full_name, value=value)
+            changes.append(change)
+            continue
+
+        group_spec = spec.groups[full_name]
+        if group_spec.selection:
+            change = core.config.ChangeRequest.for_group_selection(name=full_name, value=value)
+            changes.append(change)
+            continue
+
+        if not spec.groups[full_name].activation:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: only activatable groups may be (de)activated")
+
+        if not isinstance(value, bool):
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: value expected to be boolean")
+
+        change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=value)
+        changes.append(change)
+
+    return changes
+
+
+def _check_parameters_unique(parameters: list[dict]) -> None:
+    checked = set()
+
+    for entry in parameters:
+        key = entry["key"]
+        if key not in checked:
+            checked.add(key)
+        else:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{key} is not unique within parameters")

@@ -144,6 +144,7 @@ class JobRepoImpl(JobRepoInterface):
 
         return Task(
             id=id,
+            display_name=task_record.display_name,
             target=target_,
             owner=cls._get_task_owner(task_record=task_record),
             selector=task_record.selector,

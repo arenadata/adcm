@@ -11,7 +11,13 @@
 # limitations under the License.
 
 # order is important
-from core.action._types import JobSpec, ScriptType  # noqa
+from core.action._types import (  # noqa
+    JobSpec,
+    ScriptType,
+    ServiceManageConfigChange,
+    ServiceManageHostComponentChange,
+    ServiceManageServiceEntry,
+)
 from core.action import _wizard as wizard  # noqa
 from core.action import _context as context
 from core.action import operations
@@ -19,6 +25,9 @@ from core.action import operations
 __all__ = [
     "JobSpec",
     "ScriptType",
+    "ServiceManageConfigChange",
+    "ServiceManageHostComponentChange",
+    "ServiceManageServiceEntry",
     "context",
     "wizard",
     "operations",

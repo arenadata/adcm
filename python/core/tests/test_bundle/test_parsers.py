@@ -412,6 +412,108 @@ class TestApplyConfig(TestCase):
                 self.assertEqual(cur_result, prev_result)
 
 
+class TestServiceManage(TestCase):
+    script_yaml = """
+    - name: manage services
+      script: service_manage
+      script_type: internal
+      params:
+        operation: add
+        services:
+          - name: service_1
+          - name: service_2
+            config_changes:
+              - key: "/some_param"
+                value: "some_value"
+            hc_changes:
+              - component: component_1
+                hosts: ["host-1", "host-2"]
+    """
+
+    def test_parse_in_action_and_wizard_modes_success(self):
+        scripts = yaml.safe_load(self.script_yaml)
+
+        results = []
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            for mode in ("action", "wizard"):
+                with self.subTest(f"{version}-{mode}"):
+                    parsed = parser.parse_scripts(
+                        scripts, template_path=Path(), action_allow_to_terminate=False, mode=mode
+                    )
+                    results.append((version, mode, parsed))
+
+        for previous_idx, (cur_ver, cur_mode, cur_result) in enumerate(results[1:]):
+            prev_ver, prev_mode, prev_result = results[previous_idx]
+            with self.subTest(f"{cur_ver}-{cur_mode}-same-as-{prev_ver}-{prev_mode}"):
+                self.assertEqual(cur_result, prev_result)
+
+    def test_rejected_in_upgrade_mode_fail(self):
+        scripts = yaml.safe_load(self.script_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="'service_manage'"):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="upgrade")
+
+    def test_not_supported_for_1_0_fail(self):
+        scripts = yaml.safe_load(self.script_yaml)
+
+        for _, parser in filter(lambda x: x[0] == "1.0", get_parsers()):
+            with self.assertRaises(BundleParsingError, msg="'service_manage'"):
+                parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+    def test_duplicate_services_fail(self):
+        as_yaml = """
+        - name: manage services
+          script: service_manage
+          script_type: internal
+          params:
+            operation: add
+            services:
+              - name: service_1
+              - name: service_1
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="Duplicate service"):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+    def test_unsupported_operation_fail(self):
+        as_yaml = """
+        - name: manage services
+          script: service_manage
+          script_type: internal
+          params:
+            operation: remove
+            services:
+              - name: service_1
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="'add'"):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+    def test_empty_services_fail(self):
+        as_yaml = """
+        - name: manage services
+          script: service_manage
+          script_type: internal
+          params:
+            operation: add
+            services: []
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+
 class TestUpgradeScripts(TestCase):
     def test_adcm_7953_internal_revert_in_scripts_fail(self):
         yaml_schema = """

@@ -13,8 +13,10 @@
 from configparser import ConfigParser
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 import json
 
+from core.action import ServiceManageServiceEntry
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -23,17 +25,19 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.legacy.job.types import HcAclRule, TaskMappingDelta
+from core.legacy.job.types import AssociatedProcess, CallingProcess, HcAclRule, JobParams, TaskMappingDelta
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
+from pydantic import ValidationError
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
 from use_cases.transition.config import UpdateConfigurationFromJob
+from use_cases.transition.service_manage import ManageClusterServices, _build_mapping_delta
 
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
@@ -41,10 +45,21 @@ from cm.legacy.api import add_service_to_cluster
 from cm.legacy.services.job.run._target_factories import (
     internal_script_config_apply,
     internal_script_hc_apply,
+    internal_script_service_manage,
     prepare_ansible_environment,
 )
 from cm.legacy.services.job.run.repo import JobRepoImpl
-from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
+from cm.models import (
+    Action,
+    Component,
+    ConfigLog,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Prototype,
+    Service,
+    get_object_cluster,
+)
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
@@ -498,10 +513,7 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
 
         task.owner = owner_
         task.selector = {ADCMCoreType.CLUSTER.value: {"id": self.cluster.id, "name": self.cluster.name}}
-
-        action = DummyObject()
-        action.display_name = "Config apply"
-        task.action = action
+        task.display_name = "Config apply"
 
         params = DummyObject()
         params.changes = [
@@ -618,3 +630,302 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         )
         self.assertEqual(result.code, 0)
         self.assertEqual(result.message, expected_message)
+
+    def get_dummy_service_manage_task_job(
+        self,
+        owner: Model | None,
+        services: list[dict],
+        action_process: CallingProcess | AssociatedProcess | None = None,
+    ) -> tuple[object, object]:
+        task, job = DummyObject(), DummyObject()
+
+        owner_ = None
+        if owner:
+            owner_ = DummyObject()
+            owner_.id = owner.id
+            owner_.type = orm_object_to_core_type(owner)
+            owner_.prototype_id = owner.prototype_id
+
+            related_objects = DummyObject()
+
+            cluster = get_object_cluster(owner)
+            cluster_ = None
+            if cluster:
+                cluster_ = DummyObject()
+                cluster_.id = cluster.id
+                cluster_.prototype_id = cluster.prototype_id
+
+            related_objects.cluster = cluster_
+            owner_.related_objects = related_objects
+
+        task.owner = owner_
+        task.action_process = action_process
+        task.display_name = "Service manage"
+
+        params = DummyObject()
+        params.operation = "add"
+        params.services = [ServiceManageServiceEntry.model_validate(entry) for entry in services]
+        job.params = params
+        job.id = 112
+
+        return task, job
+
+    def get_service_manage_deps(self) -> dict:
+        return {"manage_services": self.uc.container.get(ManageClusterServices)}
+
+    def test_internal_service_manage_add_success(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[{"name": "another_service_two_components"}, {"name": "another_service_two_components_2"}],
+        )
+
+        with patch("use_cases.transition.service_manage.create_related_configs") as related_configs_mock:
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("services are in place", result.message)
+
+        for name in ("another_service_two_components", "another_service_two_components_2"):
+            service = Service.objects.filter(cluster=self.cluster, prototype__name=name).first()
+            self.assertIsNotNone(service)
+            self.assertEqual(Component.objects.filter(service=service).count(), 2)
+            self.assertIsNotNone(service.config)
+
+        related_configs_mock.assert_called_once_with(job_id=job.id, owner=task.owner)
+
+    def test_internal_service_manage_add_existing_service_success(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster, services=[{"name": "service_two_components"}]
+        )
+
+        with patch("use_cases.transition.service_manage.create_related_configs") as related_configs_mock:
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("already in place", result.message)
+        self.assertEqual(
+            Service.objects.filter(cluster=self.cluster, prototype__name="service_two_components").count(), 1
+        )
+        related_configs_mock.assert_not_called()
+
+    def test_internal_service_manage_from_service_context_success(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.service, services=[{"name": "another_service_two_components"}]
+        )
+
+        with patch("use_cases.transition.service_manage.create_related_configs"):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertTrue(
+            Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
+        )
+
+    def test_internal_service_manage_unknown_service_fail(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster, services=[{"name": "nonexistent_service"}]
+        )
+
+        with self.assertRaises(AdcmEx) as err:
+            internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(err.exception.code, "PROTOTYPE_NOT_FOUND")
+        self.assertIn("nonexistent_service", err.exception.msg)
+
+    def test_internal_service_manage_with_parameters_success(self):
+        expected_value = "changed_by_service_manage"
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "another_service_two_components",
+                    "config_changes": [{"key": "/string", "value": expected_value}],
+                }
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs"),
+            patch("use_cases.transition.config.update_related_configs"),
+        ):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        service = Service.objects.get(cluster=self.cluster, prototype__name="another_service_two_components")
+        current_config = ConfigLog.objects.get(obj_ref=service.config, id=service.config.current)
+        self.assertEqual(current_config.config["string"], expected_value)
+
+    def test_internal_service_manage_with_mapping_success(self):
+        services = [
+            {
+                "name": "another_service_two_components",
+                "hc_changes": [
+                    {"component": "component_1", "hosts": ["host1", "host2"]},
+                    {"component": "component_2", "hosts": ["host1"]},
+                ],
+            }
+        ]
+        task, job = self.get_dummy_service_manage_task_job(owner=self.cluster, services=services)
+
+        with patch("use_cases.transition.service_manage.create_related_configs"):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        service = Service.objects.get(cluster=self.cluster, prototype__name="another_service_two_components")
+        component_1 = Component.objects.get(service=service, prototype__name="component_1")
+        component_2 = Component.objects.get(service=service, prototype__name="component_2")
+        actual_hc = set(
+            HostComponent.objects.filter(cluster=self.cluster, service=service).values_list("host_id", "component_id")
+        )
+        expected_hc = {
+            (self.host_1.pk, component_1.pk),
+            (self.host_2.pk, component_1.pk),
+            (self.host_1.pk, component_2.pk),
+        }
+        self.assertSetEqual(actual_hc, expected_hc)
+
+        # repeated call with the same arguments should change nothing
+        task, job = self.get_dummy_service_manage_task_job(owner=self.cluster, services=services)
+        with patch("use_cases.transition.service_manage.create_related_configs"):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("already in place", result.message)
+        self.assertEqual(HostComponent.objects.filter(cluster=self.cluster, service=service).count(), 3)
+
+    def test_internal_service_manage_unknown_host_rollback_fail(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "another_service_two_components",
+                    "hc_changes": [{"component": "component_1", "hosts": ["nonexistent-host"]}],
+                }
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs"),
+            self.assertRaises(AdcmEx) as err,
+        ):
+            internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(err.exception.code, "HOST_NOT_FOUND")
+        self.assertFalse(
+            Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
+        )
+
+    def test_internal_service_manage_unknown_component_fail(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "another_service_two_components",
+                    "hc_changes": [{"component": "nonexistent_component", "hosts": ["host1"]}],
+                }
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs"),
+            self.assertRaises(AdcmEx) as err,
+        ):
+            internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(err.exception.code, "COMPONENT_NOT_FOUND")
+
+    def test_service_manage_job_params_serialization(self):
+        params = JobParams(
+            ansible_tags="",
+            operation="add",
+            services=[
+                {
+                    "name": "some_service",
+                    "config_changes": [{"key": "/some_param", "value": "some_value"}],
+                    "hc_changes": [{"component": "some_component", "hosts": ["host-1"]}],
+                }
+            ],
+        )
+
+        self.assertEqual(params.operation, "add")
+        entry = params.services[0]
+        self.assertIsInstance(entry, ServiceManageServiceEntry)
+        self.assertEqual(entry.config_changes[0].key, "/some_param")
+        self.assertEqual(entry.hc_changes[0].hosts, ["host-1"])
+
+        # fields are excluded from serialization to keep rendered job params (e.g. job's `config.json`) unchanged
+        dumped = params.model_dump()
+        self.assertNotIn("operation", dumped)
+        self.assertNotIn("services", dumped)
+
+        # only `add` operation exists for now
+        with self.assertRaises(ValidationError):
+            JobParams(ansible_tags="", operation="remove")
+
+    def test_internal_service_manage_mapping_to_mm_host_fail(self):
+        Host.objects.filter(pk=self.host_1.pk).update(maintenance_mode=MaintenanceMode.ON)
+
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "another_service_two_components",
+                    "hc_changes": [{"component": "component_1", "hosts": ["host1"]}],
+                }
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs"),
+            self.assertRaises(AdcmEx) as err,
+        ):
+            internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(err.exception.code, "INVALID_HC_HOST_IN_MM")
+        self.assertFalse(
+            Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
+        )
+
+    def test_internal_service_manage_absent_service_in_mapping_fail(self):
+        topology = self.uc.container.get(ClusterService).retrieve_topology(cluster_id=self.cluster.pk)
+        entries = (
+            ServiceManageServiceEntry(
+                name="ghost_service", hc_changes=[{"component": "component_1", "hosts": ["host1"]}]
+            ),
+        )
+
+        with self.assertRaises(AdcmEx) as err:
+            _build_mapping_delta(topology=topology, entries=entries)
+
+        self.assertEqual(err.exception.code, "SERVICE_NOT_FOUND")
+        self.assertIn("ghost_service", err.exception.msg)
+
+    def test_internal_service_manage_from_wizard_operation_step_success(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[{"name": "another_service_two_components"}],
+            action_process=CallingProcess(id=1, sync_key=uuid4(), step_id=2),
+        )
+
+        with patch("use_cases.transition.service_manage.create_related_configs"):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertTrue(
+            Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
+        )
+
+    def test_internal_service_manage_from_wizard_completing_action_success(self):
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[{"name": "another_service_two_components"}],
+            action_process=AssociatedProcess(id=1),
+        )
+
+        with patch("use_cases.transition.service_manage.create_related_configs"):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertTrue(
+            Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
+        )
