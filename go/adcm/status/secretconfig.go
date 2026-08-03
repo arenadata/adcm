@@ -13,14 +13,17 @@
 package status
 
 import (
-	"adcm/config"
+	"sync"
 	"time"
+
+	"adcm/config"
 )
 
 type SecretConfig struct {
 	AccessTokens config.AccessTokens
 	adcmTokens   map[string]time.Time
 	tokenTimeOut time.Duration
+	mu           sync.RWMutex
 }
 
 func NewSecretConfig(accessTokens config.AccessTokens) *SecretConfig {
@@ -29,4 +32,19 @@ func NewSecretConfig(accessTokens config.AccessTokens) *SecretConfig {
 		adcmTokens:   map[string]time.Time{},
 		tokenTimeOut: 60 * time.Minute,
 	}
+}
+
+func (sc *SecretConfig) SetADCMToken(token string) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	sc.adcmTokens[token] = time.Now().Add(sc.tokenTimeOut)
+}
+
+func (sc *SecretConfig) GetADCMToken(token string) (time.Time, bool) {
+	sc.mu.RLock()
+	defer sc.mu.RUnlock()
+
+	val, ok := sc.adcmTokens[token]
+	return val, ok
 }
