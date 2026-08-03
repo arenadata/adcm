@@ -10,15 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+from rest_framework.serializers import CharField, Serializer
 
-from api_v2.internal.views import StatusCheckerTokenViewSet, StatusServerUpdateView
 
-urlpatterns = [
-    path("unstable/status-server/sync/", StatusServerUpdateView.as_view({"post": "create"}), name="status-server-sync"),
-    path(
-        "unstable/status-server/get-token/",
-        StatusCheckerTokenViewSet.as_view({"get": "list"}),
-        name="status-server-get-token",
-    ),
-]
+class StatusCheckerTokenSerializer(Serializer):
+    token = CharField(read_only=True, help_text="Status server shared-secret token for status checker")
