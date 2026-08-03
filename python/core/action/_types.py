@@ -12,8 +12,9 @@
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
 from enum import Enum
+from typing import Annotated, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ScriptType(str, Enum):
@@ -37,3 +38,19 @@ class JobSpec(BaseModel):
 
     # extra
     params: dict
+
+
+class ServiceManageConfigChange(BaseModel):
+    key: str
+    value: Any
+
+
+class ServiceManageHostComponentChange(BaseModel):
+    component: str
+    hosts: list[str]
+
+
+class ServiceManageServiceEntry(BaseModel):
+    name: str
+    config_changes: Annotated[list[ServiceManageConfigChange] | None, Field(default=None)]
+    hc_changes: Annotated[list[ServiceManageHostComponentChange] | None, Field(default=None)]

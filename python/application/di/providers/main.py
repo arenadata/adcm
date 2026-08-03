@@ -64,6 +64,7 @@ from use_cases.transition.job.schedule import (
     ScheduleTask,
     TaskStarter,
 )
+from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
@@ -227,7 +228,9 @@ class UseCaseProvider(Provider):
 
     create_cluster = provide(CreateCluster)
 
-    add_services = provide(CreateServicesFromPrototypes)
+    # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
+    add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)
+    manage_cluster_services = provide(ManageClusterServices, scope=Scope.APP)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
 

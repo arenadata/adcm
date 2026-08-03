@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.action import JobSpec  # noqa
+from core.action import JobSpec, ServiceManageServiceEntry  # noqa
 from core.templates import Template
 from core.types import (
     ActionID,
@@ -220,6 +220,7 @@ class CallingProcess(BaseModel):
 
 class Task(BaseModel):
     id: int
+    display_name: str = ""
 
     # Owner is an object on which action is defined
     owner: TaskOwner[ADCMCoreType] | None
@@ -255,6 +256,10 @@ class Task(BaseModel):
 class JobParams(BaseModel):
     ansible_tags: str
     rules: Annotated[list[HcAclRule], Field(default_factory=list)]
+    # `service_manage` internal script arguments;
+    # excluded from serialization to keep rendered job params (e.g. job's `config.json`) unchanged
+    operation: Annotated[Literal["add"] | None, Field(default=None, exclude=True)]
+    services: Annotated[list[ServiceManageServiceEntry] | None, Field(default=None, exclude=True)]
 
     model_config = ConfigDict(extra="allow")
 
