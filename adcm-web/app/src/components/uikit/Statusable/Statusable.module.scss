@@ -5,6 +5,8 @@
     --statusable-circle-background-failed: var(--color-xred);
     --statusable-circle-background-aborted: var(--color-xgray-light);
     --statusable-circle-background-running: var(--color-xblue);
+    --statusable-circle-background-revoking: var(--color-yellow-lighter);
+    --statusable-circle-background-terminating: var(--color-yellow-lighter);
     --statusable-circle-background-created: var(--color-xwhite-off);
     --statusable-color-name: var(--color-xwhite-off);
   }
@@ -14,6 +16,8 @@
     --statusable-circle-background-failed: var(--color-xred-light);
     --statusable-circle-background-aborted: var(--color-xgray-light);
     --statusable-circle-background-running: var(--color-xblue);
+    --statusable-circle-background-revoking: var(--color-yellow-lighter);
+    --statusable-circle-background-terminating: var(--color-yellow-lighter);
     --statusable-circle-background-created: var(--color-xdark);
     --statusable-color-name: var(--color-xdark);
   }
@@ -46,6 +50,12 @@
   }
   &_running {
     --statusable-circle-background: var(--statusable-circle-background-running)
+  }
+  &_revoking {
+    --statusable-circle-background: var(--statusable-circle-background-revoking)
+  }
+  &_terminating {
+    --statusable-circle-background: var(--statusable-circle-background-terminating)
   }
   &_created {
     --statusable-circle-background: var(--statusable-circle-background-created)
