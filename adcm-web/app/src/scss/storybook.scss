@@ -1,7 +1,7 @@
-@import 'vars.scss';
-@import 'normalize';
-@import 'common.scss';
-@import 'theme.scss';
+@use 'vars';
+@use 'normalize';
+@use 'common';
+@use 'theme';
 
 body.theme-dark {
   --body-background: var(--color-xblack);

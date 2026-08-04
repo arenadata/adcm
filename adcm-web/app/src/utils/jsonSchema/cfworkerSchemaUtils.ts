@@ -3,6 +3,7 @@
  **/
 import type { Schema } from '@cfworker/json-schema';
 import { type OutputUnit, Validator } from '@cfworker/json-schema';
+import { isValueUnset } from '@utils/checkUtils';
 import { deepClone, getValueByPath } from '@utils/objectUtils';
 
 export type SchemaLike = Schema | object | boolean;
@@ -1284,12 +1285,16 @@ function getObjectDefault(schema: Schema): Record<string, unknown> {
 
 // Return true if schema is an object schema (type: object + properties).
 function isObjectSchema(s: Schema): boolean {
-  return s.type === 'object' && s.properties != null && typeof s.properties === 'object';
+  return s.type === 'object' && !isValueUnset(s.properties) && typeof s.properties === 'object';
 }
 
 // Return true if schema is an array schema (type: array + schema `items`).
 function isArraySchema(s: Schema): boolean {
-  return s.type === 'array' && s.items != null && isSchema(s.items);
+  return s.type === 'array' && !isValueUnset(s.items) && isSchema(s.items);
+}
+
+function hasOneOfBranches(schema: Schema): boolean {
+  return Array.isArray(schema.oneOf) && schema.oneOf.length > 0;
 }
 
 /** Select oneOf branch by matching default with const in one of the branches. */
@@ -1322,6 +1327,13 @@ function getStaticSubSchemaFromBranch(branch: Schema): Schema | undefined {
   return isSchema(sub) ? sub : undefined;
 }
 
+function findBranchWithStatic(oneOfBranches: Schema[]): Schema | undefined {
+  return oneOfBranches.find((branch) => {
+    if (!isSchema(branch)) return false;
+    return !isValueUnset(branch.properties?.[PROP_STATIC]);
+  });
+}
+
 /**
  * Fills result.static when generating defaults for oneOf schemas (e.g. with discriminator).
  * ADCM config may have "dynamic" and "static" branches; "static" has its own sub-schema with default.
@@ -1341,7 +1353,7 @@ function ensureStaticInResult(
     }
   }
 
-  const branchWithStatic = oneOfBranches.find((b) => isSchema(b) && b.properties?.[PROP_STATIC] != null);
+  const branchWithStatic = findBranchWithStatic(oneOfBranches);
   const staticSchema = branchWithStatic && getStaticSubSchemaFromBranch(branchWithStatic);
   if (!staticSchema) return;
 
@@ -1411,7 +1423,7 @@ function generateFromObjectProperties<T>(schema: Schema): T {
     if (value && typeof value === 'object' && Array.isArray(propSchema.oneOf)) {
       const valueObj = value as Record<string, unknown>;
       if (valueObj[PROP_STATIC] === undefined) {
-        const branchWithStatic = propSchema.oneOf.find((o) => isSchema(o) && o.properties?.[PROP_STATIC] != null);
+        const branchWithStatic = findBranchWithStatic(propSchema.oneOf);
         const staticSchema = branchWithStatic && getStaticSubSchemaFromBranch(branchWithStatic);
         if (staticSchema?.default !== undefined) {
           valueObj[PROP_STATIC] = deepClone(staticSchema.default);
@@ -1436,7 +1448,7 @@ function generateFromArray<T>(schema: Schema): T | undefined {
   if (!isSchema(schema.items)) return undefined;
   const item = generateFromSchemaWithCfWorker(schema.items);
 
-  return (item != null ? [item] : []) as unknown as T;
+  return (item !== null && item !== undefined ? [item] : []) as unknown as T;
 }
 
 export const generateFromSchemaWithCfWorker = <T>(schema: SchemaLike): T | undefined => {
@@ -1445,15 +1457,20 @@ export const generateFromSchemaWithCfWorker = <T>(schema: SchemaLike): T | undef
   if (schema.default === null) return null as T;
 
   // oneOf without type: 'object' e.g. type variants or null
-  if (schema.type !== 'object' && Array.isArray(schema.oneOf) && schema.oneOf.length > 0) {
+  if (schema.type !== 'object' && hasOneOfBranches(schema)) {
     return generateFromOneOfNonObject<T>(schema);
   }
 
   if (isObjectSchema(schema)) {
-    if (Array.isArray(schema.oneOf) && schema.oneOf.length > 0) {
+    if (hasOneOfBranches(schema)) {
       return generateFromObjectWithOneOf<T>(schema);
     }
     return generateFromObjectProperties<T>(schema);
+  }
+
+  // object + oneOf without `properties` and without default (typical discriminator root)
+  if (schema.type === 'object' && hasOneOfBranches(schema) && schema.default === undefined) {
+    return generateFromObjectWithOneOf<T>(schema);
   }
 
   if (isArraySchema(schema)) {
