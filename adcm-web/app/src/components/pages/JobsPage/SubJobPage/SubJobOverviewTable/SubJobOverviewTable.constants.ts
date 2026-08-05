@@ -23,8 +23,8 @@ export const columns: TableColumn[] = [
     name: 'endTime',
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
   },
 ];
 
