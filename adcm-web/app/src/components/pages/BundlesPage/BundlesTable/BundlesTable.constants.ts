@@ -33,8 +33,8 @@ export const columns: TableColumn[] = [
     name: 'signatureStatus',
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
     headerAlign: 'center',
     width: '100px',
   },
