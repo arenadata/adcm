@@ -4,6 +4,8 @@ import type { BaseStatus } from '@uikit';
 export const jobStatusesMap: { [key in AdcmJobStatus]: BaseStatus } = {
   [AdcmJobStatus.Created]: 'created',
   [AdcmJobStatus.Running]: 'running',
+  [AdcmJobStatus.Revoking]: 'revoking',
+  [AdcmJobStatus.Terminating]: 'terminating',
   [AdcmJobStatus.Success]: 'success',
   [AdcmJobStatus.Failed]: 'failed',
   [AdcmJobStatus.Aborted]: 'aborted',

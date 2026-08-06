@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from cm import errors, models
 from cm.converters import orm_object_to_core_descriptor
-from cm.legacy.api import check_license
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
@@ -37,6 +36,9 @@ class CreateCluster:
     status_scenarios: StatusScenarios
 
     def do(self, prototype: models.Prototype, name: str, description: str):
+        # imported here to avoid circular imports with `cm.legacy.api`
+        from cm.legacy.api import check_license
+
         if prototype.type != ADCMCoreType.CLUSTER:
             raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 

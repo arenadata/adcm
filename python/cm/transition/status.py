@@ -76,10 +76,9 @@ class StatusScenarios:
         legacy_send_object_update_event(obj_id=obj_id, obj_type=obj_type, changes=changes)
 
     def send_config_creation_event(self, owner: CoreObjectDescriptor | Descriptor, created_by: str) -> None:
-        object_type = owner.type if isinstance(owner.type, str) else owner.type.value
         legacy_send_config_creation_event(
             object_id=owner.id,
-            object_type=object_type,
+            object_type=owner.type.value,
             changes={"createdBy": created_by},
         )
 

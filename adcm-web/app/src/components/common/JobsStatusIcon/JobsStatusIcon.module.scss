@@ -8,7 +8,9 @@
     --status-icon-color-broken: var(--color-xgray-light);
     --status-icon-color-warning: var(--color-yellow-lighter);
     --status-icon-color-info: var(--color-xblue);
-    --status-icon-color-revoked: var(--color-xred);
+    --status-icon-color-revoked: var(--color-xdark);
+    --status-icon-color-revoking: var(--color-yellow-lighter);
+    --status-icon-color-terminating: var(--color-yellow-lighter);
     --status-icon-color-queued: var(--color-xwhite-off);
   }
   body.theme-light {
@@ -20,7 +22,9 @@
     --status-icon-color-broken: var(--color-xgray-light);
     --status-icon-color-warning: var(--color-warning-orange-new);
     --status-icon-color-info: var(--color-xblue);
-    --status-icon-color-revoked: var(--color-xred-light);
+    --status-icon-color-revoked: var(--color-xdark);
+    --status-icon-color-revoking: var(--color-yellow-lighter);
+    --status-icon-color-terminating: var(--color-yellow-lighter);
     --status-icon-color-queued: var(--color-xdark);
   }
 }
@@ -40,6 +44,14 @@
 
   &_running {
     color: var(--status-icon-color-running);
+  }
+
+  &_revoking {
+    color: var(--status-icon-color-revoking);
+  }
+
+  &_terminating {
+    color: var(--status-icon-color-terminating);
   }
 
   &_aborted {

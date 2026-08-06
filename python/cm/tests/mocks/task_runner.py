@@ -27,6 +27,7 @@ from typing_extensions import Self
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.config import UpdateConfigurationFromJob
+from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run import ExecutionTargetFactory
@@ -64,6 +65,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
     ):
@@ -73,6 +75,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
+            manage_services=manage_services,
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
         )
@@ -121,6 +124,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
     ):
@@ -130,6 +134,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
+            manage_services=manage_services,
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
         )

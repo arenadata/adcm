@@ -1,6 +1,6 @@
-@import 'vars.scss';
-@import 'normalize.scss';
-@import 'svg-sprite.scss';
-@import 'common.scss';
-@import 'fonts.scss';
-@import 'theme.scss';
+@use 'vars';
+@use 'normalize';
+@use 'svg-sprite';
+@use 'common';
+@use 'fonts';
+@use 'theme';

@@ -20,8 +20,8 @@ export const columns: TableColumn[] = [
     width: '80px',
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
     headerAlign: 'center',
     width: '100px',
   },

@@ -3,6 +3,8 @@ export enum AdcmJobStatus {
   Success = 'success',
   Failed = 'failed',
   Running = 'running',
+  Revoking = 'revoking',
+  Terminating = 'terminating',
   Locked = 'locked',
   Aborted = 'aborted',
   Broken = 'broken',

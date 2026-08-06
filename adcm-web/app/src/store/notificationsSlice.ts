@@ -24,6 +24,12 @@ const notificationsSlice = createSlice({
     showError(state, action: PayloadAction<AlertOptions>) {
       const { ttl, id, message } = action.payload;
 
+      const lastElement = state.notifications.at(-1);
+
+      if (lastElement !== undefined && lastElement.model.message === message) {
+        return;
+      }
+
       const notification: ErrorNotification = {
         id: id ?? nanoid(),
         variant: NotificationVariant.Error,
@@ -36,6 +42,12 @@ const notificationsSlice = createSlice({
     },
     showInfo(state, action: PayloadAction<AlertOptions>) {
       const { ttl, id, message } = action.payload;
+
+      const lastElement = state.notifications.at(-1);
+
+      if (lastElement !== undefined && lastElement.model.message === message) {
+        return;
+      }
 
       const notification: InfoNotification = {
         id: id ?? nanoid(),

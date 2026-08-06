@@ -10,15 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+from zoneinfo import ZoneInfo
 
-from api_v2.internal.views import StatusCheckerTokenViewSet, StatusServerUpdateView
-
-urlpatterns = [
-    path("unstable/status-server/sync/", StatusServerUpdateView.as_view({"post": "create"}), name="status-server-sync"),
-    path(
-        "unstable/status-server/get-token/",
-        StatusCheckerTokenViewSet.as_view({"get": "list"}),
-        name="status-server-get-token",
-    ),
-]
+UTC = ZoneInfo("UTC")

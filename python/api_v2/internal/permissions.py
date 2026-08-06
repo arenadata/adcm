@@ -10,15 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+from rest_framework.permissions import BasePermission
 
-from api_v2.internal.views import StatusCheckerTokenViewSet, StatusServerUpdateView
 
-urlpatterns = [
-    path("unstable/status-server/sync/", StatusServerUpdateView.as_view({"post": "create"}), name="status-server-sync"),
-    path(
-        "unstable/status-server/get-token/",
-        StatusCheckerTokenViewSet.as_view({"get": "list"}),
-        name="status-server-get-token",
-    ),
-]
+class IsSuperUser(BasePermission):
+    def has_permission(self, request, view):  # noqa: ARG002
+        user = request.user
+        return bool(user and user.is_authenticated and user.is_superuser)

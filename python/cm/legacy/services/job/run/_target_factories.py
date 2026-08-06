@@ -22,6 +22,7 @@ import traceback
 
 from core.action import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.action.job import TaskUpdateDTO
+from core.action import ServiceManageServiceEntry
 from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
@@ -38,10 +39,10 @@ from rbac.roles import re_apply_policy_for_jobs
 from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob
-import core
+from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
+from use_cases.transition.service_manage import ManageClusterServices
 
-from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
+from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.types import ProcessStepState
@@ -90,6 +91,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
         cluster_service: ClusterService,
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
@@ -114,6 +116,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                 internal_script_config_apply,
                 update_configuration_from_job=update_configuration_from_job,
             ),
+            "service_manage": partial(internal_script_service_manage, manage_services=manage_services),
             "before_upgrade_clean": partial(
                 internal_script_before_upgrade_clean,
                 cluster_uc=reset_cluster_before_upgrade,
@@ -337,12 +340,12 @@ def internal_script_config_apply(
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
-        has_changed = _apply_config_changes(
-            job.id,
-            changing_object,
-            change["parameters"],
-            f"{task.action.display_name} process update",
-            update_configuration_from_job,
+        has_changed = apply_config_changes(
+            job_id=job.id,
+            db_object=changing_object,
+            parameters=change["parameters"],
+            changes_description=f"{task.display_name} process update",
+            update_configuration_from_job=update_configuration_from_job,
         )
         # if at least one change has been applied, the script is marked as completed with updates
         with_updates = has_changed or with_updates
@@ -354,6 +357,39 @@ def internal_script_config_apply(
         with_updates=with_updates,
     )
     return InternalScriptResult(code=0, message=result_message)
+
+
+def internal_script_service_manage(
+    task: Task,
+    job: Job,
+    manage_services: ManageClusterServices,
+) -> InternalScriptResult:
+    cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
+
+    outcome = manage_services.add(
+        cluster_id=cluster_id,
+        entries=entries,
+        job_id=job.id,
+        task_owner=task.owner,
+        changes_description=f"{task.display_name} process update",
+    )
+
+    result_message = _build_result_message(
+        script_name="service_manage",
+        full_complete_message=f"services are in place: {', '.join(entry.name for entry in entries)}",
+        without_updates_message="the requested services were already in place",
+        with_updates=outcome.with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def _parse_service_manage_arguments(task: Task, job: Job) -> tuple[ClusterID, tuple[ServiceManageServiceEntry, ...]]:
+    if task.owner is None:
+        raise RuntimeError("misconfigured task runner: no owner")
+
+    cluster_id = task.owner.id if task.owner.type == ADCMCoreType.CLUSTER else task.owner.related_objects.cluster.id
+
+    return cluster_id, tuple(job.params.services or ())
 
 
 def internal_script_before_upgrade_clean(
@@ -411,27 +447,6 @@ def _build_result_message(
     return base_template.format(script_name=script_name, completed_info=complete_info)
 
 
-def _apply_config_changes(
-    job_id: int,
-    db_object: ADCM | CoreObject,
-    parameters: list[dict],
-    changes_description: str,
-    update_configuration_from_job: UpdateConfigurationFromJob,
-) -> bool:
-    _check_parameters_unique(parameters)
-
-    _, has_changed = update_configuration_from_job.do(
-        owner=orm_object_to_core_descriptor(db_object),
-        changes_input=parameters,
-        convert=_prepare_changes_new,
-        job_id=job_id,
-        description=changes_description,
-        owner_orm=db_object,
-    )
-
-    return has_changed
-
-
 def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
     last_mapping_step = (
         process.steps.filter(state=ProcessStepState.COMPLETED)
@@ -454,47 +469,6 @@ def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
         remove_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
 
     return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
-
-
-def _check_parameters_unique(parameters: list[dict]) -> None:
-    checked = set()
-
-    for entry in parameters:
-        key = entry["key"]
-        if key not in checked:
-            checked.add(key)
-        else:
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{key} is not unique within parameters")
-
-
-def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
-    changes = []
-
-    for parameter_change in parameters:
-        full_name = core.config.names.ensure_full_name(parameter_change["key"])
-        value = parameter_change["value"]
-
-        if full_name not in spec.groups:
-            change = core.config.ChangeRequest.for_value(name=full_name, value=value)
-            changes.append(change)
-            continue
-
-        group_spec = spec.groups[full_name]
-        if group_spec.selection:
-            change = core.config.ChangeRequest.for_group_selection(name=full_name, value=value)
-            changes.append(change)
-            continue
-
-        if not spec.groups[full_name].activation:
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: only activatable groups may be (de)activated")
-
-        if not isinstance(value, bool):
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: value expected to be boolean")
-
-        change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=value)
-        changes.append(change)
-
-    return changes
 
 
 def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:

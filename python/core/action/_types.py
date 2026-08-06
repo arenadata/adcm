@@ -19,6 +19,7 @@ from typing import Annotated, Literal, NamedTuple, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated, Any
 
 from core.templates import Template
 from core.types import (
@@ -37,6 +38,7 @@ from core.types import (
 T = TypeVar("T")
 V = TypeVar("V")
 CT = TypeVar("CT", bound=ADCMCoreType)
+from pydantic import BaseModel, Field
 
 
 class ScriptType(str, Enum):
@@ -249,3 +251,19 @@ class ActionInfo(BaseModel):
     scripts_jinja: str
     wizard_template: Template | None
     scripts_template: Template | None = None
+
+
+class ServiceManageConfigChange(BaseModel):
+    key: str
+    value: Any
+
+
+class ServiceManageHostComponentChange(BaseModel):
+    component: str
+    hosts: list[str]
+
+
+class ServiceManageServiceEntry(BaseModel):
+    name: str
+    config_changes: Annotated[list[ServiceManageConfigChange] | None, Field(default=None)]
+    hc_changes: Annotated[list[ServiceManageHostComponentChange] | None, Field(default=None)]

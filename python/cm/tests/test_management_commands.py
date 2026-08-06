@@ -22,6 +22,7 @@ import tarfile
 import datetime
 import unittest
 
+from core.shortcuts import UTC
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
@@ -595,7 +596,7 @@ class TestStorage(ADCMDjangoAPISuite):
 
     def test_storage_one_file_success(self):
         community_storage = TarFileWithJSONFileStorage()
-        expected_name = f"{datetime.datetime.now(tz=datetime.UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
+        expected_name = f"{datetime.datetime.now(tz=UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
 
         community_storage.add(
             JSONFile(
@@ -613,7 +614,7 @@ class TestStorage(ADCMDjangoAPISuite):
 
     def test_storage_archive_written_twice_success(self):
         community_storage = TarFileWithJSONFileStorage()
-        expected_name = f"{datetime.datetime.now(tz=datetime.UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
+        expected_name = f"{datetime.datetime.now(tz=UTC).date().strftime('%Y-%m-%d')}_statistics.tar.gz"
 
         community_storage.add(
             JSONFile(

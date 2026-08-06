@@ -275,7 +275,7 @@ describe('Cluster mapping utils', () => {
 
   test('test getServicesMapping empty mapping', () => {
     const componentsMapping = getComponentsMapping(emptyMapping, components, hostsDictionary);
-    const servicesMapping = getServicesMapping(componentsMapping);
+    const servicesMapping = getServicesMapping(componentsMapping.componentsMapping);
 
     const expected: ServiceMapping[] = [
       {
@@ -313,7 +313,7 @@ describe('Cluster mapping utils', () => {
     ];
 
     const componentsMapping = getComponentsMapping(mapping, components, hostsDictionary);
-    const servicesMapping = getServicesMapping(componentsMapping);
+    const servicesMapping = getServicesMapping(componentsMapping.componentsMapping);
 
     const expected: ServiceMapping[] = [
       {
@@ -454,7 +454,7 @@ describe('Cluster mapping utils', () => {
     ];
 
     const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
-    const serviceMapping = getServicesMapping(componentMapping);
+    const serviceMapping = getServicesMapping(componentMapping.componentsMapping);
     const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
 
     const relatedData: ValidateRelatedData = {
@@ -463,7 +463,7 @@ describe('Cluster mapping utils', () => {
       notAddedServicesDictionary: {},
     };
 
-    const validationResult = validate(componentMapping, relatedData);
+    const validationResult = validate(componentMapping.componentsMapping, relatedData);
 
     const expected: ComponentsMappingErrors = {
       [componentsDictionaryByName.hBaseMaster.id]: {
@@ -486,7 +486,7 @@ describe('Cluster mapping utils', () => {
     ];
 
     const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
-    const serviceMapping = getServicesMapping(componentMapping);
+    const serviceMapping = getServicesMapping(componentMapping.componentsMapping);
     const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
 
     const relatedData: ValidateRelatedData = {
@@ -495,7 +495,7 @@ describe('Cluster mapping utils', () => {
       notAddedServicesDictionary: {},
     };
 
-    const validationResult = validate(componentMapping, relatedData);
+    const validationResult = validate(componentMapping.componentsMapping, relatedData);
 
     expect(validationResult).toStrictEqual({});
   });
@@ -507,7 +507,7 @@ describe('Cluster mapping utils', () => {
     ];
 
     const componentMapping = getComponentsMapping(mapping, components, hostsDictionary);
-    const serviceMapping = getServicesMapping(componentMapping);
+    const serviceMapping = getServicesMapping(componentMapping.componentsMapping);
     const servicesMappingDictionary = arrayToHash(serviceMapping, (sm) => sm.service.prototype.id);
 
     const relatedData: ValidateRelatedData = {
@@ -518,7 +518,7 @@ describe('Cluster mapping utils', () => {
       },
     };
 
-    const validationResult = validate(componentMapping, relatedData);
+    const validationResult = validate(componentMapping.componentsMapping, relatedData);
 
     const expected: ComponentsMappingErrors = {
       [componentsDictionaryByName.zookeeperServer.id]: {

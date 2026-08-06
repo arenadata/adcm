@@ -34,6 +34,13 @@ from core.action._types import (  # noqa
     UNFINISHED_STATUSES,
 )
 
+from core.action._types import (  # noqa
+    JobSpec,
+    ScriptType,
+    ServiceManageConfigChange,
+    ServiceManageHostComponentChange,
+    ServiceManageServiceEntry,
+)
 from core.action import _wizard as wizard  # noqa
 
 from core.action import _context as context
@@ -53,6 +60,9 @@ __all__ = [
     "JobSpec",
     "RelatedObjects",
     "ScriptType",
+    "ServiceManageConfigChange",
+    "ServiceManageHostComponentChange",
+    "ServiceManageServiceEntry",
     "StateChanges",
     "Task",
     "TaskActionInfo",

@@ -61,6 +61,8 @@ const MonacoCodeViewer = ({
       automaticLayout: true,
       renderWhitespace: 'none',
       glyphMargin: false,
+      occurrencesHighlight: 'off',
+      selectionHighlight: false,
       padding: { top: 16, bottom: 16 },
     });
 

@@ -65,8 +65,8 @@ RUN python3.10 -m pip install -U setuptools wheel && \
 # Non-root runtime user. Writable state is relocated off root-owned paths (/run, /root) onto
 # /adcm/data and the user's home. The uid/gid are build args so they are declared and stable: existing installs
 # upgrading from a root-based image must `chown -R ${ADCM_UID}:${ADCM_GID}` their /adcm/data volume once.
-ARG ADCM_UID=1001
-ARG ADCM_GID=1001
+ARG ADCM_UID=10001
+ARG ADCM_GID=10001
 RUN addgroup -g "${ADCM_GID}" adcm && \
     adduser -D -u "${ADCM_UID}" -G adcm -h /home/adcm -s /bin/sh adcm
 

@@ -31,8 +31,8 @@ export const columns: TableColumn[] = [
     isSortable: false,
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
     isSortable: false,
     headerAlign: 'center',
     width: '100px',
