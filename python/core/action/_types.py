@@ -15,11 +15,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain
 from pathlib import Path
-from typing import Annotated, Literal, NamedTuple, TypeGuard, TypeVar
+from typing import Annotated, Any, Literal, NamedTuple, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Annotated, Any
 
 from core.templates import Template
 from core.types import (
@@ -38,7 +37,6 @@ from core.types import (
 T = TypeVar("T")
 V = TypeVar("V")
 CT = TypeVar("CT", bound=ADCMCoreType)
-from pydantic import BaseModel, Field
 
 
 class ScriptType(str, Enum):
@@ -132,6 +130,31 @@ class HcAclRule(NamedTuple):
     action: Literal["add", "remove"]
 
 
+class ActionInfo(BaseModel):
+    id: ActionID
+    name: str
+    owner_prototype: PrototypeDescriptor
+    scripts_jinja: str
+    wizard_template: Template | None
+    scripts_template: Template | None = None
+
+
+class ServiceManageConfigChange(BaseModel):
+    key: str
+    value: Any
+
+
+class ServiceManageHostComponentChange(BaseModel):
+    component: str
+    hosts: list[str]
+
+
+class ServiceManageServiceEntry(BaseModel):
+    name: str
+    config_changes: Annotated[list[ServiceManageConfigChange] | None, Field(default=None)]
+    hc_changes: Annotated[list[ServiceManageHostComponentChange] | None, Field(default=None)]
+
+
 # it is validated, because we want to fail here on incorrect data
 # rather than when we will use it
 class JobParams(BaseModel):
@@ -139,6 +162,10 @@ class JobParams(BaseModel):
 
     ansible_tags: str
     rules: Annotated[list[HcAclRule], Field(default_factory=list)]
+    # `service_manage` internal script arguments;
+    # excluded from serialization to keep rendered job params (e.g. job's `config.json`) unchanged
+    operation: Annotated[Literal["add"] | None, Field(default=None, exclude=True)]
+    services: Annotated[list[ServiceManageServiceEntry] | None, Field(default=None, exclude=True)]
 
 
 class Job(BaseModel):
@@ -207,6 +234,7 @@ class HostComponentChanges(NamedTuple):
 
 class Task(BaseModel):
     id: int
+    display_name: str = ""
 
     # Owner is an object on which action is defined
     owner: TaskOwner | None
@@ -242,28 +270,3 @@ class Task(BaseModel):
 
 def is_operation_step_task(task_process: CallingProcess | AssociatedProcess | None) -> TypeGuard[CallingProcess]:
     return isinstance(task_process, CallingProcess)
-
-
-class ActionInfo(BaseModel):
-    id: ActionID
-    name: str
-    owner_prototype: PrototypeDescriptor
-    scripts_jinja: str
-    wizard_template: Template | None
-    scripts_template: Template | None = None
-
-
-class ServiceManageConfigChange(BaseModel):
-    key: str
-    value: Any
-
-
-class ServiceManageHostComponentChange(BaseModel):
-    component: str
-    hosts: list[str]
-
-
-class ServiceManageServiceEntry(BaseModel):
-    name: str
-    config_changes: Annotated[list[ServiceManageConfigChange] | None, Field(default=None)]
-    hc_changes: Annotated[list[ServiceManageHostComponentChange] | None, Field(default=None)]

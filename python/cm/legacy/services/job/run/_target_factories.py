@@ -20,9 +20,8 @@ from typing import Any, Literal
 import json
 import traceback
 
-from core.action import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
+from core.action import AssociatedProcess, HcAclRule, Job, ScriptType, ServiceManageServiceEntry, Task, TaskMappingDelta
 from core.action.job import TaskUpdateDTO
-from core.action import ServiceManageServiceEntry
 from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig

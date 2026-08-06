@@ -148,6 +148,7 @@ class JobRepo(JobRepoI):
 
         return Task(
             id=id,
+            display_name=task_record.display_name,
             target=target_,
             owner=_get_task_owner(task_record=task_record),
             status=ExecutionStatus(task_record.status),

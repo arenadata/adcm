@@ -16,8 +16,14 @@ from unittest.mock import patch
 from uuid import uuid4
 import json
 
-from core.action import ServiceManageServiceEntry
-from core.action import HcAclRule, TaskMappingDelta
+from core.action import (
+    AssociatedProcess,
+    CallingProcess,
+    HcAclRule,
+    JobParams,
+    ServiceManageServiceEntry,
+    TaskMappingDelta,
+)
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -49,7 +55,17 @@ from cm.legacy.services.job.run._target_factories import (
     internal_script_service_manage,
     prepare_ansible_environment,
 )
-from cm.models import Action, Component, HostComponent, Prototype, get_object_cluster
+from cm.models import (
+    Action,
+    Component,
+    ConfigLog,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Prototype,
+    Service,
+    get_object_cluster,
+)
 from cm.tests.utils import (
     gen_action,
     gen_bundle,
