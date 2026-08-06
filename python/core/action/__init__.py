@@ -12,6 +12,7 @@
 
 # order is important
 from core.action._types import (  # noqa
+    is_operation_step_task,
     ExecutionEnvironment,
     ActionInfo,
     AssociatedProcess,
@@ -30,6 +31,7 @@ from core.action._types import (  # noqa
     TaskActionInfo,
     TaskMappingDelta,
     TaskOwner,
+    UNFINISHED_STATUSES,
 )
 
 from core.action import _wizard as wizard  # noqa
@@ -56,7 +58,9 @@ __all__ = [
     "TaskActionInfo",
     "TaskMappingDelta",
     "TaskOwner",
+    "UNFINISHED_STATUSES",
     "context",
+    "is_operation_step_task",
     "job",
     "operations",
     "wizard",

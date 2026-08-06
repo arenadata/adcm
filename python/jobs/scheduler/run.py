@@ -15,46 +15,48 @@
 from multiprocessing import Process
 import os
 import sys
+import logging.config
 
+from application.loggers import SchedulerLoggingConfig
 from dishka import make_container
 
 sys.path.append("/adcm/python")
+
 import adcm.init_django  # noqa
+
 from application.di.containers import get_main_providers
-from cm.transition.action import RetrieveStartImpossibleReason
 from jobs.worker.celery.di import CeleryProvider
 from jobs.scheduler.di import SchedulerProvider
-from django.db import connections
 
-from jobs.scheduler.launcher import run_launcher_in_loop
-from jobs.scheduler.logger import logger
-from jobs.scheduler.monitor import run_monitor_in_loop
-from jobs.scheduler.recover import actualize_locks
-from jobs.scheduler.killer import run_killer_in_loop
+from jobs.scheduler.monitor import Monitor
+from jobs.scheduler.killer import Killer
+from jobs.scheduler.launcher import Launcher
+
+logger = logging.getLogger("scheduler.main")
 
 
 def main() -> None:
-    logger.info(f"Scheduler started (pid: {os.getpid()})")
-
-    actualize_locks()
-
     container = make_container(CeleryProvider(), SchedulerProvider(), *get_main_providers())
-    retrieve_sir = container.get(RetrieveStartImpossibleReason)
 
-    processes = [
-        Process(
-            target=run_launcher_in_loop,
-            args=(retrieve_sir,),
-        ),
-        Process(target=run_monitor_in_loop, args=()),
-        Process(target=run_killer_in_loop, args=(container,)),
-    ]
+    logging.config.dictConfig(container.get(SchedulerLoggingConfig))
+    logger.info("Scheduler started (pid: %d)", os.getpid())
 
-    # psycopg connections are not fork-safe. `actualize_locks()` and container
-    # setup above opened Django's DB connection in this parent process; if we
-    # fork now, every child inherits and shares that same socket, corrupting its
-    # transaction state. Close it so each child opens its own.
-    connections.close_all()
+    monitor = container.get(Monitor)
+    launcher = container.get(Launcher)
+    killer = container.get(Killer)
+
+    processes = (
+        Process(target=launcher.run_in_loop),
+        Process(target=monitor.run_in_loop),
+        Process(target=killer.run_in_loop),
+    )
+
+    # NOTE:
+    #     psycopg connections are not fork-safe, so connections must be closed before starting subprocesses.
+    #     Some time ago this function opened Django's DB connection in this process.
+    #     If we fork now, every child inherits and shares that same socket, corrupting its transaction state.
+    #     Close it so each child opens its own with `connections.close_all()`.
+    #     For now it is removed, return if problems occur again
 
     for proc in processes:
         proc.start()

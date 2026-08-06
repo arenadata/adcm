@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from itertools import chain
 from pathlib import Path
-from typing import Annotated, Literal, NamedTuple, TypeVar
+from typing import Annotated, Literal, NamedTuple, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -58,6 +58,17 @@ class ExecutionStatus(str, Enum):
     SCHEDULED = "scheduled"
     SUCCESS = "success"
     TERMINATING = "terminating"
+
+
+# should be unified and distinct
+UNFINISHED_STATUSES = (
+    ExecutionStatus.CREATED,
+    ExecutionStatus.SCHEDULED,
+    ExecutionStatus.QUEUED,
+    ExecutionStatus.RUNNING,
+    ExecutionStatus.REVOKING,
+    ExecutionStatus.TERMINATING,
+)
 
 
 @dataclass(slots=True)
@@ -226,9 +237,9 @@ class Task(BaseModel):
 
     execution_env: ExecutionEnvironment
 
-    @property
-    def is_operation_step_task(self) -> bool:
-        return isinstance(self.action_process, CallingProcess)
+
+def is_operation_step_task(task_process: CallingProcess | AssociatedProcess | None) -> TypeGuard[CallingProcess]:
+    return isinstance(task_process, CallingProcess)
 
 
 class ActionInfo(BaseModel):

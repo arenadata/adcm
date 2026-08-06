@@ -10,40 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-import os
-import logging
+from typing import Annotated
 
-from jobs.scheduler._types import TaskRunnerEnvironment
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-TASK_HEALTHCHECK_INTERVAL = int(os.environ.get("TASK_HEALTHCHECK_INTERVAL", 60))
-JOB_TERMINATION_POLL_INTERVAL = int(os.environ.get("JOB_TERMINATION_POLL_INTERVAL", 5))
-DEFAULT_JOB_EXECUTION_ENVIRONMENT = TaskRunnerEnvironment(os.environ.get("DEFAULT_JOB_EXECUTION_ENVIRONMENT", "local"))
-LAUNCHER_ITERATION_INTERVAL = 1
+from jobs.scheduler.types import TaskRunnerEnvironment
 
-LOG_DIR = Path(__file__).absolute().parent.parent.parent.parent / "data" / "log"
-DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", logging.getLevelName(logging.ERROR))
-LOGGER_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "adcm": {
-            "format": "{asctime} {levelname} {module} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "job_scheduler_file_handler": {
-            "class": "logging.handlers.WatchedFileHandler",
-            "formatter": "adcm",
-            "filename": LOG_DIR / "scheduler.log",
-        },
-    },
-    "loggers": {
-        "job_scheduler": {
-            "handlers": ["job_scheduler_file_handler"],
-            "level": DEFAULT_LOG_LEVEL,
-            "propagate": True,
-        },
-    },
-}
+
+class SchedulerSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="scheduler_")
+
+    # poll_interval in seconds
+    job_launch_poll_interval: Annotated[int, Field(default=1, ge=1)]
+    job_monitor_poll_interval: Annotated[int, Field(default=60, ge=1)]
+    job_termination_poll_interval: Annotated[int, Field(default=5, ge=1)]
+
+    # threshold to consider tasks dead when last job was finished more than this value ago (in seconds)
+    job_inactivity_threshold: Annotated[int, Field(default=30, ge=1)]
+
+    job_execution_environment: TaskRunnerEnvironment = TaskRunnerEnvironment.LOCAL

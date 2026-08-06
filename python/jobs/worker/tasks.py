@@ -12,12 +12,15 @@
 
 
 import logging
+import logging.config
 
+from application.loggers import TaskWorkerLoggingConfig
 from celery import Task, chain, signature
 from celery.canvas import Signature
-from celery.signals import after_setup_logger
+from celery.signals import celeryd_after_setup
+from celery.worker.control import control_command
 from core.action import ExecutionStatus
-from core.action.job import JobRepoI, JobUpdateDTO
+from core.action.job import ExecutorTerminator, JobRepoI, JobUpdateDTO
 from core.legacy.job.runners import RunnerEnvironment, TaskRunner
 from core.types import JobID, TaskID
 from use_cases.job.run import FinalizeTask, MarkTaskBroken, PlannedJobs, RunJob, SetTaskToRunning
@@ -44,13 +47,64 @@ class JobFailedFlowErrFilter(logging.Filter):
         return not is_special_exc
 
 
-@after_setup_logger.connect
-def attach_flow_error_filter(*_, **__):
+@celeryd_after_setup.connect
+def configure_logging(sender, instance, **__):
+    # There is `setup_logging` signal for configuring logging for celery,
+    # but it doesn't provide instance or any app-linked object, which is inconvenient for our flow.
+
+    _ = sender
+
+    logging_config = instance.app.di_container.get(TaskWorkerLoggingConfig)
+
+    logging.config.dictConfig(logging_config)
+
     # Need to add filter for our custom error that is used to break the celery chain flow.
     # Since it's not exactly exception, it shouldn't be shown to user.
-    # Using this hook in order to avoid messing with whole logging config.
+    # We can include it in `TaskWorkerLoggingConfig` right away, but now I keep it separate for simplicity.
     filter_ = JobFailedFlowErrFilter(name="exc_filter")
     logging.getLogger("celery.app.trace").addFilter(filter_)
+
+
+# Commands
+
+
+@control_command(
+    args=[("task_id", str), ("adcm_job_id", str)],
+)
+def stop_executor(state, task_id: str, adcm_job_id: str):
+    from celery.worker.control import logger, worker_state
+
+    job_id = int(adcm_job_id)
+
+    logger.info('Command "stop_executor" received for celery_task_id = %s and adcm_job_id = %d', task_id, job_id)
+
+    on_this_worker = task_id in worker_state.requests
+    if not on_this_worker:
+        logger.debug('Command "stop_executor" skipped due to celery task id not registered on this worker')
+        return
+
+    repo: JobRepoI = state.app.di_container.get(JobRepoI)
+    job = repo.get_job(id=job_id)
+
+    is_same_celery_id = task_id == job.execution_env.worker_id
+    if not is_same_celery_id:
+        logging.warning(
+            'Command "stop_executor" skipped due to celery task ids mismatch (given != defined in job): %s != %s',
+            task_id,
+            job.execution_env.worker_id,
+        )
+        return
+
+    pid = job.execution_env.pid
+
+    if pid <= 0:
+        logging.debug('Command "stop_executor" skipped due to local pid not specified (pid=%d)', pid)
+        return
+
+    terminator: ExecutorTerminator = state.app.di_container.get(ExecutorTerminator)
+    terminator.terminate(pid)
+
+    logging.debug('Command "stop_executor" finished')
 
 
 # Tasks

@@ -10,65 +10,103 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from types import ModuleType
+from typing import NewType, Protocol
 import os
-import time
-
-import adcm.init_django  # noqa: F401, isort:skip
+import logging
 
 from cm.converters import orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
-from cm.impl.job.repo import JobRepo, TaskTargetCoreObject
+from cm.impl.job.repo import TaskTargetCoreObject
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
-from cm.legacy.services.job.run import distribute_concerns
+from cm.legacy.services.job.run import distribute_concerns, run_task_in_local_subprocess
 from cm.models import Cluster
 from cm.transition.action import RetrieveStartImpossibleReason
-from core.action import ExecutionStatus, Task
+from core.action import ExecutionStatus, Task, is_operation_step_task
 from core.action.job import JobRepoI, TaskUpdateDTO
 from core.legacy.cluster.operations import construct_mapping_from_delta
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
 
-from jobs.scheduler import repo, settings
-from jobs.scheduler._types import TaskQueuer, TaskRunnerEnvironment
+from jobs.scheduler import repo
+from jobs.scheduler.clock import Clock
 from jobs.scheduler.errors import LauncherError
-from jobs.scheduler.logger import logger
-from jobs.scheduler.queuers import QUEUER_REGISTRY
+from jobs.scheduler.types import TaskRunnerEnvironment, WorkerInfo
 from jobs.scheduler.utils import clear_concerns_on_error, set_status_on_fail, set_status_on_success
 
+logger = logging.getLogger("scheduler.launcher")
 
-def run_launcher_in_loop(retrieve_sir: RetrieveStartImpossibleReason) -> None:
-    job_repo: JobRepoI = JobRepo()
-    scheduler_repo: ModuleType = repo
-    queuer = QUEUER_REGISTRY[settings.DEFAULT_JOB_EXECUTION_ENVIRONMENT]()
 
-    logger.info(f"{queuer.env.capitalize()} launcher started (pid: {os.getpid()})")
+class TaskQueuer(Protocol):
+    env: TaskRunnerEnvironment
 
-    while True:
-        time.sleep(settings.LAUNCHER_ITERATION_INTERVAL)
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        ...
 
-        try:
-            with atomic(), job_repo.retrieve_and_lock_first_scheduled_or_created_task() as locked:
-                if locked is None:
-                    continue
 
-                task_id, task_status = locked
-                match task_status:
-                    case ExecutionStatus.CREATED:
-                        schedule_task(
-                            task_id=task_id,
-                            env_type=queuer.env,
-                            job_repo=job_repo,
-                            scheduler_repo=scheduler_repo,
-                            retrieve_sir=retrieve_sir,
-                        )
+class LocalTaskQueuer(TaskQueuer):
+    env = TaskRunnerEnvironment.LOCAL
+    repo = repo
 
-                    case ExecutionStatus.SCHEDULED:
-                        queue_task(queuer=queuer, task_id=task_id, job_repo=job_repo)
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        pid = run_task_in_local_subprocess(task=self.repo.retrieve_task_orm(task_id=task_id), command="start")
 
-        except Exception:  # noqa: BLE001
-            logger.exception(f"{queuer.env.capitalize()} launcher encountered an error. Skipping iteration.")
+        return WorkerInfo(environment=self.env, worker_id=pid)
+
+
+class CeleryTaskQueuer(TaskQueuer):
+    env = TaskRunnerEnvironment.CELERY
+
+    def queue(self, task_id: TaskID) -> WorkerInfo:
+        from jobs.worker.tasks import run_scheduled_task
+
+        result = run_scheduled_task.delay(task_id=task_id)  # pyright: ignore [reportFunctionMemberAccess]
+
+        return WorkerInfo(environment=self.env, worker_id=result.id)
+
+
+LauncherClock = NewType("LauncherClock", Clock)
+
+
+@dataclass(slots=True)
+class Launcher:
+    queuer: TaskQueuer
+    retrieve_start_impossible_reason: RetrieveStartImpossibleReason
+    job_repo: JobRepoI
+    scheduler_repo: repo.SchedulerRepo
+    clock: LauncherClock
+
+    def run_in_loop(self):
+        logger.info("Scheduler.Launcher started (pid: %d) with queuer %s", os.getpid(), self.queuer.env.capitalize())
+
+        while True:
+            self.clock.sleep_until_next_tick()
+
+            try:
+                self.run_iteration()
+            except Exception:  # noqa: BLE001
+                logger.exception("Scheduler.Launcher encountered an error. Skipping iteration.")
+
+    def run_iteration(self):
+        with atomic(), self.job_repo.retrieve_and_lock_first_scheduled_or_created_task() as locked:
+            if locked is None:
+                return
+
+            task_id, task_status = locked
+            match task_status:
+                case ExecutionStatus.CREATED:
+                    schedule_task(
+                        task_id=task_id,
+                        env_type=self.queuer.env,
+                        job_repo=self.job_repo,
+                        scheduler_repo=self.scheduler_repo,
+                        retrieve_sir=self.retrieve_start_impossible_reason,
+                    )
+
+                case ExecutionStatus.SCHEDULED:
+                    queue_task(queuer=self.queuer, task_id=task_id, job_repo=self.job_repo)
 
 
 # we don't set from_status for broken, because it should indicate the level or error even if it'll be overwritten
@@ -87,7 +125,7 @@ def schedule_task(
     target_orm = job_repo.get_target_orm(task_id)
 
     # operation step's task should not be validated
-    if not job_repo.get_task(id=task_id).is_operation_step_task:
+    if not is_operation_step_task(job_repo.get_task(id=task_id).action_process):
         validate(
             task_id=task_id,
             target_orm=target_orm,

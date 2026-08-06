@@ -12,8 +12,8 @@
 
 # The file is named this way to avoid circular imports.
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import NamedTuple, TypeAlias, TypedDict
 import zoneinfo
@@ -65,7 +65,7 @@ CELERY_RUNNING_STATES = {
 #######
 
 
-WorkerID: TypeAlias = int | str
+WorkerTaskID: TypeAlias = int | str
 
 
 class TaskRunnerEnvironment(str, Enum):
@@ -75,7 +75,7 @@ class TaskRunnerEnvironment(str, Enum):
 
 class WorkerInfo(TypedDict):
     environment: TaskRunnerEnvironment
-    worker_id: WorkerID
+    worker_id: WorkerTaskID
 
 
 @dataclass
@@ -96,6 +96,8 @@ class TaskShortInfo:
 @dataclass(slots=True, frozen=True)
 class JobShortInfo:
     id: JobID
+    task_id: TaskID
+    finish_date: datetime | None
     worker: WorkerInfo
     status: ExecutionStatus
 
@@ -103,16 +105,3 @@ class JobShortInfo:
 class LiveCheckResult(NamedTuple):
     is_dead: bool
     status: ExecutionStatus | None = None
-
-
-######
-# ABCs
-######
-
-
-class TaskQueuer(ABC):
-    env: TaskRunnerEnvironment
-
-    @abstractmethod
-    def queue(self, task_id: TaskID) -> WorkerInfo:
-        ...

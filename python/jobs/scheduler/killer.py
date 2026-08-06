@@ -10,61 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
-from typing import Protocol, TypeAlias
+from typing import NewType, Protocol, TypeAlias
 import os
-import time
+import logging
 
 from celery import Celery
 from core.action import ExecutionStatus
 from core.action.job import ExecutorTerminator, JobRepoI, TaskRunnerTerminator
 from django.db.transaction import atomic
-import dishka
 
-from jobs.scheduler._types import JobShortInfo, TaskRunnerEnvironment, TaskShortInfo
-from jobs.scheduler.logger import logger
-from jobs.scheduler.repo import (
-    get_planned_for_termination,
-    lock_job_for_termination,
-    lock_task_for_termination,
-    retrieve_job,
-    retrieve_task,
-)
-from jobs.scheduler.utils import UTC
+from jobs.scheduler import repo
+from jobs.scheduler.clock import Clock
+from jobs.scheduler.types import JobShortInfo, TaskRunnerEnvironment, TaskShortInfo
 
-
-def utc_now() -> datetime:
-    return datetime.now(tz=UTC)
-
-
-@dataclass(slots=True)
-class Clock:
-    period: timedelta
-
-    next_tick_after: datetime = datetime.min.replace(tzinfo=UTC)
-
-    sleep: Callable[[float], None] = time.sleep
-    now: Callable[[], datetime] = utc_now
-
-    def sleep_until_next_tick(self) -> None:
-        now = self.now()
-
-        until_next_tick = (self.next_tick_after - now).total_seconds()
-        if until_next_tick > 0:
-            self.sleep(until_next_tick)
-
-        self.next_tick_after = now + self.period
-
+logger = logging.getLogger("scheduler.killer")
 
 # NOTE:
 #   "Killer" as term is colliding with "Terminator" one,
 #   rethink them in case of uni/core-fication
 
 
-class Killer(Protocol):
+class Terminator(Protocol):
     def terminate_task(self, task: TaskShortInfo) -> None:
         ...
 
@@ -72,11 +41,11 @@ class Killer(Protocol):
         ...
 
 
-KillerRegistry: TypeAlias = Mapping[TaskRunnerEnvironment, Killer]
+TerminatorRegistry: TypeAlias = Mapping[TaskRunnerEnvironment, Terminator]
 
 
 @dataclass(slots=True)
-class LocalKiller(Killer):
+class LocalTerminator(Terminator):
     task_runner_terminator: TaskRunnerTerminator
     executor_terminator: ExecutorTerminator
 
@@ -88,7 +57,7 @@ class LocalKiller(Killer):
 
 
 @dataclass(slots=True)
-class CeleryKiller(Killer):
+class CeleryTerminator(Terminator):
     app: Celery
     repo: JobRepoI
 
@@ -122,61 +91,68 @@ class CeleryKiller(Killer):
         )
 
 
-def run_killer_in_loop(container: dishka.Container) -> None:
-    logger.info("Job killer started (pid: %s)", os.getpid())
+KillerClock = NewType("KillerClock", Clock)
 
-    repo: JobRepoI = container.get(JobRepoI)
-    registry = container.get(KillerRegistry)
 
-    from jobs.scheduler import settings
+@dataclass(slots=True)
+class Killer:
+    job_repo: JobRepoI
+    scheduler_repo: repo.SchedulerRepo
+    registry: TerminatorRegistry
+    clock: KillerClock
 
-    clock = Clock(period=timedelta(seconds=settings.JOB_TERMINATION_POLL_INTERVAL))
+    def run_in_loop(self):
+        logger.info("Job killer started (pid: %s)", os.getpid())
 
-    while True:
-        clock.sleep_until_next_tick()
+        while True:
+            self.clock.sleep_until_next_tick()
 
-        try:
-            jobs_to_terminate, tasks_to_terminate = get_planned_for_termination()
+            try:
+                self.run_iteration()
+            except Exception:  # noqa: BLE001
+                logger.exception("Job killer iteration failed")
 
-            for job_id in jobs_to_terminate:
-                with atomic(), lock_job_for_termination(job_id) as job_id:
-                    if not job_id:
-                        continue
+    def run_iteration(self):
+        jobs_to_terminate, tasks_to_terminate = self.scheduler_repo.get_planned_for_termination()
 
-                    logger.debug("Scheduler.Killer terminating job with id=%d started", job_id)
+        for job_id in jobs_to_terminate:
+            with atomic(), self.scheduler_repo.lock_job_for_termination(job_id) as job_id:
+                if not job_id:
+                    continue
 
-                    job = retrieve_job(job_id=job_id)
-                    killer = registry[job.worker["environment"]]
-                    killer.terminate_job(job)
-                    status_changed = repo.change_job_status(
-                        id=job_id, previous=job.status, new=ExecutionStatus.TERMINATING
-                    )
+                logger.debug("Scheduler.Killer terminating job with id=%d started", job_id)
 
-                    logger.debug(
-                        "Scheduler.Killer terminating job with id=%d finished, status changed = %s",
-                        job_id,
-                        status_changed,
-                    )
+                job = self.scheduler_repo.retrieve_in_waiting_for_termination_status(job_id=job_id)
+                status_changed = self.job_repo.change_job_status(
+                    id=job_id, previous=job.status, new=ExecutionStatus.TERMINATING
+                )
 
-            for task_id in tasks_to_terminate:
-                with atomic(), lock_task_for_termination(task_id) as task_id:
-                    if not task_id:
-                        continue
+                terminator = self.registry[job.worker["environment"]]
+                terminator.terminate_job(job)
 
-                    logger.debug("Scheduler.Killer terminating task with id=%d started", task_id)
+                logger.debug(
+                    "Scheduler.Killer terminating job with id=%d finished, status changed = %s",
+                    job_id,
+                    status_changed,
+                )
 
-                    task = retrieve_task(task_id=task_id)
-                    killer = registry[task.worker["environment"]]
-                    killer.terminate_task(task)
-                    status_changed = repo.change_task_status(
-                        id=task_id, previous=task.status, new=ExecutionStatus.TERMINATING
-                    )
+        for task_id in tasks_to_terminate:
+            with atomic(), self.scheduler_repo.lock_task_for_termination(task_id) as task_id:
+                if not task_id:
+                    continue
 
-                    logger.debug(
-                        "Scheduler.Killer terminating task with id=%d finished, status changed = %s",
-                        task_id,
-                        status_changed,
-                    )
+                logger.debug("Scheduler.Killer terminating task with id=%d started", task_id)
 
-        except Exception:  # noqa: BLE001
-            logger.exception("Job killer iteration failed")
+                task = self.scheduler_repo.retrieve_task(task_id=task_id)
+                status_changed = self.job_repo.change_task_status(
+                    id=task_id, previous=task.status, new=ExecutionStatus.TERMINATING
+                )
+
+                terminator = self.registry[task.worker["environment"]]
+                terminator.terminate_task(task)
+
+                logger.debug(
+                    "Scheduler.Killer terminating task with id=%d finished, status changed = %s",
+                    task_id,
+                    status_changed,
+                )

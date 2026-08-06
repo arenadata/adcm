@@ -15,6 +15,7 @@ Keep here providers that aren't Django-dependant, so they can be used during sta
 """
 
 from pathlib import Path
+from typing import cast
 import os
 
 from adcm.feature_flags import use_new_job_scheduler
@@ -31,6 +32,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import pydantic
 
 from application.constants import SECRETS_FILENAME
+from application.loggers import (
+    APILoggingConfig,
+    LoggingConfig,
+    SchedulerLoggingConfig,
+    TaskWorkerLoggingConfig,
+    build_default_logging_config,
+)
 from application.types import ADCMMaintenanceMode, SecretsSource, TaskRunnerMode
 
 
@@ -174,6 +182,73 @@ class EnvironmentProvider(Provider):
     @provide
     def bundles_root_dir(self, directories: Directories) -> BundlesDir:
         return BundlesDir(directories.bundles)
+
+    @provide
+    def logging_config(self) -> LoggingConfig:
+        return LoggingConfig()
+
+    @provide
+    def logging_api(self, config: LoggingConfig, directories: Directories) -> APILoggingConfig:
+        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+        default_config["loggers"] |= {
+            "adcm": {
+                "handlers": ["adcm_file"],
+                "level": config.adcm_log_level,
+                "propagate": True,
+            },
+            "django": {
+                "handlers": ["adcm_debug_file"],
+                "level": config.adcm_log_level,
+                "propagate": True,
+            },
+            "background_tasks": {
+                "handlers": ["background_task_file_handler"],
+                "level": config.background_tasks_log_level,
+                "propagate": True,
+            },
+            "task_runner_err": {
+                "handlers": ["task_runner_err_file"],
+                "level": config.task_runner_log_level,
+                "propagate": True,
+            },
+            "stream_std": {
+                "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
+                "level": config.log_level,
+            },
+            "django_auth_ldap": {
+                "handlers": ["ldap_file_handler"],
+                "level": config.ldap_log_level,
+                "propagate": True,
+            },
+        }
+        return APILoggingConfig(cast(dict, default_config))
+
+    @provide
+    def logging_scheduler(self, config: LoggingConfig, directories: Directories) -> SchedulerLoggingConfig:
+        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+        default_config["loggers"]["scheduler"] = {
+            "handlers": ["job_scheduler_file_handler"],
+            "level": config.log_level,
+            "propagate": True,
+        }
+        return SchedulerLoggingConfig(cast(dict, default_config))
+
+    @provide
+    def logging_task_worker(self, config: LoggingConfig, directories: Directories) -> TaskWorkerLoggingConfig:
+        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+        default_config["loggers"] |= {
+            "celery": {
+                "handlers": ["stream_stderr_handler"],
+                "level": config.adcm_log_level,
+                "propagate": True,
+            },
+            "adcm": {
+                "handlers": ["stream_stderr_handler"],
+                "level": config.adcm_log_level,
+                "propagate": True,
+            },
+        }
+        return TaskWorkerLoggingConfig(cast(dict, default_config))
 
 
 def parse_vault_settings_from_env():

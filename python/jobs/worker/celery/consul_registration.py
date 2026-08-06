@@ -13,13 +13,15 @@
 from __future__ import annotations
 
 import re
+import logging
 
 from celery import bootsteps
 from core.adcm import ADCMRepoI
 from integrations.consul import ConsulBackend, ServiceRegistration
 
-from jobs.scheduler.logger import logger
 from jobs.worker.celery.custom import read_adcm_uuid
+
+logger = logging.getLogger("adcm.worker")
 
 SERVICE_NAME = "adcm-worker"
 

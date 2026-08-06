@@ -11,14 +11,16 @@
 # limitations under the License.
 
 from functools import wraps
+import logging
 
 from celery import Celery
 from core.adcm import ADCMRepoI
 from dishka.integrations.base import wrap_injection
 import dishka
 
-from jobs.scheduler.logger import logger
 from jobs.worker.celery.settings import CelerySettings
+
+logger = logging.getLogger("adcm.worker")
 
 
 class ADCMCelery(Celery):
