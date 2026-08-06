@@ -23,6 +23,7 @@ from core import secrets
 from core.ext_utils.pydantic import represent_missing_and_others_errors_without_description
 from core.files.directories import ADCMBundleDir, BundlesDir
 from core.files.secrets_provider import FSSecretsBackend
+from core.scenarios.adcm import DefaultURL
 from core.settings import Directories
 from core.types import CurrentADCMVersion
 from dishka import Provider, Scope, provide
@@ -65,6 +66,14 @@ class ConsulSettingsInitError(Exception):
 
 class EnvironmentProvider(Provider):
     scope = Scope.APP
+
+    @provide
+    def default_adcm_url(self) -> DefaultURL | None:
+        adcm_url = os.getenv("DEFAULT_ADCM_URL")
+        if adcm_url:
+            return DefaultURL(adcm_url)
+
+        return None
 
     @provide
     def adcm_maintenance_mode(self) -> ADCMMaintenanceMode:
