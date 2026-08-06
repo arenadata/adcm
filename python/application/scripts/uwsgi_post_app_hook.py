@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,12 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-. /etc/adcmenv
+from application.di.providers.environment import EnvironmentProvider
+import dishka
 
-echo "Run main wsgi application ..."
-exec 1>>"${adcmlog}/service_wsgi.out"
-exec 2>>"${adcmlog}/service_wsgi.err"
+if __name__ == "__main__":
+    import adcm.init_django  # noqa: F401, isort:skip
 
-cd "${adcmroot}/python"
-touch "${adcmrun}/uwsgi.pid"
-$adcmvenv/uwsgi --ini /etc/adcm/adcm.cfg --exec-post-app="${adcmvenv}/python ${coderoot}/application/scripts/uwsgi_post_app_hook.py"
+    from application.di.providers.main import ADCMProvider
+    from application.startup.consul import register_adcm_in_service_discovery_when_consul_configured
+
+    container = dishka.make_container(EnvironmentProvider(), ADCMProvider())
+    register_adcm_in_service_discovery_when_consul_configured(container)
