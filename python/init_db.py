@@ -16,11 +16,11 @@ from secrets import token_hex
 import logging
 
 from dishka import make_container
+from django.db.models import Q
 import dishka
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from adcm.feature_flags import use_new_job_scheduler
 from application.di.containers import get_main_providers
 from cm.legacy.issue import update_hierarchy_issues
 from cm.models import (
@@ -31,10 +31,12 @@ from cm.models import (
     ConcernType,
     GroupCheckLog,
     Provider,
+    TaskLog,
 )
+from core.action import UNFINISHED_STATUSES, ExecutionStatus
 from core.files.directories import ADCMBundleDir
 from core.secrets import Secret, SecretsBackend
-from jobs.scheduler.recover import recover_statuses
+from jobs.scheduler.types import TaskRunnerEnvironment
 from rbac.models import User
 from rest_framework.authtoken.models import Token
 from use_cases import bundle
@@ -104,9 +106,17 @@ def clear_temp_tables():
     GroupCheckLog.objects.all().delete()
 
 
-def drop_locks():
-    """Drop orphaned locks"""
-    ConcernItem.objects.filter(type=ConcernType.LOCK).delete()
+def set_local_tasks_to_broken():
+    TaskLog.objects.filter(executor__environment=TaskRunnerEnvironment.LOCAL, status__in=UNFINISHED_STATUSES).update(
+        status=ExecutionStatus.BROKEN
+    )
+
+
+def remove_orphan_and_local_locks():
+    ConcernItem.objects.filter(
+        Q(type=ConcernType.LOCK)
+        & (Q(tasklog__isnull=True) | Q(tasklog__executor__environment=TaskRunnerEnvironment.LOCAL))
+    ).delete()
 
 
 def recheck_issues():
@@ -130,7 +140,8 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     status_user_token = secrets_backend.read(Secret.STATUS_SERVICE_ADCM_TOKEN)
     _ensure_status_user_token_set(user_id=user_id, token=status_user_token)
 
-    recover_statuses()
+    set_local_tasks_to_broken()
+    remove_orphan_and_local_locks()
     clear_temp_tables()
 
     # maybe should be encapsulated in DI too
@@ -138,8 +149,6 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
 
     container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file)
 
-    if not use_new_job_scheduler():
-        drop_locks()
     recheck_issues()
 
     logger.info("ADCM DB is initialized")

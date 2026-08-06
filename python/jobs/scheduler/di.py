@@ -20,18 +20,70 @@
 #   not to some `core` functionality/protocol.
 
 
-from dishka import Provider, Scope, provide
+from datetime import timedelta
 
-from jobs.scheduler._types import TaskRunnerEnvironment
-from jobs.scheduler.killer import CeleryKiller, KillerRegistry, LocalKiller
+from dishka import Provider, Scope, provide, provide_all
+
+from jobs.scheduler import repo as scheduler_repo
+from jobs.scheduler.clock import Clock
+from jobs.scheduler.killer import CeleryTerminator, Killer, KillerClock, LocalTerminator, TerminatorRegistry
+from jobs.scheduler.launcher import CeleryTaskQueuer, Launcher, LauncherClock, LocalTaskQueuer, TaskQueuer
+from jobs.scheduler.monitor import (
+    CeleryMonitorTrustGap,
+    CeleryTaskMonitor,
+    LocalTaskMonitor,
+    Monitor,
+    MonitorClock,
+    TaskMonitorRegistry,
+)
+from jobs.scheduler.settings import SchedulerSettings
+from jobs.scheduler.types import TaskRunnerEnvironment
 
 
 class SchedulerProvider(Provider):
     scope = Scope.APP
 
-    local_killer = provide(LocalKiller)
-    celery_killer = provide(CeleryKiller)
+    various = provide_all(
+        LocalTerminator, CeleryTerminator, Monitor, Launcher, Killer, LocalTaskMonitor, CeleryTaskMonitor
+    )
 
     @provide
-    def killer_registry(self, local: LocalKiller, celery: CeleryKiller) -> KillerRegistry:
+    def settings(self) -> SchedulerSettings:
+        # ignoring, because base settings work like that
+        return SchedulerSettings()  # pyright: ignore[reportCallIssue]
+
+    @provide
+    def job_trust_gap(self, settings: SchedulerSettings) -> CeleryMonitorTrustGap:
+        return CeleryMonitorTrustGap(timedelta(seconds=settings.job_inactivity_threshold))
+
+    @provide
+    def killer_registry(self, local: LocalTerminator, celery: CeleryTerminator) -> TerminatorRegistry:
         return {TaskRunnerEnvironment.LOCAL: local, TaskRunnerEnvironment.CELERY: celery}
+
+    @provide
+    def monitor_registry(self, local: LocalTaskMonitor, celery: CeleryTaskMonitor) -> TaskMonitorRegistry:
+        return {TaskRunnerEnvironment.LOCAL: local, TaskRunnerEnvironment.CELERY: celery}
+
+    @provide
+    def queuer(self, settings: SchedulerSettings) -> TaskQueuer:
+        match settings.job_execution_environment:
+            case TaskRunnerEnvironment.LOCAL:
+                return LocalTaskQueuer()
+            case TaskRunnerEnvironment.CELERY:
+                return CeleryTaskQueuer()
+
+    @provide
+    def scheduler_repo(self) -> scheduler_repo.SchedulerRepo:
+        return scheduler_repo.SchedulerRepo(scheduler_repo)
+
+    @provide
+    def monitor_clock(self, settings: SchedulerSettings) -> MonitorClock:
+        return MonitorClock(Clock(period=timedelta(seconds=settings.job_monitor_poll_interval)))
+
+    @provide
+    def launcher_clock(self, settings: SchedulerSettings) -> LauncherClock:
+        return LauncherClock(Clock(period=timedelta(seconds=settings.job_launch_poll_interval)))
+
+    @provide
+    def killer_clock(self, settings: SchedulerSettings) -> KillerClock:
+        return KillerClock(Clock(period=timedelta(seconds=settings.job_termination_poll_interval)))

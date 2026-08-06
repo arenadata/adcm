@@ -13,14 +13,16 @@
 from __future__ import annotations
 
 from typing import Any
+import logging
 
 from celery.signals import worker_init
 from cm.legacy.status_api import status_service_url
 from core.adcm import ADCMRepoI
 from integrations.consul import ConsulBackend, url_with_base_path
 
-from jobs.scheduler.logger import logger
 from jobs.worker.celery.custom import read_adcm_uuid
+
+logger = logging.getLogger("adcm.worker")
 
 ADCM_SERVICE_NAME = "adcm"
 STATUS_SERVICE_URL_META = "status_service_url"

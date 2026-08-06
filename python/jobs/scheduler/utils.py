@@ -15,23 +15,23 @@ from datetime import datetime
 from functools import wraps
 import os
 import errno
+import logging
 
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from cm.legacy.status_api import send_task_status_update_event
 from core.action import ExecutionStatus
 from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
-from core.types import (
-    PID,
-)
+from core.types import PID
 from django.db import connection
 from django.db.transaction import atomic
 from django.db.utils import ProgrammingError
 from psycopg import errors as pg_errors
 
 from jobs.scheduler import repo
-from jobs.scheduler._types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, TaskShortInfo, WorkerID
-from jobs.scheduler.logger import logger
+from jobs.scheduler.types import CELERY_RUNNING_STATES, UTC, CeleryTaskState, TaskShortInfo, WorkerTaskID
+
+logger = logging.getLogger("scheduler.main")
 
 
 def set_status_on_success(from_status: ExecutionStatus, to_status: ExecutionStatus):
@@ -120,7 +120,7 @@ def clear_concerns_on_error(func):
     return wrapper
 
 
-def retrieve_celery_task_state(worker_id: WorkerID) -> CeleryTaskState:
+def retrieve_celery_task_state(worker_id: WorkerTaskID) -> CeleryTaskState:
     from jobs.worker.celery.worker import app
 
     table = "celery_taskmeta"

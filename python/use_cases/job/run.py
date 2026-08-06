@@ -31,10 +31,11 @@ from cm.legacy.services.job.run.runners import (
     update_object_maintenance_mode,
 )
 from cm.transition.status import StatusScenarios
-from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
+from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner, is_operation_step_task
 from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
 from core.cluster import ClusterService
 from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
+from core.result import Fail, Success
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
 from django.db.transaction import atomic
 from use_cases.wizard import CompleteWizardOperationStep
@@ -193,7 +194,7 @@ class FinalizeTask:
 
             audit_task_finish(task=task, task_result=task_result, name_splitter=self.audit_name_splitter)
 
-            if task.action_process and isinstance(task.action_process, CallingProcess):
+            if is_operation_step_task(task.action_process):
                 self._update_calling_process(
                     process=task.action_process,
                     task=task,
@@ -208,7 +209,10 @@ class FinalizeTask:
                 #   which for now is not achievable.
 
                 # not very accurate status filtering, but ok since all those operations are chaotic for now
-                last_finished_job = next(filter(lambda j: j.status != ExecutionStatus.CREATED, reversed(jobs)), None)
+                incomplete_step_statuses = {ExecutionStatus.CREATED, ExecutionStatus.REVOKED}
+                last_finished_job = next(
+                    filter(lambda j: j.status not in incomplete_step_statuses, reversed(jobs)), None
+                )
                 if last_finished_job:
                     owner_descriptor = CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
                     self._update_owner_state(
@@ -313,8 +317,27 @@ class MarkTaskBroken:
     repo: JobRepoI
 
     @atomic
-    def do(self, task_id: TaskID, environment: RunnerEnvironment) -> None:
-        self.repo.update_task(
-            id=task_id,
-            data=TaskUpdateDTO(status=ExecutionStatus.BROKEN, finish_date=environment.now()),
-        )
+    def do(
+        self, task_id: TaskID, environment: RunnerEnvironment, from_status: ExecutionStatus | None = None
+    ) -> Success[None] | Fail[str]:
+        new_status = ExecutionStatus.BROKEN
+
+        # if there will be a shortes version of task that suites this UC, use it, since `get_task` returns too much
+        task = self.repo.get_task(id=task_id)
+
+        if not from_status:
+            update_data = TaskUpdateDTO(status=new_status, finish_date=environment.now())
+            self.repo.update_task(id=task_id, data=update_data)
+        elif task.status != from_status:
+            return Fail("status of job has changed")
+        else:
+            updated = self.repo.change_task_status(id=task_id, previous=from_status, new=new_status)
+            if not updated:
+                return Fail("status change failed, most likely due to parallel job update")
+
+        if task.is_blocking:
+            delete_task_lock_concern(task_id=task_id)
+        else:
+            delete_task_flag_concern(task_id=task_id)
+
+        return Success(None)

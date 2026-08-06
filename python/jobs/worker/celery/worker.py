@@ -10,58 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 
 from celery import Celery
-from celery.worker.control import control_command
 import dishka
 
 import adcm.init_django  # noqa: F401, isort:skip
 
 from application.di.containers import get_main_providers
-from core.action.job import ExecutorTerminator, JobRepoI
 
 from jobs.worker.celery.di import CeleryProvider
-
-
-@control_command(
-    args=[("task_id", str), ("adcm_job_id", int)],
-)
-def stop_executor(state, task_id: str, adcm_job_id: str):
-    from celery.worker.control import logger, worker_state
-
-    job_id = int(adcm_job_id)
-
-    logger.info('Command "stop_executor" received for celery_task_id = %s and adcm_job_id = %d', task_id, job_id)
-
-    on_this_worker = task_id in worker_state.requests
-    if not on_this_worker:
-        logger.debug('Command "stop_executor" skipped due to celery task id not registered on this worker')
-        return
-
-    repo: JobRepoI = state.app.di_container.get(JobRepoI)
-    job = repo.get_job(id=job_id)
-
-    is_same_celery_id = task_id == job.execution_env.worker_id
-    if not is_same_celery_id:
-        logging.warning(
-            'Command "stop_executor" skipped due to celery task ids mismatch (given != defined in job): %s != %s',
-            task_id,
-            job.execution_env.worker_id,
-        )
-        return
-
-    pid = job.execution_env.pid
-
-    if pid <= 0:
-        logging.debug('Command "stop_executor" skipped due to local pid not specified (pid=%d)', pid)
-        return
-
-    terminator: ExecutorTerminator = state.app.di_container.get(ExecutorTerminator)
-    terminator.terminate(pid)
-
-    logging.debug('Command "stop_executor" finished')
-
 
 container = dishka.make_container(CeleryProvider(), *get_main_providers())
 app = container.get(Celery)
