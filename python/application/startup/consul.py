@@ -11,9 +11,6 @@
 # limitations under the License.
 
 """
-Startup wiring that registers the ADCM backend as a Consul service and
-deregisters it on ``SIGINT`` / ``SIGTERM``.
-
 Connection credentials, the ADCM URL and the ADCM uuid are resolved from the DI
 container.
 
