@@ -51,6 +51,9 @@
   &_running {
     --statusable-circle-background: var(--statusable-circle-background-running)
   }
+  &_revoked {
+    --statusable-circle-background: var(--statusable-circle-background-failed)
+  }
   &_revoking {
     --statusable-circle-background: var(--statusable-circle-background-revoking)
   }

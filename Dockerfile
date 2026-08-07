@@ -40,6 +40,12 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     source /venv/2.16/bin/activate && \
     uv pip install -p 3.10 -r ansible-2.16-python3.10-dependencies.txt
 
+# Prepare venv Python 3.13 for Ansible 2.21
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=bind,source=ansible-2.21-python3.13-dependencies.txt,target=ansible-2.21-python3.13-dependencies.txt \
+    uv venv -p 3.13 /venv/2.21 && \
+    source /venv/2.21/bin/activate && \
+    uv pip install -p 3.13 -r ansible-2.21-python3.13-dependencies.txt
 
 FROM python:3.10-alpine3.24
 
@@ -84,10 +90,15 @@ COPY --from=python_builder /python /python
 COPY --from=python_builder /adcm/.venv /adcm/.venv
 COPY --from=python_builder /venv/2.16 /venv/2.16
 COPY --from=arenadata/ansible:2.16.4-python3.10 /venv/2.16 /venv/2.16
-COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /usr/share/ansible/collections
+COPY --from=arenadata/ansible:2.16.4-python3.10 /root/.ansible/collections /venv/2.16/collections
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.13-develop /venv/2.21 /venv/2.21
+COPY --from=python_builder /venv/2.21 /venv/2.21
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.13-develop /root/.ansible/collections /venv/2.21/collections
 COPY conf /adcm/conf
 COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
-COPY python/ansible_collections/arenadata/adcm /usr/share/ansible/collections/ansible_collections/arenadata/adcm
+COPY python/ansible_collections/arenadata/adcm /venv/2.16/collections/ansible_collections/arenadata/adcm
+COPY python/ansible_collections/arenadata/adcm /venv/2.21/collections/ansible_collections/arenadata/adcm
+
 COPY python /adcm/python
 
 RUN ln -s -f /usr/local/bin/python3 /usr/bin/python3 && \

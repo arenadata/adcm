@@ -75,8 +75,11 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
         env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
 
+        selected_venv = self._config.venv if self._config.venv in {"2.16", "2.21"} else "2.16"
+
         # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
         env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
+        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{selected_venv}/collections"
 
         return env
 

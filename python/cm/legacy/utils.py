@@ -45,16 +45,12 @@ def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, Object
     return {object_.pk: object_ for object_ in objects}
 
 
-def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:  # noqa: ARG001
+def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
 
-    # TODO From time to time, we explicitly use environments to launch playbooks,
-    #  regardless of which one was specified. Fixed before release 3.0.0
-    existing_env["PATH"] = f"/venv/2.16/bin:{existing_env['PATH']}"
-
-    # if venv != "default":
-    #     existing_env["PATH"] = f"/venv/{venv}/bin:{existing_env['PATH']}"
+    selected_venv = venv if venv in {"2.16", "2.21"} else "2.16"
+    existing_env["PATH"] = f"/venv/{selected_venv}/bin:{existing_env['PATH']}"
 
     return existing_env
 
