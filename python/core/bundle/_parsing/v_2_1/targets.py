@@ -21,7 +21,7 @@ from core.bundle._parsing.v_2_0.targets import Host as HostV2
 from core.bundle._parsing.v_2_0.targets import Provider as ProviderV2
 from core.bundle._parsing.v_2_0.targets import Service as ServiceV2
 
-MainVenv: TypeAlias = Literal["2.16"]
+MainVenv: TypeAlias = Literal["2.16", "2.21"]
 ChildVenv: TypeAlias = Annotated[MainVenv | None, Field(default=None)]
 
 
