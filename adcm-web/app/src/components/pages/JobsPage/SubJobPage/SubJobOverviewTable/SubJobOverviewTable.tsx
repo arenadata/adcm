@@ -4,7 +4,7 @@ import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObjectsCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import { orElseGet } from '@utils/checkUtils';
-import { columns, jobStatusesMap } from './SubJobOverviewTable.constants';
+import { columns } from './SubJobOverviewTable.constants';
 import { AdcmJobStatus } from '@models/adcm';
 
 export interface SubJobOverviewTableProps {
@@ -20,7 +20,7 @@ const SubJobOverviewTable = ({ onStop }: SubJobOverviewTableProps) => {
       {subJob && (
         <TableRow>
           <JobObjectsCell objects={subJob.parentTask?.objects} />
-          <TableCell>{jobStatusesMap[subJob.status]}</TableCell>
+          <TableCell>{subJob.status}</TableCell>
           <TableCell>{orElseGet(subJob.duration ?? 0, secondsToDuration)}</TableCell>
           <DateTimeCell value={subJob.startTime ?? undefined} />
           <DateTimeCell value={subJob.endTime ?? undefined} />

@@ -15,5 +15,5 @@ export const jobStatusesMap: { [key in AdcmJobStatus]: BaseStatus } = {
   [AdcmJobStatus.Info]: 'info',
   [AdcmJobStatus.Queued]: 'running',
   [AdcmJobStatus.Scheduled]: 'running',
-  [AdcmJobStatus.Revoked]: 'failed',
+  [AdcmJobStatus.Revoked]: 'revoked',
 };
