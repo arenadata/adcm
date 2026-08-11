@@ -163,7 +163,8 @@
     }
   }
 
-  tr:not(:hover) :global(.rename-button) {
+  tr:not(:hover) :global(.rename-button),
+  tr:not(:hover) :global(.copy-button) {
     color: transparent;
   }
 

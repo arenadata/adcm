@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { Button, Checkbox, ExpandableRowComponent, IconButton, Table, TableCell, FlexGroup } from '@uikit';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import { columns, hostStatusesMap } from '@pages/HostsPage/HostsTable/HostsTable.constants';
-import { useDispatch, useStore, useSelectedItems } from '@hooks';
+import { useDispatch, useStore, useSelectedItems, useClipboardCopy } from '@hooks';
 import type { AdcmHost } from '@models/adcm/host';
 import UnlinkHostToggleButton from '@pages/HostsPage/HostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
 import type { SortParams } from '@uikit/types/list.types';
@@ -31,6 +31,7 @@ const getHostUniqKey = ({ id }: AdcmHost) => id;
 
 const HostsTable: React.FC = () => {
   const dispatch = useDispatch();
+  const [, handleCopy] = useClipboardCopy();
 
   const hosts = useStore(({ adcm }) => adcm.hosts.hosts);
   const isLoading = useStore(({ adcm }) => isShowSpinner(adcm.hosts.loadState));
@@ -128,16 +129,24 @@ const HostsTable: React.FC = () => {
             <StatusableCell
               status={hostStatusesMap[host.status]}
               endAdornment={
-                host.state === AdcmEntitySystemState.Created &&
-                !host.cluster?.id && (
+                <FlexGroup gap={4} style={{ marginLeft: 8 }}>
                   <IconButton
-                    icon="g1-edit"
-                    size={32}
-                    title="Edit"
-                    className="rename-button"
-                    onClick={() => handleUpdateClick(host)}
+                    icon="g1-copy"
+                    size={20}
+                    title="Copy hostname"
+                    className="copy-button"
+                    onClick={() => handleCopy(host.name)}
                   />
-                )
+                  {host.state === AdcmEntitySystemState.Created && !isHostLinked && (
+                    <IconButton
+                      icon="g1-edit"
+                      size={32}
+                      title="Edit"
+                      className="rename-button"
+                      onClick={() => handleUpdateClick(host)}
+                    />
+                  )}
+                </FlexGroup>
               }
             >
               <Link to={`/hosts/${host.id}`} className="text-link">
