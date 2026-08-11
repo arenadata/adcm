@@ -15,7 +15,7 @@ import {
   postOperationWithTask,
   resetSelectedStepId,
 } from '@store/adcm/clusters/clustersWizardActionsSlice';
-import { getProcess, getSteps, resetStep } from '@store/adcm/clusters/clustersWizardSlice';
+import { getProcess, getStep, getSteps, resetStep } from '@store/adcm/clusters/clustersWizardSlice';
 import type { RunClusterDynamicActionPayload } from '@store/adcm/clusters/clustersDynamicActionsSlice';
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
@@ -150,6 +150,16 @@ const ClusterDynamicActionWizardStep: React.FC<ClusterDynamicActionWizardStepPro
       );
     }
   }, [dispatch, stepIds, selectedStep]);
+
+  useEffect(() => {
+    if (!clusterId || !actionId || !processId || !selectedStep) return;
+
+    const selectedStepData = process?.stages.flatMap((stage) => stage.steps).find((step) => step.id === selectedStep);
+
+    if (selectedStepData?.type === AdcmWizardStepType.Configuration) {
+      dispatch(getStep({ clusterId, actionId, processId, stepId: selectedStep }));
+    }
+  }, [dispatch, clusterId, actionId, processId, selectedStep]);
 
   const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!clusterId || !actionId || !process) {
