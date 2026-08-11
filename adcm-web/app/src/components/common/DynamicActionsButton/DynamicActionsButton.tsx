@@ -5,6 +5,7 @@ import ActionMenu from '@uikit/ActionMenu/ActionMenu';
 import IconButton from '@uikit/IconButton/IconButton';
 import type { ChildWithRef } from '@uikit/types/element.types';
 import type { IconProps } from '@uikit/Icon/Icon';
+import type { IconsNames } from '@uikit/Icon/sprite';
 import { Button } from '@uikit';
 
 interface DynamicActionsCommonProps {
@@ -43,20 +44,53 @@ type DynamicActionsIconProps = Omit<DynamicActionsCommonProps, 'children'> & {
   disabled?: boolean;
 };
 
-export const DynamicActionsIcon: React.FC<DynamicActionsIconProps> = ({ disabled, size = 32, ...props }) => {
-  const iconName = disabled ? 'g1-actions-disabled' : 'g1-actions';
+interface PrepareViewInfo {
+  disabled?: boolean;
+  actions: AdcmDynamicAction[] | null;
+}
+
+const prepareViewInfo = ({ disabled, actions }: PrepareViewInfo) => {
+  const isNoActions = !actions?.length;
+  const isDisabled = disabled || isNoActions;
+  const title = disabled ? 'Actions are blocked' : isNoActions ? 'No Actions available' : 'Actions';
+
+  const iconName: IconsNames = disabled ? 'g1-actions-disabled' : 'g1-actions';
+
+  return {
+    isDisabled,
+    title,
+    iconName,
+  };
+};
+
+export const DynamicActionsIcon: React.FC<DynamicActionsIconProps> = ({ disabled, size = 32, actions, ...props }) => {
+  const { isDisabled, iconName, title } = prepareViewInfo({ disabled, actions });
+
   return (
-    <DynamicActionsCommon {...props}>
-      <IconButton icon={iconName} size={size} disabled={disabled} title="Action" />
+    <DynamicActionsCommon {...props} actions={actions}>
+      <IconButton
+        //
+        icon={iconName}
+        size={size}
+        disabled={isDisabled}
+        title={title}
+      />
     </DynamicActionsCommon>
   );
 };
 
-export const DynamicActionsButton: React.FC<DynamicActionsButtonProps> = ({ disabled, ...props }) => {
-  const iconName = disabled ? 'g1-actions-disabled' : 'g1-actions';
+export const DynamicActionsButton: React.FC<DynamicActionsButtonProps> = ({ disabled, actions, ...props }) => {
+  const { isDisabled, iconName, title } = prepareViewInfo({ disabled, actions });
+
   return (
-    <DynamicActionsCommon {...props}>
-      <Button iconLeft={iconName} variant="secondary" disabled={disabled}>
+    <DynamicActionsCommon {...props} actions={actions}>
+      <Button
+        //
+        iconLeft={iconName}
+        variant="secondary"
+        disabled={isDisabled}
+        title={title}
+      >
         Actions
       </Button>
     </DynamicActionsCommon>
