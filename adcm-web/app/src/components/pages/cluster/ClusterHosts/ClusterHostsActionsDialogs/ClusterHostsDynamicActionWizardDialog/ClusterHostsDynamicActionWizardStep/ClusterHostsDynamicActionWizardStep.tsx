@@ -11,7 +11,7 @@ import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
 import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSteps/ActionWizardConfigurationEditor/ActionWizardConfigurationEditorContextProvider/ActionWizardConfigurationEditorContext.context';
 import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
 import { getCurrentStageNotDisabledStepIds, getMaxStepId } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
-import { getProcess, getSteps, resetStep } from '@store/adcm/cluster/hosts/hostsWizardSlice';
+import { getProcess, getStep, getSteps, resetStep } from '@store/adcm/cluster/hosts/hostsWizardSlice';
 import {
   type AdcmPostOperationPayload,
   postOperation,
@@ -159,6 +159,16 @@ const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWiz
       );
     }
   }, [dispatch, stepIds, selectedStep]);
+
+  useEffect(() => {
+    if (!clusterId || !hostId || !actionId || !processId || !selectedStep) return;
+
+    const selectedStepData = process?.stages.flatMap((stage) => stage.steps).find((step) => step.id === selectedStep);
+
+    if (selectedStepData?.type === AdcmWizardStepType.Configuration) {
+      dispatch(getStep({ clusterId, hostId, actionId, processId, stepId: selectedStep }));
+    }
+  }, [dispatch, clusterId, hostId, actionId, processId, selectedStep]);
 
   const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!clusterId || !hostId || !actionId || !process || !step) {

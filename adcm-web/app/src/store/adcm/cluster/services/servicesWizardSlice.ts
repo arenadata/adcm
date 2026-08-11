@@ -392,6 +392,12 @@ const clusterServicesWizardSlice = createSlice({
     builder.addCase(getStep.fulfilled, (state, action) => {
       // @ts-ignore
       state.step = action.payload;
+
+      const index = state.steps.findIndex((step) => step.id === action.payload.id);
+      if (index !== -1) {
+        // @ts-ignore
+        state.steps[index] = action.payload;
+      }
     });
     builder.addCase(getStep.rejected, (state) => {
       state.step = null;
