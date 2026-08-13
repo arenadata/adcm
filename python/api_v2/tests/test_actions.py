@@ -539,7 +539,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertListEqual(actual_actions, sorted(expected_actions))
 
 
-class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
+class TestActionWithTemplates(ADCMDjangoAPISuite):
     maxDiff = None
 
     @classmethod
@@ -701,6 +701,37 @@ class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
         ):
             action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
             self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
+
+    def test_adcm_8330_conflicting_params(self) -> None:
+        # an ansible script's own (arbitrary) params must not be confused with reserved
+        # internal-script param names during job retrieval on run, for both static and
+        # jinja-rendered scripts
+        expected_params = {
+            "ansible_tags": "ok",
+            "operation": ["a", "b"],
+            "services": "very nice, awesome",
+            "rules": "not-a-list",
+            "changes": "not-a-list",
+        }
+
+        for action_name, script_name in (
+            ("adcm_8330_conflicting_params", "adcm_8330_conflicting_params"),
+            ("adcm_8330_conflicting_params_jinja", "adcm_8330_conflicting_params_script"),
+        ):
+            with self.subTest(action_name):
+                action = Action.objects.get(name=action_name, prototype=self.cluster.prototype)
+
+                response = self.client.v2[self.cluster, "actions", action, "run"].post()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                task_id = self.task_runner.expect_task_launched().id
+                self.task_runner.run_task(task_id)
+
+                self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "success")
+                self.assertDictEqual(
+                    JobLog.objects.filter(task_id=task_id).values_list("params", flat=True).get(name=script_name),
+                    expected_params,
+                )
 
 
 class TestAction(ADCMDjangoAPISuite):
