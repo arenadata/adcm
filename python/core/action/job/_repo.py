@@ -11,10 +11,9 @@
 # limitations under the License.
 
 from collections.abc import Collection, Iterable
-from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal, Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 from pydantic import BaseModel, Field
 
@@ -25,9 +24,11 @@ from core.action._types import (
     ExecutionStatus,
     HostComponentChanges,
     Job,
+    JobShortInfo,
     JobSpec,
     Task,
     TaskMappingDelta,
+    TaskShortInfo,
 )
 from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, HostGroupDescriptor, JobID, TaskID
 
@@ -111,6 +112,21 @@ class JobUpdateDTO(BaseModel):
     executor: dict | None = None
 
 
+@dataclass(slots=True)
+class TaskShortFilter:
+    # `None` means "don't filter by this field", not "match `None`"
+    ids: Iterable[TaskID] | None = None
+    statuses: Iterable[ExecutionStatus] | None = None
+
+
+@dataclass(slots=True)
+class JobShortFilter:
+    # `None` means "don't filter by this field", not "match `None`"
+    ids: Iterable[JobID] | None = None
+    task_ids: Iterable[TaskID] | None = None
+    statuses: Iterable[ExecutionStatus] | None = None
+
+
 class JobRepoI(Protocol):
     # retrieve
 
@@ -133,6 +149,18 @@ class JobRepoI(Protocol):
         ...
 
     def find_action_owner(self, action_id: ActionID, target: ActionTargetDescriptor) -> CoreObjectDescriptor:
+        ...
+
+    def find_tasks_short(self, filter_: TaskShortFilter) -> Iterable[TaskShortInfo]:
+        """
+        Cheaper, slimmer alternative to `get_task`, meant for tight polling loops.
+        """
+        ...
+
+    def find_jobs_short(self, filter_: JobShortFilter) -> Iterable[JobShortInfo]:
+        """
+        Cheaper, slimmer alternative to `get_job`, meant for tight polling loops.
+        """
         ...
 
     # NEED REVIEW, from ActionRepoInterface
@@ -210,15 +238,6 @@ class JobRepoI(Protocol):
 
     # NEED REVIEW, probably shouldn't be here, infra level
     def close_old_connections(self) -> None:
-        ...
-
-    # NEED REVIEW, probably shouldn't be here, infra level
-    def retrieve_and_lock_first_scheduled_or_created_task(
-        self,
-    ) -> AbstractContextManager[tuple[TaskID, Literal[ExecutionStatus.SCHEDULED, ExecutionStatus.CREATED]] | None]:
-        """
-        Must lock record by id, returning task id and status in order: SCHEDULED, CREATED
-        """
         ...
 
     # NEED REVIEW, breaks isolation levels

@@ -25,17 +25,17 @@ replacement children, parent/child socket isolation) is integration territory.
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from celery.signals import worker_before_create_process, worker_process_init
+from integrations.celery import signals
+from integrations.celery.pg import transport
 
-from jobs.worker.celery import forksafe
-from jobs.worker.celery.pg import transport
+from celery.signals import worker_before_create_process, worker_process_init
 
 _DSN = "postgresql+psycopg://inherited-from-parent"
 
 
 class TestForkSafetyHandlers(TestCase):
     def setUp(self):
-        forksafe.install()
+        signals.install_for_worker()
 
         self._engines_before = dict(transport._ENGINES)
         transport._ENGINES.clear()
@@ -48,7 +48,7 @@ class TestForkSafetyHandlers(TestCase):
         engine = Mock()
         transport._ENGINES[_DSN] = (engine, Mock())
 
-        with patch.object(forksafe.connections, "close_all") as close_all:
+        with patch.object(signals.connections, "close_all") as close_all:
             worker_process_init.send(sender=None)
 
         close_all.assert_called_once()
@@ -60,7 +60,7 @@ class TestForkSafetyHandlers(TestCase):
         engine = Mock()
         transport._ENGINES[_DSN] = (engine, Mock())
 
-        with patch.object(forksafe.connections, "close_all") as close_all:
+        with patch.object(signals.connections, "close_all") as close_all:
             worker_before_create_process.send(sender=None)
 
         # django connections are closed so the child inherits no socket...
@@ -69,12 +69,12 @@ class TestForkSafetyHandlers(TestCase):
         self.assertIn(_DSN, transport._ENGINES)
 
     def test_repeated_install_does_not_duplicate_receivers(self):
-        forksafe.install()
-        forksafe.install()
+        signals.install_for_worker()
+        signals.install_for_worker()
 
         with (
-            patch.object(forksafe.connections, "close_all") as close_all,
-            patch.object(forksafe, "discard_engines_inherited_from_fork") as discard,
+            patch.object(signals.connections, "close_all") as close_all,
+            patch.object(signals, "discard_engines_inherited_from_fork") as discard,
         ):
             worker_process_init.send(sender=None)
 

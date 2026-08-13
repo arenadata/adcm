@@ -10,18 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import ModuleType
-from typing import NewType
-
-from cm.models import Action, TaskLog
-from core.types import ActionID, TaskID
-
-SchedulerRepo = NewType("SchedulerRepo", ModuleType)
+from core.action import ExecutionStatus
+from core.types import JobID, TaskID
 
 
-def retrieve_task_orm(task_id: TaskID) -> TaskLog:
-    return TaskLog.objects.get(id=task_id)
+class JobFailedFlowError(Exception):
+    def __init__(self, *args, task_id: TaskID, job_id: JobID, final_status: ExecutionStatus) -> None:
+        super().__init__(*args)
 
-
-def retrieve_action_orm(action_id: ActionID) -> Action:
-    return Action.objects.get(id=action_id)
+        self.task_id = task_id
+        self.job_id = job_id
+        self.final_status = final_status

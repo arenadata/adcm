@@ -13,16 +13,16 @@
 from dataclasses import dataclass
 from typing import Literal, TypeAlias, cast
 
-from adcm.settings_setups.shared.constants import (
+from cm.converters import orm_object_to_core_type
+from cm.models import Action, Component, Host, Service
+from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService, ClusterTopology
+from core.constants import (
     ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
     ADCM_HOST_TURN_ON_MM_ACTION_NAME,
     ADCM_TURN_OFF_MM_ACTION_NAME,
     ADCM_TURN_ON_MM_ACTION_NAME,
 )
-from cm.converters import orm_object_to_core_type
-from cm.models import Action, Component, Host, Service
-from cm.transition.status import StatusScenarios
-from core.cluster import ClusterService, ClusterTopology
 from core.types import (
     ADCMCoreType,
     ComponentDesc,

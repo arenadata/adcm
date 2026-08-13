@@ -13,6 +13,7 @@
 from core.action.job import errors, operations
 from core.action.job._repo import (
     JobRepoI,
+    JobShortFilter,
     JobUpdateDTO,
     LaunchOptions,
     LogCreateDTO,
@@ -20,6 +21,7 @@ from core.action.job._repo import (
     TaskExtraInfo,
     TaskMutableFieldsDTO,
     TaskPayloadDTO,
+    TaskShortFilter,
     TaskUpdateDTO,
     TaskUpdateMainFieldsDTO,
 )
@@ -38,6 +40,7 @@ __all__ = [
     "IndirectRepoTerminationSignaller",
     "JobRepoI",
     "JobService",
+    "JobShortFilter",
     "JobUpdateDTO",
     "LaunchOptions",
     "LogCreateDTO",
@@ -46,6 +49,7 @@ __all__ = [
     "TaskMutableFieldsDTO",
     "TaskPayloadDTO",
     "TaskRunnerTerminator",
+    "TaskShortFilter",
     "TaskUpdateDTO",
     "TaskUpdateMainFieldsDTO",
     "TerminationSignaller",

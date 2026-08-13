@@ -10,18 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import ModuleType
-from typing import NewType
+import logging
 
-from cm.models import Action, TaskLog
-from core.types import ActionID, TaskID
+from core.adcm import ADCMRepoI
 
-SchedulerRepo = NewType("SchedulerRepo", ModuleType)
+logger = logging.getLogger("worker.celery.utils")
 
 
-def retrieve_task_orm(task_id: TaskID) -> TaskLog:
-    return TaskLog.objects.get(id=task_id)
-
-
-def retrieve_action_orm(action_id: ActionID) -> Action:
-    return Action.objects.get(id=action_id)
+def read_adcm_uuid(repo: ADCMRepoI) -> str | None:
+    """Read the ADCM uuid; best-effort (``None`` on failure)."""
+    try:
+        return repo.get_uuid()
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to read ADCM uuid")
+        return None

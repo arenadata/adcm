@@ -22,6 +22,7 @@ import operator
 
 from core.action import (
     ActionInfo,
+    ActionShortInfo,
     AssociatedProcess,
     BundleInfo,
     CallingProcess,
@@ -31,6 +32,7 @@ from core.action import (
     HostComponentChanges,
     Job,
     JobParams,
+    JobShortInfo,
     JobSpec,
     RelatedObjects,
     ScriptType,
@@ -39,16 +41,20 @@ from core.action import (
     TaskActionInfo,
     TaskMappingDelta,
     TaskOwner,
+    TaskShortInfo,
 )
 from core.action.job import (
     JobRepoI,
+    JobShortFilter,
     JobUpdateDTO,
     LogCreateDTO,
     TaskCreateDTO,
     TaskMutableFieldsDTO,
+    TaskShortFilter,
     TaskUpdateDTO,
     TaskUpdateMainFieldsDTO,
 )
+from core.action.scheduler import Claimer
 from core.errors import NotFoundError
 from core.types import (
     ActionID,
@@ -259,6 +265,34 @@ class JobRepo(JobRepoI):
             case _:  # cluster, service, component, provider
                 return CoreObjectDescriptor(id=target.id, type=target.type)
 
+    def find_tasks_short(self, filter_: TaskShortFilter) -> Iterable[TaskShortInfo]:
+        filter_kwargs = {}
+        if filter_.ids is not None:
+            filter_kwargs["id__in"] = filter_.ids
+        if filter_.statuses is not None:
+            filter_kwargs["status__in"] = filter_.statuses
+
+        query = TaskLog.objects.filter(**filter_kwargs).values_list(
+            "id", "executor", "status", "lock_id", "action_id", "action__name"
+        )
+        return [_task_log_fields_to_short_info(fields) for fields in query]
+
+    def find_jobs_short(self, filter_: JobShortFilter) -> Iterable[JobShortInfo]:
+        filter_kwargs = {}
+        if filter_.ids is not None:
+            filter_kwargs["id__in"] = filter_.ids
+        if filter_.task_ids is not None:
+            filter_kwargs["task_id__in"] = filter_.task_ids
+        if filter_.statuses is not None:
+            filter_kwargs["status__in"] = filter_.statuses
+
+        query = (
+            JobLog.objects.filter(**filter_kwargs)
+            .order_by("id")
+            .values_list("id", "task_id", "finish_date", "executor", "status")
+        )
+        return [_job_log_fields_to_short_info(fields) for fields in query]
+
     def get_related_wizard_process(self, job_id: JobID) -> CallingProcess | AssociatedProcess | None:
         process_data = JobLog.objects.values_list("task__process", flat=True).get(id=job_id)
         if process_data is None:
@@ -394,27 +428,6 @@ class JobRepo(JobRepoI):
     def close_old_connections(self) -> None:
         close_old_connections()
 
-    @contextmanager
-    def retrieve_and_lock_first_scheduled_or_created_task(
-        self,
-    ) -> Generator[tuple[TaskID, Literal[ExecutionStatus.SCHEDULED, ExecutionStatus.CREATED]] | None]:
-        result = None
-
-        fields = (
-            TaskLog.objects.select_for_update(skip_locked=True)
-            .filter(status__in=(ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED))
-            .order_by("-status", "id")
-            .values_list("id", "status")
-            .first()
-        )
-        if fields:
-            parsed_status = cast(
-                Literal[ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED], ExecutionStatus(fields[1])
-            )
-            result = (int(fields[0]), parsed_status)
-
-        yield result
-
     # from action repo
 
     def get_action(self, id: ActionID) -> ActionInfo:  # noqa: A002
@@ -443,7 +456,66 @@ class JobRepo(JobRepoI):
         return list(map(_from_entry_to_spec, query))
 
 
+class JobClaimer(Claimer):
+    @contextmanager
+    def claim_first_scheduled_or_created_task(
+        self,
+    ) -> Generator[tuple[TaskID, Literal[ExecutionStatus.SCHEDULED, ExecutionStatus.CREATED]] | None]:
+        result = None
+
+        fields = (
+            TaskLog.objects.select_for_update(skip_locked=True)
+            .filter(status__in=(ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED))
+            .order_by("-status", "id")
+            .values_list("id", "status")
+            .first()
+        )
+        if fields:
+            parsed_status = cast(
+                Literal[ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED], ExecutionStatus(fields[1])
+            )
+            result = (int(fields[0]), parsed_status)
+
+        yield result
+
+    @contextmanager
+    def claim_task(self, task_id: TaskID, expected_status: ExecutionStatus) -> Generator[TaskID | None]:
+        yield (
+            TaskLog.objects.select_for_update(skip_locked=True)
+            .filter(id=task_id, status=expected_status)
+            .values_list("id", flat=True)
+            .first()
+        )
+
+    @contextmanager
+    def claim_job(self, job_id: JobID, expected_status: ExecutionStatus) -> Generator[JobID | None]:
+        yield (
+            JobLog.objects.select_for_update(skip_locked=True)
+            .filter(id=job_id, status=expected_status)
+            .values_list("id", flat=True)
+            .first()
+        )
+
+
 # conversions
+
+
+def _task_log_fields_to_short_info(fields: tuple) -> TaskShortInfo:
+    id_, executor, status, lock_id, action_id, action_name = fields
+    return TaskShortInfo(
+        id=id_,
+        worker=executor,
+        status=ExecutionStatus(status.lower()),
+        lock_id=lock_id,
+        action=ActionShortInfo(id=action_id, name=action_name),
+    )
+
+
+def _job_log_fields_to_short_info(fields: tuple) -> JobShortInfo:
+    id_, task_id, finish_date, executor, status = fields
+    return JobShortInfo(
+        id=id_, task_id=task_id, finish_date=finish_date, worker=executor, status=ExecutionStatus(status.lower())
+    )
 
 
 def _mapping_delta_to_db_dict(

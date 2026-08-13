@@ -12,26 +12,31 @@
 
 # str is required for pydantic to correctly cast enum to value when calling `.dict`
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from itertools import chain
 from pathlib import Path
-from typing import Annotated, Any, Literal, NamedTuple, TypeGuard, TypeVar
+from typing import Annotated, Any, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.constants import MM_ACTION_NAMES
 from core.templates import Template
 from core.types import (
     ActionID,
     ADCMCoreType,
     ComponentID,
+    ConcernID,
     Descriptor,
     HostID,
+    JobID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
     ObjectID,
     PrototypeDescriptor,
     PrototypeID,
+    TaskID,
 )
 
 T = TypeVar("T")
@@ -270,3 +275,45 @@ class Task(BaseModel):
 
 def is_operation_step_task(task_process: CallingProcess | AssociatedProcess | None) -> TypeGuard[CallingProcess]:
     return isinstance(task_process, CallingProcess)
+
+
+WorkerTaskID: TypeAlias = int | str
+
+
+class TaskRunnerEnvironment(str, Enum):
+    LOCAL = "local"
+    CELERY = "celery"
+
+
+class WorkerInfo(TypedDict):
+    environment: TaskRunnerEnvironment
+    worker_id: WorkerTaskID
+
+
+@dataclass
+class ActionShortInfo:
+    id: ActionID
+    name: str
+
+    # NOTE: name-based MM action detection is a placeholder, to be revisited in a follow-up iteration
+    @property
+    def is_mm_action(self) -> bool:
+        return self.name in MM_ACTION_NAMES
+
+
+@dataclass(slots=True, frozen=True)
+class TaskShortInfo:
+    id: TaskID
+    worker: WorkerInfo
+    status: ExecutionStatus
+    lock_id: ConcernID | None
+    action: ActionShortInfo
+
+
+@dataclass(slots=True, frozen=True)
+class JobShortInfo:
+    id: JobID
+    task_id: TaskID
+    finish_date: datetime | None
+    worker: WorkerInfo
+    status: ExecutionStatus

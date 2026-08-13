@@ -44,7 +44,7 @@ import core
 # NOTE:
 #  Type checker errors are ignored for now, because it's problematic to resolve it now reasonably
 
-logger = logging.getLogger("task_runner_err")
+logger = logging.getLogger("task-runner")
 
 PlannedJobs: TypeAlias = tuple[Job, ...]
 

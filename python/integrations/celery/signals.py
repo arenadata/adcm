@@ -10,19 +10,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import annotations
+"""
+Celery signal handlers used by the ADCM worker process.
+
+These have real side effects (closing DB connections around a prefork fork,
+mutating global status-service URL state, wiring worker-only logging) that
+only make sense for the process that IS the worker, so they are never
+connected automatically on import. Call `install_for_worker()` once, from
+the worker entrypoint only.
+"""
 
 from typing import Any
 import logging
+import logging.config
 
-from celery.signals import worker_init
+from application.loggers import task_worker_logging_config_from_env
+from celery.signals import celeryd_after_setup, worker_before_create_process, worker_init, worker_process_init
 from cm.legacy.status_api import status_service_url
 from core.adcm import ADCMRepoI
+from django.db import connections
+
+from integrations.celery.errors import JobFailedFlowError
+from integrations.celery.helpers import read_adcm_uuid
+from integrations.celery.pg.transport import discard_engines_inherited_from_fork
 from integrations.consul import ConsulBackend, url_with_base_path
 
-from jobs.worker.celery.custom import read_adcm_uuid
-
-logger = logging.getLogger("adcm.worker")
+logger = logging.getLogger("worker.celery")
 
 ADCM_SERVICE_NAME = "adcm"
 STATUS_SERVICE_URL_META = "status_service_url"
@@ -30,6 +43,45 @@ STATUS_SERVICE_URL_META = "status_service_url"
 
 class StatusServiceUrlResolutionError(Exception):
     ...
+
+
+class JobFailedFlowErrFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        is_special_exc = record.exc_info and record.exc_info[0] == JobFailedFlowError
+        return not is_special_exc
+
+
+# Fork safety
+#
+# Neither psycopg connections nor SQLAlchemy engines are fork-safe: anything the
+# worker parent has open when billiard forks a pool child is inherited by both,
+# and two processes speaking through one socket interleave protocol replies
+# (surfacing as errors like "the last operation didn't produce records (command
+# status: COMMIT)"). Celery's built-in Django fixup covers only Django-project
+# setups; this worker assembles its own app, so the same guarantees are made
+# explicitly here.
+
+
+def close_parent_connections_before_fork(**_) -> None:
+    # In the parent, right before every pool fork (including replacement
+    # children forked at runtime): bootstrap code and startup hooks use the ORM,
+    # so a connection may be open. Close it so the child inherits no socket.
+    # The parent's SQLAlchemy transport engine stays untouched: it is in active
+    # use by the consumer, and the child discards its inherited copy instead.
+    connections.close_all()
+
+
+def close_inherited_connections_in_child(**_) -> None:
+    # In each pool child, right after fork: drop everything inherited so the
+    # child lazily opens connections of its own. Replacement children fork
+    # after the parent's consumer has opened the transport, so the SQLAlchemy
+    # engine cache is populated at fork time — and children publish to the
+    # broker (chain links), so a stale cache would reuse the parent's sockets.
+    connections.close_all()
+    discard_engines_inherited_from_fork()
+
+
+# Status service URL resolution
 
 
 def extract_status_service_url(entries: list[dict[str, Any]]) -> str | None:
@@ -101,12 +153,6 @@ def setup_status_service_url(sender, **_) -> None:
     logger.info("Worker status events will be sent to %s", resolved_url)
 
 
-def install() -> None:
-    # dispatch deduplicates receivers, so repeated installation is harmless;
-    # connecting on the producer side is inert — worker_init never fires there
-    worker_init.connect(setup_status_service_url)
-
-
 def _discover_status_service_url(*, backend: ConsulBackend, adcm_uuid: str | None) -> str | None:
     try:
         entries = backend.discover(ADCM_SERVICE_NAME, tag=adcm_uuid)
@@ -115,3 +161,32 @@ def _discover_status_service_url(*, backend: ConsulBackend, adcm_uuid: str | Non
         return None
 
     return extract_status_service_url(entries)
+
+
+# Logging
+
+
+def configure_logging(sender, instance, **__):
+    # Kept on `celeryd_after_setup` rather than `setup_logging`: we don't want to suppress
+    # Celery's own default logging setup, only add our handlers/filters on top of it.
+
+    _ = sender
+    _ = instance
+
+    logging_config = task_worker_logging_config_from_env()
+
+    logging.config.dictConfig(logging_config)
+
+    # Need to add filter for our custom error that is used to break the celery chain flow.
+    # Since it's not exactly exception, it shouldn't be shown to user.
+    # We can include it in the logging config right away, but now I keep it separate for simplicity.
+    filter_ = JobFailedFlowErrFilter(name="exc_filter")
+    logging.getLogger("celery.app.trace").addFilter(filter_)
+
+
+def install_for_worker() -> None:
+    # dispatch deduplicates receivers, so repeated installation is harmless
+    worker_before_create_process.connect(close_parent_connections_before_fork)
+    worker_process_init.connect(close_inherited_connections_in_child)
+    worker_init.connect(setup_status_service_url)
+    celeryd_after_setup.connect(configure_logging)

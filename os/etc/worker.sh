@@ -1,3 +1,4 @@
+#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,18 +11,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import ModuleType
-from typing import NewType
+# load common functions and variables
+. /etc/adcmenv
 
-from cm.models import Action, TaskLog
-from core.types import ActionID, TaskID
+celery_app="jobs.worker.celery.worker"
 
-SchedulerRepo = NewType("SchedulerRepo", ModuleType)
+run_celery() {
+  "${adcmvenv}/celery" --workdir "${coderoot}" -A "${celery_app}" "$@"
+}
 
-
-def retrieve_task_orm(task_id: TaskID) -> TaskLog:
-    return TaskLog.objects.get(id=task_id)
-
-
-def retrieve_action_orm(action_id: ActionID) -> Action:
-    return Action.objects.get(id=action_id)
+if [ "$#" -eq 0 ]; then
+  if [ -n "${WORKER_LOG_LEVEL}" ]; then
+    run_celery worker --loglevel "${WORKER_LOG_LEVEL}"
+  else
+    run_celery worker
+  fi
+else
+  run_celery "$@"
+fi

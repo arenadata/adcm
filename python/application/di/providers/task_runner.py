@@ -49,11 +49,9 @@ class SubprocessRunnerEnvironment:
 class TaskRunnerProvider(Provider):
     scope = Scope.APP
 
-    # job_processor: JobProcessor
-
     @provide
     def logger(self) -> logging.Logger:
-        return logging.getLogger("task_runner_err")
+        return logging.getLogger("task-runner")
 
     @provide  # must be moved to environment
     def consul_settings(self) -> ConsulSettings:

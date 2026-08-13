@@ -21,7 +21,7 @@ from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.impl.job.repo import JobRepo
+from cm.impl.job.repo import JobClaimer, JobRepo
 from cm.impl.logs.repo import LogsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
@@ -112,6 +112,7 @@ class JobProvider(Provider):
 
     repo = provide(JobRepo, provides=core.action.job.JobRepoI)
     service = provide(core.action.job.JobService)
+    claimer = provide(JobClaimer, provides=core.action.scheduler.Claimer)
 
     task_runner_terminator = provide(TaskRunnerTerminator)
     executor_terminator = provide(ExecutorTerminator)

@@ -27,5 +27,5 @@ wakeup/broadcast path uses ``LISTEN``/``NOTIFY``.
 
 Register it by pointing ``broker_url`` at the fully-qualified transport class::
 
-    broker_url = "jobs.worker.celery.pg.transport:Transport+postgresql+psycopg://..."
+    broker_url = "integrations.celery.pg.transport:Transport+postgresql+psycopg://..."
 """

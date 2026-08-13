@@ -37,7 +37,7 @@ from cm.models import (
     TaskLog,
 )
 
-logger = logging.getLogger("background_tasks")
+logger = logging.getLogger("background-tasks")
 
 
 class TargetType(Enum):

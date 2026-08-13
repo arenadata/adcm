@@ -14,8 +14,7 @@
 Keep here providers that aren't Django-dependant, so they can be used during startup (django init phase)
 """
 
-from pathlib import Path
-from typing import cast
+from typing import Annotated, TypeVar
 import os
 
 from adcm.feature_flags import use_new_job_scheduler
@@ -27,20 +26,22 @@ from core.scenarios.adcm import DefaultURL
 from core.settings import Directories
 from core.types import CurrentADCMVersion
 from dishka import Provider, Scope, provide
+from django.conf import settings as django_settings
 from integrations import consul, vault
+from integrations.celery.pg.transport import make_broker_url
+from integrations.celery.settings import CelerySettings
 from integrations.consul import ConsulBackend
+from jobs.scheduler.settings import SchedulerSettings
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
 import pydantic
 
 from application.constants import SECRETS_FILENAME
-from application.loggers import (
-    APILoggingConfig,
-    LoggingConfig,
-    SchedulerLoggingConfig,
-    TaskWorkerLoggingConfig,
-    build_default_logging_config,
-)
+from application.environment import directories_from_env
 from application.types import ADCMMaintenanceMode, SecretsSource, TaskRunnerMode
+
+_EnvSettingsT = TypeVar("_EnvSettingsT", bound=BaseSettings)
 
 
 # don't know where to put it yet, so keeping close to usage point
@@ -56,11 +57,28 @@ class ConsulSettings(BaseSettings):
     consul: consul.ClientSettings
 
 
+class EnvDBSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="db_")
+
+    user: str
+    # prefix looks to be ignored when alias is used
+    password: Annotated[SecretStr, Field(alias="db_pass")]
+    name: str
+    host: str
+    port: str
+
+    options: Annotated[dict, Field(default_factory=dict)]
+
+
 class VaultSecretsInitError(Exception):
     ...
 
 
 class ConsulSettingsInitError(Exception):
+    ...
+
+
+class WorkerSettingsInitError(Exception):
     ...
 
 
@@ -89,27 +107,7 @@ class EnvironmentProvider(Provider):
 
     @provide
     def directories(self) -> Directories:
-        base_dir = Path(os.getenv("ADCM_BASE_DIR", Path(__file__).absolute().parent.parent.parent.parent.parent))
-        stack_dir = Path(os.getenv("ADCM_STACK_DIR", base_dir))
-
-        base_data_dir = base_dir / "data"
-        # feels wrong to have both base dir and stack dir to have "data",
-        # yet it's out there for a long time
-        stack_data_dir = stack_dir / "data"
-
-        return Directories(
-            base=base_dir,
-            stack=stack_dir,
-            files=stack_data_dir / "file",
-            bundles=stack_data_dir / "bundle",
-            downloads=stack_data_dir / "download",
-            secrets=base_data_dir / "var",
-            code=base_dir / "python",
-            data=base_data_dir,
-            run=base_data_dir / "run",
-            logs=base_data_dir / "log",
-            temp=base_data_dir / "tmp",
-        )
+        return directories_from_env()
 
     @provide
     def secrets_source(self) -> SecretsSource:
@@ -154,6 +152,37 @@ class EnvironmentProvider(Provider):
                 return vault.VaultSecretsBackend.from_settings(vault_settings.vault)
 
     @provide
+    def celery_settings(
+        self,
+        consul_backend: ConsulBackend | None,
+        default_adcm_url: DefaultURL | None,
+    ) -> CelerySettings:
+        db = parse_settings_from_env(EnvDBSettings, "database")
+        # Build via URL.create so credentials/host/db and options are properly
+        # percent-encoded — a password containing @ : / ? # would otherwise
+        # break URL parsing and authentication.
+        connection_str = URL.create(
+            "postgresql+psycopg",
+            username=db.user,
+            password=db.password.get_secret_value(),
+            host=db.host,
+            port=int(db.port),
+            database=db.name,
+            query={key: str(value) for key, value in db.options.items()},
+        ).render_as_string(hide_password=False)
+
+        return CelerySettings(
+            db_url=connection_str,
+            # PostgreSQL LISTEN/NOTIFY broker; control commands ride native
+            # Celery pidbox over its fanout (see integrations.celery.pg).
+            broker_url=make_broker_url(connection_str),
+            result_backend=f"db+{connection_str}",
+            consul=consul_backend,
+            default_adcm_url=str(default_adcm_url) if default_adcm_url else None,
+            status_service_base_path=django_settings.STATUS_SERVICE_BASE_PATH,
+        )
+
+    @provide
     def consul_backend(self, settings: consul.ClientSettings | None) -> ConsulBackend | None:
         """Return a Consul backend if configured, otherwise None."""
         if settings is None:
@@ -193,83 +222,23 @@ class EnvironmentProvider(Provider):
         return BundlesDir(directories.bundles)
 
     @provide
-    def logging_config(self) -> LoggingConfig:
-        return LoggingConfig()
-
-    @provide
-    def logging_api(self, config: LoggingConfig, directories: Directories) -> APILoggingConfig:
-        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
-        default_config["loggers"] |= {
-            "adcm": {
-                "handlers": ["adcm_file"],
-                "level": config.adcm_log_level,
-                "propagate": True,
-            },
-            "django": {
-                "handlers": ["adcm_debug_file"],
-                "level": config.adcm_log_level,
-                "propagate": True,
-            },
-            "background_tasks": {
-                "handlers": ["background_task_file_handler"],
-                "level": config.background_tasks_log_level,
-                "propagate": True,
-            },
-            "task_runner_err": {
-                "handlers": ["task_runner_err_file"],
-                "level": config.task_runner_log_level,
-                "propagate": True,
-            },
-            "stream_std": {
-                "handlers": ["stream_stdout_handler", "stream_stderr_handler"],
-                "level": config.log_level,
-            },
-            "django_auth_ldap": {
-                "handlers": ["ldap_file_handler"],
-                "level": config.ldap_log_level,
-                "propagate": True,
-            },
-        }
-        return APILoggingConfig(cast(dict, default_config))
-
-    @provide
-    def logging_scheduler(self, config: LoggingConfig, directories: Directories) -> SchedulerLoggingConfig:
-        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
-        default_config["loggers"]["scheduler"] = {
-            "handlers": ["job_scheduler_file_handler"],
-            "level": config.log_level,
-            "propagate": True,
-        }
-        return SchedulerLoggingConfig(cast(dict, default_config))
-
-    @provide
-    def logging_task_worker(self, config: LoggingConfig, directories: Directories) -> TaskWorkerLoggingConfig:
-        default_config = build_default_logging_config(config=config, log_dir=directories.logs)
-        default_config["loggers"] |= {
-            "celery": {
-                "handlers": ["stream_stderr_handler"],
-                "level": config.adcm_log_level,
-                "propagate": True,
-            },
-            "adcm": {
-                "handlers": ["stream_stderr_handler"],
-                "level": config.adcm_log_level,
-                "propagate": True,
-            },
-        }
-        return TaskWorkerLoggingConfig(cast(dict, default_config))
+    def scheduler_settings(self) -> SchedulerSettings:
+        return parse_settings_from_env(SchedulerSettings, "scheduler")
 
 
-def parse_vault_settings_from_env():
+def parse_settings_from_env(settings_cls: type[_EnvSettingsT], name: str) -> _EnvSettingsT:
     try:
-        # ignored, because pyright doesn't know about pydantic settings logic
-        return VaultSettings()  # pyright: ignore[reportCallIssue]
+        return settings_cls()
     except pydantic.ValidationError as e:
         message = represent_missing_and_others_errors_without_description(
             errors=e.errors(),
-            prefix="Failed to retrieve vault settings from environment.\nSummary:\n",
+            prefix=f"Failed to retrieve {name} settings from environment.\nSummary:\n",
         )
-        raise VaultSecretsInitError(message) from None
+        raise WorkerSettingsInitError(message) from None
+
+
+def parse_vault_settings_from_env() -> VaultSettings:
+    return parse_settings_from_env(settings_cls=VaultSettings, name="vault")
 
 
 def parse_consul_settings_from_env() -> consul.ClientSettings | None:
@@ -277,12 +246,4 @@ def parse_consul_settings_from_env() -> consul.ClientSettings | None:
     if not os.getenv("CONSUL_URL"):
         return None
 
-    try:
-        # ignored, because pyright doesn't know about pydantic settings logic
-        return ConsulSettings().consul  # pyright: ignore[reportCallIssue]
-    except pydantic.ValidationError as e:
-        message = represent_missing_and_others_errors_without_description(
-            errors=e.errors(),
-            prefix="Failed to retrieve consul settings from environment.\nSummary:\n",
-        )
-        raise ConsulSettingsInitError(message) from None
+    return parse_settings_from_env(settings_cls=ConsulSettings, name="consul").consul

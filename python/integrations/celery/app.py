@@ -10,22 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from celery import Celery
 import dishka
 
-import adcm.init_django  # noqa: F401, isort:skip
-
-from application.di.containers import get_main_providers
-from integrations.celery import signals
 from integrations.celery.settings import CelerySettings
-from integrations.celery.steps import ConsulRegistrationStep
 
-container = dishka.make_container(*get_main_providers())
-app = container.get(Celery)
 
-signals.install_for_worker()
+class ADCMCelery(Celery):
+    def __init__(
+        self,
+        *args,
+        adcm_di_container: dishka.Container,
+        adcm_settings: CelerySettings,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
 
-celery_settings = container.get(CelerySettings)
-if celery_settings.consul is not None:
-    app.steps["worker"].add(ConsulRegistrationStep)  # pyright: ignore[reportOptionalSubscript]
+        # CelerySettings is the config carrier: every field becomes an ``app.conf``
+        # key, both native Celery settings (broker_url, ...) and ADCM ones read by
+        # the worker startup hooks (consul, default_adcm_url, ...).
+        self.config_from_object(adcm_settings)
+
+        self.di_container = adcm_di_container

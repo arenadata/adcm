@@ -36,11 +36,11 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
-from jobs.worker.celery.pg.listen import ListenConnection, sqlalchemy_url_to_dsn
-from jobs.worker.celery.pg.models import Binding, Message, Queue, metadata
-from jobs.worker.celery.pg.poller import FanoutPoller
+from integrations.celery.pg.listen import ListenConnection, sqlalchemy_url_to_dsn
+from integrations.celery.pg.models import Binding, Message, Queue, metadata
+from integrations.celery.pg.poller import FanoutPoller
 
-logger = logging.getLogger("adcm-worker.pg_transport")
+logger = logging.getLogger("worker.celery.transport.pg")
 
 # One engine per DSN, shared across channels of a process.
 _ENGINES: dict[str, tuple] = {}
