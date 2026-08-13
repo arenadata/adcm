@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from jobs.worker.celery.pg.transport import Channel
+    from integrations.celery.pg.transport import Channel
 
 
 class FanoutPoller:

@@ -26,23 +26,22 @@ import time
 
 from django.db import connection as django_connection
 from django.test import TestCase as DjangoTestCase
-from kombu import Connection
-from sqlalchemy import URL
-
-from jobs.worker.celery.pg import transport
-from jobs.worker.celery.pg.listen import (
+from integrations.celery.pg import transport
+from integrations.celery.pg.listen import (
     MAX_NOTIFY_PAYLOAD,
     ListenConnection,
     sqlalchemy_url_to_dsn,
 )
-from jobs.worker.celery.pg.models import Binding, Message, Queue
+from integrations.celery.pg.models import Binding, Message, Queue
+from kombu import Connection
+from sqlalchemy import URL
 
 
 class TestNamingAndUrls(TestCase):
     def test_broker_url_selects_this_transport(self):
         url = transport.make_broker_url("postgresql+psycopg://u:p@h:5/db")
 
-        self.assertEqual(url, "jobs.worker.celery.pg.transport:Transport+postgresql+psycopg://u:p@h:5/db")
+        self.assertEqual(url, "integrations.celery.pg.transport:Transport+postgresql+psycopg://u:p@h:5/db")
 
     def test_channel_names_are_safe_postgres_identifiers(self):
         # exchange/queue names may contain dots and be arbitrarily long;

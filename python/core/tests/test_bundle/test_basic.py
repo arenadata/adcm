@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from core.action import JobSpec, ScriptType
-from core.legacy.bundle_alt.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
+from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.legacy.bundle_alt.convertion import schema_entry_to_definition
 from core.legacy.bundle_alt.errors import BundleValidationError
 from core.legacy.bundle_alt.schema import (

@@ -11,46 +11,9 @@
 # limitations under the License.
 
 from functools import wraps
-import logging
 
-from celery import Celery
-from core.adcm import ADCMRepoI
 from dishka.integrations.base import wrap_injection
 import dishka
-
-from jobs.worker.celery.settings import CelerySettings
-
-logger = logging.getLogger("adcm.worker")
-
-
-class ADCMCelery(Celery):
-    def __init__(
-        self,
-        *args,
-        adcm_di_container: dishka.Container,
-        adcm_settings: CelerySettings,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-
-        # CelerySettings is the config carrier: every field becomes an ``app.conf``
-        # key, both native Celery settings (broker_url, ...) and ADCM ones read by
-        # the worker startup hooks (consul, default_adcm_url, ...).
-        self.config_from_object(adcm_settings)
-
-        self.di_container = adcm_di_container
-
-
-# kept DI function in here, because they are deeply dependant on `ADCMCelery` structure
-
-
-def read_adcm_uuid(repo: ADCMRepoI) -> str | None:
-    """Read the ADCM uuid; best-effort (``None`` on failure)."""
-    try:
-        return repo.get_uuid()
-    except Exception:  # noqa: BLE001
-        logger.exception("Failed to read ADCM uuid")
-        return None
 
 
 def container_from_argument(*args):

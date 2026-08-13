@@ -11,24 +11,8 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Annotated
 
 from integrations.consul import ConsulBackend
-from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class EnvDBSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="db_")
-
-    user: str
-    # prefix looks to be ignored when alias is used
-    password: Annotated[SecretStr, Field(alias="db_pass")]
-    name: str
-    host: str
-    port: str
-
-    options: Annotated[dict, Field(default_factory=dict)]
 
 
 @dataclass(slots=True)

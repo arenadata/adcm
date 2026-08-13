@@ -13,7 +13,7 @@
 
 from pathlib import Path
 from secrets import token_hex
-import logging
+import logging.config
 
 from dishka import make_container
 from django.db.models import Q
@@ -22,6 +22,7 @@ import dishka
 import adcm.init_django  # noqa: F401, isort:skip
 
 from application.di.containers import get_main_providers
+from application.loggers import startup_logging_config_from_env
 from cm.legacy.issue import update_hierarchy_issues
 from cm.models import (
     ADCM,
@@ -33,10 +34,9 @@ from cm.models import (
     Provider,
     TaskLog,
 )
-from core.action import UNFINISHED_STATUSES, ExecutionStatus
+from core.action import UNFINISHED_STATUSES, ExecutionStatus, TaskRunnerEnvironment
 from core.files.directories import ADCMBundleDir
 from core.secrets import Secret, SecretsBackend
-from jobs.scheduler.types import TaskRunnerEnvironment
 from rbac.models import User
 from rest_framework.authtoken.models import Token
 from use_cases import bundle
@@ -44,7 +44,7 @@ from use_cases import bundle
 TOKEN_LENGTH = 20
 
 
-logger = logging.getLogger("stream_std")
+logger = logging.getLogger("startup.flow")
 
 
 def _create_admin_user() -> None:
@@ -144,7 +144,6 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     remove_orphan_and_local_locks()
     clear_temp_tables()
 
-    # maybe should be encapsulated in DI too
     adcm_conf_file = adcm_conf_file.parent if adcm_conf_file else container.get(ADCMBundleDir)
 
     container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file)
@@ -156,5 +155,7 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
 
 if __name__ == "__main__":
     container = make_container(*get_main_providers())
+
+    logging.config.dictConfig(startup_logging_config_from_env())
 
     init(container=container)

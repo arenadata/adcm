@@ -11,11 +11,13 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import NewType, TypedDict
+from typing import TypedDict, cast
 import logging
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+from application.environment import directories_from_env
 
 
 class DefaultLoggingConfig(TypedDict):
@@ -27,12 +29,33 @@ class DefaultLoggingConfig(TypedDict):
     loggers: dict
 
 
-APILoggingConfig = NewType("APILoggingConfig", dict)
-SchedulerLoggingConfig = NewType("SchedulerLoggingConfig", dict)
-TaskWorkerLoggingConfig = NewType("TaskWorkerLoggingConfig", dict)
-
-
 _ERROR_LEVEL = logging.getLevelName(logging.ERROR)
+_FORMATTERS = {
+    "adcm": {
+        "format": "{asctime} {levelname} {module} {message}",
+        "style": "{",
+    },
+    "scheduler": {
+        "format": "{asctime} {levelname} {name} {message}",
+        "style": "{",
+    },
+    "only-message": {
+        "format": "{message}",
+        "style": "{",
+    },
+}
+_HANDLERS_STREAM = {
+    "stream.print": {
+        "class": "logging.StreamHandler",
+        "formatter": "only-message",
+        "stream": "ext://sys.stdout",
+    },
+    "stream.stderr": {
+        "class": "logging.StreamHandler",
+        "formatter": "adcm",
+        "stream": "ext://sys.stderr",
+    },
+}
 
 
 class LoggingConfig(BaseSettings):
@@ -67,73 +90,131 @@ def build_default_logging_config(
                 "()": "django.utils.log.RequireDebugFalse",
             },
         },
-        "formatters": {
-            "adcm": {
-                "format": "{asctime} {levelname} {module} {message}",
-                "style": "{",
-            },
-            "scheduler": {
-                "format": "{asctime} {levelname} {name} {message}",
-                "style": "{",
-            },
-        },
+        "formatters": _FORMATTERS,
         "handlers": {
             # files
-            "job_scheduler_file_handler": {
-                "class": "logging.handlers.WatchedFileHandler",
+            "file.scheduler": {
                 "formatter": "scheduler",
+                "class": file_handler_class,
                 "filename": log_dir / "scheduler.log",
             },
-            "adcm_file": {
+            "file.adcm": {
                 "filters": ["require_debug_false"],
                 "formatter": "adcm",
                 "class": file_handler_class,
                 "filename": log_dir / "adcm.log",
             },
-            "adcm_debug_file": {
+            "file.adcm-debug": {
                 "filters": ["require_debug_false"],
                 "formatter": "adcm",
                 "class": file_handler_class,
                 "filename": log_dir / "adcm_debug.log",
             },
-            "task_runner_err_file": {
+            "file.task-runner": {
                 "filters": ["require_debug_false"],
                 "formatter": "adcm",
                 "class": file_handler_class,
                 "filename": log_dir / "task_runner.err",
             },
-            "background_task_file_handler": {
+            "file.background-task": {
                 "formatter": "adcm",
                 "class": file_handler_class,
                 "filename": log_dir / "cron_task.log",
             },
-            "ldap_file_handler": {
+            "file.ldap": {
                 "class": file_handler_class,
                 "formatter": "adcm",
                 "filename": log_dir / "ldap.log",
             },
             # streams
-            "stream_stdout_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "adcm",
-                "stream": "ext://sys.stdout",
-            },
-            "stream_stderr_handler": {
-                "class": "logging.StreamHandler",
-                "formatter": "adcm",
-                "stream": "ext://sys.stderr",
-            },
+            **_HANDLERS_STREAM,
             # special
-            "audit_file_handler": {
+            "file.audit": {
                 "class": file_handler_class,
                 "filename": log_dir / "audit.log",
             },
         },
         "loggers": {
             "audit": {
-                "handlers": ["audit_file_handler"],
+                "handlers": ["file.audit"],
                 "level": config.audit_log_level,
-                "propagate": True,
+                "propagate": False,
             },
         },
     }
+
+
+def api_logging_config_from_env() -> dict:
+    config = LoggingConfig()
+    directories = directories_from_env()
+
+    default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+    default_config["loggers"] |= {
+        # our
+        "adcm": {
+            "handlers": ["file.adcm"],
+            "level": config.adcm_log_level,
+            "propagate": True,
+        },
+        "background-tasks": {
+            "handlers": ["file.background-task"],
+            "level": config.background_tasks_log_level,
+            "propagate": True,
+        },
+        "task-runner": {
+            "handlers": ["file.task-runner"],
+            "level": config.task_runner_log_level,
+            "propagate": True,
+        },
+        # django
+        "django": {
+            "handlers": ["file.adcm-debug"],
+            "level": config.adcm_log_level,
+            "propagate": True,
+        },
+        "django_auth_ldap": {
+            "handlers": ["file.ldap"],
+            "level": config.ldap_log_level,
+            "propagate": True,
+        },
+    }
+    return cast(dict, default_config)
+
+
+def scheduler_logging_config_from_env() -> dict:
+    config = LoggingConfig()
+    directories = directories_from_env()
+
+    default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+    default_config["loggers"]["scheduler"] = {
+        "handlers": ["file.scheduler"],
+        "level": config.log_level,
+        "propagate": True,
+    }
+    return cast(dict, default_config)
+
+
+def startup_logging_config_from_env() -> dict:
+    config = LoggingConfig()
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": _FORMATTERS,
+        "handlers": _HANDLERS_STREAM,
+        "loggers": {
+            # use to to write messages to stdout in startup scripts, it has the simpliest format possible
+            "startup.message": {"propagate": False, "level": logging.INFO, "handlers": ["stream.print"]},
+            # use this to log progress of startup scripts (regular logging)
+            "startup.flow": {"propagate": False, "level": config.adcm_log_level, "handlers": ["stream.stderr"]},
+        },
+    }
+
+
+def task_worker_logging_config_from_env() -> dict:
+    config = LoggingConfig()
+    directories = directories_from_env()
+
+    # ensure obligatory loggers are initialized, but don't configure extra ones: worker and so on,
+    # just rely on default logger configuration
+    default_config = build_default_logging_config(config=config, log_dir=directories.logs)
+    return cast(dict, default_config)

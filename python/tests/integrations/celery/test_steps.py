@@ -17,16 +17,15 @@ import os
 from application.di.providers.environment import ConsulSettings
 from cm.legacy.status_api import status_service_url
 from django.test import SimpleTestCase, override_settings
-from integrations.consul import ServiceRegistration, url_with_base_path
-from unittest_parametrize import ParametrizedTestCase, param, parametrize
-
-from jobs.worker.celery.consul_registration import build_worker_registration, ttl_refresh_interval
-from jobs.worker.celery.status_service import (
+from integrations.celery.signals import (
     StatusServiceUrlResolutionError,
     extract_status_service_url,
     resolve_external_status_service_url,
     setup_status_service_url,
 )
+from integrations.celery.steps import build_worker_registration, ttl_refresh_interval
+from integrations.consul import ServiceRegistration, url_with_base_path
+from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 
 class TestServiceRegistrationPayload(TestCase):

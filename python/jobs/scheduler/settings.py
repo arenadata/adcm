@@ -12,10 +12,9 @@
 
 from typing import Annotated
 
+from core.action import TaskRunnerEnvironment
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from jobs.scheduler.types import TaskRunnerEnvironment
 
 
 class SchedulerSettings(BaseSettings):

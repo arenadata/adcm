@@ -37,7 +37,7 @@ def main():
     with container():
         runner = container.get(TaskRunner)
 
-    logger = logging.getLogger("task_runner_err")
+    logger = logging.getLogger("task-runner")
 
     exit_ = {"code": 0}
 

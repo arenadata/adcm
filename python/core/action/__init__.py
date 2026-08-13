@@ -13,6 +13,7 @@
 # order is important
 from core.action._types import (  # noqa
     is_operation_step_task,
+    ActionShortInfo,
     ExecutionEnvironment,
     ActionInfo,
     AssociatedProcess,
@@ -23,6 +24,7 @@ from core.action._types import (  # noqa
     HostComponentChanges,
     Job,
     JobParams,
+    JobShortInfo,
     JobSpec,
     RelatedObjects,
     ScriptType,
@@ -31,7 +33,11 @@ from core.action._types import (  # noqa
     TaskActionInfo,
     TaskMappingDelta,
     TaskOwner,
+    TaskRunnerEnvironment,
+    TaskShortInfo,
     UNFINISHED_STATUSES,
+    WorkerInfo,
+    WorkerTaskID,
 )
 
 from core.action._types import (  # noqa
@@ -44,10 +50,11 @@ from core.action._types import (  # noqa
 from core.action import _wizard as wizard  # noqa
 
 from core.action import _context as context
-from core.action import job, operations
+from core.action import job, operations, scheduler
 
 __all__ = [
     "ActionInfo",
+    "ActionShortInfo",
     "AssociatedProcess",
     "BundleInfo",
     "CallingProcess",
@@ -57,6 +64,7 @@ __all__ = [
     "HostComponentChanges",
     "Job",
     "JobParams",
+    "JobShortInfo",
     "JobSpec",
     "RelatedObjects",
     "ScriptType",
@@ -68,10 +76,15 @@ __all__ = [
     "TaskActionInfo",
     "TaskMappingDelta",
     "TaskOwner",
+    "TaskRunnerEnvironment",
+    "TaskShortInfo",
     "UNFINISHED_STATUSES",
+    "WorkerInfo",
+    "WorkerTaskID",
     "context",
     "is_operation_step_task",
     "job",
     "operations",
+    "scheduler",
     "wizard",
 ]

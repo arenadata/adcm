@@ -13,6 +13,7 @@
 
 from dishka import Provider
 
+from application.di.providers.celery import CeleryProvider
 from application.di.providers.environment import EnvironmentProvider
 from application.di.providers.main import (
     ActionHostGroupProvider,
@@ -38,6 +39,7 @@ def get_main_providers() -> tuple[Provider, ...]:
     return (
         ActionHostGroupProvider(),
         BundleProvider(),
+        CeleryProvider(),
         LogsServiceProvider(),
         ClusterProvider(),
         ConfigProvider(),

@@ -14,7 +14,7 @@ import os
 import logging
 
 from application.di.providers.environment import EnvironmentProvider
-from application.loggers import APILoggingConfig
+from application.loggers import api_logging_config_from_env
 from core.secrets import (
     Secret,
     SecretsBackend,
@@ -48,7 +48,7 @@ LOG_DIR = directories.logs
 TMP_DIR = directories.temp
 
 
-LOGGING = container.get(APILoggingConfig)
+LOGGING = api_logging_config_from_env()
 
 STATIC_ROOT = directories.base / "wwwroot/static/"
 

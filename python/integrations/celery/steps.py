@@ -17,11 +17,11 @@ import logging
 
 from celery import bootsteps
 from core.adcm import ADCMRepoI
+
+from integrations.celery.helpers import read_adcm_uuid
 from integrations.consul import ConsulBackend, ServiceRegistration
 
-from jobs.worker.celery.custom import read_adcm_uuid
-
-logger = logging.getLogger("adcm.worker")
+logger = logging.getLogger("worker.celery")
 
 SERVICE_NAME = "adcm-worker"
 
