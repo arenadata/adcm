@@ -1,8 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import ConfigurationTree from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree';
 import AddConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/AddConfigurationFieldDialog/AddConfigurationFieldDialog';
 import EditConfigurationFieldDialog from '@uikit/ConfigurationEditor/Dialogs/EditConfigurationFieldDialog/EditConfigurationFieldDialog';
-import type { ConfigurationNodeView, ConfigurationTreeFilter } from './ConfigurationEditor.types';
+import type {
+  ConfigurationField,
+  ConfigurationNodePath,
+  ConfigurationNodeView,
+  ConfigurationSelectableObject,
+  ConfigurationTreeFilter,
+} from './ConfigurationEditor.types';
 import {
   editField,
   addField,
@@ -14,13 +20,25 @@ import {
 import type { ConfigurationData, ConfigurationSchema, ConfigurationAttributes, FieldAttributes } from '@models/adcm';
 import type { JSONPrimitive, JSONValue } from '@models/json';
 import { DEFAULT_JSON_SCHEMA_ENGINE, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
-import { syncFieldAttributes } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTreeAttributes.utils';
+import {
+  buildOneOfMetaAttributesSyncPayload,
+  syncFieldAttributes,
+} from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTreeAttributes.utils';
 import type { FieldAttributesSyncPayload } from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.types';
+import { isInlineEditablePrimitiveField } from '@uikit/ConfigurationEditor/InlinePrimitiveFieldControl/InlinePrimitiveFieldControl.utils';
+import {
+  clearOneOfBranchStorePath,
+  resolveOneOfSelectionValue,
+  type OneOfBranchStore,
+} from '@uikit/ConfigurationEditor/ConfigurationTree/ConfigurationTree.utils';
+import { getValueByPath } from '@utils/objectUtils';
 
 type SelectedNode = {
   node: ConfigurationNodeView;
   ref: React.RefObject<HTMLElement>;
 };
+
+const buildNodeKey = (path: ConfigurationNodePath) => `/${path.join('/')}`;
 
 export interface ConfigurationEditorProps {
   schema: ConfigurationSchema;
@@ -49,25 +67,42 @@ const ConfigurationEditor = ({
   isReadOnly = false,
   validationEngine = DEFAULT_JSON_SCHEMA_ENGINE,
 }: ConfigurationEditorProps) => {
-  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
+  const [dialogTarget, setDialogTarget] = useState<SelectedNode | null>(null);
+  const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null);
+  const [focusNodeKey, setFocusNodeKey] = useState<string | null>(null);
   const [isEditFieldDialogOpen, setIsEditFieldDialogOpen] = useState(false);
   const [isAddFieldDialogOpen, setIsAddFieldDialogOpen] = useState(false);
+  const oneOfBranchStoreRef = useRef<OneOfBranchStore>({});
+
+  const handleFocusNodeHandled = useCallback(() => {
+    setFocusNodeKey(null);
+  }, []);
 
   const handleOpenEditFieldDialog = useCallback(
     (node: ConfigurationNodeView, nodeRef: React.RefObject<HTMLElement>) => {
-      setSelectedNode({ node, ref: nodeRef });
+      if (node.data.type === 'field' && isInlineEditablePrimitiveField((node.data as ConfigurationField).fieldSchema)) {
+        return;
+      }
+
+      setSelectedNodeKey(node.key);
+      setDialogTarget({ node, ref: nodeRef });
       setIsEditFieldDialogOpen(true);
     },
     [],
   );
 
   const handleOpenAddFieldDialog = useCallback((node: ConfigurationNodeView, nodeRef: React.RefObject<HTMLElement>) => {
-    setSelectedNode({ node, ref: nodeRef });
+    setDialogTarget({ node, ref: nodeRef });
     setIsAddFieldDialogOpen(true);
   }, []);
 
   const handleAddArrayItem = useCallback(
     (node: ConfigurationNodeView) => {
+      const arrayValue = getValueByPath(configuration, buildNodeKey(node.data.path), '/');
+      const newIndex = Array.isArray(arrayValue) ? arrayValue.length : 0;
+      const newNodeKey = buildNodeKey([...node.data.path, newIndex]);
+      setSelectedNodeKey(newNodeKey);
+      setFocusNodeKey(newNodeKey);
       const newConfiguration = addArrayItem(configuration, node.data.path, node.data.fieldSchema);
       onConfigurationChange(newConfiguration);
     },
@@ -75,7 +110,7 @@ const ConfigurationEditor = ({
   );
 
   const handleFieldEditorOpenChange = () => {
-    setSelectedNode(null);
+    setDialogTarget(null);
     setIsEditFieldDialogOpen(false);
     setIsAddFieldDialogOpen(false);
   };
@@ -100,8 +135,30 @@ const ConfigurationEditor = ({
     [attributes, configuration, onConfigurationAndAttributesChange],
   );
 
+  const handleSelectOneOfBranch = useCallback(
+    (node: ConfigurationNodeView, selection: string) => {
+      if (node.data.type !== 'selectableObject') {
+        return;
+      }
+
+      const data = node.data as ConfigurationSelectableObject;
+      const nextValue = resolveOneOfSelectionValue(
+        data.value,
+        selection,
+        data.oneOfSchemaDefaults,
+        oneOfBranchStoreRef.current,
+        node.key,
+      );
+      const payload = buildOneOfMetaAttributesSyncPayload(data.fieldSchema, data.value, nextValue, data.path);
+
+      handleValueChangeWithAttributes(node, nextValue, payload);
+    },
+    [handleValueChangeWithAttributes],
+  );
+
   const handleAddEmptyObject = useCallback(
     (node: ConfigurationNodeView) => {
+      setSelectedNodeKey(buildNodeKey(node.data.path));
       const newConfiguration = editField(configuration, node.data.path, node.data.fieldSchema.default as JSONValue);
       if (newConfiguration) {
         onConfigurationChange(newConfiguration);
@@ -113,6 +170,9 @@ const ConfigurationEditor = ({
   const handleAddField = useCallback(
     (node: ConfigurationNodeView, fieldName: string, value: JSONPrimitive) => {
       const newFieldPath = [...node.data.path, fieldName];
+      const newNodeKey = buildNodeKey(newFieldPath);
+      setSelectedNodeKey(newNodeKey);
+      setFocusNodeKey(newNodeKey);
       const newConfiguration = addField(configuration, newFieldPath, value);
       onConfigurationChange(newConfiguration);
     },
@@ -121,6 +181,10 @@ const ConfigurationEditor = ({
 
   const handleClearField = useCallback(
     (node: ConfigurationNodeView) => {
+      if (node.data.type === 'selectableObject') {
+        clearOneOfBranchStorePath(oneOfBranchStoreRef.current, node.key);
+      }
+
       const newConfiguration = editField(configuration, node.data.path, null);
       if (newConfiguration) {
         onConfigurationChange(newConfiguration);
@@ -136,6 +200,14 @@ const ConfigurationEditor = ({
       const isParentArray = parentNodeData.type === 'array';
       const isParentObject = parentNodeData.type === 'object';
 
+      if (node.key === selectedNodeKey) {
+        setSelectedNodeKey(null);
+      }
+
+      if (node.data.type === 'selectableObject') {
+        clearOneOfBranchStorePath(oneOfBranchStoreRef.current, node.key);
+      }
+
       if (isParentArray) {
         const newConfiguration = deleteArrayItem(configuration, node.data.path);
         onConfigurationChange(newConfiguration);
@@ -146,7 +218,7 @@ const ConfigurationEditor = ({
         onConfigurationChange(newConfiguration);
       }
     },
-    [configuration, onConfigurationChange],
+    [configuration, onConfigurationChange, selectedNodeKey],
   );
 
   const handleFieldAttributesChange = useCallback(
@@ -176,6 +248,10 @@ const ConfigurationEditor = ({
         attributes={attributes}
         filter={filter}
         areExpandedAll={areExpandedAll}
+        selectedNodeKey={selectedNodeKey}
+        focusNodeKey={focusNodeKey}
+        onFocusNodeHandled={handleFocusNodeHandled}
+        onSelectNode={setSelectedNodeKey}
         validationEngine={validationEngine}
         onAddEmptyObject={handleAddEmptyObject}
         onEditField={handleOpenEditFieldDialog}
@@ -184,26 +260,26 @@ const ConfigurationEditor = ({
         onClear={handleClearField}
         onDelete={handleDeleteField}
         onChange={handleValueChange}
-        onChangeWithAttributes={handleValueChangeWithAttributes}
+        onSelectOneOfBranch={handleSelectOneOfBranch}
         onAddArrayItem={handleAddArrayItem}
         onFieldAttributesChange={handleFieldAttributesChange}
         onChangeIsValid={onChangeIsValid}
         isReadOnly={isReadOnly}
       />
-      {selectedNode && isEditFieldDialogOpen && (
+      {dialogTarget && isEditFieldDialogOpen && (
         <EditConfigurationFieldDialog
-          node={selectedNode.node}
-          triggerRef={selectedNode.ref}
-          isOpen={selectedNode !== null}
+          node={dialogTarget.node}
+          triggerRef={dialogTarget.ref}
+          isOpen={dialogTarget !== null}
           onOpenChange={handleFieldEditorOpenChange}
           onChange={handleValueChange}
         />
       )}
-      {selectedNode && isAddFieldDialogOpen && (
+      {dialogTarget && isAddFieldDialogOpen && (
         <AddConfigurationFieldDialog
-          node={selectedNode.node}
-          triggerRef={selectedNode.ref}
-          isOpen={selectedNode !== null}
+          node={dialogTarget.node}
+          triggerRef={dialogTarget.ref}
+          isOpen={dialogTarget !== null}
           onOpenChange={handleFieldEditorOpenChange}
           onAddField={handleAddField}
         />

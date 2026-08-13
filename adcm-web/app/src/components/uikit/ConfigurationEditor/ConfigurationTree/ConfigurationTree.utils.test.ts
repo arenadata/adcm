@@ -38,9 +38,12 @@ import {
   getDefaultValue,
   getErrorsForTreeRow,
   getOneOfSchemaDefaults,
+  getOneOfDiscriminatorValue,
+  resolveOneOfSelectionValue,
   hasFieldDefaultValue,
   resolveFieldDefaultValue,
   validate,
+  type OneOfBranchStore,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
@@ -884,5 +887,46 @@ describe('getOneOfSchemaDefaults', () => {
     expect(b[discriminatorFieldName]).toBe('b');
     expect(b.a).toBeUndefined();
     expect(b.b).toEqual({ plain: 2 });
+  });
+});
+
+describe('resolveOneOfSelectionValue', () => {
+  const schemaDefaults = {
+    a: { _selection: 'a', a: { plain: 2 } },
+    b: { _selection: 'b', b: { plain: 2 } },
+  };
+
+  test('restores previously saved branch value when switching back', () => {
+    const store: OneOfBranchStore = {};
+    const pathKey = '/variant';
+    const groupAValue = { _selection: 'a', a: { plain: 42 } };
+
+    resolveOneOfSelectionValue(groupAValue, 'b', schemaDefaults, store, pathKey);
+    const editedGroupB = { _selection: 'b', b: { plain: 99 } };
+    const restored = resolveOneOfSelectionValue(editedGroupB, 'a', schemaDefaults, store, pathKey);
+
+    expect(restored).toEqual(groupAValue);
+    expect(store[pathKey].b).toEqual(editedGroupB);
+  });
+
+  test('uses schema defaults for branch that was never selected', () => {
+    const store: OneOfBranchStore = {};
+
+    const nextValue = resolveOneOfSelectionValue(null, 'b', schemaDefaults, store, '/variant');
+
+    expect(nextValue).toEqual(schemaDefaults.b);
+  });
+
+  test('does not leak branches across different paths', () => {
+    const store: OneOfBranchStore = {};
+    resolveOneOfSelectionValue({ _selection: 'a', a: { plain: 1 } }, 'b', schemaDefaults, store, '/left');
+
+    const right = resolveOneOfSelectionValue(null, 'a', schemaDefaults, store, '/right');
+    expect(right).toEqual(schemaDefaults.a);
+  });
+
+  test('getOneOfDiscriminatorValue returns discriminator from object value', () => {
+    expect(getOneOfDiscriminatorValue({ _selection: 'a', a: { plain: 1 } })).toBe('a');
+    expect(getOneOfDiscriminatorValue(null)).toBeUndefined();
   });
 });

@@ -2044,12 +2044,47 @@ export const testArrayItemSchema: ConfigurationSchema = {
       },
       minItems: 1,
     },
+    multiline_list: {
+      title: 'multiline list',
+      type: 'array',
+      description: 'Non-inline array items: Add property opens the edit dialog',
+      default: ['first multiline entry'],
+      readOnly: false,
+      adcmMeta: {
+        isAdvanced: false,
+        isInvisible: false,
+        activation: null,
+        synchronization: null,
+        isSecret: false,
+        stringExtra: null,
+        enumExtra: null,
+      },
+      items: {
+        type: 'string',
+        title: '',
+        description: '',
+        default: null,
+        readOnly: false,
+        adcmMeta: {
+          isAdvanced: false,
+          isInvisible: false,
+          activation: null,
+          synchronization: null,
+          isSecret: false,
+          stringExtra: {
+            isMultiline: true,
+          },
+          enumExtra: null,
+        },
+      },
+    },
   },
   required: ['dfs.namenode.name.dir'],
 };
 
 export const testArrayItemConfig = {
   'dfs.namenode.name.dir': ['aaa'],
+  multiline_list: ['first multiline entry'],
 };
 
 export const selectableObjectReadOnlySchema: ConfigurationSchema = {

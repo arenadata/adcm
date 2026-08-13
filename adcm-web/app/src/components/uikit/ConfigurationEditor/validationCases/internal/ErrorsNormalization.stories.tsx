@@ -35,18 +35,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<StoryArgs>;
 
-const getNodeClassName = (
-  node: ConfigurationNodeView,
-  hasError: boolean,
-  isSelected: boolean,
-  isBeforeFailedNode: boolean,
-) => {
+const getNodeClassName = (node: ConfigurationNodeView, hasError: boolean, isBeforeFailedNode: boolean) => {
   const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
   return cn(s.collapseNode, {
     [s.collapseNode_beforeFailed]: isBeforeFailedNode,
     [s.collapseNode_failed]: hasError,
     [s.collapseNode_disabled]: !hasError && isReadonly,
-    [s.isSelected]: isSelected,
     [s.isExpandable]: !!node?.children?.length,
   });
 };
@@ -54,7 +48,7 @@ const getNodeClassName = (
 const RequiredAtRootTree = () => {
   const ref = useRef<HTMLDivElement>(null);
   const filter: ConfigurationTreeFilter = { title: '', showAdvanced: true, showInvisible: true };
-  const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
+  const [treeState, _setTreeState] = useState<ConfigurationTreeState>({ dragNode: null });
 
   const schema: SchemaDefinition = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -96,10 +90,9 @@ const RequiredAtRootTree = () => {
 
   const handleGetNodeClassName = (node: ConfigurationNodeView) => {
     const hasError = configurationErrors[node.key] !== undefined;
-    const isSelected = node.key === treeState.selectedNode?.key;
     const failedNodeInfo = getFailedNodeInfo(nodeDictionary, configurationErrors, node.data.parentNode.key || node.key);
     const isBeforeFailedNode = failedNodeInfo ? failedNodeInfo.lastFailedNodeIndex > node.index : false;
-    return getNodeClassName(node, hasError, isSelected, isBeforeFailedNode);
+    return getNodeClassName(node, hasError, isBeforeFailedNode);
   };
 
   const handleRenderNodeContent = (
@@ -114,7 +107,7 @@ const RequiredAtRootTree = () => {
         <FieldNodeContent
           node={node}
           errors={errors}
-          onClick={(n) => setTreeState({ ...treeState, selectedNode: n })}
+          onClick={() => null}
           onClear={() => null}
           onDelete={() => null}
           onChange={() => null}
@@ -133,7 +126,7 @@ const RequiredAtRootTree = () => {
         onClear={() => null}
         onDelete={() => null}
         onChange={() => null}
-        onChangeWithAttributes={() => null}
+        onSelectOneOfBranch={() => null}
         onExpand={onExpand}
         onFieldAttributeChange={() => null}
         onDragStart={() => null}

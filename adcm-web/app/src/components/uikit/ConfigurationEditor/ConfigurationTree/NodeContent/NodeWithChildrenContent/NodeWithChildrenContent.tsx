@@ -9,8 +9,8 @@ import type {
 import type {
   ChangeConfigurationNodeHandler,
   ChangeConfigurationNodeValueHandler,
-  ChangeConfigurationNodeValueWithAttributesHandler,
   ChangeFieldAttributesHandler,
+  SelectOneOfBranchHandler,
 } from '../../ConfigurationTree.types';
 import s from '../../ConfigurationTree.module.scss';
 import st from '@uikit/CollapseTree2/CollapseNode.module.scss';
@@ -25,7 +25,6 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import ObjectSchemaSelect from './ObjectSchemaSelect';
-import { buildOneOfMetaAttributesSyncPayload } from '../../ConfigurationTreeAttributes.utils';
 
 interface NodeWithChildrenContentProps {
   node: ConfigurationNodeView;
@@ -34,7 +33,7 @@ interface NodeWithChildrenContentProps {
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onChange: ChangeConfigurationNodeValueHandler;
-  onChangeWithAttributes: ChangeConfigurationNodeValueWithAttributesHandler;
+  onSelectOneOfBranch: SelectOneOfBranchHandler;
   onExpand: (isOpen: boolean) => void;
   onFieldAttributeChange: ChangeFieldAttributesHandler;
   onDragStart?: (node: ConfigurationNodeView) => void;
@@ -48,7 +47,7 @@ const NodeWithChildrenContent = ({
   onClear,
   onDelete,
   onChange,
-  onChangeWithAttributes,
+  onSelectOneOfBranch,
   onExpand,
   onFieldAttributeChange,
   onDragStart,
@@ -134,13 +133,9 @@ const NodeWithChildrenContent = ({
     (selection: string | null) => {
       if (!selection || node.data.type !== 'selectableObject') return;
 
-      const data = node.data as ConfigurationSelectableObject;
-      const defaultValue = data.oneOfSchemaDefaults[selection];
-      const payload = buildOneOfMetaAttributesSyncPayload(data.fieldSchema, data.value, defaultValue, data.path);
-
-      onChangeWithAttributes(node, defaultValue, payload);
+      onSelectOneOfBranch(node, selection);
     },
-    [node, onChangeWithAttributes],
+    [node, onSelectOneOfBranch],
   );
 
   const selectionControl = useMemo(() => {

@@ -146,6 +146,75 @@
     flex: 1;
     min-width: 0;
     padding: 5px 0;
+
+    &_inline {
+      cursor: default;
+      display: flex;
+      align-items: stretch;
+      flex: 0 0 auto;
+      min-width: 0;
+      overflow: visible;
+      padding: 0;
+    }
+
+    &_inlineString {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      align-items: stretch;
+      align-self: stretch;
+    }
+  }
+
+  &_inline {
+    flex: 0 1 auto;
+    gap: 0;
+    padding: 0 10px 0 0;
+    align-items: stretch;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
+
+    &:focus-within,
+    &:has(:global(.is-active)) {
+      --node-content-border: var(--node-content-selected-border-default);
+    }
+
+    &:global(.is-failed):focus-within,
+    &:global(.is-failed):has(:global(.is-active)) {
+      --node-content-border: var(--node-content-selected-border-error);
+    }
+
+    .nodeContent__title {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .nodeContent__syncAttribute {
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+  }
+
+  &_inlineString {
+    flex: 0 1 auto;
+    width: fit-content;
+    min-width: 0;
+    max-width: 100%;
+
+    .nodeContent__title {
+      align-self: stretch;
+      align-items: center;
+    }
+
+    &:focus-within {
+      .nodeContent__value_inlineString {
+        overflow: visible;
+      }
+    }
   }
 
   &__buttonWrapper {
@@ -177,6 +246,15 @@
 
   svg {
     flex-shrink: 0;
+  }
+
+  &__syncAttribute {
+    flex-shrink: 0;
+  }
+
+  &__errorIcon {
+    align-self: center;
+    display: inline-flex;
   }
 }
 

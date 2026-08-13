@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import type { ConfigurationField, ConfigurationNodeView } from '../../ConfigurationEditor.types';
 import { emptyStringStub, nullStub, secretStub, whiteSpaceStringStub } from '../ConfigurationTree.constants';
 import s from '../ConfigurationTree.module.scss';
@@ -21,10 +21,14 @@ import Tooltip from '@uikit/Tooltip/Tooltip';
 import MarkerIcon from '@uikit/MarkerIcon/MarkerIcon';
 import Icon from '@uikit/Icon/Icon';
 import { useClipboardCopy } from '@hooks';
+import InlinePrimitiveFieldControl from '../../InlinePrimitiveFieldControl/InlinePrimitiveFieldControl';
+import { useInlineField } from './useInlineField';
 
 interface FieldNodeContentProps {
   node: ConfigurationNodeView;
   errors?: FieldErrors;
+  shouldFocus?: boolean;
+  onFocusHandled?: () => void;
   onClick: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
@@ -37,6 +41,8 @@ interface FieldNodeContentProps {
 const FieldNodeContent = ({
   node,
   errors,
+  shouldFocus = false,
+  onFocusHandled,
   onClick,
   onClear,
   onDelete,
@@ -53,6 +59,22 @@ const FieldNodeContent = ({
   const [initialIsActive] = useState(fieldAttributes?.isActive);
   const [isOverDragHandle, setIsOverDragHandle] = useState(false);
   const [_, copyToClipboard] = useClipboardCopy();
+
+  const inlineField = useInlineField({ node, fieldNodeData, onChange });
+
+  useEffect(() => {
+    if (!shouldFocus) {
+      return;
+    }
+
+    if (inlineField.isEditable) {
+      onFocusHandled?.();
+      return;
+    }
+
+    onClick(node, ref);
+    onFocusHandled?.();
+  }, [shouldFocus, inlineField.isEditable, node, onClick, onFocusHandled]);
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -92,6 +114,10 @@ const FieldNodeContent = ({
     onChange(node, resolveFieldDefaultValue(fieldNodeData));
   };
 
+  const handleActionMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
+
   const handleDragHandleMouseEnter = () => {
     setIsOverDragHandle(true);
   };
@@ -111,15 +137,10 @@ const FieldNodeContent = ({
 
   const handleCopyNodeValueClick = () => {
     if (fieldNodeData !== undefined && fieldNodeData !== null) {
-      copyToClipboard(value.toString());
+      copyToClipboard(displayValue.toString());
     }
   };
-
-  const className = cn(s.nodeContent, {
-    'is-failed': errors !== undefined,
-  });
-
-  const value: string | number | boolean = useMemo(() => {
+  const displayValue: string | number | boolean = useMemo(() => {
     if (!isPrimitiveValueSet(fieldNodeData.value)) {
       return nullStub;
     }
@@ -147,6 +168,13 @@ const FieldNodeContent = ({
 
     return fieldNodeData.value.toString();
   }, [adcmMeta?.isSecret, adcmMeta?.enumExtra, fieldNodeData.fieldSchema.enum, fieldNodeData.value]);
+
+  const className = cn(s.nodeContent, {
+    'is-failed': errors !== undefined,
+    [s.nodeContent_inline]: inlineField.showInlineControl,
+    [s.nodeContent_inlineString]: inlineField.isStringField,
+    'is-inline-string': inlineField.isStringField,
+  });
 
   return (
     <>
@@ -176,8 +204,26 @@ const FieldNodeContent = ({
             onToggle={handleIsSynchronizedChange}
           />
         )}
-        <div className={s.nodeContent__value} data-test="node-value" onClick={handleClick}>
-          {value}
+        <div
+          className={cn(s.nodeContent__value, {
+            [s.nodeContent__value_inline]: inlineField.showInlineControl,
+            [s.nodeContent__value_inlineString]: inlineField.isStringField,
+          })}
+          style={inlineField.valueStyle}
+          data-test="node-value"
+          onClick={inlineField.isEditable ? inlineField.onValueClick : handleClick}
+        >
+          {inlineField.showInlineControl ? (
+            <InlinePrimitiveFieldControl
+              fieldSchema={fieldNodeData.fieldSchema}
+              value={fieldNodeData.value}
+              isReadonly={fieldNodeData.isReadonly}
+              autoFocus={shouldFocus && inlineField.isEditable}
+              onChange={inlineField.onChange}
+            />
+          ) : (
+            displayValue
+          )}
         </div>
         {adcmMeta?.activation && fieldAttributes?.isActive !== undefined && (
           <ActivationAttribute
@@ -190,16 +236,17 @@ const FieldNodeContent = ({
         )}
         {errors && (
           <Tooltip label={<FieldNodeErrors fieldErrors={errors} />}>
-            <MarkerIcon variant="round" type="alert" size={16} data-test="error" />
+            <MarkerIcon className={s.nodeContent__errorIcon} variant="round" type="alert" size={16} data-test="error" />
           </Tooltip>
         )}
       </div>
       <div className={cn(s.nodeContent__buttonWrapper, st.nodeContent__buttonWrapper)}>
         {!adcmMeta?.isSecret && (
           <IconButton
-            className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__copyButton)}
+            className={cn(s.nodeContent, s.nodeContent__button)}
             size={16}
             icon="g1-copy"
+            onMouseDown={handleActionMouseDown}
             onClick={handleCopyNodeValueClick}
             data-test="copy-btn"
             title="Copy value"
@@ -210,6 +257,7 @@ const FieldNodeContent = ({
             className={cn(s.nodeContent, s.nodeContent__button)}
             size={16}
             icon="g3-clear"
+            onMouseDown={handleActionMouseDown}
             onClick={handleClearClick}
             data-test="clear-btn"
           />
@@ -221,6 +269,7 @@ const FieldNodeContent = ({
               className={cn(s.nodeContent, s.nodeContent__button, s.nodeContent__button__resetButton)}
               size={28}
               icon="g1-return"
+              onMouseDown={handleActionMouseDown}
               onClick={handleResetToDefaultClick}
               data-test="reset-btn"
               title="Reset to default"
@@ -231,6 +280,7 @@ const FieldNodeContent = ({
             className={cn(s.nodeContent, s.nodeContent__button)}
             size={16}
             icon="g3-delete"
+            onMouseDown={handleActionMouseDown}
             onClick={handleDeleteClick}
             data-test="delete-btn"
           />
@@ -242,6 +292,7 @@ const FieldNodeContent = ({
               className={cn(s.nodeContent, s.nodeContent__button)}
               size={18}
               icon="marker-info"
+              onMouseDown={handleActionMouseDown}
               data-test="description-btn"
             />
           </Tooltip>
