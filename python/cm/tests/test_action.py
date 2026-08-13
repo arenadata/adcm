@@ -19,10 +19,13 @@ import json
 from core.action import (
     AssociatedProcess,
     CallingProcess,
+    ConfigApplyChangeEntry,
+    ConfigApplyParameterEntry,
     HcAclRule,
-    JobParams,
+    ServiceManageScriptParams,
     ServiceManageServiceEntry,
     TaskMappingDelta,
+    TypeBasedConfigApplyTarget,
 )
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
@@ -36,7 +39,7 @@ from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
@@ -353,7 +356,6 @@ class TestActionParams(ADCMDjangoAPISuite):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
-            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(action_pk=self.action_full.pk)
@@ -371,7 +373,6 @@ class TestActionParams(ADCMDjangoAPISuite):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": False,
-            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -390,7 +391,6 @@ class TestActionParams(ADCMDjangoAPISuite):
             "custom_list": [1, "two", 3.0],
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
-            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -409,7 +409,6 @@ class TestActionParams(ADCMDjangoAPISuite):
             "custom_map": {"1": "two", "five": 6, "three": 4.0},
             "custom_str": "custom_str_value",
             "jinja2_native": True,
-            "rules": [],
         }
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
@@ -432,7 +431,7 @@ class TestActionParams(ADCMDjangoAPISuite):
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
 
     def test_params_custom_fields_absent(self):
-        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True, "rules": []}
+        expected_job_params = {"ansible_tags": "ansible_tag1, ansible_tag2", "jinja2_native": True}
 
         ansible_cfg_content, config_json_content = self._generate_and_read_target_files(
             action_pk=self.action_custom_fields_absent.pk,
@@ -523,10 +522,10 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
 
         params = DummyObject()
         params.changes = [
-            {
-                "object": {"type": ADCMCoreType.CLUSTER.value},
-                "parameters": [{"key": parameter, "value": value}],
-            }
+            ConfigApplyChangeEntry(
+                object=TypeBasedConfigApplyTarget(type=ADCMCoreType.CLUSTER.value),
+                parameters=[ConfigApplyParameterEntry(key=parameter, value=value)],
+            )
         ]
 
         job.id = 111
@@ -840,17 +839,18 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
 
         self.assertEqual(err.exception.code, "COMPONENT_NOT_FOUND")
 
-    def test_service_manage_job_params_serialization(self):
-        params = JobParams(
-            ansible_tags="",
-            operation="add",
-            services=[
-                {
-                    "name": "some_service",
-                    "config_changes": [{"key": "/some_param", "value": "some_value"}],
-                    "hc_changes": [{"component": "some_component", "hosts": ["host-1"]}],
-                }
-            ],
+    def test_service_manage_script_params_validation(self):
+        params = TypeAdapter(ServiceManageScriptParams).validate_python(
+            {
+                "operation": "add",
+                "services": [
+                    {
+                        "name": "some_service",
+                        "config_changes": [{"key": "/some_param", "value": "some_value"}],
+                        "hc_changes": [{"component": "some_component", "hosts": ["host-1"]}],
+                    }
+                ],
+            }
         )
 
         self.assertEqual(params.operation, "add")
@@ -859,14 +859,9 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         self.assertEqual(entry.config_changes[0].key, "/some_param")
         self.assertEqual(entry.hc_changes[0].hosts, ["host-1"])
 
-        # fields are excluded from serialization to keep rendered job params (e.g. job's `config.json`) unchanged
-        dumped = params.model_dump()
-        self.assertNotIn("operation", dumped)
-        self.assertNotIn("services", dumped)
-
         # only `add` operation exists for now
         with self.assertRaises(ValidationError):
-            JobParams(ansible_tags="", operation="remove")
+            TypeAdapter(ServiceManageScriptParams).validate_python({"operation": "remove", "services": []})
 
     def test_internal_service_manage_mapping_to_mm_host_fail(self):
         Host.objects.filter(pk=self.host_1.pk).update(maintenance_mode=MaintenanceMode.ON)

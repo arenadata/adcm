@@ -31,7 +31,6 @@ from core.action import (
     HcAclRule,
     HostComponentChanges,
     Job,
-    JobParams,
     JobShortInfo,
     JobSpec,
     RelatedObjects,
@@ -72,7 +71,7 @@ from core.types import (
 from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import F, ObjectDoesNotExist, Value
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
 from cm.converters import (
     core_type_to_model,
@@ -194,7 +193,7 @@ class JobRepo(JobRepoI):
 
     def get_job(self, id: int) -> Job:  # noqa: A002
         with suppress(ObjectDoesNotExist):
-            return _job_from_job_log(_job_log_qs().filter(id=id).get())
+            return _build_job(_job_log_qs().filter(id=id).get())
 
         message = f"Can't find job with id {id}"
         raise NotFoundError(message)
@@ -202,7 +201,7 @@ class JobRepo(JobRepoI):
     def find_jobs_of_task(self, task_id: TaskID) -> tuple[Job, ...]:
         query = _job_log_qs()
         filtered_by_task_id = query.filter(task_id=task_id)
-        return tuple(map(_job_log_to_job, filtered_by_task_id))
+        return tuple(map(_build_job, filtered_by_task_id))
 
     def get_task_jobs(self, task_id: int) -> Iterable[Job]:
         return self.find_jobs_of_task(task_id)
@@ -553,33 +552,60 @@ def _from_entry_to_spec(entry: dict) -> JobSpec:
     return JobSpec(**entry, params=source_params)
 
 
-def _job_log_to_job(job: JobLog) -> Job:
-    params = deepcopy(job.params)
-    ansible_tags = params.pop("ansible_tags", "") or ""
-    if not isinstance(ansible_tags, str):
-        # todo I don't like to fix it here,
-        #  but not sure we can validate it now on config.yaml load
-        #  see https://tracker.yandex.ru/ADCM-5325
-        ansible_tags = ""
-        if isinstance(ansible_tags, list | tuple):
-            ansible_tags = ",".join(map(str, ansible_tags))
+_JOB_TYPE_ADAPTER: Final = TypeAdapter(Job)
 
-    return Job(
-        id=job.pk,
-        pid=job.pid,
-        name=job.name,
-        type=ScriptType(job.script_type),
-        status=ExecutionStatus(job.status),
-        is_termination_allowed=job.allow_to_terminate,
-        script=job.script,
-        params=JobParams(ansible_tags=ansible_tags, **params),
-        on_fail=StateChanges(
+
+def _normalize_ansible_tags(raw_params: dict) -> None:
+    ansible_tags = raw_params.pop("ansible_tags", "") or ""
+    # todo I don't like to fix it here,
+    #  but not sure we can validate it now on config.yaml load
+    #  see https://tracker.yandex.ru/ADCM-5325
+    if isinstance(ansible_tags, list | tuple):
+        ansible_tags = ",".join(map(str, ansible_tags))
+    elif not isinstance(ansible_tags, str):
+        ansible_tags = ""
+
+    raw_params["ansible_tags"] = ansible_tags
+
+
+def _build_job(job: JobLog) -> Job:
+    script_type = ScriptType(job.script_type)
+    raw_params = deepcopy(job.params) or {}
+    if not isinstance(raw_params, dict):
+        message = f"Job {job.pk} has params of unexpected shape: {raw_params!r}"
+        raise TypeError(message)
+
+    if script_type == ScriptType.ANSIBLE:
+        _normalize_ansible_tags(raw_params)
+        params = raw_params
+    else:
+        # python jobs and parameterless internal scripts carry no params;
+        # hc_apply/config_apply/service_manage params are validated below,
+        # matched against `script` by `Job`'s own discriminated union
+        params = raw_params or None
+
+    data = {
+        "id": job.pk,
+        "pid": job.pid,
+        "name": job.name,
+        "type": script_type,
+        "script": job.script,
+        "status": ExecutionStatus(job.status),
+        "params": params,
+        "on_fail": StateChanges(
             state=job.state_on_fail,
             multi_state_set=tuple(job.multi_state_on_fail_set or ()),
             multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
         ),
-        execution_env=ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
-    )
+        "is_termination_allowed": job.allow_to_terminate,
+        "execution_env": ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
+    }
+
+    try:
+        return _JOB_TYPE_ADAPTER.validate_python(data)
+    except ValidationError as error:
+        message = f"Can't build Job {job.pk} for script_type={script_type!r} script={job.script!r}: {error}"
+        raise ValueError(message) from error
 
 
 # queries
@@ -771,35 +797,6 @@ def _restore_delta_from_db_format(task_delta: dict | None) -> TaskMappingDelta |
         to_remove[int(component_id)].update(host_ids)
 
     return TaskMappingDelta(add=to_add, remove=to_remove)
-
-
-def _job_from_job_log(job: JobLog) -> Job:
-    params = deepcopy(job.params)
-    ansible_tags = params.pop("ansible_tags", "") or ""
-    if not isinstance(ansible_tags, str):
-        # todo I don't like to fix it here,
-        #  but not sure we can validate it now on config.yaml load
-        #  see https://tracker.yandex.ru/ADCM-5325
-        ansible_tags = ""
-        if isinstance(ansible_tags, list | tuple):
-            ansible_tags = ",".join(map(str, ansible_tags))
-
-    return Job(
-        id=job.pk,
-        pid=job.pid,
-        name=job.name,
-        type=ScriptType(job.script_type),
-        status=ExecutionStatus(job.status),
-        is_termination_allowed=job.allow_to_terminate,
-        script=job.script,
-        params=JobParams(ansible_tags=ansible_tags, **params),
-        on_fail=StateChanges(
-            state=job.state_on_fail,
-            multi_state_set=tuple(job.multi_state_on_fail_set or ()),
-            multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
-        ),
-        execution_env=ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
-    )
 
 
 def _convert_delta_to_db_format(

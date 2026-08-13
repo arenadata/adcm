@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from itertools import chain
 from pathlib import Path
-from typing import Annotated, Any, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard, TypeVar
+from typing import Annotated, Any, Generic, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -160,34 +160,132 @@ class ServiceManageServiceEntry(BaseModel):
     hc_changes: Annotated[list[ServiceManageHostComponentChange] | None, Field(default=None)]
 
 
-# it is validated, because we want to fail here on incorrect data
-# rather than when we will use it
-class JobParams(BaseModel):
+# SCRIPT PARAMS
+#
+# Params are typed per script_type + script (for internal scripts), mirroring the split
+# already enforced at bundle-parsing time.
+# It is validated, because we want to fail here on incorrect data rather than when we will use it.
+
+
+class AnsibleScriptParams(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    ansible_tags: str
-    rules: Annotated[list[HcAclRule], Field(default_factory=list)]
-    # `service_manage` internal script arguments;
-    # excluded from serialization to keep rendered job params (e.g. job's `config.json`) unchanged
-    operation: Annotated[Literal["add"] | None, Field(default=None, exclude=True)]
-    services: Annotated[list[ServiceManageServiceEntry] | None, Field(default=None, exclude=True)]
+    ansible_tags: str = ""
 
 
-class Job(BaseModel):
+@dataclass(slots=True)
+class HcApplyScriptParams:
+    rules: list[HcAclRule] = field(default_factory=list)
+
+
+@dataclass(slots=True, frozen=True)
+class TypeBasedConfigApplyTarget:
+    type: Literal["adcm", "provider", "host", "cluster"]
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceConfigApplyTarget:
+    type: Literal["service"]
+    service_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class ComponentConfigApplyTarget:
+    type: Literal["component"]
+    service_name: str
+    component_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class ConfigApplyParameterEntry:
+    key: str
+    value: Any
+
+
+@dataclass(slots=True, frozen=True)
+class ConfigApplyChangeEntry:
+    object: Annotated[
+        TypeBasedConfigApplyTarget | ServiceConfigApplyTarget | ComponentConfigApplyTarget,
+        Field(discriminator="type"),
+    ]
+    parameters: list[ConfigApplyParameterEntry]
+
+
+@dataclass(slots=True)
+class ConfigApplyScriptParams:
+    changes: list[ConfigApplyChangeEntry]
+
+
+@dataclass(slots=True)
+class ServiceManageScriptParams:
+    operation: Literal["add"]
+    services: list[ServiceManageServiceEntry]
+
+
+# JOB
+#
+# `type` and `script` act as discriminators of the `Job` union below, so they're mandatory here.
+# Unlike loosely-typed intermediate bundle-parsing dicts (where their presence can't always
+# be relied on), construction of any of these types must supply both explicitly.
+
+ScriptTypeT = TypeVar("ScriptTypeT", bound=ScriptType)
+ScriptNameT = TypeVar("ScriptNameT", bound=str)
+ParamsT = TypeVar("ParamsT")
+
+
+class _BaseJob(BaseModel, Generic[ScriptTypeT, ScriptNameT, ParamsT]):
     id: int
     pid: int
     name: str
-    type: ScriptType
+    type: ScriptTypeT
+    script: ScriptNameT
     status: ExecutionStatus
-    script: str
 
-    params: JobParams
+    params: ParamsT
 
     on_fail: StateChanges
 
     is_termination_allowed: bool
 
     execution_env: ExecutionEnvironment
+
+
+class AnsibleJob(_BaseJob[Literal[ScriptType.ANSIBLE], str, AnsibleScriptParams]):
+    pass
+
+
+class PythonJob(_BaseJob[Literal[ScriptType.PYTHON], str, None]):
+    pass
+
+
+# common parent of all internal scripts, so it's possible to match/isinstance-check
+# against "any internal script job" without enumerating every concrete script
+class InternalJob(_BaseJob[Literal[ScriptType.INTERNAL], ScriptNameT, ParamsT], Generic[ScriptNameT, ParamsT]):
+    pass
+
+
+class SimpleInternalJob(InternalJob[Literal["bundle_switch", "bundle_revert", "before_upgrade_clean"], None]):
+    pass
+
+
+class HcApplyJob(InternalJob[Literal["hc_apply"], HcApplyScriptParams]):
+    pass
+
+
+class ConfigApplyJob(InternalJob[Literal["config_apply"], ConfigApplyScriptParams]):
+    pass
+
+
+class ServiceManageJob(InternalJob[Literal["service_manage"], ServiceManageScriptParams]):
+    pass
+
+
+_InternalJobVariants = Annotated[
+    SimpleInternalJob | HcApplyJob | ConfigApplyJob | ServiceManageJob,
+    Field(discriminator="script"),
+]
+
+Job = Annotated[AnsibleJob | PythonJob | _InternalJobVariants, Field(discriminator="type")]
 
 
 class BundleInfo(NamedTuple):

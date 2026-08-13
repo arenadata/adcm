@@ -513,6 +513,28 @@ class TestServiceManage(TestCase):
                 with self.assertRaises(BundleParsingError):
                     parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
 
+    def test_adcm_8330_no_field_conflict(self):
+        as_yaml = """
+        - name: lookalike_ansible
+          script: something
+          script_type: ansible
+          params:
+            operation: ["a", "b"]
+            services: "very nice, awesome"
+        """
+
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                result = parser.parse_scripts(
+                    scripts, template_path=Path(), action_allow_to_terminate=False, mode="action"
+                )
+                script, *_ = result
+
+                self.assertListEqual(script.params["operation"], ["a", "b"])
+                self.assertEqual(script.params["services"], "very nice, awesome")
+
 
 class TestUpgradeScripts(TestCase):
     def test_adcm_7953_internal_revert_in_scripts_fail(self):
