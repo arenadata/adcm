@@ -13,11 +13,11 @@
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
+from core.action import JobSpec, ScriptType, Task, TaskMappingDelta
+from core.action.job import LaunchOptions, LogCreateDTO, TaskCreateDTO, TaskExtraInfo, TaskPayloadDTO
+from core.action.job.errors import TaskCreateError
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.legacy.job.dto import LogCreateDTO, TaskPayloadDTO
-from core.legacy.job.errors import TaskCreateError
-from core.legacy.job.types import JobSpec, ScriptType, Task, TaskMappingDelta
 from core.templates import Template
 from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
 from django.conf import settings
@@ -27,12 +27,12 @@ import core
 
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
 from cm.errors import AdcmEx
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs, render_scripts
 from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template
-from cm.legacy.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.legacy.services.job.types import ActionHCRule
 from cm.legacy.services.mapping import check_no_host_in_mm
 from cm.models import (
@@ -53,7 +53,7 @@ ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
 
 
 def prepare_task_for_action(
-    target: ActionTargetDescriptor,
+    target: ActionTargetDescriptor | CoreObjectDescriptor,
     orm_owner: ObjectWithAction,
     orm_target: ActionTarget,
     action: ActionID,
@@ -64,8 +64,8 @@ def prepare_task_for_action(
     """
     USED ONLY IN TESTS, WILL BE REMOVED
     """
-    job_repo = JobRepoImpl
-    action_repo = ActionRepoImpl
+    job_repo = JobRepo()
+    action_repo = job_repo
     owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
     orm_action = Action.objects.select_related("prototype").get(id=action)
 
@@ -80,7 +80,18 @@ def prepare_task_for_action(
 
     action_info = action_repo.get_action(id=action)
 
-    task = job_repo.create_task(target=target, owner=owner, action=action_info, payload=payload)
+    create_dto = TaskCreateDTO(
+        owner=owner,
+        target=target.as_core_or_group_descriptor if not isinstance(target, CoreObjectDescriptor) else target,
+        action_id=action,
+        launch=LaunchOptions(is_verbose=payload.verbose, is_blocking=payload.is_blocking),
+        extra=TaskExtraInfo(
+            name=orm_action.name, display_name=orm_action.display_name, description=orm_action.description
+        ),
+    )
+
+    task_id = job_repo.create_task(payload=create_dto)
+    task = job_repo.get_task(task_id)
 
     if payload.conf:
         raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
@@ -117,7 +128,7 @@ def prepare_task_for_action(
         message = f"Can't compose task for action #{action}, because no associated jobs found"
         raise TaskCreateError(message)
 
-    job_repo.create_jobs(task_id=task.id, jobs=job_specifications)
+    job_repo.create_jobs(task_id=task.id, scripts=job_specifications)
 
     logs = []
     for job in job_repo.get_task_jobs(task_id=task.id):

@@ -14,9 +14,8 @@ from collections.abc import Collection
 from unittest.mock import patch
 
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, ConcernItem, Service
-from core.legacy.job.types import Task
+from core.action import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -47,7 +46,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         )
 
     def execute_plugin_patched(self, task, arguments):
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor, call_arguments=arguments, call_context=job
         )
@@ -208,7 +207,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_incorrect_name_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor, call_arguments={"operation": "up"}, call_context=job
         )
@@ -217,7 +216,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual("`name` should be specified for `up` operation", result.error.message)
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor, call_arguments={"operation": "up", "name": ""}, call_context=job
         )
@@ -226,7 +225,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertIn("`name` should be at least 1 symbol", result.error.message)
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
             call_arguments={"operation": "down", "name": ""},
@@ -238,7 +237,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_forbidden_arg_fail(self):
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
@@ -253,7 +252,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         flag_name = "custom"
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
             call_arguments={
@@ -287,7 +286,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_changed_on_raise(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
             call_arguments={
@@ -320,7 +319,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_changed_on_lower(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
             call_arguments={
@@ -353,7 +352,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_changed_on_lower_all(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMChangeFlagPluginExecutor,
             call_arguments={

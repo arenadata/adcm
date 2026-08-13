@@ -19,4 +19,4 @@ exec 2>>"${adcmlog}/service_wsgi.err"
 
 cd "${adcmroot}/python"
 touch "${adcmrun}/uwsgi.pid"
-$adcmvenv/uwsgi --ini /etc/adcm/adcm.cfg
+$adcmvenv/uwsgi --ini /etc/adcm/adcm.cfg --exec-post-app="${adcmvenv}/python ${coderoot}/application/scripts/uwsgi_post_app_hook.py"

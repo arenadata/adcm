@@ -17,8 +17,8 @@ from typing import Any, Literal
 from cm.legacy.api import get_hc
 from cm.legacy.services.mapping import change_host_component_mapping
 from cm.models import Cluster, Component, Host, JobLog
+from core.action import TaskMappingDelta
 from core.cluster import ClusterService
-from core.legacy.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import field_validator
 

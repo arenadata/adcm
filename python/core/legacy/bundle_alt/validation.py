@@ -18,6 +18,8 @@ from typing import cast
 
 import jinja2
 
+from core.action import JobSpec, ScriptType
+from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.errors import localize_error
 from core.legacy.bundle_alt._config import key_to_str
 from core.legacy.bundle_alt._yspec import FormatError, check_rule, process_rule
@@ -32,15 +34,7 @@ from core.legacy.bundle_alt.types import (
     ImportDefinition,
     UpgradeDefinition,
 )
-from core.legacy.job.types import JobSpec, ScriptType
 from core.templates import RendererEnv, Template, get_renderer
-
-# This section should be in sort of global consts module
-ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
-ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
-ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
-ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
-# section end
 
 
 def check_definitions_are_valid(

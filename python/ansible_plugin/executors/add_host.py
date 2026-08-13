@@ -16,7 +16,7 @@ from typing import TypedDict
 from cm.legacy.api import add_host
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import Prototype, Provider
-from core.legacy.job.types import RelatedObjects, TaskOwner
+from core.action import RelatedObjects, TaskOwner
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic

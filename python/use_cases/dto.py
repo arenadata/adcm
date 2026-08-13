@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from typing import Generic, Protocol, TypeVar
 
 from core.legacy.cluster.types import HostComponentEntry
-from core.legacy.job.types import AssociatedProcess
 import core
 
 from use_cases.errors import UseCaseError
@@ -40,12 +39,12 @@ class ConfigurationDTO(Generic[T]):
 class _CommonActionDTO:
     configuration: ConfigurationDTO | None = None
     mapping: set[HostComponentEntry] | None = None
-    launch: core.job.dto.LaunchOptions = field(default_factory=core.job.dto.LaunchOptions)
+    launch: core.action.job.LaunchOptions = field(default_factory=core.action.job.LaunchOptions)
 
 
 @dataclass(slots=True)
 class RunActionDTO(_CommonActionDTO):
-    process: AssociatedProcess | None = None
+    process: core.action.AssociatedProcess | None = None
     description: str = ""
 
 

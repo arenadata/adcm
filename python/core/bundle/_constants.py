@@ -12,13 +12,16 @@
 
 import re
 
+from core.constants import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_TURN_ON_MM_ACTION_NAME,
+)
+
 # copied from cm.utils
 NAME_REGEX = re.compile(pattern=r"[0-9a-zA-Z_\.-]+")
 
-ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
-ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
-ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
-ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
 ADCM_DELETE_SERVICE_ACTION_NAME = "adcm_delete_service"
 ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_TURN_ON_MM_ACTION_NAME,

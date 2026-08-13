@@ -12,7 +12,6 @@
 
 from typing import TypeAlias
 
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Cluster, Component, Host, Provider, Service
 from tests.dependencies import StatusEventCall, get_status_scenarios_manager
 from tests.suites import ADCMPluginExecutorSuite
@@ -157,7 +156,7 @@ class TestADCMStatePluginExecutors(ADCMPluginExecutorSuite):
                 raise NotImplementedError(str(executor_class))
 
         task = self.prepare_task(owner=owner, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=executor_class,
@@ -258,7 +257,7 @@ class TestADCMStatePluginExecutors(ADCMPluginExecutorSuite):
 
         # set a multi state
         set_multi_st_task = self.prepare_task(owner=service, name="set_multi_state")
-        set_job, *_ = JobRepoImpl.get_task_jobs(set_multi_st_task.id)
+        set_job, *_ = self.get_task_jobs(set_multi_st_task.id)
         set_executor = self.prepare_executor(
             executor_type=ADCMMultiStateSetPluginExecutor,
             call_arguments={"type": "service", "service_name": service.name, "state": multi_state},
@@ -278,7 +277,7 @@ class TestADCMStatePluginExecutors(ADCMPluginExecutorSuite):
 
         # unset a multi state
         unset_multi_st_task = self.prepare_task(owner=service, name="unset_multi_state")
-        unset_job, *_ = JobRepoImpl.get_task_jobs(unset_multi_st_task.id)
+        unset_job, *_ = self.get_task_jobs(unset_multi_st_task.id)
         unset_executor = self.prepare_executor(
             executor_type=ADCMMultiStateUnsetPluginExecutor,
             call_arguments={"type": "service", "service_name": service.name, "state": multi_state},

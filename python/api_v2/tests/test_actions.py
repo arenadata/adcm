@@ -35,6 +35,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.action import ExecutionStatus
 from core.action.operations import ActionStartImpossibleReason
 from core.cluster import ClusterService
 from core.config import ConfigService
@@ -371,6 +372,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.task_runner.expect_task_not_launched()
 
     def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
+        non_terminatable_status = ExecutionStatus.QUEUED
+
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
@@ -381,6 +384,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         task_id = self.task_runner.expect_task_launched().id
         job = JobLog.objects.filter(task_id=task_id).first()
+        job.status = non_terminatable_status
+        job.save(update_fields=["status"])
 
         response = self.client.v2[job, "terminate"].post(data={})
 
@@ -388,8 +393,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertDictEqual(
             response.json(),
             {
-                "code": "JOB_TERMINATION_ERROR",
-                "desc": f"Can't terminate job #{job.id}, pid: 0 with status created",
+                "code": "NOT_ALLOWED_TERMINATION",
+                "desc": f"Job #{job.id} termination is not allowed due to status: {non_terminatable_status.value}",
                 "level": "error",
             },
         )
@@ -534,7 +539,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertListEqual(actual_actions, sorted(expected_actions))
 
 
-class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
+class TestActionWithTemplates(ADCMDjangoAPISuite):
     maxDiff = None
 
     @classmethod
@@ -696,6 +701,37 @@ class TestActionWithJinjaConfig(ADCMDjangoAPISuite):
         ):
             action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
             self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
+
+    def test_adcm_8330_conflicting_params(self) -> None:
+        # an ansible script's own (arbitrary) params must not be confused with reserved
+        # internal-script param names during job retrieval on run, for both static and
+        # jinja-rendered scripts
+        expected_params = {
+            "ansible_tags": "ok",
+            "operation": ["a", "b"],
+            "services": "very nice, awesome",
+            "rules": "not-a-list",
+            "changes": "not-a-list",
+        }
+
+        for action_name, script_name in (
+            ("adcm_8330_conflicting_params", "adcm_8330_conflicting_params"),
+            ("adcm_8330_conflicting_params_jinja", "adcm_8330_conflicting_params_script"),
+        ):
+            with self.subTest(action_name):
+                action = Action.objects.get(name=action_name, prototype=self.cluster.prototype)
+
+                response = self.client.v2[self.cluster, "actions", action, "run"].post()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                task_id = self.task_runner.expect_task_launched().id
+                self.task_runner.run_task(task_id)
+
+                self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "success")
+                self.assertDictEqual(
+                    JobLog.objects.filter(task_id=task_id).values_list("params", flat=True).get(name=script_name),
+                    expected_params,
+                )
 
 
 class TestAction(ADCMDjangoAPISuite):

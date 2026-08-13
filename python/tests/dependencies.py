@@ -33,8 +33,8 @@ from cm.tests.mocks.task_runner import (
 )
 from cm.transition.status import StatusScenarios
 from core import secrets
+from core.action.job import JobRepoI
 from core.files.directories import ADCMBundleDir
-from core.legacy.job.repo import JobRepoInterface
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -383,7 +383,7 @@ class TaskRunnerOverride(dishka.Provider):
             consul=consul,
         )
 
-    job_repo = provide(JobImplRunnerMock, provides=JobRepoInterface)
+    job_repo = provide(JobImplRunnerMock, provides=JobRepoI)
     job_factory = provide(ExecutionTargetFactoryDummyMock, provides=ExecutionTargetFactoryI)
 
     @provide

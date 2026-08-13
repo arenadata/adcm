@@ -10,15 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from celery import Celery
-from core.legacy.job.runners import JobFilterPredicate, always_true
 import dishka
 
 import adcm.init_django  # noqa: F401, isort:skip
 
 from application.di.containers import get_main_providers
+from integrations.celery import signals
+from integrations.celery.settings import CelerySettings
+from integrations.celery.steps import ConsulRegistrationStep
 
-from jobs.worker.celery.di import CeleryProvider
-
-container = dishka.make_container(CeleryProvider(), *get_main_providers(), context={JobFilterPredicate: always_true})
+container = dishka.make_container(*get_main_providers())
 app = container.get(Celery)
+
+signals.install_for_worker()
+
+celery_settings = container.get(CelerySettings)
+if celery_settings.consul is not None:
+    app.steps["worker"].add(ConsulRegistrationStep)  # pyright: ignore[reportOptionalSubscript]

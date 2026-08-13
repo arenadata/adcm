@@ -11,9 +11,6 @@
 # limitations under the License.
 
 """
-Startup wiring that registers the ADCM backend as a Consul service and
-deregisters it on ``SIGINT`` / ``SIGTERM``.
-
 Connection credentials, the ADCM URL and the ADCM uuid are resolved from the DI
 container.
 
@@ -96,7 +93,7 @@ def register_adcm_in_service_discovery_when_consul_configured(container: Contain
         )
         consul_backend.register(registration)
     except Exception:  # noqa: BLE001
-        logger.error("Failed to register ADCM in Consul")
+        logger.exception("Failed to register ADCM in Consul")
         return
 
     logger.info("ADCM registered in Consul as %s", registration.service_id)

@@ -16,6 +16,7 @@ from copy import copy
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from core.action import TaskMappingDelta
 from core.legacy.cluster.rules import (
     HostCandidateDTO,
     check_all_hosts_exist,
@@ -30,7 +31,6 @@ from core.legacy.cluster.types import (
     ServiceTopology,
     TopologyHostDiff,
 )
-from core.legacy.job.types import TaskMappingDelta
 from core.types import (
     ClusterID,
     ComponentID,

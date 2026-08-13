@@ -13,6 +13,7 @@
 from collections import defaultdict
 from collections.abc import Generator, Iterable
 from configparser import ConfigParser
+from dataclasses import asdict
 from functools import partial
 from logging import getLogger
 from pathlib import Path
@@ -20,20 +21,26 @@ from typing import Any, Literal
 import json
 import traceback
 
-from core.action import ServiceManageServiceEntry
-from core.cluster import ClusterService
-from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.dto import TaskUpdateDTO
-from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
-from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
-from core.legacy.job.types import (
+from core.action import (
+    AnsibleJob,
     AssociatedProcess,
+    ConfigApplyChangeEntry,
+    ConfigApplyJob,
     HcAclRule,
+    HcApplyJob,
     Job,
     ScriptType,
+    ServiceManageJob,
+    ServiceManageServiceEntry,
+    SimpleInternalJob,
     Task,
     TaskMappingDelta,
 )
+from core.action.job import TaskUpdateDTO
+from core.cluster import ClusterService
+from core.legacy.cluster.types import ClusterTopology
+from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
+from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.logs import LogsService
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
@@ -51,6 +58,7 @@ from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.config import ConfigAttrPair
@@ -62,7 +70,6 @@ from cm.legacy.services.job.run.executors import (
     InternalScriptResult,
     PythonProcessExecutor,
 )
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.services.job.types import (
     ADCMJobConfig,
     ClusterActionType,
@@ -188,7 +195,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 @atomic()
 def internal_script_bundle_switch(
     task: Task,
-    job: Job,
+    job: SimpleInternalJob,
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
@@ -230,7 +237,7 @@ def internal_script_bundle_switch(
 @atomic()
 def internal_script_bundle_revert(
     task: Task,
-    job: Job,
+    job: SimpleInternalJob,
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
@@ -281,7 +288,7 @@ def internal_script_bundle_revert(
     return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterService) -> InternalScriptResult:
+def internal_script_hc_apply(task: Task, job: HcApplyJob, cluster_service: ClusterService) -> InternalScriptResult:
     if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         raise AdcmEx(
             code="WRONG_OWNER",
@@ -340,7 +347,7 @@ def internal_script_hc_apply(task: Task, job: Job, cluster_service: ClusterServi
 
 def internal_script_config_apply(
     task: Task,
-    job: Job,
+    job: ConfigApplyJob,
     update_configuration_from_job: UpdateConfigurationFromJob,
 ) -> InternalScriptResult:
     with_updates = False
@@ -350,7 +357,7 @@ def internal_script_config_apply(
         has_changed = apply_config_changes(
             job_id=job.id,
             db_object=changing_object,
-            parameters=change["parameters"],
+            parameters=[asdict(parameter) for parameter in change.parameters],
             changes_description=f"{task.display_name} process update",
             update_configuration_from_job=update_configuration_from_job,
         )
@@ -368,7 +375,7 @@ def internal_script_config_apply(
 
 def internal_script_service_manage(
     task: Task,
-    job: Job,
+    job: ServiceManageJob,
     manage_services: ManageClusterServices,
 ) -> InternalScriptResult:
     cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
@@ -390,7 +397,9 @@ def internal_script_service_manage(
     return InternalScriptResult(code=0, message=result_message)
 
 
-def _parse_service_manage_arguments(task: Task, job: Job) -> tuple[ClusterID, tuple[ServiceManageServiceEntry, ...]]:
+def _parse_service_manage_arguments(
+    task: Task, job: ServiceManageJob
+) -> tuple[ClusterID, tuple[ServiceManageServiceEntry, ...]]:
     if task.owner is None:
         raise RuntimeError("misconfigured task runner: no owner")
 
@@ -401,7 +410,7 @@ def _parse_service_manage_arguments(task: Task, job: Job) -> tuple[ClusterID, tu
 
 def internal_script_before_upgrade_clean(
     task: Task,
-    job: Job,
+    job: SimpleInternalJob,
     cluster_uc: ResetBeforeUpgradeCluster,
     provider_uc: ResetBeforeUpgradeProvider,
 ) -> InternalScriptResult:
@@ -502,14 +511,14 @@ def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
     return changes
 
 
-def _extract_apply_config_target(task: Task, change: dict) -> ADCM | CoreObject:
+def _extract_apply_config_target(task: Task, change: ConfigApplyChangeEntry) -> ADCM | CoreObject:
     # in order to preserve single mechanism with adcm_config plugin.
     # Requires refactoring to move it common location with plugins
     from ansible_plugin.base import CoreObjectTargetDescription, VarsContextSection, _from_target_description
     from ansible_plugin.errors import PluginTargetDetectionError
 
     context = VarsContextSection(**context_m.get_run_context(task=task))
-    target_description = CoreObjectTargetDescription(**change["object"])
+    target_description = CoreObjectTargetDescription(**asdict(change.object))
 
     try:
         target = _from_target_description(target_description, context)
@@ -567,14 +576,14 @@ def _switch_hc_if_required(task: Task) -> None:
             else:
                 delta.add[component_id].add(new_entry["host_id"])
 
-    JobRepoImpl.update_task(id=task.id, data=TaskUpdateDTO(post_upgrade_hc_map=None, hostcomponentmap=delta))
+    JobRepo().update_task(id=task.id, data=TaskUpdateDTO(post_upgrade_hc_map=None, hostcomponentmap=delta))
 
 
 # ENVIRONMENT BUILDERS
 
 
 def prepare_ansible_environment(
-    task: Task, job: Job, configuration: ExternalSettings, cluster_service: ClusterService
+    task: Task, job: AnsibleJob, configuration: ExternalSettings, cluster_service: ClusterService
 ) -> None:
     cluster_id, topology = None, None
     if task.owner:
@@ -625,7 +634,7 @@ def prepare_ansible_inventory(
 
 
 def prepare_ansible_job_config(
-    task: Task, job: Job, configuration: ExternalSettings, topology: ClusterTopology | None = None
+    task: Task, job: AnsibleJob, configuration: ExternalSettings, topology: ClusterTopology | None = None
 ) -> dict[str, Any]:
     job_data = JobData(
         id=job.id,

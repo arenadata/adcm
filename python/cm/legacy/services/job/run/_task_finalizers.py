@@ -13,10 +13,15 @@
 from logging import Logger
 from typing import Protocol
 
+from core.action import Task
 from core.cluster import ClusterService
-from core.legacy.job.types import Task
-from core.types import ADCMCoreType
-from django.conf import settings
+from core.constants import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_TURN_ON_MM_ACTION_NAME,
+)
+from core.types import ADCMCoreType, Descriptor
 
 from cm.converters import core_type_to_model, orm_object_to_core_type
 from cm.legacy.services.mapping import change_host_component_mapping, check_nothing
@@ -58,14 +63,14 @@ def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logge
     )
 
 
-def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType):
+def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCoreType]):
     """
     If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
     """
     obj = core_type_to_model(core_type=object_.type).objects.get(id=object_.id)
 
     if (
-        action_name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+        action_name in {ADCM_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.OFF
@@ -77,7 +82,7 @@ def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType)
         )
 
     if (
-        action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+        action_name in {ADCM_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.ON

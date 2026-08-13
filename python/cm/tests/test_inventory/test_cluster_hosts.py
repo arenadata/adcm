@@ -13,8 +13,8 @@
 
 from pathlib import Path
 
+from core.action.job import TaskPayloadDTO
 from core.cluster import ClusterService
-from core.legacy.job.dto import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
 

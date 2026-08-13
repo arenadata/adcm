@@ -13,7 +13,6 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
 from cm.transition.status import StatusScenarios
 from rbac.scenarios import RBACScenarios
@@ -49,7 +48,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_host_success(self) -> None:
         task = self.prepare_task(owner=self.host_2, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMDeleteHostPluginExecutor, call_arguments={}, call_context=job
@@ -68,7 +67,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_host_assigned_to_cluster_fail(self) -> None:
         task = self.prepare_task(owner=self.tp_host, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMDeleteHostPluginExecutor, call_arguments={}, call_context=job
@@ -88,7 +87,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMDeleteHostPluginExecutor,
                     call_arguments={"fqdn": f"cool-{name.lower()}"},
@@ -116,7 +115,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         )
 
         task = self.prepare_task(owner=host, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMDeleteHostPluginExecutor, call_arguments={}, call_context=job

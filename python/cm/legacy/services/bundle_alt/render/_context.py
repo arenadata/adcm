@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from typing import TypeAlias
 from uuid import UUID
 
+from core.action import TaskMappingDelta
 from core.action._context._wizard_process import construct_process_info
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName
 from django.conf import settings
 from pydantic import BaseModel

@@ -30,7 +30,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from core.legacy.job.dto import TaskPayloadDTO
+from core.action.job import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -99,8 +99,8 @@ class TestTask(ADCMDjangoAPISuite):
 
     def test_filtering_success(self):
         task = self.cluster_task
-        task.name = "test_task"
-        task.display_name = "Test Task"
+        task.name = "qtest_task"
+        task.display_name = "QTest Task"
         task.status = "running"
         task.start_date = timezone.now() - timedelta(days=3)
         task.finish_date = timezone.now()

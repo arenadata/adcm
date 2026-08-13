@@ -23,11 +23,10 @@ from cm.legacy.services.mapping import (
     lock_cluster_mapping,
 )
 from cm.models import Cluster, ObjectType, Prototype, Service
-from core.action import ServiceManageServiceEntry
+from core.action import ServiceManageServiceEntry, TaskMappingDelta, TaskOwner
 from core.cluster import ClusterService
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.legacy.job.types import TaskMappingDelta, TaskOwner
 from core.types import BundleID, ClusterID, JobID, PrototypeID
 from django.db.transaction import atomic
 

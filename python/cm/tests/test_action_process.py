@@ -20,6 +20,7 @@ from tests.utils import assert_dict_contains_subset
 from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
     OperationContext,
@@ -33,7 +34,6 @@ from cm.legacy.services.action_process.schema_validation import (
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
 from cm.tests.dependencies import WithDishkaContainer
 
@@ -171,7 +171,7 @@ class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
         cluster = self.uc.add_cluster(bundle=bundle, name="cc")
         object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
-        action_info = ActionRepoImpl.get_action(id=action.pk)
+        action_info = JobRepo().get_action(id=action.pk)
         process_context = ProcessContext(
             action=action_info,
             action_orm=action,

@@ -12,7 +12,6 @@
 
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -35,7 +34,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
     def test_add_host_to_cluster_success(self) -> None:
         with self.subTest("Cluster Context | by fqdn"):
             task = self.prepare_task(owner=self.cluster, name="dummy")
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            job, *_ = self.get_task_jobs(task.id)
             executor = self.prepare_executor(
                 executor_type=ADCMAddHostToClusterPluginExecutor,
                 call_arguments=f"""
@@ -53,7 +52,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
 
         with self.subTest("Service Context | by id"):
             task = self.prepare_task(owner=self.service_1, name="dummy")
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            job, *_ = self.get_task_jobs(task.id)
             executor = self.prepare_executor(
                 executor_type=ADCMAddHostToClusterPluginExecutor,
                 call_arguments=f"""
@@ -71,7 +70,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
 
         with self.subTest("Component Context | by id"):
             task = self.prepare_task(owner=self.service_1, name="dummy")
-            job, *_ = JobRepoImpl.get_task_jobs(task.id)
+            job, *_ = self.get_task_jobs(task.id)
             executor = self.prepare_executor(
                 executor_type=ADCMAddHostToClusterPluginExecutor,
                 call_arguments=f"""
@@ -89,7 +88,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_both_arguments_specified_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMAddHostToClusterPluginExecutor,
             call_arguments={"fqdn": self.host_2.fqdn, "host_id": self.host_1.id},
@@ -107,7 +106,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_forbidden_arg_fail(self):
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMAddHostToClusterPluginExecutor,
             call_arguments={"host_id": self.host_2.id, "some": "argument"},
@@ -123,7 +122,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_absent_arguments_call_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMAddHostToClusterPluginExecutor,
             call_arguments={},
@@ -140,7 +139,7 @@ class TestAddHostToClusterPluginExecutor(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMAddHostToClusterPluginExecutor,
                     call_arguments={"fqdn": f"cool-{name.lower()}"},

@@ -101,6 +101,8 @@ order-by-type = true
 # ARG001 - interface implementations may not use all arguments required by that interface
 # N801 - hooks that inherits from convenient class are also classes, but should be percieved as functions
 "python/audit/alt/hooks.py" = ["ARG001", "N801"]
+# S101 - asserts are essential for pytest
+"python/tests_integration/*" = ["S101"]
 
 [tool.ruff.lint]
 ignore = [
@@ -162,7 +164,8 @@ exclude = [
     "python/ansible_share/",
     "python/ansible_collections/",
     "python/api_v2/",
-    "python/jobs/",
+    "python/jobs/scheduler/",
+    "python/jobs/worker/celery/consul/",
     # common
     "**/tests",
     # technical

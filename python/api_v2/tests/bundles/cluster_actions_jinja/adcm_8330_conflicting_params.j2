@@ -1,0 +1,9 @@
+- name: adcm_8330_conflicting_params_script
+  script_type: ansible
+  script: ./actions.yaml
+  params:
+    ansible_tags: ok
+    operation: ["a", "b"]
+    services: "very nice, awesome"
+    rules: "not-a-list"
+    changes: "not-a-list"

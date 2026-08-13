@@ -32,9 +32,8 @@ from audit.models import (
     AuditUser,
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
-from cm.impl.job.repo import _get_selector_for_core_object
+from cm.impl.job.repo import JobRepo, _get_selector_for_core_object
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import (
     ADCM,
     Action,
@@ -51,6 +50,7 @@ from cm.models import (
     SignatureStatus,
     TaskLog,
 )
+from core.action import Job
 from core.legacy.job.executors import Executor as JobExecutor
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -59,7 +59,6 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.legacy.job.types import Job
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
@@ -228,9 +227,11 @@ class ADCMPluginExecutorSuite(
                 job_id = call_context if isinstance(call_context, int) else call_context.id
                 task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
 
+                repo = JobRepo()
+
                 context = prepare_ansible_job_config(
-                    task=JobRepoImpl.get_task(id=task_id),
-                    job=JobRepoImpl.get_job(id=job_id),
+                    task=repo.get_task(id=task_id),
+                    job=repo.get_job(id=job_id),
                     configuration=configuration,
                 )
 
@@ -250,6 +251,9 @@ class ADCMPluginExecutorSuite(
             return 0 if result.error is None else 1
 
         return _executor_func
+
+    def get_task_jobs(self, task_id):
+        return JobRepo().get_task_jobs(task_id)
 
 
 class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
