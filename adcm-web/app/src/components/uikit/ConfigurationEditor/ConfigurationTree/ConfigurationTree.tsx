@@ -27,7 +27,7 @@ import type {
   MoveConfigurationNodeHandler,
   ChangeFieldAttributesHandler,
   ChangeConfigurationNodeValueHandler,
-  ChangeConfigurationNodeValueWithAttributesHandler,
+  SelectOneOfBranchHandler,
 } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
@@ -40,13 +40,17 @@ export interface ConfigurationTreeProps {
   attributes: ConfigurationAttributes;
   filter: ConfigurationTreeFilter;
   areExpandedAll: boolean;
+  selectedNodeKey: string | null;
+  focusNodeKey: string | null;
+  onFocusNodeHandled: () => void;
+  onSelectNode: (key: string) => void;
   onEditField: ChangeConfigurationNodeHandler;
   onAddEmptyObject: ChangeConfigurationNodeHandler;
   onAddField: ChangeConfigurationNodeHandler;
   onClear: ChangeConfigurationNodeHandler;
   onDelete: ChangeConfigurationNodeHandler;
   onChange: ChangeConfigurationNodeValueHandler;
-  onChangeWithAttributes: ChangeConfigurationNodeValueWithAttributesHandler;
+  onSelectOneOfBranch: SelectOneOfBranchHandler;
   onAddArrayItem: ChangeConfigurationNodeHandler;
   onMoveArrayItem: MoveConfigurationNodeHandler;
   onFieldAttributesChange: ChangeFieldAttributesHandler;
@@ -81,6 +85,10 @@ const ConfigurationTree = ({
   attributes,
   filter,
   areExpandedAll,
+  selectedNodeKey,
+  focusNodeKey,
+  onFocusNodeHandled,
+  onSelectNode,
   validationEngine = DEFAULT_JSON_SCHEMA_ENGINE,
   onEditField,
   onAddEmptyObject,
@@ -88,7 +96,7 @@ const ConfigurationTree = ({
   onClear,
   onDelete,
   onChange,
-  onChangeWithAttributes,
+  onSelectOneOfBranch,
   onAddArrayItem,
   onFieldAttributesChange,
   onMoveArrayItem,
@@ -105,7 +113,7 @@ const ConfigurationTree = ({
   );
   const nodeDictionary = buildNodeDictionary(configNode);
 
-  const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null, selectedNode: null });
+  const [treeState, setTreeState] = useState<ConfigurationTreeState>({ dragNode: null });
 
   const viewConfigTree = buildConfigurationTree(configNode, filter, treeState);
 
@@ -122,14 +130,14 @@ const ConfigurationTree = ({
     }
   }, [areExpandedAll]);
 
-  const handleClick = (node: ConfigurationNodeView, ref: React.RefObject<HTMLElement>) => {
-    setTreeState({ ...treeState, selectedNode: node });
-    onEditField(node, ref);
+  const handleClick: ChangeConfigurationNodeHandler = (node, nodeRef) => {
+    onSelectNode(node.key);
+    onEditField(node, nodeRef);
   };
 
   const handleGetNodeClassName = (node: ConfigurationNodeView) => {
     const hasError = configurationErrors[node.key] !== undefined;
-    const isSelected = node.key === treeState.selectedNode?.key;
+    const isSelected = node.key === selectedNodeKey;
 
     const failedNodeInfo = getFailedNodeInfo(nodeDictionary, configurationErrors, node.data.parentNode.key || node.key);
     const isBeforeFailedNode = failedNodeInfo ? failedNodeInfo.lastFailedNodeIndex > node.index : false;
@@ -169,6 +177,8 @@ const ConfigurationTree = ({
           <FieldNodeContent
             node={node}
             errors={errors}
+            shouldFocus={node.key === focusNodeKey}
+            onFocusHandled={onFocusNodeHandled}
             onClick={handleClick}
             onClear={onClear}
             onDelete={onDelete}
@@ -200,7 +210,7 @@ const ConfigurationTree = ({
             onClear={onClear}
             onDelete={onDelete}
             onChange={onChange}
-            onChangeWithAttributes={onChangeWithAttributes}
+            onSelectOneOfBranch={onSelectOneOfBranch}
             onExpand={onExpand}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}

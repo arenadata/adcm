@@ -1015,6 +1015,45 @@ export const determineSelectableFieldSchema = (
   return null;
 };
 
+export const getOneOfDiscriminatorValue = (value: JSONValue): string | undefined => {
+  if (!isObject(value)) {
+    return undefined;
+  }
+
+  return (value as JSONObject)[discriminatorFieldName] as string | undefined;
+};
+
+export type OneOfBranchStore = Record<string, Record<string, JSONValue>>;
+
+export const snapshotOneOfBranch = (store: OneOfBranchStore, pathKey: string, currentValue: JSONValue): void => {
+  const prevSelection = getOneOfDiscriminatorValue(currentValue);
+  if (prevSelection === undefined) {
+    return;
+  }
+
+  if (store[pathKey] === undefined) {
+    store[pathKey] = {};
+  }
+
+  store[pathKey][prevSelection] = currentValue as JSONObject;
+};
+
+export const clearOneOfBranchStorePath = (store: OneOfBranchStore, pathKey: string): void => {
+  delete store[pathKey];
+};
+
+export const resolveOneOfSelectionValue = (
+  currentValue: JSONValue,
+  selection: string,
+  schemaDefaults: Record<string, JSONValue>,
+  store: OneOfBranchStore,
+  pathKey: string,
+): JSONValue => {
+  snapshotOneOfBranch(store, pathKey, currentValue);
+
+  return store[pathKey]?.[selection] ?? schemaDefaults[selection];
+};
+
 export const getOneOfSchemaDefaults = (
   fieldSchema: SchemaDefinition,
   engine: JsonSchemaEngineId = DEFAULT_JSON_SCHEMA_ENGINE,
