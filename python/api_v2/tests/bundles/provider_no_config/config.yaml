@@ -1,10 +1,10 @@
 ---
 - type: provider
   name: provider_no_config
-  version: &version '1.0'
+  version: '1.0'
   config_group_customization: true
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: host_no_config
-  version: *version
-
+  version: '1.0'

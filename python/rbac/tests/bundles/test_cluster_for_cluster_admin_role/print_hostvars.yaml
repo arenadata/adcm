@@ -1,0 +1,12 @@
+---
+- name: print
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Print hostvars
+      pause:
+        seconds: 1
+    - debug:
+        msg: "{{ hostvars }}"

@@ -2,94 +2,119 @@
 - type: cluster
   name: cluster_with_mm_plugins_mm_actions
   display_name: cluster_with_mm_plugins_mm_actions
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   allow_maintenance_mode: true
   actions:
-    adcm_host_turn_on_maintenance_mode: &action
-      type: job
-      script: ./host-mm.yaml
-      script_type: ansible
+    adcm_host_turn_on_maintenance_mode:
       host_action: true
-      states:
+      states: &id001
         available: any
-      params:
-        ansible_tags: turn_on
-    adcm_host_turn_off_maintenance_mode: 
-      <<: *action
-      params:
-        ansible_tags: turn_off
-
-  config: &config
+      scripts:
+        - name: adcm_host_turn_on_maintenance_mode
+          script: ./host-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_on
+    adcm_host_turn_off_maintenance_mode:
+      host_action: true
+      states: *id001
+      scripts:
+        - name: adcm_host_turn_off_maintenance_mode
+          script: ./host-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_off
+  config: &id002
     - name: float
       type: float
       required: false
       default: 0.1
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_1
   display_name: Service 1
   type: service
-  version: *version
+  version: '1.0'
   actions:
     adcm_turn_on_maintenance_mode:
-      <<: *action
       host_action: false
-      script: ./service-mm.yaml
-      params:
-        ansible_tags: turn_on
+      states: *id001
+      scripts:
+        - name: adcm_turn_on_maintenance_mode
+          script: ./service-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_on
     adcm_turn_off_maintenance_mode:
-      <<: *action
       host_action: false
-      script: ./service-mm.yaml
-      params:
-        ansible_tags: turn_off
-  config: *config
-  
+      states: *id001
+      scripts:
+        - name: adcm_turn_off_maintenance_mode
+          script: ./service-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_off
+  config: *id002
   components:
     component_1:
       display_name: Component 1 from Service 1
-      constraint: [ 1,+ ]
+      constraint:
+        - 1
+        - +
       actions:
         adcm_turn_on_maintenance_mode:
-          <<: *action
           host_action: false
-          script: ./component-mm.yaml
-          params:
-            ansible_tags: turn_on
+          states: *id001
+          scripts:
+            - name: adcm_turn_on_maintenance_mode
+              script: ./component-mm.yaml
+              script_type: ansible
+              params:
+                ansible_tags: turn_on
         adcm_turn_off_maintenance_mode:
-          <<: *action
           host_action: false
-          script: ./component-mm.yaml
-          params:
-            ansible_tags: turn_off
-      config: *config
-
+          states: *id001
+          scripts:
+            - name: adcm_turn_off_maintenance_mode
+              script: ./component-mm.yaml
+              script_type: ansible
+              params:
+                ansible_tags: turn_off
+      config: *id002
     component_2:
       display_name: Component 2 from Service 1
-
 - name: service_2
   display_name: Service 2
   type: service
-  version: *version
+  version: '1.0'
   actions:
     adcm_turn_on_maintenance_mode:
-      <<: *action
       host_action: false
-      script: ./service-mm.yaml
-      params:
-        ansible_tags: turn_on
+      states: *id001
+      scripts:
+        - name: adcm_turn_on_maintenance_mode
+          script: ./service-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_on
     adcm_turn_off_maintenance_mode:
-      <<: *action
       host_action: false
-      script: ./service-mm.yaml
-      params:
-        ansible_tags: turn_off
-
+      states: *id001
+      scripts:
+        - name: adcm_turn_off_maintenance_mode
+          script: ./service-mm.yaml
+          script_type: ansible
+          params:
+            ansible_tags: turn_off
   components:
     component_1:
       display_name: Component 1 from Service 2
-      constraint: [ 1,+ ]
-
+      constraint:
+        - 1
+        - +
     component_2:
       display_name: Component 2 from Service 2
-      constraint: [ 0,+ ]
+      constraint:
+        - 0
+        - +

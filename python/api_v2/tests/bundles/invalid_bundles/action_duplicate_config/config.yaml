@@ -4,11 +4,14 @@
   version: 1
   actions:
     action:
-      type: job
-      script_type: ansible
-      script: ./playbook.yaml
       config:
         - name: str1
           type: string
         - name: str1
           type: string
+      scripts:
+        - name: action
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

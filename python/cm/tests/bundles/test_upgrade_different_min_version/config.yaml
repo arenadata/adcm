@@ -1,0 +1,56 @@
+---
+- type: cluster
+  name: Monitoring
+  version: 666
+  edition: community
+  description: Monitoring and Control Software
+  upgrade:
+    - name: Upgrade name
+      description: test upg1 description
+      from_edition:
+        - community
+        - enterprise
+      versions:
+        min: '0.1'
+        max_strict: '2.11'
+      scripts:
+        - name: Script name
+          script: monitoring/bundle_pre_check.yaml
+          script_type: ansible
+          on_fail: running
+        - name: Script name
+          script: bundle_switch
+          script_type: internal
+        - name: Script name
+          script: monitoring/bundle_post_upgrade.yaml
+          params:
+            ansible_tags: install
+          script_type: ansible
+      states:
+        available: any
+        on_success: upgradable
+    - name: Upgrade name
+      from_edition:
+        - community
+        - enterprise
+      versions:
+        min: '2.11'
+        max_strict: '2.11'
+      scripts:
+        - name: Script name
+          script: monitoring/bundle_pre_check.yaml
+          script_type: ansible
+          on_fail: running
+        - name: Script name
+          script: bundle_switch
+          script_type: internal
+        - name: Script name
+          script: monitoring/bundle_post_upgrade.yaml
+          params:
+            ansible_tags: install
+          script_type: ansible
+      states:
+        available: any
+        on_success: upgradable
+  contract_version: '2.1'
+  venv: '2.16'

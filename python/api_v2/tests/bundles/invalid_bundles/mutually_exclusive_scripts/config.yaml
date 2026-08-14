@@ -4,6 +4,14 @@
   version: 1
   actions:
     some_action:
-      type: task
-      scripts_jinja: scripts.j2
-      scripts: script
+      scripts:
+        - name: script
+          script_type: ansible
+          script: playbook.yaml
+      scripts_template:
+        file:
+          path: scripts.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'

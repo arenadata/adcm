@@ -1,51 +1,56 @@
 ---
 - type: cluster
   name: cluster_with_wizard
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   allow_maintenance_mode: true
-
   actions:
-    wizard_jinja: &wizard_action
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
-      wizard_template:
+    wizard_jinja:
+      wizard_template: &id005
         file:
           path: wizard_jinja/stages.j2
         engine:
           type: jinja2
-      states:
+      states: &id001
         available: any
-
+      scripts:
+        - name: wizard_jinja
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_operation_as_first:
-      <<: *wizard_action
       wizard_template:
         file:
           path: wizard_jinja/stages_operation_first.j2
         engine:
           type: jinja2
-
+      states: *id001
+      scripts:
+        - name: wizard_operation_as_first
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_skip_steps:
-      <<: *wizard_action
       wizard_template:
         file:
           path: wizard_jinja/stages_skip_step.j2
         engine:
           type: jinja2
-
+      states: *id001
+      scripts:
+        - name: wizard_skip_steps
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_broken_step:
-      <<: *wizard_action
       wizard_template:
         file:
           path: wizard_jinja/stages_broken_step.j2
         engine:
           type: jinja2
-
+      states: *id001
+      scripts:
+        - name: wizard_broken_step
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_with_mapping_only:
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/mapping/stages.j2
@@ -53,35 +58,43 @@
           type: jinja2
       states:
         available: any
-
-    wizard_host_action_from_cluster: &host_action
-      type: job
-      script: wizard_jinja/scripts/sleep.yaml
-      script_type: ansible
+      scripts:
+        - name: wizard_with_mapping_only
+          script: ./sleep.yaml
+          script_type: ansible
+    wizard_host_action_from_cluster:
       host_action: true
-      ui_options:
-        disclaimer: "Test message!"
-      wizard_template:
+      ui_options: &id002
+        disclaimer: Test message!
+      wizard_template: &id003
         file:
           path: wizard_jinja/host_action/stages.j2
         engine:
           type: jinja2
-      states:
+      states: &id004
         available: any
-
-    wizard_cluster_action: &action
-      <<: *host_action
+      scripts:
+        - name: wizard_host_action_from_cluster
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
+    wizard_cluster_action:
       host_action: false
       allow_for_action_host_group: true
-
+      ui_options: *id002
+      wizard_template: *id003
+      states: *id004
+      scripts:
+        - name: wizard_cluster_action
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
     regular_action:
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
       states:
         available: any
-
-  config: &config
+      scripts:
+        - name: regular_action
+          script: ./sleep.yaml
+          script_type: ansible
+  config: &id006
     - name: float
       type: float
       required: false
@@ -95,30 +108,69 @@
             - entry1
             - entry2
           type: list
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service_1
-  version: "0.1"
-
+  version: '0.1'
   actions:
     wizard_jinja:
-      <<: *wizard_action
+      wizard_template: *id005
+      states: *id001
+      scripts:
+        - name: wizard_jinja
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_host_action_from_service:
-      <<: *host_action
+      host_action: true
+      ui_options: *id002
+      wizard_template: *id003
+      states: *id004
+      scripts:
+        - name: wizard_host_action_from_service
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
     wizard_service_action:
-      <<: *action
-
-  config: *config
-
+      host_action: false
+      allow_for_action_host_group: true
+      ui_options: *id002
+      wizard_template: *id003
+      states: *id004
+      scripts:
+        - name: wizard_service_action
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
+  config: *id006
   components:
-    component_1: &component
-      actions:
+    component_1:
+      actions: &id007
         wizard_jinja:
-          <<: *wizard_action
+          wizard_template: *id005
+          states: *id001
+          scripts:
+            - name: wizard_jinja
+              script: ./sleep.yaml
+              script_type: ansible
         wizard_host_action_from_component:
-          <<: *host_action
+          host_action: true
+          ui_options: *id002
+          wizard_template: *id003
+          states: *id004
+          scripts:
+            - name: wizard_host_action_from_component
+              script: wizard_jinja/scripts/sleep.yaml
+              script_type: ansible
         wizard_component_action:
-          <<: *action
-      config: *config
+          host_action: false
+          allow_for_action_host_group: true
+          ui_options: *id002
+          wizard_template: *id003
+          states: *id004
+          scripts:
+            - name: wizard_component_action
+              script: wizard_jinja/scripts/sleep.yaml
+              script_type: ansible
+      config: *id006
     component_2:
-      <<: *component
+      actions: *id007
+      config: *id006

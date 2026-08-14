@@ -1,97 +1,77 @@
+---
 - type: cluster
   name: cluster
   version: 1
-  contract_version: "2.0"
-  venv: "2.16"
-
+  contract_version: '2.1'
+  venv: '2.16'
   actions:
     error_render_yaml_scripts:
-      scripts_template: &render_yaml
-        engine: &j2_engine { type: jinja2 }
-        file: { path: templates/render_error.yaml }
+      scripts_template: &id002
+        engine: &id001
+          type: jinja2
+        file:
+          path: templates/render_error.yaml
       masking: {}
-
     error_render_py_scripts:
-      scripts_template: &render_py
-        engine: &py_engine { type: python }
-        file: { path: templates/render_error.py, entrypoint: main }
+      scripts_template: &id003
+        engine: &id006
+          type: python
+        file:
+          path: templates/render_error.py
+          entrypoint: main
       masking: {}
-
     error_syntax_yaml_scripts:
-      scripts_template: &syntax_yaml
-        engine: *j2_engine
-        file: { path: templates/syntax_error.yaml }
+      scripts_template: &id005
+        engine: *id001
+        file:
+          path: templates/syntax_error.yaml
       masking: {}
-
-    # validated on upload, can't check in here
-    #error_syntax_py_scripts:
-    #  scripts_template: &syntax_py
-    #    engine: *py_engine
-    #    file: { path: templates/syntax_error.py, entrypoint: main }
-    #  masking: {}
-
     error_render_yaml_config:
-      config_template: *render_yaml
+      config_template: *id002
       masking: {}
-      scripts: &fake_scripts
+      scripts: &id004
         - name: aa
           script: woo.yaml
           script_type: ansible
-
     error_render_py_config:
-      config_template: *render_py
+      config_template: *id003
       masking: {}
-      scripts: *fake_scripts
-
+      scripts: *id004
     error_syntax_yaml_config:
-      config_template: *syntax_yaml
+      config_template: *id005
       masking: {}
-      scripts: *fake_scripts
-
-    # validated on upload, can't check in here
-    #error_syntax_py_config:
-    #  config_template: *syntax_py
-    #  masking: {}
-    #  scripts: *fake_scripts
-
+      scripts: *id004
     error_render_yaml_wizard:
-      wizard_template: *render_yaml
+      wizard_template: *id002
       masking: {}
-      scripts: *fake_scripts
-
+      scripts: *id004
     error_render_py_wizard:
-      wizard_template: *render_py
+      wizard_template: *id003
       masking: {}
-      scripts: *fake_scripts
-
+      scripts: *id004
     error_syntax_yaml_wizard:
-      wizard_template: *syntax_yaml
+      wizard_template: *id005
       masking: {}
-      scripts: *fake_scripts
-
-    # validated on upload, can't check in here
-    #error_syntax_py_wizard:
-    #  wizard_template: *syntax_py
-    #  masking: {}
-    #  scripts: *fake_scripts
-
+      scripts: *id004
     error_missing_file_step_config:
       wizard_template:
-        engine: *j2_engine
-        file: { path: templates/stage_missing_file.yaml }
+        engine: *id001
+        file:
+          path: templates/stage_missing_file.yaml
       masking: {}
-      scripts: *fake_scripts
-
+      scripts: *id004
     error_syntax_py_step_mapping:
       wizard_template:
-        engine: *py_engine
-        file: { path: templates/stage_syntax_err_mapping.py, entrypoint: render }
+        engine: *id006
+        file:
+          path: templates/stage_syntax_err_mapping.py
+          entrypoint: render
       masking: {}
-      scripts: *fake_scripts
-
+      scripts: *id004
     error_render_yaml_step_mapping:
       wizard_template:
-        engine: *j2_engine
-        file: { path: ./templates/stage_render_err_mapping.yaml }
+        engine: *id001
+        file:
+          path: ./templates/stage_render_err_mapping.yaml
       masking: {}
-      scripts: *fake_scripts
+      scripts: *id004

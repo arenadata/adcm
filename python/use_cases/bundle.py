@@ -119,6 +119,8 @@ class InitOrUpgradeADCM:
                 case models.ADCM():
                     self.upgrade_adcm.do(bundle_id=bundle_id)
 
+                    self.bundle_service.clear_old_versions_adcm_bundles()
+
                     logger.info("ADCM upgrade: OK (%s -> %s).", current_adcm_bundle_version, new_adcm_bundle_version)
 
                 case None:

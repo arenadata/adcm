@@ -130,9 +130,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 multi_bind(cluster=import_object.cluster, service=import_object, bind_list=multibind_data)
 
     def change_config_partial(self, target: ADCMModel) -> None:
-        self.change_configuration(
-            target=target,
-            config_diff=self.PARTIAL_CONFIG,
+        self.uc.change_config(
+            owner=target,
+            values_diff=self.PARTIAL_CONFIG,
             preprocess_config=lambda d: {
                 **d,
                 "map": {},
@@ -142,9 +142,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     def change_config_full(self, target: ADCMModel) -> None:
-        self.change_configuration(
-            target=target,
-            config_diff=self.FULL_CONFIG,
+        self.uc.change_config(
+            owner=target,
+            values_diff=self.FULL_CONFIG,
             meta_diff={"/activatable_group": {"isActive": True}},
             preprocess_config=lambda d: {
                 **d,
@@ -209,9 +209,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.change_config_partial(target=self.service)
         self.change_config_full(target=self.component)
 
-        self.change_configuration(
-            target=self.export_cluster_1,
-            config_diff={
+        self.uc.change_config(
+            owner=self.export_cluster_1,
+            values_diff={
                 "list_of_dicts": [{"integer": 1, "string": "one"}],
                 "just_integer": 100,
                 "variant_inline": "f",
@@ -254,18 +254,18 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             # (self.service, [self.export_cluster_1, self.export_service_2]),
         )
 
-        self.change_configuration(
-            target=self.export_cluster_1,
-            config_diff={
+        self.uc.change_config(
+            owner=self.export_cluster_1,
+            values_diff={
                 "list_of_dicts": [{"integer": 1, "string": "one"}],
                 "just_integer": 100,
                 "variant_inline": "f",
                 "plain_group": {"list_of_dicts": [{"integer": 2, "string": "two"}]},
             },
         )
-        self.change_configuration(
-            target=self.export_service_2,
-            config_diff={
+        self.uc.change_config(
+            owner=self.export_service_2,
+            values_diff={
                 "just_integer": 100,
                 "plain_group": {"list_of_dicts": [{"integer": 3, "string": "three"}]},
                 "activatable_group": {"secretmap": {"one": "two"}},
@@ -295,9 +295,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 self.assertDictEqual(actual_vars, expected_vars)
 
     def test_imports_have_default_no_import_success(self) -> None:
-        self.change_configuration(
-            target=self.service_with_defaults,
-            config_diff={"another_stuff": {"hehe": 30.43}, "plain_group": {"listofstuff": ["204"]}},
+        self.uc.change_config(
+            owner=self.service_with_defaults,
+            values_diff={"another_stuff": {"hehe": 30.43}, "plain_group": {"listofstuff": ["204"]}},
         )
 
         expected = {
@@ -310,9 +310,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.assertDictEqual(result, expected)
 
     def test_imports_have_default_one_import_succeess(self) -> None:
-        self.change_configuration(
-            target=self.service_with_defaults,
-            config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
+        self.uc.change_config(
+            owner=self.service_with_defaults,
+            values_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
             meta_diff={"/activatable_group": {"isActive": True}},
         )
         self.bind_objects((self.service_with_defaults, [self.export_cluster_1]))
@@ -343,9 +343,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         self.bind_objects(
             (self.service_with_defaults, [self.export_cluster_1, self.export_service_1, self.export_service_2])
         )
-        self.change_configuration(
-            target=self.export_service_2,
-            config_diff={"just_integer": 400},
+        self.uc.change_config(
+            owner=self.export_service_2,
+            values_diff={"just_integer": 400},
             meta_diff={"/activatable_group": {"isActive": True}},
         )
 
@@ -395,14 +395,14 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             cluster=self.cluster_with_defaults, entries=[(host_3, component), (host_4, component)]
         )
         group = self.add_config_host_group(parent=self.service_with_defaults, hosts=[host_3])
-        self.change_configuration(
-            target=self.service_with_defaults,
-            config_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
+        self.uc.change_config(
+            owner=self.service_with_defaults,
+            values_diff={"another_stuff": {"hehe": 500.5}, "plain_group": {"listofstuff": ["204"]}},
             meta_diff={"/activatable_group": {"isActive": True}},
         )
-        self.change_configuration(
-            target=group,
-            config_diff={
+        self.uc.change_config(
+            owner=group,
+            values_diff={
                 "another_stuff": {"hehe": 2000},
                 "plain_group": {"listofstuff": ["ooo"]},
                 "activatable_group": {"simple": "ch"},

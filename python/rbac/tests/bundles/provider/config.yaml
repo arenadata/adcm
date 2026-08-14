@@ -1,0 +1,25 @@
+---
+- type: provider
+  name: provider
+  version: '1.0'
+  actions:
+    action: &id001
+      states:
+        available: any
+      scripts:
+        - name: action
+          script: ./success.yaml
+          script_type: ansible
+  config: &id002
+    - name: string
+      type: string
+      required: false
+      default: string
+  contract_version: '2.1'
+  venv: '2.16'
+- type: host
+  name: host
+  version: '1.0'
+  actions:
+    action: *id001
+  config: *id002

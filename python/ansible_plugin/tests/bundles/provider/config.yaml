@@ -1,18 +1,18 @@
+---
 - type: provider
   name: simple_provider
   version: 3
-
-  actions: &actions
+  actions: &id001
     dummy:
-      type: job
-      script_type: ansible
-      script: ./playbook.yaml
-      masking:
-
-  config: &config
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
+  config: &id002
     - name: ip
       type: string
-      default: "127.0.0.1"
+      default: 127.0.0.1
     - name: inside
       type: group
       subs:
@@ -22,11 +22,10 @@
         - name: complex_secret
           type: secrettext
           required: false
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: host
   version: 2
-
-  actions: *actions
-
-  config: *config
+  actions: *id001
+  config: *id002

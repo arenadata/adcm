@@ -2,7 +2,8 @@
 - type: provider
   name: provider
   version: 1.0
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: host
   version: 1.0

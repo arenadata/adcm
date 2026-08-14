@@ -1,19 +1,19 @@
+---
 - type: cluster
   name: simple_cluster
   version: 3
-
-  config: &config
+  config: &id001
     - name: integer_field
       type: integer
       default: 1
     - name: string_field
       type: string
-      default: "string_value"
+      default: string_value
     - name: map_field
       type: map
       default:
-        integer_key: "2"
-        string_key: "map_string_value"
+        integer_key: '2'
+        string_key: map_string_value
     - name: group
       type: group
       subs:
@@ -22,12 +22,12 @@
           default: 11
         - name: group_string_field
           type: string
-          default: "group_string_value"
+          default: group_string_value
         - name: group_map_field
           type: map
           default:
-            integer_key: "22"
-            string_key: "group_map_string_value"
+            integer_key: '22'
+            string_key: group_map_string_value
     - name: activatable_group
       type: group
       activatable: true
@@ -38,66 +38,71 @@
           default: 111
         - name: activatable_group_string_field
           type: string
-          default: "activatable_group_string_value"
+          default: activatable_group_string_value
         - name: activatable_group_map_field
           type: map
           default:
-            integer_key: "222"
-            string_key: "activatable_group_map_string_value"
-
-  actions: &actions
-    dummy: &action
-      type: job
-      script_type: ansible
-      script: ./playbook.yaml
-      masking:
-
+            integer_key: '222'
+            string_key: activatable_group_map_string_value
+  actions: &id002
+    dummy:
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
     on_host:
-      <<: *action
       host_action: true
-
+      masking: null
+      scripts:
+        - name: on_host
+          script: ./playbook.yaml
+          script_type: ansible
     with_hc:
-      <<: *action
       hc_acl:
         - action: add
           service: service_1
           component: component_1
-
-- &service
-  type: service
+      masking: null
+      scripts:
+        - name: with_hc
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
+- type: service
   name: service_1
   version: 2
-
-  config: *config
-  actions: *actions
-
-  components:
+  config: *id001
+  actions: *id002
+  components: &id003
     component_1:
-      actions: *actions
-      config: *config
-
+      actions: *id002
+      config: *id001
     component_2:
-      actions: *actions
-      config: *config
-
-- <<: *service
-  name: service_2
-
+      actions: *id002
+      config: *id001
+- name: service_2
+  type: service
+  version: 2
+  config: *id001
+  actions: *id002
+  components: *id003
 - type: service
   name: multi_state_service
   version: 1
-
   actions:
     set_multi_state:
-      type: job
-      script_type: ansible
-      script: ./multi_state_service.yaml
-      params:
-        ansible_tags: set_multi_state
-
+      scripts:
+        - name: set_multi_state
+          script: ./multi_state_service.yaml
+          script_type: ansible
+          params:
+            ansible_tags: set_multi_state
     unset_multi_state:
-      type: job
-      script_type: ansible
-      script: ./multi_state_service.yaml
-      params:
-        ansible_tags: unset_multi_state
+      scripts:
+        - name: unset_multi_state
+          script: ./multi_state_service.yaml
+          script_type: ansible
+          params:
+            ansible_tags: unset_multi_state

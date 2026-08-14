@@ -1,7 +1,7 @@
+---
 - type: cluster
   name: with_many_activatable_groups
   version: 1.0
-
   config:
     - name: boolean
       type: boolean
@@ -17,7 +17,6 @@
         - name: simple
           type: string
           required: false
-    # activatable group
     - name: activatable_group_string
       type: group
       activatable: true
@@ -35,3 +34,5 @@
           type: integer
           required: false
           default: 10
+  contract_version: '2.1'
+  venv: '2.16'

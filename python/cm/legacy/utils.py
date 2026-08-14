@@ -49,8 +49,7 @@ def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
 
-    selected_venv = venv if venv in {"2.16", "2.21"} else "2.16"
-    existing_env["PATH"] = f"/venv/{selected_venv}/bin:{existing_env['PATH']}"
+    existing_env["PATH"] = f"/venv/{venv}/bin:{existing_env['PATH']}"
 
     return existing_env
 

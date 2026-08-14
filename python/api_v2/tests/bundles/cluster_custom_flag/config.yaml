@@ -1,32 +1,31 @@
 ---
 - type: cluster
   name: cluster_flags
-  version: &version 1.0
-
-  config: &config
+  version: 1.0
+  config:
     - name: string_param
       type: string
       default: some_default_value
-
     - name: int_param
       type: integer
       display_name: Some Int
       default: 12
-
-  actions: &actions
-    flag_up_cluster: 
-      type: job
-      script_type: ansible
-      script: ./change_flag.yaml
+  actions: &id001
+    flag_up_cluster:
       states:
         available: any
-      params:
-        ansible_tags: up_cluster
-
+      scripts:
+        - name: flag_up_cluster
+          script: ./change_flag.yaml
+          script_type: ansible
+          params:
+            ansible_tags: up_cluster
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
-  version: *version
-  actions: *actions
+  version: 1.0
+  actions: *id001
   name: master_service
   components:
     test_component:
-      actions: *actions
+      actions: *id001

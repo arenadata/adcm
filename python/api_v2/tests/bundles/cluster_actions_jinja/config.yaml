@@ -1,7 +1,7 @@
 ---
 - type: cluster
   name: config_jinja_full
-  version: &version '1.0'
+  version: '1.0'
   config:
     - name: boolean
       type: boolean
@@ -19,103 +19,176 @@
       type: text
       required: false
       default: text
-  actions: &actions
-    check_state: &job
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: ok
-      config_jinja: config_jinja_state.jinja2
-      states:
+  actions:
+    check_state:
+      states: &id001
         on_success: created
         available: any
-
+      scripts:
+        - name: check_state
+          script: ./actions.yaml
+          script_type: ansible
+          params: &id002
+            ansible_tags: ok
+      config_template:
+        file:
+          path: config_jinja_state.jinja2
+        engine:
+          type: jinja2
     check_param:
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: sleep
       states:
         on_success: created
         available: any
-      config_jinja: ./config_jinja_param.jinja2
-
+      scripts:
+        - name: check_param
+          script: ./actions.yaml
+          script_type: ansible
+          params:
+            ansible_tags: sleep
+      config_template:
+        file:
+          path: ./config_jinja_param.jinja2
+        engine:
+          type: jinja2
     check_multistate:
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: sleep
       states:
         on_success: created
         available: any
-      config_jinja: ./config_jinja_multistate.jinja2
-
-    check_numeric_min_max_param:
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: sleep
+      scripts:
+        - name: check_multistate
+          script: ./actions.yaml
+          script_type: ansible
+          params:
+            ansible_tags: sleep
+      config_template:
+        file:
+          path: ./config_jinja_multistate.jinja2
+        engine:
+          type: jinja2
+    check_numeric_min_max_param: &id003
       states:
         on_success: created
         available: any
-      config_jinja: ./config_jinja_numeric_min_max.jinja2
-
-    # ADCM-8330: an ansible script's own (arbitrary) `params` must not be confused with
-    # reserved internal-script param names during job retrieval on run - `operation`/`services`
-    # (service_manage), `rules` (hc_apply), `changes` (config_apply) - regardless of static
-    # (`scripts:`) or jinja-rendered (`scripts_jinja:`) script definition.
-    adcm_8330_conflicting_params:
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: ok
-        operation: ["a", "b"]
-        services: "very nice, awesome"
-        rules: "not-a-list"
-        changes: "not-a-list"
+      scripts:
+        - name: check_numeric_min_max_param
+          script: ./actions.yaml
+          script_type: ansible
+          params:
+            ansible_tags: sleep
+      config_template:
+        file:
+          path: ./config_jinja_numeric_min_max.jinja2
+        engine:
+          type: jinja2
+    adcm_8330_conflicting_params: &id004
       states:
         available: any
-
-    adcm_8330_conflicting_params_jinja:
-      type: task
-      scripts_jinja: "./adcm_8330_conflicting_params.j2"
+      scripts:
+        - name: adcm_8330_conflicting_params
+          script: ./actions.yaml
+          script_type: ansible
+          params:
+            ansible_tags: ok
+            operation:
+              - a
+              - b
+            services: very nice, awesome
+            rules: not-a-list
+            changes: not-a-list
+    adcm_8330_conflicting_params_jinja: &id005
       states:
         available: any
-
+      scripts_template:
+        file:
+          path: ./adcm_8330_conflicting_params.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: first_service
-  version: *version
-  config: &config
+  version: '1.0'
+  config:
     - name: string
       type: string
       required: false
       default: string
   actions:
     check_state:
-      <<: *job
-      config_jinja: ./config_jinja_state_service.jinja2
+      states: *id001
+      scripts:
+        - name: check_state
+          script: ./actions.yaml
+          script_type: ansible
+          params: *id002
+      config_template:
+        file:
+          path: ./config_jinja_state_service.jinja2
+        engine:
+          type: jinja2
     check_param:
-      <<: *job
-      config_jinja: ./config_jinja_param_service.jinja2
+      states: *id001
+      scripts:
+        - name: check_param
+          script: ./actions.yaml
+          script_type: ansible
+          params: *id002
+      config_template:
+        file:
+          path: ./config_jinja_param_service.jinja2
+        engine:
+          type: jinja2
     check_multistate:
-      <<: *job
-      config_jinja: ./config_jinja_multistate_service.jinja2
-
+      states: *id001
+      scripts:
+        - name: check_multistate
+          script: ./actions.yaml
+          script_type: ansible
+          params: *id002
+      config_template:
+        file:
+          path: ./config_jinja_multistate_service.jinja2
+        engine:
+          type: jinja2
   components:
     first_component:
       actions:
-        <<: *actions
         check_state:
-          <<: *job
-          config_jinja: ./config_jinja_state_component.jinja2
+          states: *id001
+          scripts:
+            - name: check_state
+              script: ./actions.yaml
+              script_type: ansible
+              params: *id002
+          config_template:
+            file:
+              path: ./config_jinja_state_component.jinja2
+            engine:
+              type: jinja2
         check_param:
-          <<: *job
-          config_jinja: ./config_jinja_param_component.jinja2
+          states: *id001
+          scripts:
+            - name: check_param
+              script: ./actions.yaml
+              script_type: ansible
+              params: *id002
+          config_template:
+            file:
+              path: ./config_jinja_param_component.jinja2
+            engine:
+              type: jinja2
         check_multistate:
-          <<: *job
-          config_jinja: ./config_jinja_multistate_component.jinja2
+          states: *id001
+          scripts:
+            - name: check_multistate
+              script: ./actions.yaml
+              script_type: ansible
+              params: *id002
+          config_template:
+            file:
+              path: ./config_jinja_multistate_component.jinja2
+            engine:
+              type: jinja2
+        check_numeric_min_max_param: *id003
+        adcm_8330_conflicting_params: *id004
+        adcm_8330_conflicting_params_jinja: *id005

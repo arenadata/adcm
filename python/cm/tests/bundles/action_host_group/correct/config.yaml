@@ -1,35 +1,37 @@
+---
 - type: cluster
   version: 1
-  name: "cl"
-
+  name: cl
   actions:
     allow_true_ha_false:
-      masking:
+      masking: null
       allow_for_action_host_group: true
       host_action: false
-      type: job
-      script: ./some.yaml
-      script_type: ansible
-
+      scripts:
+        - name: allow_true_ha_false
+          script: ./some.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   version: 4
-  name: "se"
-
+  name: se
   actions:
     allow_false_ha_true:
-      masking:
+      masking: null
       allow_for_action_host_group: false
       host_action: true
-      type: job
-      script: ./some.yaml
-      script_type: ansible
-
+      scripts:
+        - name: allow_false_ha_true
+          script: ./some.yaml
+          script_type: ansible
   components:
     co:
       actions:
         allow_true_ha_absent:
-          masking:
+          masking: null
           allow_for_action_host_group: true
-          type: job
-          script: ./some.yaml
-          script_type: ansible
+          scripts:
+            - name: allow_true_ha_absent
+              script: ./some.yaml
+              script_type: ansible

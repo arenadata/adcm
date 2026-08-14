@@ -1,14 +1,13 @@
+---
 - type: cluster
   name: with_all_config_params
   version: 1.0
-
   import:
     very_complex:
       multibind: true
     for_export:
       multibind: true
-
-  config: &config
+  config: &id001
     - type: boolean
       name: boolean
       required: false
@@ -50,7 +49,9 @@
       required: false
     - name: source_list
       type: list
-      default: ["ok", "fail"]
+      default:
+        - ok
+        - fail
     - name: variant_config
       required: false
       type: variant
@@ -86,7 +87,6 @@
         - name: listofstuff
           type: list
           required: false
-    # activatable group
     - name: activatable_group
       type: group
       activatable: true
@@ -98,94 +98,104 @@
         - name: list
           type: list
           required: false
-
-  actions: &actions
-    dummy: &job
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+  actions: &id003
+    dummy: &id004
       allow_for_action_host_group: true
-      states:
+      states: &id002
         available: any
-
-    with_config:
-      <<: *job
-      config: *config
-
-    with_config_on_host:
-      <<: *job
-      config: *config
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
+    with_config: &id005
+      config: *id001
+      allow_for_action_host_group: true
+      states: *id002
+      scripts:
+        - name: with_config
+          script: ./playbook.yaml
+          script_type: ansible
+    with_config_on_host: &id006
+      config: *id001
       allow_for_action_host_group: false
       host_action: true
-
-    name_and_pass:
-      script: ./playbook.yaml
-      script_type: ansible
+      states: *id002
+      scripts:
+        - name: with_config_on_host
+          script: ./playbook.yaml
+          script_type: ansible
+    name_and_pass: &id007
       states:
         available: any
-      type: job
       config:
         - name: rolename
           display_name: Role name
           type: string
-          required: yes
+          required: true
         - name: rolepass
           display_name: Role password
           type: password
-          required: yes
-
-    with_jinja:
-      script: ./playbool.yaml
-      script_type: ansible
+          required: true
+      scripts:
+        - name: name_and_pass
+          script: ./playbook.yaml
+          script_type: ansible
+    with_jinja: &id008
       allow_for_action_host_group: true
-      config_jinja: action.j2
       states:
         available: any
-      type: job
-
+      scripts:
+        - name: with_jinja
+          script: ./playbool.yaml
+          script_type: ansible
+      config_template:
+        file:
+          path: action.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: all_params
   version: 1.1
-
   import:
     very_complex:
       multibind: false
     for_export:
       multibind: false
-
-  actions: *actions
-  config: *config
-
+  actions: *id003
+  config: *id001
   components:
     all_params_component:
       actions:
-        <<: *actions
         without_config_on_host:
-          <<: *job
           allow_for_action_host_group: false
           host_action: true
-
-      config: *config
-
+          states: *id002
+          scripts:
+            - name: without_config_on_host
+              script: ./playbook.yaml
+              script_type: ansible
+        dummy: *id004
+        with_config: *id005
+        with_config_on_host: *id006
+        name_and_pass: *id007
+        with_jinja: *id008
+      config: *id001
 - type: service
   name: imports_with_defaults
   version: 4.3
-
   import:
-    very_complex: # same default names
+    very_complex:
       multibind: false
       default:
-        # only groups can be included here
-        # - just_integer
         - plain_group
         - activatable_group
-    for_export: # unmatching default names
+    for_export:
       multibind: true
       default:
         - another_stuff
-
-  actions: *actions
-
+  actions: *id003
   config:
     - name: just_integer
       type: integer
@@ -195,7 +205,10 @@
       subs:
         - name: listofstuff
           type: list
-          default: [ "o", "o", "p" ]
+          default:
+            - o
+            - o
+            - p
     - name: activatable_group
       type: group
       activatable: true
@@ -203,13 +216,12 @@
       subs:
         - name: simple
           type: string
-          default: "alsohere"
+          default: alsohere
     - name: another_stuff
       type: group
       subs:
         - name: hehe
           type: float
-          default: 4.3030
-
+          default: 4.303
   components:
-    just_component:
+    just_component: null

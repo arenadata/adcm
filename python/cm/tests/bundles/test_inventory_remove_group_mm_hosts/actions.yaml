@@ -1,0 +1,10 @@
+---
+- name: Dummy action
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Dummy?
+      debug:
+        msg: "Some message"

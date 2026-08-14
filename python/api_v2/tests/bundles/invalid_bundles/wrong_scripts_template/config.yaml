@@ -3,17 +3,16 @@
   name: wrong_scripts_template
   version: 1
   edition: community
-
   config:
     - name: bool_field
-      display_name: "Boolean field"
+      display_name: Boolean field
       type: boolean
       default: false
-
   actions:
     dummy:
-      display_name: "Dummy action"
-      type: task
+      display_name: Dummy action
       scripts_template: scripts.j2
       states:
         available: any
+  contract_version: '2.1'
+  venv: '2.16'

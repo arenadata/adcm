@@ -1,106 +1,87 @@
+---
 - type: cluster
   name: all_concerns
   version: 3.4
   allow_maintenance_mode: true
-
   flag_autogeneration:
     enable_outdated_config: true
-
-  # no import for service
-  import: &import
+  import: &id003
     cluster_export:
       multibind: false
       required: true
-
-  config: &required_config
+  config: &id001
     - name: field
       type: integer
       required: true
-
-  actions: &actions
+  actions: &id002
     dummy:
-      type: job
-      script_type: ansible
-      script: ./action.yaml
-      masking:
-
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./action.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: main
   version: 1
   flag_autogeneration:
     enable_outdated_config: true
-
-  config: *required_config
-
-  actions: *actions
-
+  config: *id001
+  actions: *id002
   components:
     single:
-      constraint: [1]
-      config: *required_config
+      constraint:
+        - 1
+      config: *id001
       flag_autogeneration:
         enable_outdated_config: true
     free:
-      actions: *actions
+      actions: *id002
       flag_autogeneration:
         enable_outdated_config: true
-
 - type: service
   name: required
   version: 2
   required: true
-
 - type: service
   name: dummy
   version: 4
-
   components:
-    same_dummy:
-
+    same_dummy: null
 - type: service
   name: require_dummy_service
   version: 3
-
   requires:
     - service: dummy
-
-  actions: *actions
-
+  actions: *id002
   components:
-    silent:
+    silent: null
     sir:
-      config: *required_config
-
+      config: *id001
 - type: service
   name: no_components
   version: 5
-
-  import: *import
-
+  import: *id003
 - type: service
   name: with_multiple_imports
   version: 2
-
   import:
     cluster_export:
       multibind: false
       required: true
-
     service_export:
       multibind: true
       required: true
-
   components:
     component_1:
-      config: *required_config
-    component_2:
-
+      config: *id001
+    component_2: null
 - type: service
   name: greedy
   version: 4.3
-
-  config: *required_config
-
+  config: *id001
   components:
     on_all:
-      constraint: [+]
+      constraint:
+        - +

@@ -100,7 +100,7 @@ class ActionDefinition:
 
     # Specifics
     is_host_action: bool = False
-    venv: Literal["default", "2.9"] = "default"
+    venv: Literal["2.16"] = "2.16"
 
     # Allowed operations
     allow_to_terminate: bool = False
@@ -224,7 +224,7 @@ class Definition(GeneralObjectDescription):
     # Misc
     path: str = "."
     adcm_min_version: str | None = None
-    venv: Literal["default", "2.9"] = "default"
+    venv: Literal["2.16"] = "2.16"
     shared: bool = False
 
 

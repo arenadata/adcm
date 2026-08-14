@@ -3,7 +3,8 @@
   name: cluster_adcm_min_version
   version: 1.0
   adcm_min_version: 1.9.9
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service
   version: 1.0

@@ -1,22 +1,23 @@
 ---
 - type: cluster
   name: cluster_without_config
-  version: &version '1.1'
+  version: '1.1'
   edition: community
   config_group_customization: true
-
-  config: &config
+  config: &id001
     - name: float_field
       type: float
       required: false
       default: 0.1
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_1
   type: service
-  version: *version
-  config: *config
-
+  version: '1.1'
+  config: *id001
   components:
     component_1:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id001

@@ -81,9 +81,9 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
         task = self.prepare_task(owner=self.cluster, name="dummy")
         job, *_ = self.get_task_jobs(task.id)
 
-        self.change_configuration(
-            target=self.cluster,
-            config_diff={
+        self.uc.change_config(
+            owner=self.cluster,
+            values_diff={
                 "integer_field": -1,
                 "map_field": {"integer_key": "-2", "string_key": "map_string_value"},
                 "group": {
@@ -100,11 +100,9 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
             },
             meta_diff={"/activatable_group": {"isActive": False}},
         )
-        self.change_configuration(
-            target=self.service_1, config_diff={}, meta_diff={"/activatable_group": {"isActive": False}}
-        )
-        self.change_configuration(
-            target=self.component_1, config_diff={"activatable_group": {"activatable_group_string_field": "new_string"}}
+        self.uc.change_config(owner=self.service_1, meta_diff={"/activatable_group": {"isActive": False}})
+        self.uc.change_config(
+            owner=self.component_1, values_diff={"activatable_group": {"activatable_group_string_field": "new_string"}}
         )
         expected_diff = {
             "CLUSTER": {

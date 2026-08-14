@@ -13,7 +13,7 @@
 from cm.models import Bundle, Prototype
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from tests.base import BaseTestCase
+from tests.suites import SETUP_WITH_RBAC, GenericTestCase
 
 from rbac.models import Role
 
@@ -38,24 +38,28 @@ def cook_role(name, class_name, obj_type=None):
     )
 
 
-class RBACBaseTestCase(BaseTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.create_bundles_and_prototypes()
-        self.create_permissions()
+class RBACBaseTestCase(GenericTestCase):
+    suite_setup = SETUP_WITH_RBAC
 
-    def create_bundles_and_prototypes(self):
-        self.bundle_1 = Bundle.objects.create(name="cluster_bundle", version="1.0")
-        self.clp = Prototype.objects.create(
-            bundle=self.bundle_1,
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        cls.create_bundles_and_prototypes()
+        cls.create_permissions()
+
+    @classmethod
+    def create_bundles_and_prototypes(cls):
+        cls.bundle_1 = Bundle.objects.create(name="cluster_bundle", version="1.0")
+        cls.clp = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="cluster",
             name="sample_cluster",
             version="1.0",
             display_name="Sample Cluster",
             allow_maintenance_mode=True,
         )
-        self.sp_1 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.sp_1 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="service",
             name="service_1",
             version="1.0",
@@ -63,71 +67,72 @@ class RBACBaseTestCase(BaseTestCase):
             allow_maintenance_mode=True,
         )
 
-        self.sp_2 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.sp_2 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="service",
             name="service_2",
             version="1.0",
             display_name="Service 2",
         )
 
-        self.cop_11 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.cop_11 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="component",
             name="component_1",
             version="1.0",
             display_name="Component 1 from Service 1",
-            parent=self.sp_1,
+            parent=cls.sp_1,
             allow_maintenance_mode=True,
         )
-        self.cop_12 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.cop_12 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="component",
             name="component_2",
             version="1.0",
             display_name="Component 2 from Service 1",
-            parent=self.sp_1,
+            parent=cls.sp_1,
         )
-        self.cop_21 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.cop_21 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="component",
             name="component_1",
             version="1.0",
             display_name="Component 1 from Service 2",
-            parent=self.sp_2,
+            parent=cls.sp_2,
         )
-        self.cop_22 = Prototype.objects.create(
-            bundle=self.bundle_1,
+        cls.cop_22 = Prototype.objects.create(
+            bundle=cls.bundle_1,
             type="component",
             name="component_2",
             version="1.0",
             display_name="Component 2 from Service 2",
-            parent=self.sp_2,
+            parent=cls.sp_2,
         )
-        self.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
-        self.provider_prototype = Prototype.objects.create(
-            bundle=self.bundle_2,
+        cls.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
+        cls.provider_prototype = Prototype.objects.create(
+            bundle=cls.bundle_2,
             type="provider",
             name="provider",
             allow_maintenance_mode=True,
         )
-        self.host_prototype = Prototype.objects.create(
-            bundle=self.bundle_2,
+        cls.host_prototype = Prototype.objects.create(
+            bundle=cls.bundle_2,
             type="host",
             name="host",
             allow_maintenance_mode=True,
         )
 
-    def create_permissions(self):
-        self.add_host_perm = cook_perm("add", "host")
-        self.view_cluster_perm = cook_perm("view", "cluster")
-        self.view_service_perm = cook_perm("view", "service")
-        self.view_component_perm = cook_perm("view", "component")
-        self.change_cluster_config_perm = cook_perm("change_config_of", "cluster")
-        self.change_service_config_perm = cook_perm("change_config_of", "service")
-        self.change_component_config_perm = cook_perm("change_config_of", "component")
-        self.change_host_config_perm = cook_perm("change_config_of", "host")
-        self.change_provider_config_perm = cook_perm("change_config_of", "provider")
+    @classmethod
+    def create_permissions(cls):
+        cls.add_host_perm = cook_perm("add", "host")
+        cls.view_cluster_perm = cook_perm("view", "cluster")
+        cls.view_service_perm = cook_perm("view", "service")
+        cls.view_component_perm = cook_perm("view", "component")
+        cls.change_cluster_config_perm = cook_perm("change_config_of", "cluster")
+        cls.change_service_config_perm = cook_perm("change_config_of", "service")
+        cls.change_component_config_perm = cook_perm("change_config_of", "component")
+        cls.change_host_config_perm = cook_perm("change_config_of", "host")
+        cls.change_provider_config_perm = cook_perm("change_config_of", "provider")
 
     def object_role(self):
         object_role = cook_role("object role", "ObjectRole")

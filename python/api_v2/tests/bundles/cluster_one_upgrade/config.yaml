@@ -1,24 +1,24 @@
 ---
 - type: cluster
   name: cluster_one
-  version: &version '2.0'
-  contract_version: "2.0"
-  venv: "2.16"
+  version: '2.0'
+  contract_version: '2.1'
+  venv: '2.16'
   edition: community
   config_group_customization: true
   license: ./EULA.txt
   upgrade:
     - name: upgrade
-      versions: &correct_versions
+      versions: &id001
         min: '1.0'
         max: '2.0'
-      states: &always_available
+      states: &id002
         available: any
       description: This is upgrade!
     - name: upgrade_via_action_simple
-      versions: *correct_versions
-      states: *always_available
-      scripts: &upgrade_scripts
+      versions: *id001
+      states: *id002
+      scripts: &id003
         - name: pre
           script: ./playbook.yaml
           script_type: ansible
@@ -28,11 +28,10 @@
         - name: post
           script: ./playbook.yaml
           script_type: ansible
-
     - name: upgrade_via_action_complex
-      versions: *correct_versions
-      states: *always_available
-      scripts: *upgrade_scripts
+      versions: *id001
+      states: *id002
+      scripts: *id003
       config:
         - name: simple
           type: string
@@ -55,48 +54,44 @@
               yspec: ./schema.yaml
               default:
                 nested:
-                  attr: "nice"
-                  op: "eq"
-                  tech: "true"
+                  attr: nice
+                  op: eq
+                  tech: 'true'
                 quantity: 14443
         - name: after
           type: list
           default:
-            - "1"
-            - "woohoo"
+            - '1'
+            - woohoo
         - name: variant_config_type_strict
           type: variant
           required: false
           source:
             type: config
             strict: true
-            name: list  # param from cluster config in before version
+            name: list
           default: value1
       ui_options:
-        disclaimer: "Cool upgrade"
-
+        disclaimer: Cool upgrade
     - name: unfit_version
       versions:
         min_strict: '0'
         max: '0.3'
-      states: *always_available
-
+      states: *id002
     - name: unfit_state
-      versions: *correct_versions
+      versions: *id001
       states:
         available:
           - doesnotexist
-
     - name: with_scripts_adcm_7807
-      versions: *correct_versions
-      states: *always_available
+      versions: *id001
+      states: *id002
       scripts_template:
         engine:
           type: jinja2
         file:
           path: ./adcm_7807_upgrade_scripts.j2
-
-  config: &config
+  config: &id004
     - name: string
       type: string
       required: false
@@ -109,64 +104,61 @@
           required: false
           default: string
   actions:
-    action: &action
+    action: &id005
       scripts:
         - script: ./playbook.yaml
           script_type: ansible
           name: some
       states:
         available: any
-
 - name: service_1
   type: service
-  version: *version
-  config: *config
+  version: '2.0'
+  config: *id004
   license: license.txt
   actions:
-    action: *action
+    action: *id005
   components:
     component_1:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id004
       actions:
-        action_1_comp_1: *action
-        action_2_comp_1: *action
+        action_1_comp_1: *id005
+        action_2_comp_1: *id005
     component_2:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id004
       actions:
-        action_1_comp_2: *action
-
+        action_1_comp_2: *id005
 - name: service_2
   type: service
-  version: *version
-  config: *config
+  version: '2.0'
+  config: *id004
   actions:
-    action_1_service_2: *action
-    action_2_service_2: *action
-
+    action_1_service_2: *id005
+    action_2_service_2: *id005
 - name: service_3_manual_add
   type: service
-  version: *version
-  config: *config
-
+  version: '2.0'
+  config: *id004
 - name: service_with_miss_config_service
   type: service
-  version: "hehe"
-
+  version: hehe
   components:
     will_miss_config:
       description: This component will not have config after upgrade
-
 - name: adcm_7807
   type: service
-  version: "20"
+  version: '20'
   config_group_customization: false
-
   config:
     - name: pick_me
       type: selection_group
-      subs: &subs
+      subs: &id006
         - name: a
           type: group
           subs:
@@ -178,8 +170,7 @@
             - name: b1
               type: integer
               default: 4
-
     - name: with_default
       type: selection_group
       default: a
-      subs: *subs
+      subs: *id006

@@ -1,74 +1,77 @@
+---
 - type: provider
   name: provider_with_actions
   version: 3
-
-  actions: &actions
-    # simple
-
-    state_any: &simple_action
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
+  actions:
+    state_any: &id002
       states:
         available: any
-
-    state_created:
-      <<: *simple_action
+      scripts:
+        - name: state_any
+          script: ./actions.yaml
+          script_type: ansible
+    state_created: &id003
       states:
         available:
           - created
-
-    state_installed:
-      <<: *simple_action
+      scripts:
+        - name: state_created
+          script: ./actions.yaml
+          script_type: ansible
+    state_installed: &id004
       states:
         available:
           - installed
-
-    # masking
-
-    state_created_masking: &action
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
+      scripts:
+        - name: state_installed
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_masking: &id005
       masking:
         state:
           available:
             - created
-
-    state_installed_masking:
-      <<: *action
+      scripts:
+        - name: state_created_masking
+          script: ./actions.yaml
+          script_type: ansible
+    state_installed_masking: &id006
       masking:
         state:
           available:
             - installed
-
-    state_created_unavailable:
-      <<: *action
+      scripts:
+        - name: state_installed_masking
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable: &id007
       masking:
         state:
           unavailable:
             - created
-
-    # multi state masking
-
-    multi_flag_masking:
-      <<: *action
+      scripts:
+        - name: state_created_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    multi_flag_masking: &id008
       masking:
         multi_state:
           available:
             - flag
-
-    multi_flag_unavailable:
-      <<: *action
+      scripts:
+        - name: multi_flag_masking
+          script: ./actions.yaml
+          script_type: ansible
+    multi_flag_unavailable: &id009
       masking:
         multi_state:
           unavailable:
             - flag
-
-    # state + multi
-
-    state_created_available_multi_bag_available:
-      <<: *action
+      scripts:
+        - name: multi_flag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_available_multi_bag_available: &id010
       masking:
         state:
           available:
@@ -76,9 +79,11 @@
         multi_state:
           available:
             - bag
-
-    state_created_available_multi_bag_unavailable:
-      <<: *action
+      scripts:
+        - name: state_created_available_multi_bag_available
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_available_multi_bag_unavailable: &id011
       masking:
         state:
           available:
@@ -86,9 +91,11 @@
         multi_state:
           unavailable:
             - bag
-
-    state_created_unavailable_multi_bag_available:
-      <<: *action
+      scripts:
+        - name: state_created_available_multi_bag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable_multi_bag_available: &id012
       masking:
         state:
           unavailable:
@@ -96,9 +103,11 @@
         multi_state:
           available:
             - bag
-
-    state_created_unavailable_multi_bag_unavailable:
-      <<: *action
+      scripts:
+        - name: state_created_unavailable_multi_bag_available
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable_multi_bag_unavailable: &id013
       masking:
         state:
           unavailable:
@@ -106,50 +115,35 @@
         multi_state:
           unavailable:
             - bag
-
-    # host_action: true
-
-    host_action_any:
-      <<: *simple_action
-      display_name: "from provider any"
-      host_action: true
-      states:
-        available: any
-
-    host_action_installed: &host_action_masking
-      <<: *action
-      display_name: "from provider installed"
-      host_action: true
-      masking:
-        state:
-          available:
-            - installed
-
-    host_action_multi_flag:
-      <<: *host_action_masking
-      display_name: "from provider multi flag"
-      masking:
-        state:
-          unavailable:
-            - created
-        multi_state:
-          available:
-            - flag
-
+      scripts:
+        - name: state_created_unavailable_multi_bag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   version: 2
   name: host_with_actions
-
   actions:
-    <<: *actions
-
-    host_action_any: &never_action
-      <<: *simple_action
-      host_action: false
+    host_action_any: &id001
       states:
         available:
           - never
-
-    host_action_installed: *never_action
-
-    host_action_multi_flag: *never_action
+      scripts:
+        - name: host_action_any
+          script: ./actions.yaml
+          script_type: ansible
+    host_action_installed: *id001
+    host_action_multi_flag: *id001
+    state_any: *id002
+    state_created: *id003
+    state_installed: *id004
+    state_created_masking: *id005
+    state_installed_masking: *id006
+    state_created_unavailable: *id007
+    multi_flag_masking: *id008
+    multi_flag_unavailable: *id009
+    state_created_available_multi_bag_available: *id010
+    state_created_available_multi_bag_unavailable: *id011
+    state_created_unavailable_multi_bag_available: *id012
+    state_created_unavailable_multi_bag_unavailable: *id013

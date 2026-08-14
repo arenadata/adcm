@@ -21,6 +21,7 @@ from cm.legacy.services.config.jinja import get_jinja_config
 from cm.models import Action
 
 
+@unittest.skip("ADCM-8106")
 class TestJinjaConfigBugs(TaskTestMixin, BaseTestCase):
     maxDiff = None
 

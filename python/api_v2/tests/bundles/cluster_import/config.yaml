@@ -1,3 +1,4 @@
+---
 - type: cluster
   name: cluster_import
   version: 1.0
@@ -23,7 +24,8 @@
         - name: string
           type: string
           default: string
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service_import
   version: 1.0
@@ -40,7 +42,6 @@
     - name: string
       type: string
       default: string
-
 - type: service
   name: service_import_2
   version: 1.0
@@ -57,7 +58,6 @@
     - name: string
       type: string
       default: string
-
 - type: service
   name: staying_alive
   version: 1.0

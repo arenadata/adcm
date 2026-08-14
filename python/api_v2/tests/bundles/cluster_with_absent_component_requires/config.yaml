@@ -1,21 +1,26 @@
+---
 - type: cluster
   name: cluster_with_service_requirements
-  version: &version '1.0'
+  version: '1.0'
   edition: community
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: main_service
   type: service
-  version: *version
+  version: '1.0'
   requires:
     - service: service_with_component_required_by_main
       component: component_absent
   components:
     component_1:
-      constraint: [ 0, + ]
-
+      constraint:
+        - 0
+        - +
 - name: service_with_component_required_by_main
   type: service
-  version: *version
+  version: '1.0'
   components:
     component_1:
-      constraint: [ 0, + ]
+      constraint:
+        - 0
+        - +

@@ -1,7 +1,7 @@
+---
 - type: cluster
   name: cluster_with_actions
-  version: "1.0"
-
+  version: '1.0'
   config:
     - name: list_field
       required: false
@@ -9,100 +9,106 @@
         - cluster_entry1
         - cluster_entry2
       type: list
-
-  actions: &actions
-
-    # maintenance mode
-
-    cluster_host_action_allowed: &job
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
-      params:
-        ansible_tags: simple_action
+  actions: &id022
+    cluster_host_action_allowed: &id007
       host_action: true
       allow_in_maintenance_mode: true
       allow_to_terminate: true
-      states:
+      states: &id001
         available: any
-      hc_acl:
+      hc_acl: &id002
         - component: component_1
           service: service_1
           action: add
         - component: component_2
           service: service_1
           action: add
-
-    cluster_host_action_disallowed:
-      <<: *job
+      scripts:
+        - name: cluster_host_action_allowed
+          script: ./actions.yaml
+          script_type: ansible
+          params: &id003
+            ansible_tags: simple_action
+    cluster_host_action_disallowed: &id008
       allow_in_maintenance_mode: false
-
-    # simple
-
-    state_any: &simple_action
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
+      host_action: true
+      allow_to_terminate: true
+      states: *id001
+      hc_acl: *id002
+      scripts:
+        - name: cluster_host_action_disallowed
+          script: ./actions.yaml
+          script_type: ansible
+          params: *id003
+    state_any: &id009
       states:
         available: any
-
-    state_created:
-      <<: *simple_action
+      scripts:
+        - name: state_any
+          script: ./actions.yaml
+          script_type: ansible
+    state_created: &id010
       states:
         available:
           - created
-
-    state_installed:
-      <<: *simple_action
+      scripts:
+        - name: state_created
+          script: ./actions.yaml
+          script_type: ansible
+    state_installed: &id011
       states:
         available:
           - installed
-
-    # masking
-
-    state_created_masking: &action
-      type: job
-      script: ./actions.yaml
-      script_type: ansible
+      scripts:
+        - name: state_installed
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_masking: &id012
       masking:
         state:
           available:
             - created
-
-    state_installed_masking:
-      <<: *action
+      scripts:
+        - name: state_created_masking
+          script: ./actions.yaml
+          script_type: ansible
+    state_installed_masking: &id013
       masking:
         state:
           available:
             - installed
-
-    state_created_unavailable:
-      <<: *action
+      scripts:
+        - name: state_installed_masking
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable: &id014
       masking:
         state:
           unavailable:
             - created
-
-    # multi state masking
-
-    multi_flag_masking:
-      <<: *action
+      scripts:
+        - name: state_created_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    multi_flag_masking: &id015
       masking:
         multi_state:
           available:
             - flag
-
-    multi_flag_unavailable:
-      <<: *action
+      scripts:
+        - name: multi_flag_masking
+          script: ./actions.yaml
+          script_type: ansible
+    multi_flag_unavailable: &id016
       masking:
         multi_state:
           unavailable:
             - flag
-
-    # state + multi
-
-    state_created_available_multi_bag_available:
-      <<: *action
+      scripts:
+        - name: multi_flag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_available_multi_bag_available: &id017
       masking:
         state:
           available:
@@ -110,9 +116,11 @@
         multi_state:
           available:
             - bag
-
-    state_created_available_multi_bag_unavailable:
-      <<: *action
+      scripts:
+        - name: state_created_available_multi_bag_available
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_available_multi_bag_unavailable: &id018
       masking:
         state:
           available:
@@ -120,9 +128,11 @@
         multi_state:
           unavailable:
             - bag
-
-    state_created_unavailable_multi_bag_available:
-      <<: *action
+      scripts:
+        - name: state_created_available_multi_bag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable_multi_bag_available: &id019
       masking:
         state:
           unavailable:
@@ -130,9 +140,11 @@
         multi_state:
           available:
             - bag
-
-    state_created_unavailable_multi_bag_unavailable:
-      <<: *action
+      scripts:
+        - name: state_created_unavailable_multi_bag_available
+          script: ./actions.yaml
+          script_type: ansible
+    state_created_unavailable_multi_bag_unavailable: &id020
       masking:
         state:
           unavailable:
@@ -140,40 +152,45 @@
         multi_state:
           unavailable:
             - bag
-
-    # host_action: true
-
-    host_action_any: &host_action_any
-      <<: *simple_action
-      display_name: "from cluster any"
+      scripts:
+        - name: state_created_unavailable_multi_bag_unavailable
+          script: ./actions.yaml
+          script_type: ansible
+    host_action_any:
+      display_name: from cluster any
       host_action: true
-      states:
+      states: &id004
         available: any
-
-    host_action_installed: &host_action_masking
-      <<: *action
-      display_name: "from cluster installed"
+      scripts:
+        - name: host_action_any
+          script: ./actions.yaml
+          script_type: ansible
+    host_action_installed:
+      display_name: from cluster installed
       host_action: true
-      masking:
+      masking: &id005
         state:
           available:
             - installed
-
+      scripts:
+        - name: host_action_installed
+          script: ./actions.yaml
+          script_type: ansible
     host_action_multi_flag:
-      <<: *host_action_masking
-      display_name: "from cluster multi flag"
-      masking: &created_unavailable_mutli_flag_available
+      display_name: from cluster multi flag
+      masking: &id006
         state:
           unavailable:
             - created
         multi_state:
           available:
             - flag
-
-    # config
-
-    with_variant_in_config:
-      <<: *simple_action
+      host_action: true
+      scripts:
+        - name: host_action_multi_flag
+          script: ./actions.yaml
+          script_type: ansible
+    with_variant_in_config: &id021
       states:
         available:
           - ready_for_variant
@@ -184,58 +201,105 @@
           source:
             name: list_field
             type: config
-
+      scripts:
+        - name: with_variant_in_config
+          script: ./actions.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service_1
-  version: "0.1"
-
+  version: '0.1'
   actions:
-    <<: *actions
-
     host_action_any:
-      <<: *host_action_any
-      display_name: "from service any"
-
+      display_name: from service any
+      host_action: true
+      states: *id004
+      scripts:
+        - name: host_action_any
+          script: ./actions.yaml
+          script_type: ansible
     host_action_installed:
-      <<: *host_action_masking
-      display_name: "from service installed"
-
-
+      display_name: from service installed
+      host_action: true
+      masking: *id005
+      scripts:
+        - name: host_action_installed
+          script: ./actions.yaml
+          script_type: ansible
     host_action_multi_flag:
-      <<: *host_action_masking
-      display_name: "from service multi flag"
-      masking: *created_unavailable_mutli_flag_available
-
+      display_name: from service multi flag
+      masking: *id006
+      host_action: true
+      scripts:
+        - name: host_action_multi_flag
+          script: ./actions.yaml
+          script_type: ansible
+    cluster_host_action_allowed: *id007
+    cluster_host_action_disallowed: *id008
+    state_any: *id009
+    state_created: *id010
+    state_installed: *id011
+    state_created_masking: *id012
+    state_installed_masking: *id013
+    state_created_unavailable: *id014
+    multi_flag_masking: *id015
+    multi_flag_unavailable: *id016
+    state_created_available_multi_bag_available: *id017
+    state_created_available_multi_bag_unavailable: *id018
+    state_created_unavailable_multi_bag_available: *id019
+    state_created_unavailable_multi_bag_unavailable: *id020
+    with_variant_in_config: *id021
   components:
     component_1:
       actions:
-        <<: *actions
-
         host_action_any:
-          <<: *host_action_any
-          display_name: "from component any"
-
+          display_name: from component any
+          host_action: true
+          states: *id004
+          scripts:
+            - name: host_action_any
+              script: ./actions.yaml
+              script_type: ansible
         host_action_installed:
-          <<: *host_action_masking
-          display_name: "from component installed"
-
+          display_name: from component installed
+          host_action: true
+          masking: *id005
+          scripts:
+            - name: host_action_installed
+              script: ./actions.yaml
+              script_type: ansible
         host_action_multi_flag:
-          <<: *host_action_masking
-          display_name: "from component multi flag"
-          masking: *created_unavailable_mutli_flag_available
-
+          display_name: from component multi flag
+          masking: *id006
+          host_action: true
+          scripts:
+            - name: host_action_multi_flag
+              script: ./actions.yaml
+              script_type: ansible
+        cluster_host_action_allowed: *id007
+        cluster_host_action_disallowed: *id008
+        state_any: *id009
+        state_created: *id010
+        state_installed: *id011
+        state_created_masking: *id012
+        state_installed_masking: *id013
+        state_created_unavailable: *id014
+        multi_flag_masking: *id015
+        multi_flag_unavailable: *id016
+        state_created_available_multi_bag_available: *id017
+        state_created_available_multi_bag_unavailable: *id018
+        state_created_unavailable_multi_bag_available: *id019
+        state_created_unavailable_multi_bag_unavailable: *id020
+        with_variant_in_config: *id021
     component_2:
-      actions: *actions
-
+      actions: *id022
 - type: service
   name: service_2
-  version: "0.2"
-
-  actions: *actions
-
+  version: '0.2'
+  actions: *id022
   components:
     component_1:
-      actions: *actions
-
+      actions: *id022
     component_2:
-      actions: *actions
+      actions: *id022

@@ -1,35 +1,32 @@
+---
 - type: cluster
   name: cluster_with_service_requirements
-  version: &version '1.0'
+  version: '1.0'
   edition: community
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_1
   type: service
-  version: *version
+  version: '1.0'
   requires:
     - service: some_other_service
-
 - name: some_other_service
   type: service
-  version: *version
+  version: '1.0'
   components:
-    component_in_other_service:
-
+    component_in_other_service: null
 - name: third_service
   type: service
-  version: *version
+  version: '1.0'
   components:
     component_from_third_service:
       requires:
         - service: some_other_service
-
 - name: fourth_service
   type: service
-  version: *version
+  version: '1.0'
   components:
     component_from_fourth_service:
       requires:
         - service: some_other_service
           component: component_in_other_service
-
-

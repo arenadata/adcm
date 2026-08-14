@@ -154,6 +154,12 @@ class RoleModelTest(BaseTestCase):
 class RoleFunctionalTestRBAC(RBACBaseTestCase):
     longMessage = False
 
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls._initialize_roles_and_adcm()
+
+        super().setUpTestData()
+
     def setUp(self):
         super().setUp()
 
