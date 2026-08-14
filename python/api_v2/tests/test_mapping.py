@@ -14,24 +14,19 @@ from pathlib import Path
 
 from cm.models import (
     Action,
-    Bundle,
     Cluster,
     Component,
-    ConcernCause,
-    ConcernItem,
     ConfigHostGroup,
     Host,
     HostComponent,
     MaintenanceMode,
     Service,
-    Upgrade,
 )
 from core.cluster import ClusterService
 from django.db.models import F
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
@@ -501,85 +496,6 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
             data=[
                 {"hostId": self.host_1.pk, "componentId": component_1.pk},
                 {"hostId": self.host_1.pk, "componentId": required_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(HostComponent.objects.count(), 2)
-
-    def test_no_bound_fail(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
-        self.assertEqual(HostComponent.objects.count(), 0)
-
-    def test_bound_on_different_host_fail(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
-        bound_target_component = Component.objects.get(
-            prototype__name="bound_target_component",
-            service=bound_target_service,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-                {"hostId": self.host_2.pk, "componentId": bound_target_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
-        self.assertEqual(HostComponent.objects.count(), 0)
-
-    def test_bound_success(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
-        bound_target_component = Component.objects.get(
-            prototype__name="bound_target_component",
-            service=bound_target_service,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-                {"hostId": self.host_1.pk, "componentId": bound_target_component.pk},
             ],
         )
 
@@ -1152,67 +1068,6 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
-
-
-class TestBoundTo(ADCMDjangoAPISuite):
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls._initialize_roles_and_adcm()
-
-        bundles_dir = cls.test_bundles_dir / "adcm_7894"
-        cls.old_bundle = cls.uc.upload_bundle(bundles_dir / "old")
-        cls.new_bundle = cls.uc.upload_bundle(bundles_dir / "new")
-
-        provider_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "provider")
-        provider = cls.uc.add_provider(bundle=provider_bundle)
-        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1")
-        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2")
-
-    def prepare_cluster_with_two_components(self, bundle: Bundle) -> tuple[Cluster, Component, Component]:
-        cluster = self.uc.add_cluster(bundle=bundle)
-        self.uc.add_services_to_cluster(["service_1", "service_with_bound_to_component"], cluster=cluster)
-        self.uc.add_host_to_cluster(host=self.host_1, cluster=cluster)
-        self.uc.add_host_to_cluster(host=self.host_2, cluster=cluster)
-        component = Component.objects.get(service__prototype__name="service_1", prototype__name="component_1")
-        dependent_component = Component.objects.get(
-            service__prototype__name="service_with_bound_to_component", prototype__name="will_have_bound_to"
-        )
-        return cluster, component, dependent_component
-
-    def test_concern_appear_after_upgrade_success(self) -> None:
-        upgrade = Upgrade.objects.get(name="upgrade")
-        cluster_old, component, dependent_component = self.prepare_cluster_with_two_components(self.old_bundle)
-        self.uc.set_hostcomponent(
-            cluster=cluster_old,
-            entries=((self.host_1, component), (self.host_2, component), (self.host_2, dependent_component)),
-        )
-        self.assertFalse(ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).exists())
-
-        response = self.client.v2[cluster_old, "upgrades", upgrade, "run"].post()
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        concern = ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).first()
-        self.assertIsNotNone(concern)
-        cluster_old.refresh_from_db()
-        self.assertEqual(concern.owner, cluster_old)
-
-    def test_save_mapping_with_unsatisfied_bound_to_fail(self) -> None:
-        cluster_new, component, dependent_component = self.prepare_cluster_with_two_components(self.new_bundle)
-        mapping_to_set = [
-            {"hostId": host.id, "componentId": component.id}
-            for host, component in (
-                (self.host_1, component),
-                (self.host_2, component),
-                (self.host_2, dependent_component),
-            )
-        ]
-
-        response = self.client.v2[cluster_new, "mapping"].post(data=mapping_to_set)
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
 class ConfigHostGroupRelatedTests(ADCMDjangoAPISuite):

@@ -12,11 +12,9 @@
 
 from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
-from rbac.scenarios import RBACScenarios
-from tests.base import BaseTestCase
+from tests.suites import GenericTestCase
 
 from cm.errors import AdcmEx
-from cm.legacy.api import add_service_to_cluster
 from cm.legacy.issue import update_hierarchy_issues
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
@@ -30,50 +28,49 @@ from cm.models import (
 )
 
 
-class TestComponent(BaseTestCase):
-    def setUp(self) -> None:
-        super().setUp()
+class TestComponent(GenericTestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.bundle = Bundle.objects.create()
-        self.cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+        cls.bundle = Bundle.objects.create()
+        cls.cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=cls.bundle, type="cluster"),
             name="test_cluster",
         )
-        self.service_proto_1 = Prototype.objects.create(
-            bundle=self.bundle,
+        cls.service_proto_1 = Prototype.objects.create(
+            bundle=cls.bundle,
             name="service_1",
             type="service",
         )
-        self.service_proto_2 = Prototype.objects.create(
-            bundle=self.bundle,
+        cls.service_proto_2 = Prototype.objects.create(
+            bundle=cls.bundle,
             name="service_2",
             type="service",
             requires=[{"service": "service_1", "component": "component_1_1"}, {"service": "service_3"}],
         )
-        self.service_proto_3 = Prototype.objects.create(
-            bundle=self.bundle,
+        cls.service_proto_3 = Prototype.objects.create(
+            bundle=cls.bundle,
             name="service_3",
             type="service",
         )
-        self.component_1_1_proto = Prototype.objects.create(
-            bundle=self.bundle,
+        cls.component_1_1_proto = Prototype.objects.create(
+            bundle=cls.bundle,
             type="component",
-            parent=self.service_proto_1,
+            parent=cls.service_proto_1,
             name="component_1_1",
             requires=[{"service": "service_1", "component": "component_1_1"}, {"service": "service_2"}],
         )
-        self.component_2_1_proto = Prototype.objects.create(
-            bundle=self.bundle,
+        cls.component_2_1_proto = Prototype.objects.create(
+            bundle=cls.bundle,
             type="component",
-            parent=self.service_proto_2,
+            parent=cls.service_proto_2,
             name="component_2_1",
             requires=[{"service": "service_1", "component": "component_1_1"}, {"service": "service_2"}],
         )
 
     def test_requires_hc(self):
-        service_1 = add_service_to_cluster(
-            cluster=self.cluster, proto=self.service_proto_1, rbac_scenarios=RBACScenarios()
-        )
+        service_1, *_ = self.uc.add_services_to_cluster(cluster=self.cluster, names=[self.service_proto_1.name])
         component_1 = Component.objects.get(prototype=self.component_1_1_proto, service=service_1)
         host = Host.objects.create(
             prototype=Prototype.objects.create(type="host", bundle=self.bundle), cluster=self.cluster

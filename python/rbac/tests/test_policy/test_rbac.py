@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.api import add_host_to_cluster, add_service_to_cluster
+from cm.legacy.api import add_host_to_cluster
 from cm.models import (
     Cluster,
     Component,
@@ -29,30 +29,31 @@ from rbac.tests.test_base import RBACBaseTestCase
 class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
     """Tests for applying policy with different combination of roles and object"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.user = User.objects.create(username="user", is_active=True, is_superuser=False)
-        self.group = Group.objects.create(name="test_group")
-        self.group.user_set.add(self.user)
+        cls.user = User.objects.create(username="user", is_active=True, is_superuser=False)
+        cls.group = Group.objects.create(name="test_group")
+        cls.group.user_set.add(cls.user)
 
-        self.cluster = Cluster.objects.create(name="Cluster_1", prototype=self.clp)
-        self.service_1 = Service.objects.create(cluster=self.cluster, prototype=self.sp_1)
-        self.service_2 = Service.objects.create(cluster=self.cluster, prototype=self.sp_2)
-        self.component_11 = Component.objects.create(
-            cluster=self.cluster,
-            service=self.service_1,
-            prototype=self.cop_11,
+        cls.cluster = Cluster.objects.create(name="Cluster_1", prototype=cls.clp)
+        cls.service_1 = Service.objects.create(cluster=cls.cluster, prototype=cls.sp_1)
+        cls.service_2 = Service.objects.create(cluster=cls.cluster, prototype=cls.sp_2)
+        cls.component_11 = Component.objects.create(
+            cluster=cls.cluster,
+            service=cls.service_1,
+            prototype=cls.cop_11,
         )
-        self.component_12 = Component.objects.create(
-            cluster=self.cluster,
-            service=self.service_1,
-            prototype=self.cop_12,
+        cls.component_12 = Component.objects.create(
+            cluster=cls.cluster,
+            service=cls.service_1,
+            prototype=cls.cop_12,
         )
-        self.component_21 = Component.objects.create(
-            cluster=self.cluster,
-            service=self.service_2,
-            prototype=self.cop_21,
+        cls.component_21 = Component.objects.create(
+            cluster=cls.cluster,
+            service=cls.service_2,
+            prototype=cls.cop_21,
         )
 
     def get_hosts_and_provider(self):
@@ -341,7 +342,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_2))
 
-        service3 = add_service_to_cluster(self.cluster, sp_3, rbac_scenarios=RBACScenarios())
+        service3, *_ = self.uc.add_services_to_cluster(cluster=self.cluster, names=[sp_3.name])
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", service3))
 

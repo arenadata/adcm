@@ -167,6 +167,10 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
 Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
 
 
+class GenericTestCase(_ADCMTestCase, django.test.TestCase):
+    ...
+
+
 class ADCMPluginExecutorSuite(
     _ADCMTestCase,
     BusinessLogicMixin,

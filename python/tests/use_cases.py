@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from operator import itemgetter
 from pathlib import Path
@@ -20,14 +20,19 @@ from api_v2.prototype.utils import accept_license
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.api import add_host_to_cluster
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.config import convert_attr_to_adcm_meta
 from cm.legacy.services.mapping import set_host_component_mapping
+from cm.legacy.utils import deep_merge
 from cm.models import (
     ActionHostGroup,
     Bundle,
     Cluster,
     Component,
+    ConfigHostGroup,
+    ConfigLog,
     Host,
     HostComponent,
+    MainObject,
     ObjectType,
     Prototype,
     Provider,
@@ -35,7 +40,8 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
-from core.config._service import ConfigService
+from core.config import ConfigService, Configuration, ConfigurationExtraInfo
+from core.config._types import Attributes
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.settings import Directories
@@ -46,6 +52,7 @@ from rbac.services.group import create as create_group
 from rbac.services.user import perform_user_creation
 from use_cases.bundle import ParseBundleFromRequest
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
+from use_cases.transition.config import UpdateConfigurationOfHostGroup, UpdateConfigurationOfObject
 from use_cases.transition.hostprovider.create import create_host, create_hostprovider
 import dishka
 
@@ -165,6 +172,56 @@ class UseCases:
     def add_hosts_to_action_host_group(self, group_id: int, hosts: list[int]) -> None:
         action_host_group_service = ActionHostGroupService(repository=ActionHostGroupRepo())
         action_host_group_service.add_hosts_to_group(group_id=group_id, hosts=hosts)
+
+    def change_config(
+        self,
+        owner: MainObject | ConfigHostGroup,
+        values_diff: dict | None = None,
+        meta_diff: dict | None = None,
+        preprocess_config: Callable[[dict], dict] = lambda x: x,
+    ) -> None:
+        owner.refresh_from_db(fields=["config"])
+        current_config = ConfigLog.objects.get(id=owner.config.current)
+
+        values = deep_merge(origin=preprocess_config(current_config.config), renovator=values_diff or {})
+        attr = {
+            key: Attributes(is_active=entry.get("isActive"), is_synced=entry.get("isSynchronized"))
+            for key, entry in deep_merge(
+                origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta_diff or {}
+            ).items()
+        }
+
+        config = Configuration(values=values, attributes=attr)
+
+        if isinstance(owner, ConfigHostGroup):
+            self.set_config_of_group(group=owner, config=config)
+        else:
+            self.set_config(owner=owner, config=config)
+
+        owner.refresh_from_db(fields=["config"])
+
+    def set_config(self, owner: MainObject, config: Configuration) -> None:
+        with self.container() as container:
+            uc = container.get(UpdateConfigurationOfObject)
+            uc.do(
+                owner=owner,
+                input_config=config,
+                convert=lambda x, _: x,
+                config_extra_info=ConfigurationExtraInfo(description="", created_by="system"),
+            )
+
+    def set_config_of_group(self, group: ConfigHostGroup, config: Configuration) -> None:
+        owner = group.object
+
+        with self.container() as container:
+            uc = container.get(UpdateConfigurationOfHostGroup)
+            uc.do(
+                owner=owner,
+                input_config=config,
+                convert=lambda x, _: x,
+                config_extra_info=ConfigurationExtraInfo(description="", created_by="system"),
+                group=group,
+            )
 
     # RBAC
 

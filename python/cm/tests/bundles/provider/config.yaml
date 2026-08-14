@@ -1,9 +1,9 @@
 ---
 - type: provider
   name: provider
-  version: &version '1.0'
+  version: '1.0'
   config_group_customization: true
-  config: &config
+  config: &id001
     - name: integer
       type: integer
       required: false
@@ -24,16 +24,18 @@
         - value2
         - value3
   actions:
-    action_on_provider: &action
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+    action_on_provider: &id002
       states:
         available: any
-
+      scripts:
+        - name: action_on_provider
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: host
-  version: *version
-  config: *config
+  version: '1.0'
+  config: *id001
   actions:
-    action_on_host: *action
+    action_on_host: *id002

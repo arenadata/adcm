@@ -15,9 +15,8 @@ from operator import attrgetter
 from unittest.mock import patch
 
 from rbac.scenarios import RBACScenarios
-from tests.base import BaseTestCase
+from tests.suites import GenericTestCase
 
-from cm.legacy.api import add_cluster, add_service_to_cluster
 from cm.legacy.hierarchy import Tree
 from cm.legacy.issue import (
     add_concern_to_object,
@@ -52,7 +51,7 @@ mock_issue_check_map = {
 }
 
 
-class CreateIssueTest(BaseTestCase):
+class CreateIssueTest(GenericTestCase):
     """Tests for `cm.issue.create_issues()`"""
 
     def setUp(self) -> None:
@@ -142,7 +141,7 @@ class CreateIssueTest(BaseTestCase):
         cluster_2 = gen_cluster(
             prototype=Prototype.objects.filter(type=ObjectType.CLUSTER, bundle=self.cluster.prototype.bundle).first()
         )
-        Prototype.objects.create(
+        prototype = Prototype.objects.create(
             type="service", bundle=self.cluster.prototype.bundle, required=False, name="required service"
         )
 
@@ -151,14 +150,13 @@ class CreateIssueTest(BaseTestCase):
             self.assertFalse(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have required services"):
-            prototype = Prototype.objects.create(
-                type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
-            )
+            prototype.required = True
+            prototype.save(update_fields=["required"])
             self.assertTrue(object_has_required_services_issue_orm_version(self.cluster))
             self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
         with self.subTest("Clusters have required services and the service is added to one of them cluster"):
-            service = add_service_to_cluster(self.cluster, prototype, rbac_scenarios=RBACScenarios())
+            service, *_ = self.uc.add_services_to_cluster(cluster=self.cluster, names=[prototype.name])
             self.assertFalse(object_has_required_services_issue_orm_version(self.cluster))
             self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
@@ -168,7 +166,7 @@ class CreateIssueTest(BaseTestCase):
             self.assertTrue(object_has_required_services_issue_orm_version(cluster_2))
 
 
-class RemoveIssueTest(BaseTestCase):
+class RemoveIssueTest(GenericTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -220,12 +218,11 @@ class RemoveIssueTest(BaseTestCase):
             self.assertEqual(concerns[0], own_issue_2.pk)
 
 
-class TestImport(BaseTestCase):
-    @staticmethod
-    def cook_cluster(proto_name, cluster_name):
+class TestImport(GenericTestCase):
+    def cook_cluster(self, proto_name, cluster_name):
         bundle = Bundle.objects.create(name=proto_name, version="1.0")
         proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=bundle)
-        cluster = add_cluster(proto, cluster_name)
+        cluster = self.uc.add_cluster(bundle, name=cluster_name)
 
         return bundle, proto, cluster
 
@@ -261,7 +258,7 @@ class TestImport(BaseTestCase):
 
         bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
-        service = add_service_to_cluster(cluster2, proto3, rbac_scenarios=RBACScenarios())
+        service, *_ = self.uc.add_services_to_cluster(cluster=cluster2, names=[proto3.name])
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2, source_service=service)
 
         self.assertFalse(object_imports_has_issue(cluster1))
@@ -270,7 +267,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
+        service, *_ = self.uc.add_services_to_cluster(cluster=cluster1, names=["YARN"])
 
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -282,11 +279,11 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Graphana", required=True)
-        service1 = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
+        service1, *_ = self.uc.add_services_to_cluster(cluster=cluster1, names=["YARN"])
 
         bundle_2, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         proto3 = Prototype.objects.create(type="service", name="Graphana", bundle=bundle_2)
-        service2 = add_service_to_cluster(cluster2, proto3, rbac_scenarios=RBACScenarios())
+        service2, *_ = self.uc.add_services_to_cluster(cluster=cluster2, names=[proto3.name])
         ClusterBind.objects.create(
             cluster=cluster1,
             service=service1,
@@ -325,7 +322,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
+        service, *_ = self.uc.add_services_to_cluster(cluster=cluster1, names=["YARN"])
 
         _, _, cluster2 = self.cook_cluster("Non_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -339,7 +336,7 @@ class TestImport(BaseTestCase):
         bundle_1, _, cluster1 = self.cook_cluster("Hadoop", "Cluster1")
         proto2 = Prototype.objects.create(type="service", name="YARN", bundle=bundle_1)
         PrototypeImport.objects.create(prototype=proto2, name="Monitoring", required=True)
-        service = add_service_to_cluster(cluster1, proto2, rbac_scenarios=RBACScenarios())
+        service, *_ = self.uc.add_services_to_cluster(cluster=cluster1, names=["YARN"])
 
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
@@ -350,7 +347,7 @@ class TestImport(BaseTestCase):
         self.assertIsNone(issue)
 
 
-class TestConcernsRedistribution(BaseTestCase):
+class TestConcernsRedistribution(GenericTestCase):
     MOCK_ISSUE_CHECK_MAP_FOR_HOST_TO_CLUSTER_MAPPING = {
         ConcernCause.CONFIG: lambda x: False,
         ConcernCause.IMPORT: lambda x: False,
@@ -359,24 +356,26 @@ class TestConcernsRedistribution(BaseTestCase):
         ConcernCause.REQUIREMENT: lambda x: True,
     }
 
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.hierarchy = generate_hierarchy(bind_to_cluster=False)
-        self.cluster = self.hierarchy["cluster"]
-        self.service = self.hierarchy["service"]
-        self.component = self.hierarchy["component"]
-        self.provider = self.hierarchy["provider"]
-        self.host = self.hierarchy["host"]
+        cls.hierarchy = generate_hierarchy(bind_to_cluster=False)
+        cls.cluster = cls.hierarchy["cluster"]
+        cls.service = cls.hierarchy["service"]
+        cls.component = cls.hierarchy["component"]
+        cls.provider = cls.hierarchy["provider"]
+        cls.host = cls.hierarchy["host"]
 
-        for object_ in self.hierarchy.values():
+        for object_ in cls.hierarchy.values():
             add_issue_on_linked_objects(object_, ConcernCause.CONFIG)
             tree = Tree(object_)
-            self.add_lock(
+            cls.add_lock(
                 owner=object_, affected_objects=map(attrgetter("value"), tree.get_all_affected(node=tree.built_from))
             )
 
-    def add_lock(self, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
+    @classmethod
+    def add_lock(cls, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
         """Check out lock_affected_objects"""
         job = gen_job_log(gen_task_log(obj=owner))
 

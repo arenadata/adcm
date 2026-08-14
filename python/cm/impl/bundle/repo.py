@@ -26,6 +26,7 @@ from pydantic import BaseModel
 
 from cm.errors import AdcmEx
 from cm.models import (
+    ADCM,
     Action,
     Bundle,
     ProductCategory,
@@ -153,7 +154,9 @@ class BundleRepo(bundle.BundleRepoI):
         return {("component", parent_name, name) for name, parent_name in prototype_qs}
 
     def retrieve_versions_info(self) -> set[bundle.InstalledBundleVersion]:
-        bundle_info = Bundle.objects.values_list("name", "edition", "version", "contract_version")
+        bundle_info = Bundle.objects.exclude(prototype__type=ADCMCoreType.ADCM.value).values_list(
+            "name", "edition", "version", "contract_version"
+        )
         return {bundle.InstalledBundleVersion(*row) for row in bundle_info}
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> bundle.BundleContext:
@@ -162,6 +165,14 @@ class BundleRepo(bundle.BundleRepoI):
         ).get(id=prototype_id)
         path = Path(settings.BUNDLE_DIR, hash_)
         return bundle.BundleContext(id=bundle_id, root=path, contract_version=contract_version)
+
+    def clear_old_versions_adcm_bundles(self) -> None:
+        ids = (
+            Prototype.objects.filter(type=ADCMCoreType.ADCM.value)
+            .exclude(id=ADCM.objects.first().prototype_id)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+            .values_list("bundle_id", flat=True)
+        )
+        Bundle.objects.filter(id__in=ids).delete()
 
 
 def convert_config_definition_to_orm_model(

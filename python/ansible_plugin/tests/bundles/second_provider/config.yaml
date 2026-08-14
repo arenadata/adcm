@@ -1,16 +1,17 @@
+---
 - type: provider
   name: another_simple_provider
   version: 2.3
-
-  actions: &actions
+  actions: &id001
     dummy:
-      type: job
-      script_type: ansible
-      script: ./playbook.yaml
-      masking:
-
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: another_host
   version: 1.4
-
-  actions: *actions
+  actions: *id001

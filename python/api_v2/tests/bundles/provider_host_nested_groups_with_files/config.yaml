@@ -1,35 +1,35 @@
+---
 - type: provider
   version: 1.0
   name: provider_nested_groups
-
-  config: &config
-  - name: g1
-    subs:
-    - &file
-      default: ./simple.txt
-      name: file_field
-      type: file
-    - &secretfile
-      default: ./secret.txt
-      group_customization: true
-      name: secretfile_field
-      type: secretfile
-    - name: g2
+  config: &id003
+    - name: g1
       subs:
-      - name: g3
-        subs:
-        - *file
-        - *secretfile
-        type: group
-      - *file
-      - *secretfile
+        - &id001
+          default: ./simple.txt
+          name: file_field
+          type: file
+        - &id002
+          default: ./secret.txt
+          group_customization: true
+          name: secretfile_field
+          type: secretfile
+        - name: g2
+          subs:
+            - name: g3
+              subs:
+                - *id001
+                - *id002
+              type: group
+            - *id001
+            - *id002
+          type: group
       type: group
-    type: group
-  - *file
-  - *secretfile
-
+    - *id001
+    - *id002
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   version: 1.0
   name: simple_host
-
-  config: *config
+  config: *id003

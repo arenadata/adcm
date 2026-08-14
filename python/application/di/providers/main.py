@@ -156,19 +156,11 @@ class BundleProvider(Provider):
 
     @provide
     def parsers(self) -> list[tuple[core.bundle.parsing.VersionInfo, core.bundle.parsing.BundleParser]]:
-        v_1_0 = (
-            core.bundle.parsing.VersionInfo(tag="1.0", status=VersionSupportStatus.SUPPORTED),
-            core.bundle.parsing.v_1_0.Parser(),
-        )
-        v_2_0 = (
-            core.bundle.parsing.VersionInfo(tag="2.0", status=VersionSupportStatus.SUPPORTED),
-            core.bundle.parsing.v_2_0.Parser(),
-        )
         v_2_1 = (
             core.bundle.parsing.VersionInfo(tag="2.1", status=VersionSupportStatus.SUPPORTED),
             core.bundle.parsing.v_2_1.Parser(),
         )
-        return [v_1_0, v_2_0, v_2_1]
+        return [v_2_1]
 
     @provide
     def convert(self, secrets: core.config.secrets.AnsibleSecrets) -> core.bundle.ConvertConfigDefinition:

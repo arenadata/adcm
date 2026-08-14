@@ -1,25 +1,25 @@
+---
 - type: cluster
   name: verynice
   version: 4
-  venv: "2.16"
-  contract_version: "2.0"
-
+  venv: '2.16'
+  contract_version: '2.1'
   actions:
-    host_action_xxx: &ha
+    host_action_xxx:
       host_action: true
-      scripts:
+      scripts: &id001
         - name: blahblah
           script: notexist.yaml
           script_type: ansible
-      masking: {}
-      config_template:
+      masking: &id002 {}
+      config_template: &id003
         file:
           path: return_groups.yaml
         engine:
           type: jinja2
-
     action_host_group_xxx:
-      <<: *ha
       host_action: false
       allow_for_action_host_group: true
-
+      scripts: *id001
+      masking: *id002
+      config_template: *id003

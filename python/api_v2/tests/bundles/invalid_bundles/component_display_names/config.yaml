@@ -2,7 +2,8 @@
 - type: cluster
   name: cluster
   version: 1
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service
   version: 1

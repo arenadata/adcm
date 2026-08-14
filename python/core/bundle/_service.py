@@ -173,3 +173,6 @@ class BundleService:
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
         return self.repo.retrieve_bundle_context_from_prototype(prototype_id=prototype_id)
+
+    def clear_old_versions_adcm_bundles(self) -> None:
+        self.repo.clear_old_versions_adcm_bundles()

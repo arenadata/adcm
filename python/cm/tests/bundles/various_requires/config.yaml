@@ -1,28 +1,27 @@
+---
 - type: cluster
   version: 7
   name: test_requires
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   version: 1.0
   name: my_service
   components:
-    my_component:
-
+    my_component: null
 - type: service
   version: 1.0
   name: service_with_requires_my_component
   components:
-    componentB:
+    componentB: null
   requires:
     - service: my_service
       component: my_component
-
 - type: service
   version: 1.0
   name: service_with_requires_my_service
   requires:
     - service: my_service
-
 - type: service
   version: 1.0
   name: component_with_requires_my_component
@@ -31,7 +30,6 @@
       requires:
         - service: my_service
           component: my_component
-
 - type: service
   version: 1.0
   name: component_with_requires_my_service
@@ -39,33 +37,25 @@
     component_with_requires_my_service:
       requires:
         - service: my_service
-
 - type: service
   version: 2.3
   name: A
-
   requires:
     - service: B
-
   components:
     a1:
       requires:
         - service: C
-
 - type: service
   version: 2.4
   name: B
-
   requires:
     - service: A
-
 - type: service
   version: 2.1
   name: C
-
   requires:
     - service: A
-
   components:
     c1:
       requires:

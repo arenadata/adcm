@@ -1,7 +1,7 @@
+---
 - type: cluster
   version: 2
-  name: "cl"
-
+  name: cl
   upgrade:
     - name: cool
       versions:
@@ -20,3 +20,5 @@
         - name: post
           script: ./playbook.yaml
           script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

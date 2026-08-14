@@ -310,7 +310,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         Actually bug is about `run_action`, because it prepares `config` for task,
         but it was caught within `get_job_config` generation, so checked here
         """
-        self.change_configuration(target=self.cluster, config_diff={"boolean": True})
+        self.uc.change_config(owner=self.cluster, values_diff={"boolean": True})
         raw_value = {"key": "val", "another": "one"}
         action = Action.objects.get(prototype=self.service.prototype, name="with_jinja")
         configuration = ConfigurationDTO(

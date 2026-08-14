@@ -1,0 +1,51 @@
+---
+- type: cluster
+  name: cluster_target_group
+  version: '1.1'
+  edition: community
+  allow_maintenance_mode: true
+  actions:
+    host_action_target_group:
+      host_action: true
+      allow_to_terminate: true
+      allow_in_maintenance_mode: true
+      scripts:
+        - name: sub_action_1
+          script_type: ansible
+          script: ./action.yaml
+      states:
+        available: any
+        on_success: installed
+    not_host_action:
+      allow_to_terminate: true
+      allow_in_maintenance_mode: true
+      scripts:
+        - name: sub_action_1
+          script_type: ansible
+          script: ./action.yaml
+      states:
+        available: any
+        on_success: installed
+  config: &id001
+    - name: float
+      type: float
+      required: false
+      default: 0.1
+    - name: some_string
+      type: string
+      required: false
+      default: some_string
+      group_customization: true
+  contract_version: '2.1'
+  venv: '2.16'
+- name: service_1_target_group
+  type: service
+  version: '1.1'
+  config: *id001
+  components:
+    component_1_target_group:
+      display_name: Component 1 from Service 1
+      constraint:
+        - 0
+        - +
+      config: *id001

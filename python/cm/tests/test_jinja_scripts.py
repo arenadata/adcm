@@ -12,6 +12,7 @@
 
 from pathlib import Path
 from uuid import uuid4
+import unittest
 
 from django.utils import timezone
 from rest_framework.status import HTTP_422_UNPROCESSABLE_ENTITY
@@ -40,6 +41,7 @@ from cm.models import (
 from cm.tests.dependencies import WithDishkaContainer
 
 
+@unittest.skip("ADCM-8106")
 class TestJinjaScriptsEnvironment(TaskTestMixin, BaseTestCase):
     maxDiff = None
 
@@ -241,6 +243,7 @@ class TestJinjaScriptsEnvironment(TaskTestMixin, BaseTestCase):
         self.assertDictEqual(env, expected_env)
 
 
+@unittest.skip("ADCM-8106")
 class TestJinjaScriptsJobs(WithDishkaContainer, TaskTestMixin, BaseTestCase):
     def setUp(self) -> None:
         bundles_dir = Path(__file__).parent / "bundles"

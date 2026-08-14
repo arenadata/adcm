@@ -73,7 +73,7 @@ class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCas
             id=bundle.pk,
             # we'll use static path for this case
             root=bundle_path,
-            contract_version="1.0",
+            contract_version="2.1",
         )
 
         with self.container() as container:

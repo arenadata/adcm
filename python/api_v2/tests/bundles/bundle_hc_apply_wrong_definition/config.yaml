@@ -1,11 +1,10 @@
+---
 - type: cluster
   name: hc_apply_scripts_cluster_wrong
-  version: &version '1.0'
+  version: '1.0'
   edition: community
-
   actions:
     install:
-      type: task
       hc_acl:
         - service: service_1
           component: component_1
@@ -33,20 +32,25 @@
                 component: component_3
                 action: add
               - ansible_tags: ansible_tag1, ansible_tag2
-
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_1
   type: service
-  version: *version
+  version: '1.0'
   components:
     component_1:
-      constraint: [ 1, + ]
-
+      constraint:
+        - 1
+        - +
 - name: service_2
   type: service
-  version: *version
+  version: '1.0'
   components:
     component_2:
-      constraint: [ 1, + ]
+      constraint:
+        - 1
+        - +
     component_3:
-      constraint: [ 1, + ]
+      constraint:
+        - 1
+        - +

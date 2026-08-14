@@ -1,52 +1,47 @@
+---
 - type: cluster
   name: cluster_dep
   version: 1.0
-
-  config: &config
+  config: &id001
     - name: string_param
       type: string
       default: some_default_value
-
     - name: int_param
       type: integer
       display_name: Some Int
       default: 12
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: first_service
   flag_autogeneration:
-    enable_outdated_config: True
+    enable_outdated_config: true
   version: 1.5
-  config: *config
-
+  config: *id001
   components:
     first_component:
       flag_autogeneration:
-        enable_outdated_config: True
-      config: *config
-
+        enable_outdated_config: true
+      config: *id001
     second_component:
       flag_autogeneration:
-        enable_outdated_config: False
-      config: *config
-
+        enable_outdated_config: false
+      config: *id001
 - type: service
   name: second_service
   requires:
     - service: first_service
       component: first_component
   flag_autogeneration:
-    enable_outdated_config: False
+    enable_outdated_config: false
   version: 1.2
-  config: *config
-
+  config: *id001
   components:
     first_component:
       flag_autogeneration:
-        enable_outdated_config: False
-      config: *config
-
+        enable_outdated_config: false
+      config: *id001
     second_component:
       flag_autogeneration:
-        enable_outdated_config: False
-      config: *config
+        enable_outdated_config: false
+      config: *id001

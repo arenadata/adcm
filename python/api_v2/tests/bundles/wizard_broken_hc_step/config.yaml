@@ -1,15 +1,12 @@
 ---
 - type: cluster
   name: cluster_wizard_hc_broken_step
-  version: &version '2.0'
+  version: '2.0'
   edition: community
   actions:
     wizard_first_step_broken:
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
       ui_options:
-        disclaimer: "Test message!"
+        disclaimer: Test message!
       wizard_template:
         file:
           path: wizard_jinja/stages_hc_first_broken.j2
@@ -17,10 +14,11 @@
           type: jinja2
       states:
         available: any
+      scripts:
+        - name: wizard_first_step_broken
+          script: ./sleep.yaml
+          script_type: ansible
     wizard_second_step_broken:
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stages_hc_second_broken.j2
@@ -28,29 +26,32 @@
           type: jinja2
       states:
         available: any
-
-  config: &config
+      scripts:
+        - name: wizard_second_step_broken
+          script: ./sleep.yaml
+          script_type: ansible
+  config: &id001
     - name: float
       type: float
       required: false
       default: 0.1
-  
+  contract_version: '2.1'
+  venv: '2.16'
 - name: hdfs
   type: service
-  version: *version
-  config: *config
+  version: '2.0'
+  config: *id001
   components:
     datanode:
-      config: *config
+      config: *id001
     namenode:
-      config: *config
-
+      config: *id001
 - name: monitoring
   type: service
-  version: *version
-  config: *config
+  version: '2.0'
+  config: *id001
   components:
     agent:
-      config: *config
+      config: *id001
     control:
-      config: *config
+      config: *id001

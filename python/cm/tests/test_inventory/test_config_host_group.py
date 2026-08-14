@@ -101,9 +101,9 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             group_3_key: [self.host_2.fqdn],
         }
 
-        self.change_configuration(
-            target=self.cluster_group,
-            config_diff={
+        self.uc.change_config(
+            owner=self.cluster_group,
+            values_diff={
                 "plain_group": {"listofstuff": ["hello"]},
                 "just_bool": True,
                 "secrettext": "imsecrett\nextforu\n",
@@ -124,17 +124,17 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             },
         )
 
-        self.change_configuration(
-            target=self.service_thesame,
-            config_diff={
+        self.uc.change_config(
+            owner=self.service_thesame,
+            values_diff={
                 "activatable_group": {"simple": "bestgroupever"},
                 "list_of_dicts": [{"integer": 400, "string": "woo"}],
             },
             meta_diff={"/activatable_group": {"isActive": True}},
         )
-        self.change_configuration(
-            target=self.service_thesame_group,
-            config_diff={"list_of_dicts": [], "just_map": {"key": "val"}},
+        self.uc.change_config(
+            owner=self.service_thesame_group,
+            values_diff={"list_of_dicts": [], "just_map": {"key": "val"}},
             meta_diff={
                 "/activatable_group": {"isActive": False, "isSynchronized": False},
                 "/just_map": {"isSynchronized": False},
@@ -144,18 +144,18 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             preprocess_config=lambda d: {**d, "just_map": {}},
         )
 
-        self.change_configuration(
-            target=self.component_another_thesame_group,
-            config_diff={"plain_group": {"secretmap": {"donot": "know", "m": "e"}}},
+        self.uc.change_config(
+            owner=self.component_another_thesame_group,
+            values_diff={"plain_group": {"secretmap": {"donot": "know", "m": "e"}}},
             meta_diff={
                 "/activatable_group": {"isActive": True, "isSynchronized": False},
                 "/plain_group/secretmap": {"isSynchronized": False},
                 "/just_float": {"isSynchronized": False},
             },
         )
-        self.change_configuration(
-            target=self.component_another_thesame,
-            config_diff={
+        self.uc.change_config(
+            owner=self.component_another_thesame,
+            values_diff={
                 "plain_group": {"secretmap": {}, "listofstuff": ["wind", "vs", "oak"]},
                 "just_float": 1000.304,
             },

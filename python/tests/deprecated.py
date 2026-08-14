@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
@@ -20,12 +20,9 @@ import tarfile
 from api_v2.prototype.utils import accept_license
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
-from cm.legacy.api import add_host_to_cluster, update_obj_config
-from cm.legacy.services.bundle_alt.load import Directories, parse_bundle_archive
-from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.legacy.api import add_host_to_cluster
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.mapping import set_host_component_mapping
-from cm.legacy.utils import deep_merge
 from cm.models import (
     ADCM,
     Action,
@@ -35,8 +32,6 @@ from cm.models import (
     Bundle,
     Cluster,
     Component,
-    ConfigHostGroup,
-    ConfigLog,
     Host,
     HostComponent,
     JobLog,
@@ -87,6 +82,10 @@ class TestUserCreateDTO(UserCreateDTO):
 
 
 class BundleLogicMixin:
+    # TODO: It is necessary to get rid of mixins and use functions directly in tests from uc.
+    #  At the moment, we use calling functions from uc in mixins to save time on processing all tests.
+    #  But mixins are an unnecessary layer.
+    #  ADCM-8108
     @staticmethod
     def prepare_bundle_file(source_dir: Path, target_dir: Path | None = None) -> str:
         bundle_file = f"{source_dir.name}.tar"
@@ -98,25 +97,15 @@ class BundleLogicMixin:
 
     @atomic()
     def add_bundle(self, source_dir: Path) -> Bundle:
-        if source_dir.is_dir():
-            archive = self.prepare_bundle_file(source_dir=source_dir)
-            archive_path = settings.DOWNLOAD_DIR / archive
-        else:
-            # for "easy" backward compatibility with "upload_and_load_bundle"
-            # which accepted path to already packed archive
-            archive_path = source_dir
-
-        return parse_bundle_archive(
-            archive=archive_path,
-            directories=Directories(
-                downloads=settings.DOWNLOAD_DIR, bundles=settings.BUNDLE_DIR, files=settings.FILE_DIR
-            ),
-            adcm_version=settings.ADCM_VERSION,
-            verified_signature_only=False,
-        )
+        return self.uc.upload_bundle(src=source_dir)
 
 
 class BusinessLogicMixin(BundleLogicMixin):
+    # TODO: It is necessary to get rid of mixins and use functions directly in tests from uc.
+    #  At the moment, we use calling functions from uc in mixins to save time on processing all tests.
+    #  But mixins are an unnecessary layer.
+    #  ADCM-8108
+
     @staticmethod
     def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).get()
@@ -229,30 +218,6 @@ class BusinessLogicMixin(BundleLogicMixin):
         if delete_role:
             custom_role.delete()
         group.delete()
-
-    @staticmethod
-    def change_configuration(
-        target: ADCMModel | ConfigHostGroup,
-        config_diff: dict,
-        meta_diff: dict | None = None,
-        preprocess_config: Callable[[dict], dict] = lambda x: x,
-    ) -> ConfigLog:
-        meta = meta_diff or {}
-
-        target.refresh_from_db()
-        current_config = ConfigLog.objects.get(id=target.config.current)
-
-        updated = update_obj_config(
-            obj_conf=target.config,
-            config=deep_merge(origin=preprocess_config(current_config.config), renovator=config_diff),
-            attr=convert_adcm_meta_to_attr(
-                deep_merge(origin=convert_attr_to_adcm_meta(current_config.attr), renovator=meta)
-            ),
-            description="",
-        )
-        target.refresh_from_db()
-
-        return updated
 
 
 class TaskTestMixin:

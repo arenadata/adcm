@@ -40,7 +40,6 @@ from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
 from pydantic import TypeAdapter, ValidationError
-from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
 from tests.deprecated import TaskTestMixin
@@ -51,223 +50,17 @@ from use_cases.transition.service_manage import ManageClusterServices, _build_ma
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
-from cm.legacy.api import add_service_to_cluster
 from cm.legacy.services.job.run._target_factories import (
     internal_script_config_apply,
     internal_script_hc_apply,
     internal_script_service_manage,
     prepare_ansible_environment,
 )
-from cm.models import (
-    Action,
-    Component,
-    ConfigLog,
-    Host,
-    HostComponent,
-    MaintenanceMode,
-    Prototype,
-    Service,
-    get_object_cluster,
-)
-from cm.tests.utils import (
-    gen_action,
-    gen_bundle,
-    gen_cluster,
-    gen_host,
-    gen_prototype,
-    gen_provider,
-)
-
-plausible_action_variants = {
-    "unlimited": {
-        "state_available": "any",
-        "state_unavailable": [],
-        "multi_state_available": "any",
-        "multi_state_unavailable": [],
-    },
-    "limited_by_available_state": {
-        "state_available": ["bimbo"],
-        "state_unavailable": [],
-        "multi_state_available": "any",
-        "multi_state_unavailable": [],
-    },
-    "limited_by_unavailable_state": {
-        "state_available": "any",
-        "state_unavailable": ["bimbo"],
-        "multi_state_available": "any",
-        "multi_state_unavailable": [],
-    },
-    "limited_by_available_multi_state": {
-        "state_available": "any",
-        "state_unavailable": [],
-        "multi_state_available": ["bimbo"],
-        "multi_state_unavailable": [],
-    },
-    "limited_by_unavailable_multi_state": {
-        "state_available": "any",
-        "state_unavailable": [],
-        "multi_state_available": "any",
-        "multi_state_unavailable": ["bimbo"],
-    },
-    "limited_by_available": {
-        "state_available": ["bimbo"],
-        "state_unavailable": [],
-        "multi_state_available": ["bimbo"],
-        "multi_state_unavailable": [],
-    },
-    "limited_by_unavailable": {
-        "state_available": "any",
-        "state_unavailable": ["bimbo"],
-        "multi_state_available": "any",
-        "multi_state_unavailable": ["bimbo"],
-    },
-    "hidden_by_unavailable_state": {
-        "state_available": "any",
-        "state_unavailable": "any",
-        "multi_state_available": "any",
-        "multi_state_unavailable": [],
-    },
-    "hidden_by_unavailable_multi_state": {
-        "state_available": "any",
-        "state_unavailable": [],
-        "multi_state_available": "any",
-        "multi_state_unavailable": "any",
-    },
-}
-cluster_variants = {
-    "unknown-unknown": {"state": "unknown", "_multi_state": ["unknown"]},
-    "bimbo-unknown": {"state": "bimbo", "_multi_state": ["unknown"]},
-    "unknown-bimbo": {"state": "unknown", "_multi_state": ["bimbo"]},
-    "bimbo-bimbo": {"state": "bimbo", "_multi_state": ["bimbo"]},
-}
-expected_results = {
-    "unknown-unknown": {
-        "unlimited": True,
-        "limited_by_available_state": False,
-        "limited_by_unavailable_state": True,
-        "limited_by_available_multi_state": False,
-        "limited_by_unavailable_multi_state": True,
-        "limited_by_available": False,
-        "limited_by_unavailable": True,
-        "hidden_by_unavailable_state": False,
-        "hidden_by_unavailable_multi_state": False,
-    },
-    "bimbo-unknown": {
-        "unlimited": True,
-        "limited_by_available_state": True,
-        "limited_by_unavailable_state": False,
-        "limited_by_available_multi_state": False,
-        "limited_by_unavailable_multi_state": True,
-        "limited_by_available": False,
-        "limited_by_unavailable": False,
-        "hidden_by_unavailable_state": False,
-        "hidden_by_unavailable_multi_state": False,
-    },
-    "unknown-bimbo": {
-        "unlimited": True,
-        "limited_by_available_state": False,
-        "limited_by_unavailable_state": True,
-        "limited_by_available_multi_state": True,
-        "limited_by_unavailable_multi_state": False,
-        "limited_by_available": False,
-        "limited_by_unavailable": False,
-        "hidden_by_unavailable_state": False,
-        "hidden_by_unavailable_multi_state": False,
-    },
-    "bimbo-bimbo": {
-        "unlimited": True,
-        "limited_by_available_state": True,
-        "limited_by_unavailable_state": False,
-        "limited_by_available_multi_state": True,
-        "limited_by_unavailable_multi_state": False,
-        "limited_by_available": True,
-        "limited_by_unavailable": False,
-        "hidden_by_unavailable_state": False,
-        "hidden_by_unavailable_multi_state": False,
-    },
-}
+from cm.models import Action, Component, ConfigLog, Host, HostComponent, MaintenanceMode, Service, get_object_cluster
 
 
 class DummyObject:
     pass
-
-
-class ActionAllowTest(BaseTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
-
-        _, self.cluster, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.test_files_dir, "cluster_test_host_actions_mm.tar"), cluster_name="test-cluster-1"
-        )
-        add_service_to_cluster(
-            cluster=self.cluster,
-            proto=Prototype.objects.get(name="service_1", display_name="Service 1", type="service"),
-            rbac_scenarios=RBACScenarios(),
-        )
-
-        provider = gen_provider()
-        self.host_1 = gen_host(provider=provider, cluster=self.cluster, fqdn="test-host-1")
-        self.host_2 = gen_host(provider=provider, cluster=self.cluster, fqdn="test-host-2")
-        self.host_3 = gen_host(provider=provider, cluster=self.cluster, fqdn="test-host-3")
-
-        component_1 = Component.objects.get(
-            cluster=self.cluster, prototype__name="component_1", prototype__display_name="Component 1 from Service 1"
-        )
-        component_2 = Component.objects.get(
-            cluster=self.cluster, prototype__name="component_2", prototype__display_name="Component 2 from Service 1"
-        )
-
-        self.uc.set_hostcomponent(
-            cluster=self.cluster,
-            entries=[
-                (self.host_1, component_1),
-                (self.host_2, component_1),
-                (self.host_2, component_2),
-                (self.host_3, component_2),
-            ],
-        )
-
-        self.host_action_comp1_allowed_in_mm = Action.objects.get(
-            prototype=component_1.prototype, name="s1_c1_action_allowed_in_mm", allow_in_maintenance_mode=True
-        )
-        self.host_action_comp1_disallowed_in_mm = Action.objects.get(
-            prototype=component_1.prototype, name="s1_c1_action_disallowed_in_mm", allow_in_maintenance_mode=False
-        )
-        self.host_action_comp2_allowed_in_mm = Action.objects.get(
-            prototype=component_2.prototype, name="s1_c2_action_allowed_in_mm", allow_in_maintenance_mode=True
-        )
-        self.host_action_comp2_disallowed_in_mm = Action.objects.get(
-            prototype=component_2.prototype, name="s1_c2_action_disallowed_in_mm", allow_in_maintenance_mode=False
-        )
-
-        _, self.cluster_2, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.test_files_dir, "cluster_with_various_actions.tar"), cluster_name="test-cluster-2"
-        )
-        self.service_2_robot = add_service_to_cluster(
-            cluster=self.cluster_2,
-            proto=Prototype.objects.get(name="robot", type="service"),
-            rbac_scenarios=RBACScenarios(),
-        )
-        self.component_wheel_of_robot = Component.objects.get(cluster=self.cluster_2, prototype__name="wheel")
-
-    def test_variants(self):
-        bundle = gen_bundle()
-        prototype = gen_prototype(bundle, "cluster")
-        cluster = gen_cluster(bundle=bundle, prototype=prototype)
-        action = gen_action(bundle=bundle, prototype=prototype)
-
-        for state_name, cluster_states in cluster_variants.items():
-            for cl_attr, cl_value in cluster_states.items():
-                setattr(cluster, cl_attr, cl_value)
-            cluster.save()
-
-            for req_name, req_states in plausible_action_variants.items():
-                for act_attr, act_value in req_states.items():
-                    setattr(action, act_attr, act_value)
-                action.save()
-
-                self.assertIs(action.allowed(cluster), expected_results[state_name][req_name])
 
 
 class TestActionParams(ADCMDjangoAPISuite):

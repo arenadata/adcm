@@ -1,11 +1,11 @@
 ---
 - type: cluster
   name: cluster_1
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   config_group_customization: true
   allow_maintenance_mode: true
-  config: &config
+  config: &id002
     - name: integer
       type: integer
       required: false
@@ -26,23 +26,24 @@
         - value2
         - value3
   actions:
-    action_on_cluster: &action
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+    action_on_cluster: &id003
       allow_in_maintenance_mode: true
-      states:
+      states: &id001
         available: any
-    host_action_on_cluster: &host_action
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+      scripts:
+        - name: action_on_cluster
+          script: ./playbook.yaml
+          script_type: ansible
+    host_action_on_cluster: &id004
       host_action: true
       allow_in_maintenance_mode: true
       states:
         available: any
-    hc_acl_action_on_cluster: &hc_acl_action
-      <<: *action
+      scripts:
+        - name: host_action_on_cluster
+          script: ./playbook.yaml
+          script_type: ansible
+    hc_acl_action_on_cluster: &id005
       hc_acl:
         - service: service_two_components
           component: component_1
@@ -56,19 +57,29 @@
         - service: service_two_components
           component: component_2
           action: remove
+      allow_in_maintenance_mode: true
+      states: *id001
+      scripts:
+        - name: hc_acl_action_on_cluster
+          script: ./playbook.yaml
+          script_type: ansible
     jinja_scripts_action:
-      type: task
-      scripts_jinja: "./jinja/scripts.j2"
       states:
         available: any
+      scripts_template:
+        file:
+          path: ./jinja/scripts.j2
+        engine:
+          type: jinja2
     unprocessable_jinja_scripts_action:
-      type: task
-      scripts_jinja: "./unprocessable_scripts.j2"
       states:
         available: any
+      scripts_template:
+        file:
+          path: ./unprocessable_scripts.j2
+        engine:
+          type: jinja2
     with_activatable_group_jinja:
-      type: task
-      scripts_jinja: "./with_group.j2"
       masking: {}
       config:
         - name: group
@@ -77,80 +88,91 @@
           subs:
             - name: x
               type: integer
+      scripts_template:
+        file:
+          path: ./with_group.j2
+        engine:
+          type: jinja2
     state_2:
-        type: task
-        scripts_jinja: "./jinja/config_apply.j2"
-        states:
-          available: any
-
+      states:
+        available: any
+      scripts_template:
+        file:
+          path: ./jinja/config_apply.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_one_component
   type: service
-  version: *version
-  config: *config
+  version: '1.0'
+  config: *id002
   actions:
-    action_on_service: *action
-    host_action_on_service: *host_action
-
+    action_on_service: *id003
+    host_action_on_service: *id004
   components:
     component_1:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component: *action
-        host_action_on_component: *host_action
-
+        action_on_component: *id003
+        host_action_on_component: *id004
 - name: service_two_components
   type: service
-  version: *version
-  config: *config
+  version: '1.0'
+  config: *id002
   actions:
-    action_on_service: *action
-    hc_acl_action_on_service: *hc_acl_action
-    host_action_on_service: *host_action
-
+    action_on_service: *id003
+    hc_acl_action_on_service: *id005
+    host_action_on_service: *id004
   components:
     component_1:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component_1: *action
-        host_action_on_component_1: *host_action
-        hc_acl_action_on_component_1: *hc_acl_action
+        action_on_component_1: *id003
+        host_action_on_component_1: *id004
+        hc_acl_action_on_component_1: *id005
     component_2:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component_2: *action
-        host_action_on_component_2: *host_action
-        hc_acl_action_on_component_2: *hc_acl_action
-
-
-- &service
-  name: another_service_two_components
+        action_on_component_2: *id003
+        host_action_on_component_2: *id004
+        hc_acl_action_on_component_2: *id005
+- name: another_service_two_components
   type: service
-  version: *version
-  config: *config
-  actions:
-    action_on_service: *action
-
-  components:
+  version: '1.0'
+  config: *id002
+  actions: &id006
+    action_on_service: *id003
+  components: &id007
     component_1:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component_1: *action
+        action_on_component_1: *id003
     component_2:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component_2: *action
-
-
-- <<: *service
-  name: another_service_two_components_2
+        action_on_component_2: *id003
+- name: another_service_two_components_2
   components:
     component_1:
-      constraint: [ 0, + ]
+      constraint:
+        - 0
+        - +
       config:
         - name: integer
           type: integer
@@ -172,26 +194,29 @@
               type: secretfile
               default: ./secret.txt
       actions:
-        action_on_component_1: *action
+        action_on_component_1: *id003
     component_2:
-      constraint: [ 0, + ]
-      config: *config
+      constraint:
+        - 0
+        - +
+      config: *id002
       actions:
-        action_on_component_2: *action
-
-- <<: *service
-  name: another_service_two_components_3
-
+        action_on_component_2: *id003
+  type: service
+  version: '1.0'
+  config: *id002
+  actions: *id006
+- name: another_service_two_components_3
+  type: service
+  version: '1.0'
+  config: *id002
+  actions: *id006
+  components: *id007
 - name: with_hc_acl_actions
   version: 3.2
   type: service
-
   actions:
-
     with_hc:
-      type: job
-      script_type: ansible
-      script: ./run.yaml
       states:
         available: any
       display_name: I have HC-ACL section, I'm the best
@@ -202,3 +227,7 @@
         - service: service_two_components
           component: component_2
           action: remove
+      scripts:
+        - name: with_hc
+          script: ./run.yaml
+          script_type: ansible

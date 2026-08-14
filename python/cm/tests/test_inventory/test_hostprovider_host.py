@@ -93,9 +93,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_provider_with_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
@@ -138,9 +138,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_host_with_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
@@ -176,9 +176,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_host_without_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 

@@ -277,18 +277,18 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         changed_string = "woohoo"
         changed_list = ["1", "2"]
 
-        self.change_configuration(
-            target=cluster_group,
-            config_diff={"integer": changed_integer},
+        self.uc.change_config(
+            owner=cluster_group,
+            values_diff={"integer": changed_integer},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.change_configuration(
-            target=service_group,
-            config_diff={"string": changed_string},
+        self.uc.change_config(
+            owner=service_group,
+            values_diff={"string": changed_string},
             meta_diff={"/string": {"isSynchronized": False}},
         )
-        self.change_configuration(
-            target=component_1_group, config_diff={"list": changed_list}, meta_diff={"/list": {"isSynchronized": False}}
+        self.uc.change_config(
+            owner=component_1_group, values_diff={"list": changed_list}, meta_diff={"/list": {"isSynchronized": False}}
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
@@ -369,9 +369,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         new_string = "another-string"
         component_1_group.delete()
-        self.change_configuration(
-            target=service_group,
-            config_diff={"string": new_string},
+        self.uc.change_config(
+            owner=service_group,
+            values_diff={"string": new_string},
             meta_diff={"/string": {"isSynchronized": False}},
         )
 
@@ -452,9 +452,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         component_group = self.add_config_host_group(parent=problem_component, hosts=[self.host_1])
 
-        self.change_configuration(
-            target=component_group,
-            config_diff={"plain": "someother\ntext", "bunch": {"secte": "itsasecret"}},
+        self.uc.change_config(
+            owner=component_group,
+            values_diff={"plain": "someother\ntext", "bunch": {"secte": "itsasecret"}},
             meta_diff={
                 "/plain": {"isSynchronized": False},
                 "/secte": {"isSynchronized": False},

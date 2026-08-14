@@ -35,3 +35,6 @@ class BundleRepoI(Protocol):
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
         ...
+
+    def clear_old_versions_adcm_bundles(self) -> None:
+        ...

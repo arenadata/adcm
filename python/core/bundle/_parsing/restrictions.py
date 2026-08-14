@@ -19,7 +19,7 @@ from core.bundle._parsing.types import BundleParser, ParsingMeta, RootEntry, Ver
 
 
 def extract_parsing_meta(entries: Collection[RootEntry]) -> ParsingMeta:
-    types_with_contract_version = {"cluster", "provider"}
+    types_with_contract_version = {"cluster", "provider", "adcm"}
     meta = ParsingMeta()
 
     for entry in entries:

@@ -2,14 +2,11 @@
 - type: cluster
   name: test_cluster
   display_name: TestCluster
-  version: &version '4'
+  version: '4'
   edition: community
   config_group_customization: true
   actions:
     action_step_config:
-      type: job
-      script: wizard_jinja/scripts/sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stage_config_step.j2
@@ -17,10 +14,11 @@
           type: jinja2
       states:
         available: any
+      scripts:
+        - name: action_step_config
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
     action_step_operation:
-      type: job
-      script: wizard_jinja/scripts/sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stage_operational_step.j2
@@ -28,10 +26,11 @@
           type: jinja2
       states:
         available: any
+      scripts:
+        - name: action_step_operation
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
     action_step_mapping:
-      type: job
-      script: wizard_jinja/scripts/sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stage_mapping_step.j2
@@ -39,10 +38,11 @@
           type: jinja2
       states:
         available: any
+      scripts:
+        - name: action_step_mapping
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
     action_no_desc:
-      type: job
-      script: wizard_jinja/scripts/sleep.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: wizard_jinja/stage_config_step_no_desc.j2
@@ -50,14 +50,21 @@
           type: jinja2
       states:
         available: any
-
+      scripts:
+        - name: action_no_desc
+          script: wizard_jinja/scripts/sleep.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - name: main_service
   display_name: MainService
   type: service
-  version: "1"
+  version: '1'
   config_group_customization: true
   components:
     first_component:
       display_name: FirstComponent
-      constraint: [ 1,+ ]
+      constraint:
+        - 1
+        - +
       config_group_customization: true

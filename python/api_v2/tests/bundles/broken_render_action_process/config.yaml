@@ -5,9 +5,6 @@
   edition: community
   actions:
     broken_process:
-      type: job
-      script: playbook.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: broken_process.j2
@@ -15,11 +12,11 @@
           type: jinja2
       states:
         available: any
-
+      scripts:
+        - name: broken_process
+          script: playbook.yaml
+          script_type: ansible
     broken_configuration_step:
-      type: job
-      script: playbook.yaml
-      script_type: ansible
       wizard_template:
         file:
           path: broken_configuration_step.j2
@@ -27,24 +24,32 @@
           type: jinja2
       states:
         available: any
-
-    broken_operation_step: &job
-      type: job
-      script: playbook.yaml
-      script_type: ansible
+      scripts:
+        - name: broken_configuration_step
+          script: playbook.yaml
+          script_type: ansible
+    broken_operation_step:
       wizard_template:
         file:
           path: broken_operation_step.j2
         engine:
           type: jinja2
-      states:
+      states: &id001
         available: any
-
+      scripts:
+        - name: broken_operation_step
+          script: playbook.yaml
+          script_type: ansible
     broken_second_step:
-      <<: *job
       wizard_template:
         file:
           path: second_step_broken.j2
         engine:
           type: jinja2
-
+      states: *id001
+      scripts:
+        - name: broken_second_step
+          script: playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

@@ -1,11 +1,18 @@
+---
 - type: cluster
   version: 3
   name: with_jinja_config
-
   actions:
     with_j2_config:
-      type: job
-      script: action.yaml
-      script_type: ansible
       masking: {}
-      config_jinja: outer/configs/config_1.j2
+      scripts:
+        - name: with_j2_config
+          script: action.yaml
+          script_type: ansible
+      config_template:
+        file:
+          path: outer/configs/config_1.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'

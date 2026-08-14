@@ -1,38 +1,34 @@
+---
 - type: cluster
   name: cname
   version: 23
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: A
   version: 2
-
   components:
     a:
       requires:
         - component: a
           service: B
-    control:
-
+    control: null
 - type: service
   name: B
   version: 2
-
   components:
     a:
       requires:
         - component: a
           service: C
-
 - type: service
   name: C
   version: 2
-
   components:
     a:
       requires:
         - component: a
           service: A
-
 - type: service
   name: control
   version: 3

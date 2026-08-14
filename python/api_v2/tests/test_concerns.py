@@ -944,7 +944,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             self.uc.add_host(self.provider, fqdn=f"host_{i}", cluster=self.cluster) for i in range(3)
         )
         unbound_host = self.uc.add_host(self.provider, fqdn="free-host")
-        self.change_configuration(host_2, config_diff={"field": 4})
+        self.uc.change_config(host_2, values_diff={"field": 4})
         lower_flag(
             BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
             on_objects=[CoreObjectDescriptor(id=host_2.id, type=ADCMCoreType.HOST)],
@@ -1104,7 +1104,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         )
 
         for object_ in (host_no_concerns, host_2):
-            self.change_configuration(object_, config_diff={"field": 1})
+            self.uc.change_config(object_, values_diff={"field": 1})
             object_desc = CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_type(object_))
             lower_flag(BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name, on_objects=[object_desc])
 

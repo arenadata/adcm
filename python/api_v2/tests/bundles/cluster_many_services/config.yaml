@@ -1,103 +1,130 @@
+---
 - type: cluster
   name: cluster_many_services
-  contract_version: "2.1"
+  contract_version: '2.1'
   version: 1.0
-  venv: "2.16"
-
-  config: &config
+  venv: '2.16'
+  config: &id001
     - name: boolean
       type: boolean
       default: true
-
-- &service
-  type: service
+- type: service
   name: service_from_cluster_with_many_services_with_unnecessary_long_name_01
   version: 1.0
-  config: *config
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_02
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_03
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_04
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_05
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_06
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_07
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_08
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_09
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_10
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_11
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_12
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_13
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_14
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_15
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_16
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_17
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_18
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_19
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_20
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_21
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_22
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_23
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_24
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_25
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_26
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_27
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_28
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_29
-
-- <<: *service
-  name: service_from_cluster_with_many_services_with_unnecessary_long_name_30
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_02
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_03
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_04
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_05
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_06
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_07
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_08
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_09
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_10
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_11
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_12
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_13
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_14
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_15
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_16
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_17
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_18
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_19
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_20
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_21
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_22
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_23
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_24
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_25
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_26
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_27
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_28
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_29
+  type: service
+  version: 1.0
+  config: *id001
+- name: service_from_cluster_with_many_services_with_unnecessary_long_name_30
+  type: service
+  version: 1.0
+  config: *id001

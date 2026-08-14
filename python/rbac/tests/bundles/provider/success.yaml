@@ -1,0 +1,12 @@
+---
+- name: success
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: success
+      assert:
+        that:
+          - 1 > 0
+        success_msg: "1 > 0"

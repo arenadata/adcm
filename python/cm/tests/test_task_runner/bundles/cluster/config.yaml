@@ -1,11 +1,10 @@
+---
 - type: cluster
   name: for_task_runner_tests
   version: 1.2
-
   actions:
     two_ansible_steps:
-      type: task
-      masking:
+      masking: null
       scripts:
         - name: first
           script_type: ansible
@@ -13,15 +12,15 @@
         - name: second
           script_type: ansible
           script: ./actions.yaml
-
-- &service
-  type: service
+  contract_version: '2.1'
+  venv: '2.16'
+- type: service
   name: simple
   version: 1
-
-  components:
-    part_1:
-    part_2:
-
-- <<: *service
-  name: second
+  components: &id001
+    part_1: null
+    part_2: null
+- name: second
+  type: service
+  version: 1
+  components: *id001

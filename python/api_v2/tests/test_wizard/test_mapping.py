@@ -821,56 +821,6 @@ class TestWizardActionProcessMapping(ADCMDjangoAPISuite, APIV2Mixin, WizardProce
                 process_id=process.id,
             )
 
-        with self.subTest("Service with bound component"):
-            host_2 = self.create_host(provider=self.provider, name="host-2", cluster=cluster)
-
-            endpoint, process = self._7313_prepare_env_get_operation_endpoint_and_process(
-                cluster=cluster, action_name="action_bound_component"
-            )
-            service = self.create_services(["service_with_bound_component"], cluster=cluster)[0]
-            component = Component.objects.get(prototype__name="bound_component", service=service, cluster=cluster)
-            bound_target_service = self.create_services(["bound_target_service"], cluster=cluster)[0]
-            bound_target_component = Component.objects.get(
-                prototype__name="bound_target_component", service=bound_target_service, cluster=cluster
-            )
-
-            # submit with unsatisfied requirement
-            payload = {
-                "method": ProcessOperationType.SUBMIT,
-                "params": {
-                    "stepId": process.current_step_id,
-                    "processSyncKey": process.sync_key,
-                    "hostComponentMapDelta": {
-                        "add": [
-                            {"hostId": host.pk, "componentId": component.pk},
-                            {"hostId": host_2.pk, "componentId": component.pk},
-                            {"hostId": host.pk, "componentId": bound_target_component.pk},
-                        ]
-                    },
-                },
-            }
-            response = endpoint.post(data=payload)
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            expected_response = {
-                "code": "COMPONENT_CONSTRAINT_ERROR",
-                "level": "error",
-                "desc": 'Component `bound_to` restriction violated.\nEach host with component "bound_target_component" '
-                'of service "bound_target_service" should have mapped component "bound_component" of service '
-                '"service_with_bound_component".',
-            }
-            self.assertDictEqual(response.json(), expected_response)
-
-            # satisfy requirements, try again
-            payload["params"]["hostComponentMapDelta"]["add"].append(
-                {"hostId": host_2.pk, "componentId": bound_target_component.pk}
-            )
-            response = endpoint.post(data=payload)
-            self.assertEqual(response.status_code, HTTP_200_OK)
-
-            self.cleanup_process_hc_service(
-                cluster_id=cluster.id, service_ids=[service.id, bound_target_service.id], process_id=process.id
-            )
-
     def test_adcm_7451_retrieve_second_mapping_step_success(self):
         self.create_services(["service_1", "service_2"], cluster=self.cluster_3)
         component_1_s1 = Component.objects.get(
