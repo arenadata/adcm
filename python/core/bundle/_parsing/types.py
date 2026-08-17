@@ -17,21 +17,15 @@ from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action, mapping
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
-from core.bundle._types import ComponentKey, ContractVersion, VersionSupportStatus
+from core.bundle._types import ComponentKey, ContractVersionTag, VersionInfo
 
 VersionTag: TypeAlias = str
 
 
 @dataclass(slots=True)
-class VersionInfo:
-    tag: ContractVersion
-    status: VersionSupportStatus
-
-
-@dataclass(slots=True)
 class ParsingMeta:
     adcm_min_version: str | None = None
-    contract_version: ContractVersion = "1.0"
+    contract_version: ContractVersionTag = "1.0"
 
 
 @dataclass(slots=True)
@@ -72,3 +66,6 @@ class BundleParser(Protocol):
         self, rules: list[dict], component_keys: Collection[ComponentKey]
     ) -> list[mapping.MappingRule]:
         ...
+
+
+BundleParsers: TypeAlias = list[tuple[VersionInfo, BundleParser]]

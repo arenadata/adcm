@@ -15,7 +15,8 @@ from collections.abc import Collection, Iterable
 from adcm_version import compare_adcm_versions
 
 from core.bundle._errors import BundleParsingError
-from core.bundle._parsing.types import BundleParser, ParsingMeta, RootEntry, VersionInfo, VersionTag
+from core.bundle._parsing.types import BundleParser, ParsingMeta, RootEntry, VersionTag
+from core.bundle._types import VersionInfo
 
 
 def extract_parsing_meta(entries: Collection[RootEntry]) -> ParsingMeta:

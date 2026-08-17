@@ -89,6 +89,19 @@ class TestBundle(ADCMDjangoAPISuite):
         self.assertEqual(Bundle.objects.filter(name="cluster_two").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def test_upload_unsupported_contract_version_fail(self):
+        unsupported_bundle = prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "unsupported_contract_version",
+            target_dir=self.test_tmp_dir,
+        )
+        expected_err_message = "Unsupported bundle's prototype usage"
+
+        response = self.create_bundle_r(self.test_tmp_dir / unsupported_bundle)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "BUNDLE_ERROR")
+        self.assertIn(expected_err_message, response.json()["desc"])
+
     def test_adcm_6555_upload_parsing_errors_fail(self):
         with self.subTest("Too long path for config"):
             new_bundle_file = prepare_bundle_file(
@@ -238,8 +251,8 @@ class TestBundle(ADCMDjangoAPISuite):
             response = self.create_bundle_r(bundle_path)
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
-            self.assertIn("Bundle contract version 1.0 is not supported", response.json()["desc"])
+            self.assertEqual(response.json()["code"], "BUNDLE_ERROR")
+            self.assertIn("Unsupported bundle's prototype usage", response.json()["desc"])
 
     def test_upload_cluster_with_ansible_options_success(self):
         new_bundle_file = prepare_bundle_file(

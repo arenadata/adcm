@@ -1,0 +1,24 @@
+- name: first_stage
+  display_name: "First stage"
+  steps:
+    - name: step_for_skip
+      display_name: "step_for_skip"
+      required: false
+      ui_options:
+        button_name: ButtonName
+      scripts_template:
+        file:
+          path: wizard_jinja/steps/s3_script.py
+          entrypoint: generate_scripts
+        engine:
+          type: python
+
+    - name: revert to wrong bundle
+      display_name: "Revert"
+      ui_options:
+        button_name: Revert
+      scripts_template:
+        file:
+          path: wizard_jinja/steps/revert.yaml
+        engine:
+          type: jinja2

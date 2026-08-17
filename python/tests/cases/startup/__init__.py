@@ -9,16 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from cm.errors import AdcmEx
-from django.conf import settings
-
-
-def get_license_text(license_path: str | None, bundle_hash: str) -> str | None:
-    if license_path is None:
-        return None
-
-    try:
-        return (settings.BUNDLE_DIR / bundle_hash / license_path).read_text(encoding=settings.ENCODING_UTF_8)
-    except FileNotFoundError as error:
-        raise AdcmEx(code="LICENSE_ERROR", msg=f'{bundle_hash} "{license_path}" is not found') from error

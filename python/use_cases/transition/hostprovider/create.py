@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
+
 from cm import converters
 from cm.errors import AdcmEx
 from cm.legacy.api import check_license
+from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.concern._operations import create_issue
 from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.legacy.services.concern.checks import object_configuration_has_issue
@@ -29,35 +32,41 @@ from rbac.scenarios import RBACScenarios
 import core
 
 
-def create_hostprovider(
-    prototype: Prototype,
-    name: str,
-    description: str,
-    config_service: core.config.ConfigService,
-    status_scenarios: StatusScenarios,
-) -> ProviderID:
-    if prototype.type != ADCMCoreType.PROVIDER.value:
-        raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
+@dataclass(slots=True)
+class CreateHostprovider:
+    config_service: core.config.ConfigService
+    status_scenarios: StatusScenarios
+    available_contract_versions: core.bundle.AvailableContractVersions
 
-    check_license(prototype)
+    @convert_bundle_errors_to_adcm_ex
+    def do(self, prototype: Prototype, name: str, description: str) -> ProviderID:
+        if prototype.type != ADCMCoreType.PROVIDER.value:
+            raise AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
-    with atomic():
-        provider = Provider.objects.create(prototype=prototype, name=name, description=description)
-        descriptor = CoreObjectDescriptor(id=provider.pk, type=ADCMCoreType.PROVIDER)
-        config_service.create_initial_configuration_if_required(owner=descriptor)
+        core.bundle.check_contract_version_supported(
+            current_version=prototype.bundle.contract_version,
+            available_contract_versions=self.available_contract_versions,
+        )
 
-        provider_cod = converters.orm_object_to_core_descriptor(provider)
-        concern_id = None
-        related_objects = {}
-        if object_configuration_has_issue(provider):
-            concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
-            concern_id = concern.pk
-            related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+        check_license(prototype)
 
-    if concern_id:
-        status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+        with atomic():
+            provider = _create_provider(
+                prototype=prototype, name=name, description=description, config_service=self.config_service
+            )
 
-    return provider.pk
+            provider_cod = converters.orm_object_to_core_descriptor(provider)
+            concern_id = None
+            related_objects = {}
+            if object_configuration_has_issue(provider):
+                concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
+                concern_id = concern.pk
+                related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+
+        if concern_id:
+            self.status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+
+        return provider.pk
 
 
 def create_host(
@@ -118,3 +127,10 @@ def create_host(
         status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return host.pk
+
+
+def _create_provider(prototype: Prototype, name: str, description: str, config_service: core.config.ConfigService):
+    provider = Provider.objects.create(prototype=prototype, name=name, description=description)
+    descriptor = CoreObjectDescriptor(id=provider.pk, type=ADCMCoreType.PROVIDER)
+    config_service.create_initial_configuration_if_required(owner=descriptor)
+    return provider

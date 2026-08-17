@@ -12,6 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.models import LICENSE_STATE, Bundle, ObjectType, Prototype, Provider
+from core.bundle import ContractVersionStatus
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import (
     CharField,
@@ -21,17 +22,31 @@ from rest_framework.fields import (
     IntegerField,
     SerializerMethodField,
 )
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 
 from api_v2.prototype.utils import get_license_text
 
 
+class ContractVersionSerializer(Serializer):
+    status = ChoiceField(
+        choices=tuple((status.value, status.value) for status in ContractVersionStatus),
+        source="contract_version_status",
+    )
+    value = CharField(source="contract_version")
+
+
 class BundleRelatedSerializer(ModelSerializer):
     edition = CharField()
+    contract_version = SerializerMethodField()
 
     class Meta:
         model = Bundle
-        fields = ["id", "edition"]
+        fields = ["id", "edition", "contract_version"]
+
+    @staticmethod
+    @extend_schema_field(field=ContractVersionSerializer)
+    def get_contract_version(bundle: Bundle) -> dict:
+        return ContractVersionSerializer(instance=bundle).data
 
 
 class MainPrototypeLicenseSerializer(EmptySerializer):
@@ -66,6 +81,7 @@ class BundleSerializer(ModelSerializer):
     upload_time = DateTimeField(read_only=True, source="date")
     display_name = CharField(read_only=True)
     main_prototype = SerializerMethodField()
+    contract_version = SerializerMethodField()
 
     class Meta:
         model = Bundle
@@ -75,10 +91,16 @@ class BundleSerializer(ModelSerializer):
             "display_name",
             "version",
             "edition",
+            "contract_version",
             "main_prototype",
             "upload_time",
             "signature_status",
         )
+
+    @staticmethod
+    @extend_schema_field(field=ContractVersionSerializer)
+    def get_contract_version(bundle: Bundle) -> dict:
+        return ContractVersionSerializer(instance=bundle).data
 
     @staticmethod
     @extend_schema_field(field=MainPrototypeSerializer)

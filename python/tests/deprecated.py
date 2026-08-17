@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any, TypeAlias
 import tarfile
 
-from api_v2.prototype.utils import accept_license
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
 from cm.legacy.api import add_host_to_cluster
@@ -59,10 +58,9 @@ from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.services.user import perform_user_creation
 from use_cases.transition.cluster.create import (
-    CreateCluster,
     CreateServicesFromPrototypes,
 )
-from use_cases.transition.hostprovider.create import create_host, create_hostprovider
+from use_cases.transition.hostprovider.create import create_host
 
 APPLICATION_JSON = "application/json"
 
@@ -101,38 +99,6 @@ class BundleLogicMixin:
 
 
 class BusinessLogicMixin(BundleLogicMixin):
-    # TODO: It is necessary to get rid of mixins and use functions directly in tests from uc.
-    #  At the moment, we use calling functions from uc in mixins to save time on processing all tests.
-    #  But mixins are an unnecessary layer.
-    #  ADCM-8108
-
-    @staticmethod
-    def add_cluster(bundle: Bundle, name: str, description: str = "") -> Cluster:
-        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).get()
-
-        if prototype.license_path is not None:
-            accept_license(prototype=prototype)
-            prototype.refresh_from_db(fields=["license"])
-
-        cluster_id = CreateCluster(config_service=get_config_service(), status_scenarios=StatusScenarios()).do(
-            prototype=prototype, name=name, description=description
-        )
-
-        return Cluster.objects.get(id=cluster_id)
-
-    @staticmethod
-    def add_provider(bundle: Bundle, name: str, description: str = "") -> Provider:
-        prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.PROVIDER).first()
-        provider_id = create_hostprovider(
-            prototype=prototype,
-            name=name,
-            description=description,
-            config_service=get_config_service(),
-            status_scenarios=StatusScenarios(),
-        )
-
-        return Provider.objects.get(id=provider_id)
-
     def add_host(self, provider: Provider, fqdn: str, cluster: Cluster | None = None) -> Host:
         host_id = create_host(
             hostprovider=provider,

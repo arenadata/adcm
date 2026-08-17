@@ -82,6 +82,20 @@ class TestProvider(ADCMDjangoAPISuite):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
+    def test_create_unsupported_contract_version_fail(self):
+        prototype = self.host_provider_bundle.prototype_set.get(name="provider")
+        self.uc.set_unsupported_contract_version(prototype=prototype)
+
+        response = (self.client.v2 / "hostproviders").post(
+            data={
+                "prototypeId": prototype.pk,
+                "name": "unsupported_provider",
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "Unsupported bundle's prototype usage")
+
     def test_delete_success(self):
         response = self.client.v2[self.host_provider].delete()
 

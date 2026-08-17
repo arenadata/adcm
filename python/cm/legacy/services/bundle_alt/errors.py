@@ -14,8 +14,15 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TypeVar
 
-from core.bundle import BundleParsingError, BundleProcessingError, BundleValidationError
-from core.config import ConfigOperationError, DefaultFileMissingError
+from core.bundle import (
+    BundleOperationError,
+    BundleParsingError,
+    BundleProcessingError,
+    BundleValidationError,
+    LicenseError,
+    UnsupportedBundleError,
+)
+from core.config import DefaultFileMissingError
 from core.errors import ConfigValueError
 from core.legacy.bundle_alt import errors
 
@@ -29,7 +36,7 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (BundleProcessingError, errors.BundleProcessingError) as e:
+        except (BundleProcessingError, errors.BundleProcessingError, UnsupportedBundleError) as e:
             http_code = 409
             error_code = "BUNDLE_ERROR"
             message = e.message
@@ -44,7 +51,12 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
             error_code = "BUNDLE_VALIDATION_ERROR"
             message = e.message
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
-        except (ConfigValueError, ConfigOperationError) as e:
+        except LicenseError as e:
+            http_code = 409
+            error_code = "LICENSE_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except ConfigValueError as e:
             http_code = 409
             error_code = "CONFIG_VALUE_ERROR"
             message = e.message
@@ -52,6 +64,11 @@ def convert_bundle_errors_to_adcm_ex(func: T) -> T:
         except (FileNotFoundError, DefaultFileMissingError) as e:
             http_code = 409
             error_code = "BUNDLE_ERROR"
+            message = str(e)
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except BundleOperationError as e:
+            http_code = 409
+            error_code = "OPERATION_ERROR"
             message = str(e)
             raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
 

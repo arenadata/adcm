@@ -422,6 +422,10 @@ components:
           maxLength: 1000
         edition:
           type: string
+        contractVersion:
+          allOf:
+          - $ref: '#/components/schemas/ContractVersion'
+          readOnly: true
         mainPrototype:
           allOf:
           - $ref: '#/components/schemas/MainPrototype'
@@ -438,6 +442,7 @@ components:
       - displayName
       - version
       - edition
+      - contractVersion
       - mainPrototype
       - uploadTime
       - signatureStatus
@@ -449,9 +454,14 @@ components:
           readOnly: true
         edition:
           type: string
+        contractVersion:
+          allOf:
+          - $ref: '#/components/schemas/ContractVersion'
+          readOnly: true
       required:
       - id
       - edition
+      - contractVersion
     CHG:
       type: object
       properties:
@@ -978,6 +988,26 @@ components:
       - creationTime
       - description
       - createdBy
+    ContractVersion:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ContractVersionStatusEnum'
+        value:
+          type: string
+      required:
+      - status
+      - value
+    ContractVersionStatusEnum:
+      enum:
+      - supported
+      - deprecated
+      - unsupported
+      type: string
+      description: |-
+        * `supported` - supported
+        * `deprecated` - deprecated
+        * `unsupported` - unsupported
     CreateDuplicate:
       type: object
       properties:
@@ -4972,6 +5002,25 @@ paths:
       description: Get a list of ADCM bundles with information on them.
       parameters:
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -5015,12 +5064,16 @@ paths:
         schema:
           type: string
           enum:
+          - -contractVersionStatus
+          - -contractVersionValue
           - -displayName
           - -edition
           - -mainPrototypeLicenseStatus
           - -signatureStatus
           - -uploadTime
           - -version
+          - contractVersionStatus
+          - contractVersionValue
           - displayName
           - edition
           - mainPrototypeLicenseStatus
@@ -21623,6 +21676,25 @@ paths:
           type: integer
         description: Filter by bundle ID.
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -21642,6 +21714,26 @@ paths:
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -contractVersionStatus
+            - -contractVersionValue
+            - contractVersionStatus
+            - contractVersionValue
+        description: |-
+          ordering
+
+          * `contractVersionStatus` - Contract version status
+          * `-contractVersionStatus` - Contract version status (descending)
+          * `contractVersionValue` - Contract version value
+          * `-contractVersionValue` - Contract version value (descending)
+        explode: false
+        style: form
       - in: query
         name: type
         schema:
@@ -21676,6 +21768,25 @@ paths:
           type: integer
         description: Bundle ID
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -21702,6 +21813,26 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -contractVersionStatus
+            - -contractVersionValue
+            - contractVersionStatus
+            - contractVersionValue
+        description: |-
+          ordering
+
+          * `contractVersionStatus` - Contract version status
+          * `-contractVersionStatus` - Contract version status (descending)
+          * `contractVersionValue` - Contract version value
+          * `-contractVersionValue` - Contract version value (descending)
+        explode: false
+        style: form
       - in: query
         name: type
         schema:
@@ -21789,6 +21920,36 @@ paths:
       description: Get a list of ADCM bundles when creating an object (cluster or
         provider).
       parameters:
+      - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -contractVersionStatus
+          - -contractVersionValue
+          - contractVersionStatus
+          - contractVersionValue
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-".
       - in: query
         name: type
         schema:

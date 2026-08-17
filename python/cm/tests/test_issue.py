@@ -220,7 +220,7 @@ class RemoveIssueTest(GenericTestCase):
 
 class TestImport(GenericTestCase):
     def cook_cluster(self, proto_name, cluster_name):
-        bundle = Bundle.objects.create(name=proto_name, version="1.0")
+        bundle = Bundle.objects.create(name=proto_name, version="1.0", contract_version="2.1")
         proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=bundle)
         cluster = self.uc.add_cluster(bundle, name=cluster_name)
 

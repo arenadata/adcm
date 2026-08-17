@@ -24,6 +24,7 @@ from cm.errors import AdcmEx
 from cm.legacy.upgrade import DifferentBundleError, check_upgrade, get_upgrade
 from cm.models import Bundle, Cluster, ObjectType, Prototype, Provider, TaskLog, Upgrade
 from cm.transition.action import RetrieveStartImpossibleReason
+from core.bundle import ContractVersionStatus
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import Descriptor
 from dishka import FromDishka
@@ -47,7 +48,7 @@ from api_v2.generic.upgrade.serializers import UpgradeListSerializer, UpgradeRet
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.config import convert_json_fields_to_strings, convert_main_config
 from api_v2.utils.di import inject
-from api_v2.views import ADCMGenericViewSet
+from api_v2.views import ADCMGenericViewSet, annotate_contract_version_status
 
 
 class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, ADCMGenericViewSet):
@@ -84,9 +85,24 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
             display_name=Subquery(prototype_qs.values("display_name")[:1]),
             prototype_id=Subquery(prototype_qs.values("id")[:1]),
             license_statues=Subquery(prototype_qs.values("license")[:1]),
+            **annotate_contract_version_status(
+                contract_version_field="contract_version",
+                request=self.request,
+            ),
         )
+        if self.action != "run":
+            bundle_qs = bundle_qs.filter(
+                contract_version_status__in=(
+                    ContractVersionStatus.SUPPORTED.value,
+                    ContractVersionStatus.DEPRECATED.value,
+                )
+            )
 
-        return queryset.prefetch_related(Prefetch("bundle", queryset=bundle_qs)).order_by("pk")
+        return (
+            queryset.filter(bundle_id__in=bundle_qs.values("id"))
+            .prefetch_related(Prefetch("bundle", queryset=bundle_qs))
+            .order_by("pk")
+        )
 
     def get_object(self):
         parent_object: Cluster | Provider | None = self.get_parent_object()
@@ -173,13 +189,19 @@ class UpgradeViewSet(ListModelMixin, GetParentObjectMixin, RetrieveModelMixin, A
         retrieve_configuration: FromDishka[RetrieveConfigurationForAction],
         config_service: FromDishka[core.config.ConfigService],
         retrieve_sir: FromDishka[RetrieveStartImpossibleReason],
+        available_contract_versions: FromDishka[core.bundle.AvailableContractVersions],
         **_,
     ) -> Response:  # noqa: ARG001, ARG002
         parent_orm: Cluster | Provider = self.get_parent_object_for_user(user=request.user)
         upgrade = self.get_object()
 
         # for retrieve endpoint start_impossible_reason should not cause an exception
-        success, msg = check_upgrade(obj=parent_orm, upgrade=upgrade, retrieve_sir=None)
+        success, msg = check_upgrade(
+            obj=parent_orm,
+            upgrade=upgrade,
+            retrieve_sir=None,
+            available_contract_versions=available_contract_versions,
+        )
         if not success:
             raise AdcmEx(code="UPGRADE_NOT_FOUND", msg=msg)
 

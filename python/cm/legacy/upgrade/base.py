@@ -53,7 +53,10 @@ class DifferentBundleError(Exception):
 
 
 def check_upgrade(
-    obj: Cluster | Provider, upgrade: Upgrade, retrieve_sir: RetrieveStartImpossibleReason | None
+    obj: Cluster | Provider,
+    upgrade: Upgrade,
+    retrieve_sir: RetrieveStartImpossibleReason | None,
+    available_contract_versions: core.bundle.AvailableContractVersions,
 ) -> tuple[bool, str]:
     _check_same_bundle(obj=obj, upgrade=upgrade)
 
@@ -63,6 +66,12 @@ def check_upgrade(
         )
     ):
         return False, start_impossible_reason
+
+    if not core.bundle.is_contract_version_supported(
+        current_version=upgrade.bundle.contract_version,
+        available_contract_versions=available_contract_versions,
+    ):
+        return False, "Can't upgrade to unsupported bundle"
 
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]

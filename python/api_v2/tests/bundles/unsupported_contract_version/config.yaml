@@ -1,0 +1,5 @@
+---
+- type: cluster
+  name: unsupported_cv
+  version: "1.0"
+  contract_version: "0.999"

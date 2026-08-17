@@ -17,6 +17,7 @@ from cm.converters import core_type_to_model, host_group_type_to_model
 from cm.errors import AdcmEx
 from cm.models import Cluster, Component, Host, Service
 from cm.transition.status import StatusScenarios
+from core.bundle import AvailableContractVersions, ContractVersionStatus
 from core.legacy.cluster.errors import (
     ClusterAddHostError,
     HostAlreadyBoundError,
@@ -26,6 +27,7 @@ from core.legacy.cluster.errors import (
 from core.types import ADCMCoreType, ADCMHostGroupType, CoreObjectDescriptor, HostGroupDescriptor
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Case, CharField, Value, When
 from django_filters.rest_framework import DjangoFilterBackend
 from djangorestframework_camel_case.parser import (
     CamelCaseFormParser,
@@ -42,6 +44,7 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
 )
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import GenericViewSet
 from use_cases.cluster.maintenance_mode import MMIsChangingError, MMIsNotAvailableError, MMValueError
@@ -297,3 +300,21 @@ class ClusterHostOperationHandleExceptionMixin:
             err = err_or_builder
 
         return super().handle_exception(err)
+
+
+def annotate_contract_version_status(contract_version_field: str, request: Request) -> dict:
+    available_cv = request.container.get(AvailableContractVersions)
+
+    return {
+        "contract_version_status": Case(
+            *[
+                When(
+                    then=Value(version_info.status.value),
+                    **{contract_version_field: version_info.tag},
+                )
+                for version_info in available_cv
+            ],
+            default=Value(ContractVersionStatus.UNSUPPORTED.value),
+            output_field=CharField(),
+        )
+    }

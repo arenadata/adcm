@@ -21,6 +21,7 @@ import datetime
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
 )
+from api_v2.tests.helpers import create_bundle_and_prototype_rows
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -44,6 +45,7 @@ from cm.models import (
     ConfigLog,
     Host,
     JobLog,
+    ObjectType,
     ProductCategory,
     Provider,
     Service,
@@ -320,6 +322,21 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "GammaCl")
         cls.set_state(cls.cl_1, "installed")
 
+        # prepare data for check contract versions
+        cls.unsupported_version = "0.999"
+        cls.supported_bundle_count = 6
+        cls.unsupported_bundle, cls.unsupported_prototype = create_bundle_and_prototype_rows(
+            [
+                {
+                    "contract_version": cls.unsupported_version,
+                    "name": "unsupported_bundle",
+                    "display_name": "Unsupported Cluster",
+                    "version": "1.0.0",
+                    "obj_type": ObjectType.CLUSTER,
+                }
+            ]
+        )[0]
+
         # prepare service with components
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cl_1)
         # prepare components
@@ -488,7 +505,8 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
 
     def get_results(self, url: APINode, value_path: str, query: dict) -> list:
         response = self.get_r(url=url, query=query)
-        return extract_from_nested_structure(response["results"], value_path)
+        nested_data = response if isinstance(response, list) else response["results"]
+        return extract_from_nested_structure(nested_data, value_path)
 
     @staticmethod
     def set_state(entity: ADCMEntity, state: str) -> None:

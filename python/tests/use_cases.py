@@ -16,7 +16,6 @@ from operator import itemgetter
 from pathlib import Path
 import tarfile
 
-from api_v2.prototype.utils import accept_license
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.api import add_host_to_cluster
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
@@ -50,10 +49,10 @@ from rbac.models import Group, User
 from rbac.scenarios import RBACScenarios
 from rbac.services.group import create as create_group
 from rbac.services.user import perform_user_creation
-from use_cases.bundle import ParseBundleFromRequest
+from use_cases.bundle import AcceptLicense, ParseBundleFromRequest
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.config import UpdateConfigurationOfHostGroup, UpdateConfigurationOfObject
-from use_cases.transition.hostprovider.create import create_host, create_hostprovider
+from use_cases.transition.hostprovider.create import CreateHostprovider, create_host
 import dishka
 
 
@@ -92,8 +91,7 @@ class UseCases:
         prototype = Prototype.objects.filter(bundle=bundle, type=ObjectType.CLUSTER).get()
 
         if prototype.license_path is not None:
-            accept_license(prototype=prototype)
-            prototype.refresh_from_db(fields=["license"])
+            self.accept_license(prototype)
 
         with self.container() as container:
             uc = container.get(CreateCluster)
@@ -104,13 +102,10 @@ class UseCases:
 
     def add_provider(self, bundle: Bundle, name: str | None = None, description: str = "") -> Provider:
         prototype = Prototype.objects.get(bundle=bundle, type=ObjectType.PROVIDER)
-        provider_id = create_hostprovider(
-            prototype=prototype,
-            name=name or self.faker.name(),
-            description=description,
-            config_service=self.container.get(ConfigService),
-            status_scenarios=self.container.get(StatusScenarios),
-        )
+
+        with self.container() as container:
+            uc = container.get(CreateHostprovider)
+            provider_id = uc.do(prototype=prototype, name=name or self.faker.name(), description=description)
 
         return Provider.objects.get(id=provider_id)
 
@@ -247,6 +242,16 @@ class UseCases:
         return create_group(
             name_to_display=display_name, description=description, user_set=[{"id": id_} for id_ in users or []]
         )
+
+    def set_unsupported_contract_version(self, prototype: Prototype, contract_version: str = "0.999") -> None:
+        Bundle.objects.filter(pk=prototype.bundle_id).update(contract_version=contract_version)
+
+    def accept_license(self, prototype: Prototype) -> None:
+        with self.container() as container:
+            accept_license = container.get(AcceptLicense)
+            accept_license.do(prototype=prototype)
+
+        prototype.refresh_from_db(fields=["license"])
 
 
 # Utilities

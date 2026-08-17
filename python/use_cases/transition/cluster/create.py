@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from cm import errors, models
 from cm.converters import orm_object_to_core_descriptor
+from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
@@ -34,13 +35,20 @@ import core
 class CreateCluster:
     config_service: core.config.ConfigService
     status_scenarios: StatusScenarios
+    available_contract_versions: core.bundle.AvailableContractVersions
 
+    @convert_bundle_errors_to_adcm_ex
     def do(self, prototype: models.Prototype, name: str, description: str):
         # imported here to avoid circular imports with `cm.legacy.api`
         from cm.legacy.api import check_license
 
         if prototype.type != ADCMCoreType.CLUSTER:
             raise errors.AdcmEx("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
+
+        core.bundle.check_contract_version_supported(
+            current_version=prototype.bundle.contract_version,
+            available_contract_versions=self.available_contract_versions,
+        )
 
         check_license(prototype)
 

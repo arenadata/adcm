@@ -74,6 +74,14 @@ class TestPrototype(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
+    def test_accept_license_unsupported_contract_version_fail(self):
+        self.uc.set_unsupported_contract_version(prototype=self.cluster_1_prototype)
+
+        response = self.client.v2[self.cluster_1_prototype, "license", "accept"].post(data=None)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "Can't accept unsupported license bundle")
+
     def test_filter_by_bundle_id_and_type_cluster(self):
         response = (self.client.v2 / "prototypes").get(query={"bundleId": self.bundle_1.id, "type": "cluster"})
 
