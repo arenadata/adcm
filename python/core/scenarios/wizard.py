@@ -71,7 +71,6 @@ class FillWizardStepSpec(Generic[ActionArgsT, TaskArgsT]):
                         bundle_context=bundle_context,
                         action_allow_to_terminate=action_allow_to_terminate,
                     )
-
                 case wizard.StepType.MAPPING:
                     task_args = self.convert_action_args_to_task_args(action_args)
                     spec = self.bundle_renderer.render_mapping_rules(

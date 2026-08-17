@@ -52,7 +52,8 @@ from cm.models import (
 )
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
-from core.action import AssociatedProcess, ScriptType, TaskMappingDelta
+from core.action import AssociatedProcess, ScriptType, TaskMappingDelta, operations
+from core.bundle import AvailableContractVersions, BundleOperationError, is_contract_version_supported
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
@@ -157,7 +158,9 @@ class _ScheduleTask(ABC):
     status_scenarios: StatusScenarios
     retrieve_sir: RetrieveStartImpossibleReason
     cluster_service: ClusterService
+    available_contract_versions: AvailableContractVersions
 
+    @convert_bundle_errors_to_adcm_ex
     def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
         action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
@@ -298,6 +301,19 @@ class _ScheduleTask(ABC):
                 case _:
                     message = f"Unexpected owner: {action_objects.owner}"
                     raise RuntimeError(message)
+
+            # check contract version supportance for revert scripts
+            if isinstance(target, Cluster | Provider) and operations.has_bundle_revert_script(scripts):
+                previous_bundle_cv = self.bundle_renderer.bundle_service.retrieve_before_upgrade_contract_version(
+                    before_upgrade_data=target.before_upgrade
+                )
+                if previous_bundle_cv and not is_contract_version_supported(
+                    current_version=previous_bundle_cv,
+                    available_contract_versions=self.available_contract_versions,
+                ):
+                    raise BundleOperationError(
+                        f"Can't run {action_orm.display_name or action_orm.name} to unsupported bundle"
+                    )
 
             self.job_service.create_jobs(task_id=task_id, scripts=scripts)
 

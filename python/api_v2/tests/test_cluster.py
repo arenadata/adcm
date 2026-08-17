@@ -147,6 +147,19 @@ class TestCluster(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
 
+    def test_create_unsupported_contract_version_fail(self):
+        self.uc.set_unsupported_contract_version(prototype=self.cluster_1.prototype)
+
+        response = (self.client.v2 / "clusters").post(
+            data={
+                "prototype_id": self.cluster_1.prototype.pk,
+                "name": "unsupported_contract_version_cluster",
+            }
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "Unsupported bundle's prototype usage")
+
     def test_create_without_required_field_fail(self):
         response = (self.client.v2 / "clusters").post(data={})
 

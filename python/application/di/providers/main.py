@@ -41,7 +41,6 @@ from core.action.job import (
     TaskRunnerTerminator,
     TerminationSignaller,
 )
-from core.bundle import VersionSupportStatus
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
@@ -51,7 +50,7 @@ from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from rbac.scenarios import RBACScenarios
-from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.logs.check import AddCheckLogRecordForJob
@@ -64,6 +63,7 @@ from use_cases.transition.config import (
     UpdateConfigurationOfObject,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
+from use_cases.transition.hostprovider.create import CreateHostprovider
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
@@ -155,12 +155,18 @@ class BundleProvider(Provider):
     scope = Scope.APP
 
     @provide
-    def parsers(self) -> list[tuple[core.bundle.parsing.VersionInfo, core.bundle.parsing.BundleParser]]:
+    def parsers(self) -> core.bundle.parsing.BundleParsers:
         v_2_1 = (
-            core.bundle.parsing.VersionInfo(tag="2.1", status=VersionSupportStatus.SUPPORTED),
+            core.bundle.VersionInfo(tag="2.1", status=core.bundle.ContractVersionStatus.SUPPORTED),
             core.bundle.parsing.v_2_1.Parser(),
         )
         return [v_2_1]
+
+    @provide
+    def available_contract_versions(
+        self, parsers: core.bundle.parsing.BundleParsers
+    ) -> core.bundle.AvailableContractVersions:
+        return [cv_info for cv_info, _ in parsers]
 
     @provide
     def convert(self, secrets: core.config.secrets.AnsibleSecrets) -> core.bundle.ConvertConfigDefinition:
@@ -246,6 +252,7 @@ class UseCaseProvider(Provider):
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
 
     create_cluster = provide(CreateCluster)
+    create_provider = provide(CreateHostprovider)
 
     # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
     add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)
@@ -276,6 +283,8 @@ class UseCaseProvider(Provider):
     update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
     set_primary_config_revision = provide(SetPrimaryConfigRevision)
     find_primary_config_diff = provide(FindPrimaryConfigDiff)
+
+    accept_license = provide(AcceptLicense)
 
 
 class AuditProvider(Provider):

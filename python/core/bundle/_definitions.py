@@ -15,7 +15,7 @@ from functools import partial
 from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action
-from core.bundle._types import BundleDefinitionKey
+from core.bundle._types import BundleDefinitionKey, ContractVersionTag
 from core.templates import Template
 
 
@@ -187,6 +187,14 @@ class License:
     status: Literal["absent", "accepted", "unaccepted"] = "absent"
     # if no license, path expected to be None
     path: str | None = None
+    # if no license, hash expected to be None
+    hash: str | None = None
+
+
+@dataclass(slots=True)
+class PrototypeMetaInfo:
+    contract_version: ContractVersionTag
+    license: License
 
 
 # EXTERNAL SECTION END

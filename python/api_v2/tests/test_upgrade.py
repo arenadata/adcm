@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from cm.models import (
+    Bundle,
     Component,
     ConfigLog,
     Host,
@@ -29,8 +31,6 @@ from rest_framework.status import (
 )
 from tests.suites import ADCMDjangoAPISuite
 from unittest_parametrize import parametrize
-
-from api_v2.prototype.utils import accept_license
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
@@ -77,6 +77,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         cls.user = cls.uc.create_user()
 
+        cls.unsupported_contract_version = "0.999"
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -84,18 +86,46 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
     def accept_license_of_first_service(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).get()
-        )
+        prototype = Prototype.objects.filter(
+            bundle=self.upgrade_cluster_via_action_simple.bundle,
+            type=ObjectType.SERVICE,
+            name="service_1",
+            version=self.upgrade_cluster_via_action_simple.bundle.version,
+        ).get()
+        self.uc.accept_license(prototype=prototype)
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, status)
+
+    @staticmethod
+    def create_upgrade_with_unsupported_bundle_row(
+        name: str,
+        prototype_type: str,
+        prototype_version: str,
+        contract_version: str,
+    ) -> tuple[Bundle, Prototype]:
+        bundle = Bundle.objects.create(
+            name=name,
+            version="99.0",
+            hash="hash",
+            contract_version=contract_version,
+        )
+        _ = Prototype.objects.create(
+            bundle=bundle,
+            type=prototype_type,
+            name=name,
+            display_name=f"Unsupported {name}",
+            version=prototype_version,
+        )
+
+        return Upgrade.objects.create(
+            bundle=bundle,
+            name="unsupported_upgrade",
+            min_version="0.0",
+            max_version=prototype_version,
+            state_available="any",
+        )
 
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
@@ -237,6 +267,32 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assert_task_status_is(launched_task.id, "success")
         self.provider.refresh_from_db()
         self.assertEqual(self.provider.prototype.version, self.upgrade_host_via_action_simple.action.prototype.version)
+
+    def test_retrieve_upgrades_without_unsupported_bundles(self):
+        for parent, prototype_type in ((self.cluster_1, "cluster"), (self.provider, "provider")):
+            unsupported_upgrade = self.create_upgrade_with_unsupported_bundle_row(
+                name=parent.prototype.bundle.name,
+                prototype_type=prototype_type,
+                prototype_version=parent.prototype.version,
+                contract_version=self.unsupported_contract_version,
+            )
+
+            with self.subTest(retrieve_many=f"{prototype_type}s"):
+                response = self.client.v2[parent, "upgrades"].get()
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                result_bundle_ids = {result["bundle"]["id"] for result in response.json()}
+                self.assertNotIn(unsupported_upgrade.bundle_id, result_bundle_ids)
+
+            with self.subTest(retrieve=prototype_type):
+                response = self.client.v2[parent, "upgrades", unsupported_upgrade].get()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            with self.subTest(action="upgrade/run"):
+                response = self.client.v2[parent, "upgrades", unsupported_upgrade, "run"].post()
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["desc"], "Can't upgrade to unsupported bundle")
 
     def test_provider_upgrade_run_violate_constraint_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.cluster_upgrade, "run"].post()
@@ -433,14 +489,13 @@ class TestUpgrade(ADCMDjangoAPISuite):
                     self.assertEqual(len(response.json()), upgrades_count)
 
     def test_upgrade_adcm_3899_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
+        prototype = Prototype.objects.filter(
+            bundle=self.upgrade_cluster_via_action_simple.bundle,
+            type=ObjectType.SERVICE,
+            name="service_1",
+            version=self.upgrade_cluster_via_action_simple.bundle.version,
+        ).first()
+        self.uc.accept_license(prototype=prototype)
         self.client.login(username="test_user_username", password="test_user_password")
         with self.grant_permissions(to=self.user, on=self.cluster_1, role_name="Cluster Administrator"):
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()

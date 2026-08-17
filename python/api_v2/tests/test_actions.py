@@ -31,6 +31,7 @@ from cm.models import (
     HostComponent,
     JobLog,
     MaintenanceMode,
+    ObjectType,
     Provider,
     Service,
     TaskLog,
@@ -55,6 +56,7 @@ from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from unittest_parametrize import parametrize
 
 from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
+from api_v2.tests.helpers import create_bundle_and_prototype_rows
 
 ObjectWithActions: TypeAlias = Cluster | Service | Component | Provider | Host
 
@@ -741,6 +743,19 @@ class TestAction(ADCMDjangoAPISuite):
         super().setUpTestData()
 
         cls.action_with_config = Action.objects.get(name="with_config", prototype=cls.cluster_1.prototype)
+        bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_import_upgrade")
+        cls.cluster = cls.uc.add_cluster(bundle=bundle, name="cluster_with_revert_actions")
+        cls.unsupported_bundle, _ = create_bundle_and_prototype_rows(
+            [
+                {
+                    "contract_version": "0.999",
+                    "name": "unsupported_bundle",
+                    "display_name": "Unsupported Cluster",
+                    "version": "1.0.0",
+                    "obj_type": ObjectType.CLUSTER,
+                }
+            ]
+        )[0]
 
     def test_retrieve_with_config(self):
         response = self.client.v2[self.cluster_1, "actions", self.action_with_config].get()
@@ -817,6 +832,27 @@ class TestAction(ADCMDjangoAPISuite):
         response = self.client.v2[cluster, "actions", action, "run"].post(data=payload)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    def set_unsupported_bundle_before_upgrade(self, cluster: Cluster, unsupported_bundle_id: int) -> None:
+        cluster.before_upgrade = {"bundle_id": unsupported_bundle_id}
+        cluster.save(update_fields=["before_upgrade"])
+
+    @parametrize(
+        ("case", "action"),
+        [
+            ("scripts_template", "revert_template"),
+            ("scripts", "revert"),
+        ],
+    )
+    def test_action_revert_on_unsupported_bundle_fail(self, case: str, action: str) -> None:
+        with self.subTest(case=case):
+            self.set_unsupported_bundle_before_upgrade(self.cluster, self.unsupported_bundle.pk)
+            action = Action.objects.get(name=action, prototype=self.cluster.prototype)
+
+            response = self.client.v2[self.cluster, "actions", action, "run"].post()
+
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["desc"], f"Can't run {action.display_name} to unsupported bundle")
 
 
 class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):

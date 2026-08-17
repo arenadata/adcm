@@ -14,12 +14,25 @@ from core.bundle import _constants as constants
 from core.bundle import _definitions as d
 from core.bundle import _operations as operations
 from core.bundle import _parsing as parsing
-from core.bundle._errors import BundleOperationError, BundleParsingError, BundleProcessingError, BundleValidationError
+from core.bundle._contract_version import (
+    check_contract_version_supported,
+    is_contract_version_supported,
+)
+from core.bundle._definitions import PrototypeMetaInfo
+from core.bundle._errors import (
+    BundleOperationError,
+    BundleParsingError,
+    BundleProcessingError,
+    BundleValidationError,
+    LicenseError,
+    UnsupportedBundleError,
+)
 from core.bundle._predicates import is_component_key
 from core.bundle._repo import BundleRepoI
 from core.bundle._representation import build_parent_key_safe
 from core.bundle._service import BundleService
 from core.bundle._types import (
+    AvailableContractVersions,
     BundleCompatibilityReport,
     BundleContext,
     BundleDefinitionKey,
@@ -27,14 +40,16 @@ from core.bundle._types import (
     BundleUnpackingInfo,
     BundleVersionTag,
     ComponentKey,
-    ContractVersion,
+    ContractVersionStatus,
+    ContractVersionTag,
     InstalledBundleVersion,
     SignatureStatus,
-    VersionSupportStatus,
+    VersionInfo,
 )
 from core.bundle._validate import ConvertConfigDefinition, check_config_defaults
 
 __all__ = [
+    "AvailableContractVersions",
     "BundleContext",
     "BundleDefinitionKey",
     "BundleInfo",
@@ -46,8 +61,13 @@ __all__ = [
     "BundleUnpackingInfo",
     "BundleValidationError",
     "ComponentKey",
+    "ContractVersionStatus",
     "ConvertConfigDefinition",
+    "PrototypeMetaInfo",
     "check_config_defaults",
+    "check_contract_version_supported",
+    "is_contract_version_supported",
+    "LicenseError",
     "SignatureStatus",
     "build_parent_key_safe",
     "constants",
@@ -55,9 +75,10 @@ __all__ = [
     "is_component_key",
     "operations",
     "parsing",
-    "VersionSupportStatus",
     "BundleCompatibilityReport",
     "InstalledBundleVersion",
-    "ContractVersion",
+    "ContractVersionTag",
     "BundleVersionTag",
+    "VersionInfo",
+    "UnsupportedBundleError",
 ]

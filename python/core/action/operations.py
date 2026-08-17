@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from enum import Enum
 from typing import Literal, TypeAlias
 
+from core.action._types import JobSpec, ScriptType
 from core.cluster import ClusterTopology
 from core.cluster._operations import find_children
 from core.config import Attributes
@@ -34,6 +35,10 @@ StartImpossibleReason: TypeAlias = str
 class ActionStartImpossibleReason(str, Enum):
     LDAP_OFF = "The Action is not available. You need to fill in the LDAP integration settings."
     MAINTENANCE_MODE = 'The {entity_type} is not available. One or more {violator_type} in "Maintenance mode"'
+
+
+def has_bundle_revert_script(scripts: Iterable[JobSpec]) -> bool:
+    return any(script.script_type == ScriptType.INTERNAL and script.script == "bundle_revert" for script in scripts)
 
 
 def detect_start_impossible_reason_for_adcm(

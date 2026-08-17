@@ -229,6 +229,7 @@ ERRORS = {
     "ACTION_PROCESS_DB_ERROR": ("Database error", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPERATION_ERROR": ("Can't perform operation with config", HTTP_409_CONFLICT, ERR),
     "ACTION_OPERATION_ERROR": ("Can't perform operation with action", HTTP_409_CONFLICT, ERR),
+    "OPERATION_ERROR": ("Can't perform operation", HTTP_409_CONFLICT, ERR),
     "ACTION_PROCESS_NOT_FOUND": ("Process not found", HTTP_404_NOT_FOUND, ERR),
     "ACTION_PROCESS_STEP_NOT_FOUND": ("Step not found", HTTP_404_NOT_FOUND, ERR),
     "UPGRADE_OPERATION_ERROR": ("Can't perform operation with upgrade", HTTP_409_CONFLICT, ERR),

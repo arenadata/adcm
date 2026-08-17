@@ -26,6 +26,13 @@
         - name: revert
           script_type: internal
           script: bundle_revert
+    revert_template:
+      masking: {}
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: revert_scripts.yaml
   config:
     - name: debug
       type: json

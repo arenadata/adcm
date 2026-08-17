@@ -13,10 +13,15 @@
 from collections.abc import Collection
 
 from cm.models import LICENSE_STATE, Bundle, ObjectType, SignatureStatus
+from core.bundle import ContractVersionStatus
 from django.db.models.query import QuerySet
-from django_filters.rest_framework import CharFilter, ChoiceFilter, NumberFilter, OrderingFilter
+from django_filters import OrderingFilter
+from django_filters.rest_framework import CharFilter, ChoiceFilter, NumberFilter
 
-from api_v2.filters import AdvancedFilterSet, CharInFilter
+from api_v2.filters import (
+    AdvancedFilterSet,
+    CharInFilter,
+)
 
 
 class BundleFilter(
@@ -92,6 +97,16 @@ class BundleFilter(
         field_name="signature_status",
         choices=SignatureStatus.choices,
     )
+    contract_version_status = ChoiceFilter(
+        field_name="contract_version_status",
+        label="Filter by bundle contract version status.",
+        choices=tuple((status.value, status.value) for status in ContractVersionStatus),
+    )
+    contract_version_value = CharFilter(
+        label="Filter by bundle contract version value.",
+        field_name="contract_version",
+        lookup_expr="exact",
+    )
     main_prototype_license_status = ChoiceFilter(
         label="Filter by bundle license status.",
         field_name="main_prototype_license",
@@ -103,6 +118,8 @@ class BundleFilter(
             "date": "uploadTime",
             "version": "version",
             "edition": "edition",
+            "contract_version_status": "contractVersionStatus",
+            "contract_version": "contractVersionValue",
             "signature_status": "signatureStatus",
             "main_prototype_license": "mainPrototypeLicenseStatus",
         },
@@ -111,6 +128,8 @@ class BundleFilter(
             "date": "Upload time",
             "version": "Version",
             "edition": "Edition",
+            "contract_version_status": "Contract version status",
+            "contract_version": "Contract version value",
             "signature_status": "Signature status",
             "main_prototype_license": "License status",
         },

@@ -66,17 +66,12 @@ class PrototypeVersionsSerializer(EmptySerializer):
     display_name = CharField()
     versions = SerializerMethodField()
 
-    @staticmethod
     @extend_schema_field(field=PrototypeVersionSerializer(many=True))
-    def get_versions(obj: Prototype) -> str | None:
-        queryset = (
-            Prototype.objects.select_related("bundle")
-            .filter(type=obj.type, name=obj.name)
-            .order_by("-version", "-bundle__edition")
-        )
-        serializer = PrototypeVersionSerializer(instance=queryset, many=True)
+    def get_versions(self, obj: Prototype):
+        prototype_attrs = obj.type, obj.name
+        versions = self.context["versions_by_type_and_name"][prototype_attrs]
 
-        return serializer.data
+        return PrototypeVersionSerializer(instance=versions, many=True, context=self.context).data
 
 
 class PrototypeRelatedSerializer(ModelSerializer):

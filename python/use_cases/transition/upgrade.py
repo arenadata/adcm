@@ -38,6 +38,7 @@ from use_cases.transition.job.schedule import ScheduleTask
 class UpgradeObject:
     schedule_task: ScheduleTask
     config_service: core.config.ConfigService
+    available_contract_versions: core.bundle.AvailableContractVersions
     retrieve_sir: RetrieveStartImpossibleReason
     rbac_scenarios: RBACScenarios
     config_scenarios: ConfigScenarios
@@ -59,7 +60,12 @@ class UpgradeObject:
             )
             check_license(prototype=upgrade_prototype)
 
-            success, msg = check_upgrade(obj=target, upgrade=upgrade, retrieve_sir=self.retrieve_sir)
+            success, msg = check_upgrade(
+                obj=target,
+                upgrade=upgrade,
+                retrieve_sir=self.retrieve_sir,
+                available_contract_versions=self.available_contract_versions,
+            )
             if not success:
                 raise AdcmEx(code="UPGRADE_ERROR", msg=msg)
 

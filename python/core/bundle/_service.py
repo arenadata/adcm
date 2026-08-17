@@ -16,16 +16,19 @@ from itertools import chain
 from pathlib import Path
 
 from core import action, config, mapping
-from core.bundle import parsing
-from core.bundle._definitions import DefinitionsMap
+from core.bundle import LicenseError, parsing
+from core.bundle._contract_version import check_contract_version_supported, is_contract_version_supported
+from core.bundle._definitions import DefinitionsMap, PrototypeMetaInfo
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
 from core.bundle._types import (
+    BeforeUpgradeData,
     BundleCompatibilityReport,
     BundleContext,
     BundleInfo,
-    VersionSupportStatus,
+    ContractVersionStatus,
+    ContractVersionTag,
 )
 from core.bundle._validate import (
     ConvertConfigDefinition,
@@ -41,7 +44,7 @@ from core.types import BundleID, CoreObjectDescriptor, CurrentADCMVersion, Proto
 @dataclass(slots=True)
 class BundleService:
     adcm_version: CurrentADCMVersion
-    parsers: list[tuple[parsing.VersionInfo, parsing.BundleParser]]
+    parsers: parsing.BundleParsers
     definition_to_spec_converter: ConvertConfigDefinition
 
     repo: BundleRepoI
@@ -54,15 +57,42 @@ class BundleService:
         self.repo.recollect_categories()
         return bundle_id
 
+    def accept_license(self, prototype_meta_info: PrototypeMetaInfo) -> None:
+        bundle_license = prototype_meta_info.license
+        if not bundle_license.path or bundle_license.status == "absent" or bundle_license.hash is None:
+            raise LicenseError("This bundle has no license")
+
+        if not is_contract_version_supported(
+            current_version=prototype_meta_info.contract_version,
+            available_contract_versions=[cv_info for cv_info, _ in self.parsers],
+        ):
+            raise LicenseError("Can't accept unsupported license bundle")
+
+        self.repo.update_prototype_license_to_accept(license_hash=bundle_license.hash)
+
+    def retrieve_before_upgrade_contract_version(
+        self, before_upgrade_data: BeforeUpgradeData
+    ) -> ContractVersionTag | None:
+        previous_bundle_id = before_upgrade_data.get("bundle_id")
+        if previous_bundle_id is None:
+            return None
+
+        return self.repo.retrieve_contract_version(bundle_id=previous_bundle_id)
+
     def read_root_bundle_entries_from_fs(self, bundle_root: Path) -> list[parsing.RootEntry]:
         config_files = get_config_files(bundle_root)
         root_entries = map(read_root_entries_from_yaml_file, config_files)
         return list(chain.from_iterable(root_entries))
 
     def parse_to_definitions(
-        self, entries: Collection[parsing.RootEntry], bundle_root: Path
+        self,
+        entries: Collection[parsing.RootEntry],
+        bundle_root: Path,
     ) -> tuple[parsing.ParsingMeta, DefinitionsMap]:
         meta = parsing.extract_parsing_meta(entries)
+        check_contract_version_supported(
+            current_version=meta.contract_version, available_contract_versions=[cv_info for cv_info, _ in self.parsers]
+        )
         parsing.check_adcm_min_version(current=self.adcm_version, required=meta.adcm_min_version)
         parser = parsing.pick_suitable_parser(version=meta.contract_version, parsers=self.parsers)
         definitions = parser.parse_root_entries(entries=entries, bundle_root=bundle_root)
@@ -152,11 +182,11 @@ class BundleService:
         return parser.parse_mapping_rules(rules=data, component_keys=component_keys)
 
     def find_contract_compatibility_violations(self) -> BundleCompatibilityReport:
-        versions_info = self.repo.retrieve_versions_info()
+        versions_info = self.repo.retrieve_bundle_installing_info()
 
-        supported_versions = {item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.SUPPORTED}
+        supported_versions = {item[0].tag for item in self.parsers if item[0].status == ContractVersionStatus.SUPPORTED}
         deprecated_versions = {
-            item[0].tag for item in self.parsers if item[0].status == VersionSupportStatus.DEPRECATED
+            item[0].tag for item in self.parsers if item[0].status == ContractVersionStatus.DEPRECATED
         }
         report = BundleCompatibilityReport(
             supported_versions=supported_versions, deprecated_versions=deprecated_versions

@@ -10,13 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest.mock import patch
+
 from cm.legacy.services.status.client import FullStatusMap
+from cm.models import ObjectType
+from core.bundle import AvailableContractVersions, ContractVersionStatus, VersionInfo
 from rbac.models import Role, User
 from tests.client import APINode
 from tests.dependencies import get_status_scenarios_manager
 from tests.suites import ADCMFiltersDataSuite
 from tests.utils import extract_from_nested_structure
+import dishka
 
+from api_v2.tests.helpers import create_bundle_and_prototype_rows
 from api_v2.tests.test_filtering.cases import (
     AuditLoginsTestCase,
     AuditOperationsTestCase,
@@ -28,6 +34,8 @@ from api_v2.tests.test_filtering.cases import (
     HostProvidersTestCase,
     HostsTestCase,
     PoliciesTestCase,
+    PrototypeTestCase,
+    PrototypeVersionsTestCase,
     RolesTestCase,
     ServicesTestCase,
     UsersTestCase,
@@ -120,6 +128,18 @@ class TestAPIFilters(FiltersBaseCheck):
     """
 
     maxDiff = None
+
+    @staticmethod
+    def get_fake_contract_versions(container, dependency_type):
+        fake_available_cv = [
+            VersionInfo(tag="8304", status=ContractVersionStatus.SUPPORTED),
+            VersionInfo(tag="8304.1", status=ContractVersionStatus.SUPPORTED),
+        ]
+
+        if dependency_type is AvailableContractVersions:
+            return fake_available_cv
+
+        return dishka.Container.get(container, dependency_type)
 
     def test_filters_clusters(self) -> None:
         case = ClustersTestCase(self)
@@ -322,3 +342,127 @@ class TestAPIFilters(FiltersBaseCheck):
     def test_ordering_policies(self) -> None:
         case = PoliciesTestCase(self)
         self.check_ordering(url=case.get_url(), ordering_cases=case.get_ordering_cases())
+
+    def test_filters_prototypes(self) -> None:
+        case = PrototypeTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_prototypes(self) -> None:
+        """
+        Special case. Where is other test logic because don't want to calculate and build
+        expected data of prototypes for ordering (prototype data can change and grow frequently).
+        """
+        case = PrototypeTestCase(self)
+        ordering_cases = case.get_ordering_cases()
+
+        for ordering_field, value_path, expected_first_value, expected_last_value in ordering_cases:
+            with self.subTest(direction="asc", ordering_field=ordering_field):
+                results = self.get_results(case.get_url(), value_path, query={"ordering": ordering_field})
+                self.assertEqual(expected_first_value, results[0])
+                self.assertEqual(expected_last_value, results[-1])
+
+            with self.subTest(direction="desc", ordering_field=ordering_field):
+                results = self.get_results(case.get_url(), value_path, query={"ordering": f"-{ordering_field}"})
+                self.assertEqual(expected_last_value, results[0])
+                self.assertEqual(expected_first_value, results[-1])
+
+    def test_filters_prototype_versions(self) -> None:
+        case = PrototypeVersionsTestCase(self)
+        self.check_filters(
+            url=case.get_url(),
+            filters_cases=case.get_filters_cases(),
+        )
+
+    def test_ordering_prototype_versions(self) -> None:
+        case = PrototypeVersionsTestCase(self)
+        self.check_ordering(
+            url=case.get_url(),
+            ordering_cases=case.get_ordering_cases(),
+        )
+
+    def test_adcm_8304_filters_prototype_versions_few_bundles(self) -> None:
+        create_bundle_and_prototype_rows(
+            [
+                {
+                    "contract_version": "8304",
+                    "name": "cluster8304_supp",
+                    "display_name": "cluster8304_supp",
+                    "version": "1",
+                    "obj_type": ObjectType.CLUSTER,
+                },
+                {
+                    "contract_version": "0.999",
+                    "name": "cluster8304_unsupp",
+                    "display_name": "cluster8304_unsupp",
+                    "version": "2",
+                    "obj_type": ObjectType.CLUSTER,
+                },
+                {
+                    "contract_version": "8304",
+                    "name": "prov8304_supp",
+                    "display_name": "prov8304_supp",
+                    "version": "3",
+                    "obj_type": ObjectType.PROVIDER,
+                },
+                {
+                    "contract_version": "0.999",
+                    "name": "prov8304_unsupp",
+                    "display_name": "prov8304_unsupp",
+                    "version": "4",
+                    "obj_type": ObjectType.PROVIDER,
+                },
+                {
+                    "contract_version": "8304",
+                    "name": "cluster8304_supp",
+                    "display_name": "cluster8304_supp",
+                    "version": "5",
+                    "obj_type": ObjectType.CLUSTER,
+                },
+                {
+                    "contract_version": "8304",
+                    "name": "prov8304_supp",
+                    "display_name": "prov8304_supp",
+                    "version": "6",
+                    "obj_type": ObjectType.PROVIDER,
+                },
+            ]
+        )
+
+        cases = [
+            (
+                "contractVersionValue",
+                "versions.bundle.contractVersion.value",
+                "8304",
+                ["8304", "8304", "8304", "8304"],
+                "8304.1",
+            ),
+            (
+                "contractVersionStatus",
+                "versions.bundle.contractVersion.status",
+                "supported",
+                ["supported", "supported", "supported", "supported"],
+                "deprecated",
+            ),
+        ]
+
+        with patch.object(dishka.Container, "get", new=self.get_fake_contract_versions):
+            url = PrototypeVersionsTestCase(self).get_url()
+
+            with self.subTest("groups prototype versions"):
+                # check collecting versions for unique prototypes
+                prototypes = self.get_r(url=url, query={"contractVersionValue": "8304"})
+                proto_name_and_versions_from_response = [
+                    (prototype["name"], [version["version"] for version in prototype["versions"]])
+                    for prototype in prototypes
+                ]
+                expected_proto_name_and_versions = [
+                    ("cluster8304_supp", ["5", "1"]),
+                    ("prov8304_supp", ["6", "3"]),
+                ]
+
+                self.assertEqual(proto_name_and_versions_from_response, expected_proto_name_and_versions)
+
+            self.check_filters(url=url, filters_cases=cases)

@@ -6,14 +6,14 @@
   allow_maintenance_mode: true
   actions:
     wizard_jinja:
-      wizard_template: &id005
+      wizard_template: &id006
         file:
           path: wizard_jinja/stages.j2
         engine:
           type: jinja2
       states: &id001
         available: any
-      scripts:
+      scripts: &id002
         - name: wizard_jinja
           script: ./sleep.yaml
           script_type: ansible
@@ -28,6 +28,14 @@
         - name: wizard_operation_as_first
           script: ./sleep.yaml
           script_type: ansible
+    wizard_revert:
+      wizard_template:
+        file:
+          path: wizard_jinja/stages_revert.j2
+        engine:
+          type: jinja2
+      states: *id001
+      scripts: *id002
     wizard_skip_steps:
       wizard_template:
         file:
@@ -64,14 +72,14 @@
           script_type: ansible
     wizard_host_action_from_cluster:
       host_action: true
-      ui_options: &id002
+      ui_options: &id003
         disclaimer: Test message!
-      wizard_template: &id003
+      wizard_template: &id004
         file:
           path: wizard_jinja/host_action/stages.j2
         engine:
           type: jinja2
-      states: &id004
+      states: &id005
         available: any
       scripts:
         - name: wizard_host_action_from_cluster
@@ -80,9 +88,9 @@
     wizard_cluster_action:
       host_action: false
       allow_for_action_host_group: true
-      ui_options: *id002
-      wizard_template: *id003
-      states: *id004
+      ui_options: *id003
+      wizard_template: *id004
+      states: *id005
       scripts:
         - name: wizard_cluster_action
           script: wizard_jinja/scripts/sleep.yaml
@@ -94,7 +102,7 @@
         - name: regular_action
           script: ./sleep.yaml
           script_type: ansible
-  config: &id006
+  config: &id007
     - name: float
       type: float
       required: false
@@ -115,7 +123,7 @@
   version: '0.1'
   actions:
     wizard_jinja:
-      wizard_template: *id005
+      wizard_template: *id006
       states: *id001
       scripts:
         - name: wizard_jinja
@@ -123,9 +131,9 @@
           script_type: ansible
     wizard_host_action_from_service:
       host_action: true
-      ui_options: *id002
-      wizard_template: *id003
-      states: *id004
+      ui_options: *id003
+      wizard_template: *id004
+      states: *id005
       scripts:
         - name: wizard_host_action_from_service
           script: wizard_jinja/scripts/sleep.yaml
@@ -133,19 +141,19 @@
     wizard_service_action:
       host_action: false
       allow_for_action_host_group: true
-      ui_options: *id002
-      wizard_template: *id003
-      states: *id004
+      ui_options: *id003
+      wizard_template: *id004
+      states: *id005
       scripts:
         - name: wizard_service_action
           script: wizard_jinja/scripts/sleep.yaml
           script_type: ansible
-  config: *id006
+  config: *id007
   components:
     component_1:
-      actions: &id007
+      actions: &id008
         wizard_jinja:
-          wizard_template: *id005
+          wizard_template: *id006
           states: *id001
           scripts:
             - name: wizard_jinja
@@ -153,9 +161,9 @@
               script_type: ansible
         wizard_host_action_from_component:
           host_action: true
-          ui_options: *id002
-          wizard_template: *id003
-          states: *id004
+          ui_options: *id003
+          wizard_template: *id004
+          states: *id005
           scripts:
             - name: wizard_host_action_from_component
               script: wizard_jinja/scripts/sleep.yaml
@@ -163,14 +171,14 @@
         wizard_component_action:
           host_action: false
           allow_for_action_host_group: true
-          ui_options: *id002
-          wizard_template: *id003
-          states: *id004
+          ui_options: *id003
+          wizard_template: *id004
+          states: *id005
           scripts:
             - name: wizard_component_action
               script: wizard_jinja/scripts/sleep.yaml
               script_type: ansible
-      config: *id006
+      config: *id007
     component_2:
-      actions: *id007
-      config: *id006
+      actions: *id008
+      config: *id007

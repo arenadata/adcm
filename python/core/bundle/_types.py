@@ -20,7 +20,7 @@ from typing_extensions import Self
 from core.types import BundleID
 
 BundleVersionTag: TypeAlias = str
-ContractVersion: TypeAlias = str
+ContractVersionTag: TypeAlias = str
 
 
 class SignatureStatus(str, Enum):
@@ -29,9 +29,25 @@ class SignatureStatus(str, Enum):
     ABSENT = "absent"
 
 
-class VersionSupportStatus(str, Enum):
+class ContractVersionStatus(str, Enum):
     SUPPORTED = "supported"
     DEPRECATED = "deprecated"
+    UNSUPPORTED = "unsupported"
+
+
+@dataclass(slots=True)
+class VersionInfo:
+    tag: ContractVersionTag
+    status: ContractVersionStatus
+
+
+AvailableContractVersions: TypeAlias = list[VersionInfo]
+
+
+@dataclass(slots=True, frozen=True)
+class ContractVersionInfo:
+    status: ContractVersionStatus
+    value: ContractVersionTag
 
 
 @dataclass(slots=True)
@@ -43,13 +59,13 @@ class BundleUnpackingInfo:
 
 @dataclass(slots=True)
 class BundleInfo:
-    contract_version: ContractVersion
+    contract_version: ContractVersionTag
     hash: str
     root: Path
     signature: SignatureStatus
 
     @classmethod
-    def from_unpacking_info(cls, info: BundleUnpackingInfo, contract_version: ContractVersion) -> Self:
+    def from_unpacking_info(cls, info: BundleUnpackingInfo, contract_version: ContractVersionTag) -> Self:
         return cls(hash=info.hash, root=info.root, signature=info.signature, contract_version=contract_version)
 
 
@@ -82,26 +98,29 @@ class BundleInfo:
 # BundleDefinitionKey: TypeAlias = ClusterBundleDefinitionKey | ProviderBundleDefinitionKey | ADCMBundleDefinitionKey
 ComponentKey: TypeAlias = tuple[Literal["component"], str, str]
 BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | ComponentKey
+BeforeUpgradeData: TypeAlias = dict
 
 
 @dataclass(slots=True)
 class BundleContext:
     id: BundleID
     root: Path
-    contract_version: ContractVersion
+    contract_version: ContractVersionTag
 
 
 @dataclass(slots=True, frozen=True)
 class InstalledBundleVersion:
+    id: BundleID
     name: str
     edition: str
     version: BundleVersionTag
-    contract_version: ContractVersion
+    contract_version: ContractVersionTag
+    has_created_objects: bool
 
 
 @dataclass(slots=True)
 class BundleCompatibilityReport:
-    supported_versions: set[ContractVersion]
-    deprecated_versions: set[ContractVersion]
+    supported_versions: set[ContractVersionTag]
+    deprecated_versions: set[ContractVersionTag]
     unsupported_version_bundles: set[InstalledBundleVersion] = field(default_factory=set)
     deprecated_version_bundles: set[InstalledBundleVersion] = field(default_factory=set)

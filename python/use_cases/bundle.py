@@ -127,3 +127,21 @@ class InitOrUpgradeADCM:
                     self.initialize_adcm.do(bundle_id=bundle_id)
 
                     logger.info("ADCM upgrade: version %s initialized.", new_adcm_bundle_version)
+
+
+@dataclass(slots=True)
+class AcceptLicense:
+    bundle_service: core.bundle.BundleService
+
+    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    def do(self, prototype: models.Prototype) -> None:
+        meta_info = core.bundle.d.PrototypeMetaInfo(
+            contract_version=prototype.bundle.contract_version,
+            license=core.bundle.d.License(
+                status=prototype.license,
+                path=prototype.license_path,
+                hash=prototype.license_hash,
+            ),
+        )
+
+        self.bundle_service.accept_license(prototype_meta_info=meta_info)
