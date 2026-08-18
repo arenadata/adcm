@@ -17,12 +17,11 @@ import os
 from application.di.providers.environment import ConsulSettings
 from cm.legacy.status_api import status_service_url
 from django.test import SimpleTestCase, override_settings
-from integrations.celery.signals import (
-    StatusServiceUrlResolutionError,
+from integrations.celery.external_status_service_url import (
+    ResolveExternalStatusServiceURL,
     extract_status_service_url,
-    resolve_external_status_service_url,
-    setup_status_service_url,
 )
+from integrations.celery.signals import StatusServiceUrlResolutionError, setup_status_service_url
 from integrations.celery.steps import build_worker_registration, ttl_refresh_interval
 from integrations.consul import ServiceRegistration, url_with_base_path
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
@@ -153,7 +152,30 @@ class TestConsulClientSettings(TestCase):
         self.assertEqual(parsed.deregister_critical_service_after, "1m")
 
 
-class TestStatusServiceUrlResolution(ParametrizedTestCase, TestCase):
+class TestBuildUrlWithBasePath(ParametrizedTestCase, TestCase):
+    @parametrize(
+        ("url", "base_path", "expected"),
+        [
+            param(
+                "http://adcm.local:8000",
+                "/status/api/v1/",
+                "http://adcm.local:8000/status/api/v1/",
+                id="from_adcm_url",
+            ),
+            param(
+                "http://adcm.local:8000/ui/foo?x=1",
+                "status/api/v1/",
+                "http://adcm.local:8000/status/api/v1/",
+                id="strips_path_and_query",
+            ),
+            param("http://adcm.local:8000/ui", "", "http://adcm.local:8000", id="empty_base_path"),
+        ],
+    )
+    def test_build_url_with_base_path(self, url: str, base_path: str, expected: str):
+        self.assertEqual(url_with_base_path(url, base_path), expected)
+
+
+class TestExtractStatusServiceUrl(ParametrizedTestCase, TestCase):
     @parametrize(
         ("entries", "expected"),
         [
@@ -177,91 +199,82 @@ class TestStatusServiceUrlResolution(ParametrizedTestCase, TestCase):
     def test_extract_status_service_url(self, entries: list, expected: str | None):
         self.assertEqual(extract_status_service_url(entries), expected)
 
-    @parametrize(
-        ("url", "base_path", "expected"),
-        [
-            param(
-                "http://adcm.local:8000",
-                "/status/api/v1/",
-                "http://adcm.local:8000/status/api/v1/",
-                id="from_adcm_url",
-            ),
-            param(
-                "http://adcm.local:8000/ui/foo?x=1",
-                "status/api/v1/",
-                "http://adcm.local:8000/status/api/v1/",
-                id="strips_path_and_query",
-            ),
-            param("http://adcm.local:8000/ui", "", "http://adcm.local:8000", id="empty_base_path"),
-        ],
-    )
-    def test_build_url_with_base_path(self, url: str, base_path: str, expected: str):
-        self.assertEqual(url_with_base_path(url, base_path), expected)
 
-    def test_resolve_prefers_consul_discovery(self):
+class TestResolveExternalStatusServiceURL(TestCase):
+    @staticmethod
+    def resolver(
+        *,
+        repo: Mock | None = None,
+        consul_backend: Mock | None = None,
+        default_adcm_url: str | None = None,
+        status_base_path: str = "/status/api/v1/",
+    ) -> ResolveExternalStatusServiceURL:
+        return ResolveExternalStatusServiceURL(
+            repo=repo if repo is not None else Mock(),
+            consul_backend=consul_backend,
+            default_adcm_url=default_adcm_url,
+            status_base_path=status_base_path,
+        )
+
+    def test_prefers_consul_discovery(self):
+        repo = Mock()
+        repo.get_uuid.return_value = "the-uuid"
         backend = Mock()
         backend.discover.return_value = [
             {"Service": {"Meta": {"status_service_url": "http://discovered:8000/status/api/v1/"}}}
         ]
 
-        url = resolve_external_status_service_url(
-            consul_backend=backend,
-            adcm_uuid="the-uuid",
-            default_adcm_url="http://fallback:8000",
-            status_base_path="/status/api/v1/",
-        )
+        url = self.resolver(repo=repo, consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
         self.assertEqual(url, "http://discovered:8000/status/api/v1/")
         backend.discover.assert_called_once_with("adcm", tag="the-uuid")
 
-    def test_resolve_falls_back_to_default_adcm_url_when_meta_missing(self):
+    def test_falls_back_to_default_adcm_url_when_meta_missing(self):
         backend = Mock()
         backend.discover.return_value = [{"Service": {"Meta": {}}}]
 
-        url = resolve_external_status_service_url(
-            consul_backend=backend,
-            adcm_uuid=None,
-            default_adcm_url="http://fallback:8000",
-            status_base_path="/status/api/v1/",
-        )
+        url = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
         self.assertEqual(url, "http://fallback:8000/status/api/v1/")
 
-    def test_resolve_falls_back_to_default_adcm_url_when_discovery_fails(self):
+    def test_falls_back_to_default_adcm_url_when_discovery_fails(self):
         backend = Mock()
         backend.discover.side_effect = RuntimeError("consul down")
 
-        url = resolve_external_status_service_url(
-            consul_backend=backend,
-            adcm_uuid=None,
-            default_adcm_url="http://fallback:8000",
-            status_base_path="/status/api/v1/",
-        )
+        url = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
         self.assertEqual(url, "http://fallback:8000/status/api/v1/")
 
-    def test_resolve_without_consul_uses_default_adcm_url(self):
-        url = resolve_external_status_service_url(
-            consul_backend=None,
-            adcm_uuid=None,
-            default_adcm_url="http://fallback:8000",
-            status_base_path="/status/api/v1/",
-        )
+    def test_without_consul_uses_default_adcm_url(self):
+        url = self.resolver(consul_backend=None, default_adcm_url="http://fallback:8000").resolve()
 
         self.assertEqual(url, "http://fallback:8000/status/api/v1/")
 
-    def test_resolve_returns_none_without_any_source(self):
-        self.assertIsNone(
-            resolve_external_status_service_url(
-                consul_backend=None,
-                adcm_uuid=None,
-                default_adcm_url=None,
-                status_base_path="/status/api/v1/",
-            )
-        )
+    def test_returns_none_without_any_source(self):
+        self.assertIsNone(self.resolver(consul_backend=None, default_adcm_url=None).resolve())
+
+    def test_repo_is_not_queried_when_consul_is_not_configured(self):
+        repo = Mock()
+
+        self.resolver(repo=repo, consul_backend=None, default_adcm_url="http://fallback:8000").resolve()
+
+        repo.get_uuid.assert_not_called()
 
 
 class TestSetupStatusServiceUrl(TestCase):
+    """Coverage for the ``setup_status_service_url`` signal handler itself.
+
+    Resolution logic (Consul discovery vs. DEFAULT_ADCM_URL fallback) lives in
+    ``ResolveExternalStatusServiceURL`` and is covered above; here we only check
+    the handler's own behavior around whatever the DI-provided resolver returns.
+    """
+
+    @staticmethod
+    def make_parent(*, resolved_url: str | None) -> Mock:
+        parent = Mock()
+        parent.app.di_container.get.return_value.resolve.return_value = resolved_url
+        return parent
+
     def setUp(self):
         # isolate the process-wide external URL override on the shared singleton
         patcher = patch.object(status_service_url, "external", None)
@@ -269,34 +282,17 @@ class TestSetupStatusServiceUrl(TestCase):
         self.addCleanup(patcher.stop)
 
     def test_start_fails_when_url_cannot_be_resolved(self):
-        parent = self._make_parent(consul=None, default_adcm_url=None)
-
-        with self.assertRaises(StatusServiceUrlResolutionError):
-            setup_status_service_url(sender=parent)
-
-    def test_start_fails_when_discovery_is_empty_and_no_default_url(self):
-        backend = Mock()
-        backend.discover.return_value = []
-        parent = self._make_parent(consul=backend, default_adcm_url=None)
+        parent = self.make_parent(resolved_url=None)
 
         with self.assertRaises(StatusServiceUrlResolutionError):
             setup_status_service_url(sender=parent)
 
     def test_start_sets_external_url_when_resolved(self):
-        parent = self._make_parent(consul=None, default_adcm_url="http://adcm.local:8000")
+        parent = self.make_parent(resolved_url="http://adcm.local:8000/status/api/v1/")
 
         setup_status_service_url(sender=parent)
 
         self.assertEqual(status_service_url.resolve(), "http://adcm.local:8000/status/api/v1/")
-
-    @staticmethod
-    def _make_parent(*, consul, default_adcm_url: str | None) -> Mock:
-        parent = Mock()
-        parent.app.conf.consul = consul
-        parent.app.conf.default_adcm_url = default_adcm_url
-        parent.app.conf.status_service_base_path = "/status/api/v1/"
-        parent.app.di_container.get.return_value.get_uuid.return_value = "the-uuid"
-        return parent
 
 
 @override_settings(INTERNAL_STATUS_SERVICE_URL="http://localhost:8020/api/v1/")
