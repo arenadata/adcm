@@ -51,10 +51,19 @@ interface PrepareViewInfo {
 
 const prepareViewInfo = ({ disabled, actions }: PrepareViewInfo) => {
   const isNoActions = !actions?.length;
-  const isDisabled = disabled || isNoActions;
-  const title = disabled ? 'Actions are blocked' : isNoActions ? 'No Actions available' : 'Actions';
+  const reasons = (actions ?? []).map((a) => a.startImpossibleReason).filter((r) => !!r);
 
-  const iconName: IconsNames = disabled ? 'g1-actions-disabled' : 'g1-actions';
+  const allHaveSameReason =
+    !isNoActions && reasons.length === actions!.length && reasons.every((r) => r === reasons[0]);
+
+  const commonReason = allHaveSameReason ? reasons[0] : null;
+
+  const isDisabled = disabled || isNoActions || allHaveSameReason;
+  const isLocked = disabled || allHaveSameReason;
+
+  const title = disabled ? 'Actions are blocked' : isNoActions ? 'No Actions available' : (commonReason ?? 'Actions');
+
+  const iconName: IconsNames = isLocked ? 'g1-actions-disabled' : 'g1-actions';
 
   return {
     isDisabled,
