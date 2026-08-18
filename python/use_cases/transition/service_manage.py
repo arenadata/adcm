@@ -59,35 +59,38 @@ class ManageClusterServices:
         task_owner: TaskOwner,
         changes_description: str,
     ) -> ServiceManageOutcome:
-        # TODO: remove cast when `core.legacy.cluster.types.ClusterTopology`
-        #  and `core.cluster._types.ClusterTopology` are united
-        topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
-        present_services = {service.info.name for service in topology.services.values()}
-        names_to_add = [entry.name for entry in entries if entry.name not in present_services]
-        mapping_is_requested = any(entry.hc_changes for entry in entries)
-
         configs_changed = False
         mapping_changed = False
+
         with atomic():
+            # TODO: remove cast when `core.legacy.cluster.types.ClusterTopology`
+            #  and `core.cluster._types.ClusterTopology` are united
+            topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
+            present_services = {service.info.name for service in topology.services.values()}
+            # configuration and mapping changes are applied only for services added by this very run,
+            # requests for already present services are silently ignored
+            entries_to_add = tuple(entry for entry in entries if entry.name not in present_services)
+            if not entries_to_add:
+                # In ADCM-8316 it was decided that only newly added services should have their mapping/config changed
+                return ServiceManageOutcome(added_services=(), configs_changed=False, mapping_changed=False)
+
+            mapping_is_requested = any(entry.hc_changes for entry in entries_to_add)
             if mapping_is_requested:
                 lock_cluster_mapping(cluster_id=cluster_id)
 
-            if names_to_add:
-                cluster, bundle_id = _retrieve_cluster_with_bundle(cluster_id=cluster_id)
-                self.add_services.do(
-                    cluster=cluster, prototype_ids=_resolve_service_prototypes(bundle_id, names_to_add)
-                )
-                # Services and components are created while the job is running,
-                # so job's related configs should be updated for new objects to be configurable below.
-                create_related_configs(job_id=job_id, owner=task_owner)
-                topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
-            else:
-                _, bundle_id = _retrieve_cluster_with_bundle(cluster_id=cluster_id)
+            cluster, bundle_id = _retrieve_cluster_with_bundle(cluster_id=cluster_id)
+            names_to_add = [entry.name for entry in entries_to_add]
 
-            services_by_name = _retrieve_services_by_name(
-                cluster_id=cluster_id, names=[entry.name for entry in entries]
-            )
-            for entry in entries:
+            self.add_services.do(cluster=cluster, prototype_ids=_resolve_service_prototypes(bundle_id, names_to_add))
+
+            # Services and components are created while the job is running,
+            # so job's related configs should be updated for new objects to be configurable below.
+            create_related_configs(job_id=job_id, owner=task_owner)
+
+            topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
+
+            services_by_name = _retrieve_services_by_name(cluster_id=cluster_id, names=names_to_add)
+            for entry in entries_to_add:
                 if not entry.config_changes:
                     continue
 
@@ -100,7 +103,7 @@ class ManageClusterServices:
                 )
                 configs_changed = configs_changed or has_changed
 
-            mapping_delta = _build_mapping_delta(topology=topology, entries=entries)
+            mapping_delta = _build_mapping_delta(topology=topology, entries=entries_to_add)
             if not mapping_delta.is_empty:
                 change_host_component_mapping_no_lock(
                     cluster_id=cluster_id,

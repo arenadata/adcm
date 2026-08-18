@@ -506,6 +506,75 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         )
         related_configs_mock.assert_not_called()
 
+    def test_internal_service_manage_existing_service_changes_skipped(self):
+        initial_config = ConfigLog.objects.get(obj_ref=self.service.config, id=self.service.config.current)
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "service_two_components",
+                    "config_changes": [{"key": "/string", "value": "should_not_be_applied"}],
+                    "hc_changes": [{"component": "component_1", "hosts": ["host1"]}],
+                }
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs") as related_configs_mock,
+            patch("use_cases.transition.config.update_related_configs"),
+        ):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("already in place", result.message)
+        related_configs_mock.assert_not_called()
+
+        # neither configuration nor mapping of an already present service should be touched
+        self.service.config.refresh_from_db()
+        self.assertEqual(self.service.config.current, initial_config.id)
+        self.assertFalse(HostComponent.objects.filter(cluster=self.cluster, service=self.service).exists())
+
+    def test_internal_service_manage_mixed_new_and_existing_services_success(self):
+        expected_value = "changed_by_service_manage"
+        initial_config = ConfigLog.objects.get(obj_ref=self.service.config, id=self.service.config.current)
+        task, job = self.get_dummy_service_manage_task_job(
+            owner=self.cluster,
+            services=[
+                {
+                    "name": "service_two_components",
+                    "config_changes": [{"key": "/string", "value": "should_not_be_applied"}],
+                    "hc_changes": [{"component": "component_1", "hosts": ["host1"]}],
+                },
+                {
+                    "name": "another_service_two_components",
+                    "config_changes": [{"key": "/string", "value": expected_value}],
+                    "hc_changes": [{"component": "component_1", "hosts": ["host2"]}],
+                },
+            ],
+        )
+
+        with (
+            patch("use_cases.transition.service_manage.create_related_configs"),
+            patch("use_cases.transition.config.update_related_configs"),
+        ):
+            result = internal_script_service_manage(task=task, job=job, **self.get_service_manage_deps())
+
+        self.assertEqual(result.code, 0)
+
+        # the added service gets both its configuration and mapping changes
+        added_service = Service.objects.get(cluster=self.cluster, prototype__name="another_service_two_components")
+        added_config = ConfigLog.objects.get(obj_ref=added_service.config, id=added_service.config.current)
+        self.assertEqual(added_config.config["string"], expected_value)
+        added_component_1 = Component.objects.get(service=added_service, prototype__name="component_1")
+        self.assertSetEqual(
+            set(HostComponent.objects.filter(cluster=self.cluster).values_list("host_id", "component_id")),
+            {(self.host_2.pk, added_component_1.pk)},
+        )
+
+        # the already present service is left as is
+        self.service.config.refresh_from_db()
+        self.assertEqual(self.service.config.current, initial_config.id)
+
     def test_internal_service_manage_from_service_context_success(self):
         task, job = self.get_dummy_service_manage_task_job(
             owner=self.service, services=[{"name": "another_service_two_components"}]
