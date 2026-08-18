@@ -20,25 +20,19 @@ connected automatically on import. Call `install_for_worker()` once, from
 the worker entrypoint only.
 """
 
-from typing import Any
 import logging
 import logging.config
 
 from application.loggers import task_worker_logging_config_from_env
 from celery.signals import celeryd_after_setup, worker_before_create_process, worker_init, worker_process_init
 from cm.legacy.status_api import status_service_url
-from core.adcm import ADCMRepoI
 from django.db import connections
 
 from integrations.celery.errors import JobFailedFlowError
-from integrations.celery.helpers import read_adcm_uuid
+from integrations.celery.external_status_service_url import ResolveExternalStatusServiceURL
 from integrations.celery.pg.transport import discard_engines_inherited_from_fork
-from integrations.consul import ConsulBackend, url_with_base_path
 
 logger = logging.getLogger("worker.celery")
-
-ADCM_SERVICE_NAME = "adcm"
-STATUS_SERVICE_URL_META = "status_service_url"
 
 
 class StatusServiceUrlResolutionError(Exception):
@@ -84,45 +78,6 @@ def close_inherited_connections_in_child(**_) -> None:
 # Status service URL resolution
 
 
-def extract_status_service_url(entries: list[dict[str, Any]]) -> str | None:
-    """
-    Pick the ``status_service_url`` meta from the first ADCM discovery entry that has one.
-
-    With several ADCM instances registered under the same uuid tag, any of
-    their advertised URLs is considered equivalent (they front the same status
-    service), so first-non-empty is a deliberate rule, not an accident.
-    """
-    for entry in entries:
-        meta = (entry.get("Service") or {}).get("Meta") or {}
-        url = meta.get(STATUS_SERVICE_URL_META)
-        if url:
-            return url
-
-    return None
-
-
-def resolve_external_status_service_url(
-    *,
-    consul_backend: ConsulBackend | None,
-    adcm_uuid: str | None,
-    default_adcm_url: str | None,
-    status_base_path: str,
-) -> str | None:
-    if consul_backend is not None:
-        url = _discover_status_service_url(backend=consul_backend, adcm_uuid=adcm_uuid)
-        if url:
-            return url
-
-    if default_adcm_url:
-        # consul-less fallback: same formula the backend uses to build the URL
-        # it advertises in Consul meta (see application.startup.consul); when
-        # discovery works, the advertised URL above wins — it is authoritative
-        # for scheme and base path
-        return url_with_base_path(default_adcm_url, status_base_path)
-
-    return None
-
-
 def setup_status_service_url(sender, **_) -> None:
     """Point ``status_api`` at the resolved external status service URL on worker start.
 
@@ -133,13 +88,8 @@ def setup_status_service_url(sender, **_) -> None:
     fires in the main process before the blueprint (and thus the pool) is
     created, so the resolved URL is inherited by every forked child.
     """
-    conf = sender.app.conf
-    resolved_url = resolve_external_status_service_url(
-        consul_backend=conf.consul,
-        adcm_uuid=read_adcm_uuid(sender.app.di_container.get(ADCMRepoI)),
-        default_adcm_url=conf.default_adcm_url,
-        status_base_path=conf.status_service_base_path,
-    )
+    resolver = sender.app.di_container.get(ResolveExternalStatusServiceURL)
+    resolved_url = resolver.resolve()
 
     if not resolved_url:
         message = (
@@ -151,16 +101,6 @@ def setup_status_service_url(sender, **_) -> None:
 
     status_service_url.set_external(resolved_url)
     logger.info("Worker status events will be sent to %s", resolved_url)
-
-
-def _discover_status_service_url(*, backend: ConsulBackend, adcm_uuid: str | None) -> str | None:
-    try:
-        entries = backend.discover(ADCM_SERVICE_NAME, tag=adcm_uuid)
-    except Exception:  # noqa: BLE001
-        logger.exception("Failed to discover ADCM in Consul")
-        return None
-
-    return extract_status_service_url(entries)
 
 
 # Logging

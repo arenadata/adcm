@@ -11,13 +11,26 @@
 # limitations under the License.
 
 from celery import Celery
+from core.adcm import ADCMRepoI
 from dishka import Container, Provider, Scope, provide
 from integrations.celery.app import ADCMCelery
+from integrations.celery.external_status_service_url import ResolveExternalStatusServiceURL
 from integrations.celery.settings import CelerySettings
 
 
 class CeleryProvider(Provider):
     scope = Scope.APP
+
+    @provide
+    def resolve_external_status_service_url(
+        self, repo: ADCMRepoI, celery_settings: CelerySettings
+    ) -> ResolveExternalStatusServiceURL:
+        return ResolveExternalStatusServiceURL(
+            repo=repo,
+            consul_backend=celery_settings.consul,
+            default_adcm_url=celery_settings.default_adcm_url,
+            status_base_path=celery_settings.status_service_base_path,
+        )
 
     @provide
     def celery(self, container: Container, celery_settings: CelerySettings) -> Celery:
