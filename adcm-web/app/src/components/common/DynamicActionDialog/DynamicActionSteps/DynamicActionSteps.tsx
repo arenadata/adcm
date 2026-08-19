@@ -6,7 +6,6 @@ import DynamicActionAgreeActionHostsGroup from './DynamicActionAgreeActionHostsG
 import DynamicActionHostMapping from './DynamicActionHostMapping/DynamicActionHostMapping';
 import type { AdcmActionHostGroup, AdcmDynamicActionDetails, AdcmDynamicActionRunConfig } from '@models/adcm';
 import { getNextStep, isLastStep } from '@uikit/WizardSteps/WizardSteps.utils';
-import DynamicActionRaisingConcerns from './DynamicActionRaisingConcerns/DynamicActionRaisingConcerns';
 import DynamicActionConfirm from './DynamicActionConfirm/DynamicActionConfirm';
 import { getDefaultRunConfig } from '../DynamicActionDialog.utils';
 import s from '../DynamicActionDialog.module.scss';
@@ -15,8 +14,7 @@ import { useDialogContext } from '@uikit/DialogV2/Dialog.context';
 const stepsTitles: Record<DynamicActionStep, string> = {
   [DynamicActionStep.AgreeActionHostsGroup]: 'Hosts group',
   [DynamicActionStep.ConfigSchema]: 'Configuration',
-  [DynamicActionStep.HostComponentMapping]: 'Host - Component',
-  [DynamicActionStep.RaisingConcerns]: 'Raising concerns',
+  [DynamicActionStep.HostComponentMapping]: 'Mapping',
   [DynamicActionStep.Confirm]: 'Confirmation',
 };
 
@@ -26,6 +24,7 @@ interface DynamicActionsStepsProps {
   actionHostGroup?: AdcmActionHostGroup;
   actionSteps: DynamicActionStep[];
   onSubmit: (runConfig: AdcmDynamicActionRunConfig) => void;
+  isConcernControlShown?: boolean;
 }
 
 const DynamicActionSteps = ({
@@ -34,6 +33,7 @@ const DynamicActionSteps = ({
   onSubmit,
   clusterId,
   actionSteps,
+  isConcernControlShown = true,
 }: DynamicActionsStepsProps) => {
   const { onCancel } = useDialogContext();
 
@@ -100,15 +100,6 @@ const DynamicActionSteps = ({
           onCancel={onCancel}
         />
       )}
-      {currentStep === DynamicActionStep.RaisingConcerns && (
-        <DynamicActionRaisingConcerns
-          actionDetails={actionDetails}
-          onNext={handleStepChange}
-          onCancel={onCancel}
-          onStateChange={handleStateChange}
-          shouldBlockObject={localActionRunConfig.shouldBlockObject}
-        />
-      )}
       {currentStep === DynamicActionStep.Confirm && (
         <DynamicActionConfirm
           actionDetails={actionDetails}
@@ -117,6 +108,8 @@ const DynamicActionSteps = ({
           onStateChange={handleStateChange}
           description={localActionRunConfig.description}
           isVerbose={localActionRunConfig.isVerbose}
+          shouldBlockObject={localActionRunConfig.shouldBlockObject}
+          isConcernControlShown={isConcernControlShown}
         />
       )}
     </div>

@@ -11,7 +11,7 @@ export interface DynamicActionDialogProps {
   actionHostGroup?: AdcmActionHostGroup;
   onSubmit: (data: AdcmDynamicActionRunConfig) => void;
   onCancel: () => void;
-  isConcernStepShown?: boolean;
+  isConcernControlShown?: boolean;
 }
 
 const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({
@@ -20,10 +20,10 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({
   actionHostGroup,
   onCancel,
   onSubmit,
-  isConcernStepShown = true,
+  isConcernControlShown = true,
 }) => {
   const dynamicActionTypes = useMemo(() => {
-    return getDynamicActionSteps(actionDetails, actionHostGroup, { isConcernStepShown });
+    return getDynamicActionSteps(actionDetails, actionHostGroup);
   }, [actionDetails, actionHostGroup]);
 
   const commonDialogOptions = {
@@ -45,6 +45,7 @@ const DynamicActionDialog: React.FC<DynamicActionDialogProps> = ({
         actionDetails={actionDetails}
         actionHostGroup={actionHostGroup}
         onSubmit={onSubmit}
+        isConcernControlShown={isConcernControlShown}
       />
     </DialogV2>
   );
