@@ -34,7 +34,7 @@ const UpgradeClusterDialog = () => {
         actionDetails={upgradeDetails}
         onCancel={onClose}
         onSubmit={onSubmit}
-        isConcernStepShown={false}
+        isConcernControlShown={false}
       />
     );
   }

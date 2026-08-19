@@ -41,12 +41,6 @@
     min-height: 52px;
   }
 
-  &__descriptionWrapper {
-    gap: 10px;
-    display: flex;
-    flex-direction: column;
-  }
-
   &__disclaimerText,
   &__descriptionLabel {
     color: var(--color-grayUsual);
@@ -55,5 +49,30 @@
   &__descriptionLabel {
     font-weight: 500;
     font-size: 14px;
+  }
+
+  &__switches {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__verbose {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  &__verboseText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  &__verboseHint {
+    color: var(--color-grayUsual);
+    font-size: 14px;
+    font-weight: 400;
   }
 }

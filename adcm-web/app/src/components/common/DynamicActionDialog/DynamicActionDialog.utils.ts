@@ -8,14 +8,9 @@ import type {
 } from '@models/adcm';
 import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 
-interface DynamicActionStepsOpts {
-  isConcernStepShown: boolean;
-}
-
 export const getDynamicActionSteps = (
   actionDetails: AdcmDynamicActionDetails,
   actionHostsGroup: AdcmActionHostGroup | undefined,
-  opts?: DynamicActionStepsOpts,
 ): DynamicActionStep[] => {
   const steps = [] as DynamicActionStep[];
 
@@ -29,10 +24,6 @@ export const getDynamicActionSteps = (
 
   if (actionDetails.hostComponentMapRules.length > 0) {
     steps.push(DynamicActionStep.HostComponentMapping);
-  }
-
-  if (opts?.isConcernStepShown) {
-    steps.push(DynamicActionStep.RaisingConcerns);
   }
 
   steps.push(DynamicActionStep.Confirm);

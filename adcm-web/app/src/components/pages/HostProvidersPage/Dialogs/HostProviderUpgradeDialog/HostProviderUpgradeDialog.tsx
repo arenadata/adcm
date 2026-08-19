@@ -34,7 +34,7 @@ const HostProviderUpgradeDialog: React.FC = () => {
         actionDetails={upgradeDetails}
         onCancel={onClose}
         onSubmit={onSubmit}
-        isConcernStepShown={false}
+        isConcernControlShown={false}
       />
     );
   }
