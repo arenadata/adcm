@@ -15,6 +15,7 @@ import {
 } from '@models/adcm';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 import type { ModalState } from '@models/modal';
+import { excludeUnsupportedPrototypeVersions } from '@utils/contractVersionUtils';
 
 interface AdcmClusterActionsState extends ModalState<AdcmCluster, 'cluster'> {
   createDialog: {
@@ -61,7 +62,7 @@ const createCluster = createAsyncThunk(
 const loadPrototypeVersions = createAsyncThunk('adcm/clustersActions/loadPrototypeVersions', async (_arg, thunkAPI) => {
   try {
     const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Cluster });
-    return prototypeVersions;
+    return excludeUnsupportedPrototypeVersions(prototypeVersions);
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);

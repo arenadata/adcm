@@ -1,5 +1,6 @@
 import AnchorBar, { AnchorList } from './AnchorBar/AnchorBar';
 import type { AnchorBarItem } from './AnchorBar/AnchorBar';
+import Badge from './Badge/Badge';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from './ButtonGroup/ButtonGroup';
 import CheckAll from '@uikit/CheckAll/CheckAll';
@@ -72,6 +73,7 @@ export {
   AnchorBar,
   type AnchorBarItem,
   AnchorList,
+  Badge,
   Button,
   ButtonGroup,
   CodeEditor,

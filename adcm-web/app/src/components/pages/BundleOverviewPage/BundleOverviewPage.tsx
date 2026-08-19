@@ -4,6 +4,7 @@ import type React from 'react';
 import { useEffect } from 'react';
 import { useRequestBundle } from './useRequestBundle';
 import BundleOverviewHeader from './BundleOverviewHeader/BundleOverviewHeader';
+import BundleOverviewContractVersionWarning from './BundleOverviewContractVersionWarning/BundleOverviewContractVersionWarning';
 import BundleOverviewTable from './BundleOverviewTable/BundleOverviewTable';
 import BundleOverviewLicenseContent from './BundleOverviewLicenceContent/BundleOverviewLicenseContent';
 import { Spinner } from '@uikit';
@@ -26,6 +27,7 @@ const BundleOverviewPage: React.FC = () => {
   return (
     <>
       <BundleOverviewHeader />
+      <BundleOverviewContractVersionWarning />
       <BundleOverviewTable />
       {isLicenseLoading ? (
         <div className={s.spinner}>

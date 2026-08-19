@@ -6,7 +6,7 @@ import Icon from '@uikit/Icon/Icon';
 
 export interface WarningProps extends React.PropsWithChildren {
   className?: string;
-  variant?: 'warning' | 'info';
+  variant?: 'warning' | 'info' | 'error';
   action?: React.ReactNode;
   innerMaxHeight?: CSSProperties['maxHeight'];
 }
@@ -14,6 +14,7 @@ export interface WarningProps extends React.PropsWithChildren {
 const iconByVariant = {
   warning: 'alert-circle',
   info: 'info',
+  error: 'alert-circle',
 } as const;
 
 const WarningMessage = ({ className, children, variant = 'warning', action, innerMaxHeight = '104' }: WarningProps) => (

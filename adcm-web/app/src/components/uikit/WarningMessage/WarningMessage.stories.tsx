@@ -18,6 +18,19 @@ export const WarningMessageElement: Story = {
   },
 };
 
+export const ErrorMessageElement: Story = {
+  args: {
+    variant: 'error',
+  },
+  render: (args) => {
+    return (
+      <WarningMessage {...args}>
+        Error message <strong>bold text</strong>
+      </WarningMessage>
+    );
+  },
+};
+
 export const InfoMessageElement: Story = {
   args: {
     variant: 'info',

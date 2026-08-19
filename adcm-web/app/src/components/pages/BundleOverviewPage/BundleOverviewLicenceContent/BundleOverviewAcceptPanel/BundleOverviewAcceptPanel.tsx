@@ -8,9 +8,15 @@ interface BundleOverviewAcceptPanelProps {
   bundleId?: number;
   prototypeId?: number;
   isLicenseAccepted: boolean;
+  isAcceptDisabled?: boolean;
 }
 
-const BundleOverviewAcceptPanel = ({ prototypeId, bundleId, isLicenseAccepted }: BundleOverviewAcceptPanelProps) => {
+const BundleOverviewAcceptPanel = ({
+  prototypeId,
+  bundleId,
+  isLicenseAccepted,
+  isAcceptDisabled = false,
+}: BundleOverviewAcceptPanelProps) => {
   const dispatch = useDispatch();
   const [isDisabled, setIsDisabled] = useState<boolean>(true);
 
@@ -25,15 +31,17 @@ const BundleOverviewAcceptPanel = ({ prototypeId, bundleId, isLicenseAccepted }:
     }
   };
 
+  const isControlsDisabled = isLicenseAccepted || isAcceptDisabled;
+
   return (
     <div className={s.acceptPanel}>
       <Checkbox
         onClick={checkboxHandler}
         label="I've read text of License Agreement"
-        disabled={isLicenseAccepted}
+        disabled={isControlsDisabled}
         checked={isLicenseAccepted}
       />
-      <Button onClick={acceptLicenseHandler} disabled={isDisabled || isLicenseAccepted}>
+      <Button onClick={acceptLicenseHandler} disabled={isDisabled || isControlsDisabled}>
         Accept
       </Button>
     </div>

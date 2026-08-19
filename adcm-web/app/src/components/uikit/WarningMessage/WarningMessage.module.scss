@@ -1,10 +1,12 @@
 :global {
   body.theme-dark {
     --warning-text-color: var(--color-xgray-lighter);
+    --warning-error-color: var(--color-xred);
   }
 
   body.theme-light {
     --warning-text-color: var(--color-xgray-light);
+    --warning-error-color: var(--color-xred-light);
   }
 }
 
@@ -28,6 +30,12 @@
   &_info {
     --warning-border-color: var(--color-xblue);
     --warning-icon-color: var(--color-xblue);
+    --warning-background-color: transparent;
+  }
+
+  &_error {
+    --warning-border-color: var(--warning-error-color);
+    --warning-icon-color: var(--warning-error-color);
     --warning-background-color: transparent;
   }
 
