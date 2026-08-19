@@ -3,9 +3,10 @@ import type React from 'react';
 import { useCallback } from 'react';
 import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './BundlesTable.constants';
+import BundleVersionCell from './BundleVersionCell/BundleVersionCell';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
-import type { AdcmBundle } from '@models/adcm';
+import { AdcmContractVersionStatus, type AdcmBundle } from '@models/adcm';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import {
   openDeleteDialog,
@@ -63,14 +64,18 @@ const BundlesTable: React.FC = () => {
     >
       {bundles.map((bundle) => {
         return (
-          <TableRow key={bundle.id} className={cn({ 'is-selected': selectedItemsIds.includes(bundle.id) })}>
+          <TableRow
+            key={bundle.id}
+            isInactive={bundle.contractVersion?.status === AdcmContractVersionStatus.Unsupported}
+            className={cn({ 'is-selected': selectedItemsIds.includes(bundle.id) })}
+          >
             <TableCell>
               <Checkbox checked={isItemSelected(bundle)} onChange={getHandlerSelectedItem(bundle)} />
             </TableCell>
             <TableCell>
               <Link to={`/bundles/${bundle.id}`}>{bundle.displayName || bundle.name}</Link>
             </TableCell>
-            <TableCell>{bundle.version}</TableCell>
+            <BundleVersionCell bundle={bundle} />
             <TableCell>{orElseGet(bundle.edition)}</TableCell>
             <DateTimeCell value={bundle.uploadTime} />
             <TableCell>{bundle.mainPrototype.license.status}</TableCell>

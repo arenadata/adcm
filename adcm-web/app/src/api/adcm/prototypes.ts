@@ -13,6 +13,8 @@ export class AdcmPrototypesApi {
   public static async getPrototypeVersions(filter: AdcmPrototypeVersionsFilter) {
     const queryParams = {
       type: filter.type || undefined,
+      contractVersionStatus: filter.contractVersionStatus || undefined,
+      contractVersionValue: filter.contractVersionValue || undefined,
     };
 
     const query = qs.stringify(queryParams);
@@ -33,6 +35,8 @@ export class AdcmPrototypesApi {
     const queryParams = {
       type: filter.type || undefined,
       bundleId: filter.bundleId || undefined,
+      contractVersionStatus: filter.contractVersionStatus || undefined,
+      contractVersionValue: filter.contractVersionValue || undefined,
       sortColumn: sortParams?.sortBy,
       sortDirection: sortParams?.sortDirection,
       offset: paginationParams ? paginationParams.pageNumber * paginationParams.perPage : undefined,

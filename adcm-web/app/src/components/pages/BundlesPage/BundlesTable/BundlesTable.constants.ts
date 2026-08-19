@@ -1,5 +1,6 @@
 import type { TableColumn, BaseStatus } from '@uikit';
-import { AdcmBundleSignatureStatus } from '@models/adcm/bundle';
+import type { BadgeStatus } from '@uikit/Badge/Badge.types';
+import { AdcmBundleSignatureStatus, AdcmContractVersionStatus } from '@models/adcm/bundle';
 
 export const columns: TableColumn[] = [
   {
@@ -44,4 +45,15 @@ export const bundleSignatureStatusesMap: { [key in AdcmBundleSignatureStatus]: B
   [AdcmBundleSignatureStatus.Valid]: 'done',
   [AdcmBundleSignatureStatus.Invalid]: 'failed',
   [AdcmBundleSignatureStatus.Absent]: 'created',
+};
+
+export const bundleContractVersionTooltips: Partial<Record<AdcmContractVersionStatus, string>> = {
+  [AdcmContractVersionStatus.Unsupported]: 'Not supported',
+  [AdcmContractVersionStatus.Deprecated]: 'Deprecated',
+};
+
+export const bundleContractVersionBadgeStatuses: Record<AdcmContractVersionStatus, BadgeStatus> = {
+  [AdcmContractVersionStatus.Unsupported]: 'danger',
+  [AdcmContractVersionStatus.Deprecated]: 'warning',
+  [AdcmContractVersionStatus.Supported]: 'info',
 };

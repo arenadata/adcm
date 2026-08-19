@@ -8,6 +8,7 @@ import type { AdcmHostProvider, AdcmHostProviderPayload, AdcmPrototypeVersions }
 import { AdcmPrototypeType } from '@models/adcm';
 import type { ModalState } from '@models/modal';
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
+import { excludeUnsupportedPrototypeVersions } from '@utils/contractVersionUtils';
 
 interface AdcmHostProvidersActionsState extends ModalState<AdcmHostProvider, 'hostprovider'> {
   createDialog: {
@@ -65,7 +66,7 @@ const loadPrototypeVersions = createAsyncThunk(
   async (_arg, thunkAPI) => {
     try {
       const prototypeVersions = await AdcmPrototypesApi.getPrototypeVersions({ type: AdcmPrototypeType.Provider });
-      return prototypeVersions;
+      return excludeUnsupportedPrototypeVersions(prototypeVersions);
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
