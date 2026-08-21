@@ -42,6 +42,10 @@ class AnsibleExecutorConfig(BundleExecutorConfig):
     venv: str
 
 
+class PythonExecutorConfig(BundleExecutorConfig):
+    venv: str
+
+
 class AnsibleProcessExecutor(ProcessExecutor):
     script_type = "ansible"
 
@@ -72,14 +76,10 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
     def _get_environment_variables(self) -> dict:
         env = super()._get_environment_variables()
-
         env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
-
-        selected_venv = self._config.venv if self._config.venv in {"2.16", "2.21"} else "2.16"
-
         # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
         env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
-        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{selected_venv}/collections"
+        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{self._config.venv}/collections"
 
         return env
 
@@ -87,8 +87,18 @@ class AnsibleProcessExecutor(ProcessExecutor):
 class PythonProcessExecutor(ProcessExecutor):
     script_type = "python"
 
+    _config: PythonExecutorConfig
+
+    def __init__(self, config: PythonExecutorConfig):
+        super().__init__(config=config)
+
     def _prepare_command(self) -> list[str]:
         return ["python", str(self._config.bundle.root / self._config.job_script)]
+
+    def _get_environment_variables(self) -> dict:
+        env = super()._get_environment_variables()
+
+        return get_env_with_venv_path(venv=self._config.venv, existing_env=env)
 
 
 class InternalExecutor(Executor, WithErrOutLogsMixin):

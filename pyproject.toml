@@ -11,7 +11,7 @@ authors = [
     { name = "Ella Kurginyan", email = "<ke@arenadata.io>" },
     { name = "Vladimir Elagin", email = "<v.elagin@arenadata.io>" },
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
