@@ -52,7 +52,7 @@ const ClusterOverviewBottomConcerns = ({ concerns }: ClusterOverviewBottomConcer
       listClassName={s.clusterOverviewBottomConcerns__list}
       headerSlot={
         <div className={s.clusterOverviewBottomConcerns__header}>
-          <h3 className={s.clusterOverviewBottomConcerns__title}>Resources</h3>
+          <h3 className={s.clusterOverviewBottomConcerns__title}>Concerns</h3>
           <TabsBlock variant="secondary" className={s.clusterOverviewBottomConcerns__tabs}>
             {FILTER_TABS.map((tab) => (
               <TabButton key={tab.id} isActive={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
