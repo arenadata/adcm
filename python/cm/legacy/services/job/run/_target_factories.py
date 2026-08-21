@@ -39,7 +39,7 @@ from core.action import (
 from core.action.job import TaskUpdateDTO
 from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
+from core.legacy.job.executors import ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.logs import LogsService
 from core.scenarios.config import ConfigScenarios
@@ -68,6 +68,7 @@ from cm.legacy.services.job.run.executors import (
     AnsibleProcessExecutor,
     InternalExecutor,
     InternalScriptResult,
+    PythonExecutorConfig,
     PythonProcessExecutor,
 )
 from cm.legacy.services.job.types import (
@@ -164,10 +165,11 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                     environment_builders = (prepare_ansible_environment,)
                 case ScriptType.PYTHON:
                     executor = PythonProcessExecutor(
-                        config=BundleExecutorConfig(
+                        config=PythonExecutorConfig(
                             job_script=job_info.script,
                             work_dir=work_dir,
                             bundle=task.bundle,
+                            venv=task.action.venv,
                         )
                     )
                     environment_builders = ()
