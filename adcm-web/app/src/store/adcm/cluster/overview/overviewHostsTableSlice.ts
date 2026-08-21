@@ -7,6 +7,8 @@ type AdcmClusterOverviewHostsTableState = ListState<AdcmClusterOverviewHostsFilt
 const createInitialState = (): AdcmClusterOverviewHostsTableState => ({
   filter: {
     hostsStatus: undefined,
+    maintenanceMode: undefined,
+    name: undefined,
   },
   paginationParams: {
     perPage: 10,
@@ -25,6 +27,13 @@ const hostsTableSlice = createListSlice({
   reducers: {},
 });
 
-export const { setPaginationParams, setRequestFrequency, setFilter, resetFilter, setSortParams, resetSortParams } =
-  hostsTableSlice.actions;
+export const {
+  setPaginationParams,
+  setRequestFrequency,
+  setFilter,
+  resetFilter,
+  setSortParams,
+  resetSortParams,
+  cleanupList,
+} = hostsTableSlice.actions;
 export default hostsTableSlice.reducer;

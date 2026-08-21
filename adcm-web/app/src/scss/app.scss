@@ -1,4 +1,8 @@
 @use 'vars';
+@use 'redesign/vars.css' as redesign-vars;
+@use 'redesign/theme.css' as redesign-theme;
+@use 'redesign/typography';
+@use 'redesign/layout';
 @use 'normalize';
 @use 'svg-sprite';
 @use 'common';

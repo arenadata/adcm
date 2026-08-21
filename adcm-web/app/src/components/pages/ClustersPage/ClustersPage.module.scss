@@ -1,0 +1,20 @@
+.clustersPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-600);
+  width: 100%;
+  min-width: 0;
+
+  &__content {
+    display: flex;
+    gap: var(--space-400);
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+  }
+}

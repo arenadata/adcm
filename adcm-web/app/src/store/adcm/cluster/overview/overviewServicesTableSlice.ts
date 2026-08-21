@@ -7,6 +7,8 @@ type AdcmClusterOverviewServicesTableState = ListState<AdcmClusterOverviewServic
 const createInitialState = (): AdcmClusterOverviewServicesTableState => ({
   filter: {
     servicesStatus: undefined,
+    maintenanceMode: undefined,
+    displayName: undefined,
   },
   paginationParams: {
     perPage: 10,
@@ -25,6 +27,13 @@ const servicesTableSlice = createListSlice({
   reducers: {},
 });
 
-export const { setPaginationParams, setRequestFrequency, setFilter, resetFilter, setSortParams, resetSortParams } =
-  servicesTableSlice.actions;
+export const {
+  setPaginationParams,
+  setRequestFrequency,
+  setFilter,
+  resetFilter,
+  setSortParams,
+  resetSortParams,
+  cleanupList,
+} = servicesTableSlice.actions;
 export default servicesTableSlice.reducer;

@@ -1,0 +1,185 @@
+:global {
+  body.theme-dark {
+    --cluster-card-metric-icon-color: var(--color-gray-usual);
+    --cluster-card-border-color: var(--color-dark-1);
+    --cluster-card-border-selected-color: var(--color-xgreen-saturated);
+    --cluster-card-border-blocking-color: var(--color-light-red-30);
+    --cluster-card-border-selected-blocking-color: var(--color-red);
+    --cluster-card-mm-icon-color: var(--color-light-red-30);
+    --cluster-card-text-primary: var(--color-xgray-lighter);
+    --cluster-card-text-secondary: var(--color-gray-usual);
+  }
+
+  body.theme-light {
+    --cluster-card-metric-icon-color: var(--color-adcm);
+    --cluster-card-border-color: var(--color-light-stroke-lighter);
+    --cluster-card-border-selected-color: var(--color-xgreen-saturated);
+    --cluster-card-border-blocking-color: var(--color-light-red-30);
+    --cluster-card-border-selected-blocking-color: var(--color-red);
+    --cluster-card-mm-icon-color: var(--color-light-red-30);
+    --cluster-card-text-primary: var(--color-xgray-new-darker);
+    --cluster-card-text-secondary: var(--color-adcm);
+  }
+}
+
+.clusterCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-300);
+  padding: var(--space-300);
+  background-color: var(--bg-container);
+  border: 2px solid var(--cluster-card-border-color);
+  border-radius: var(--radius-200);
+  cursor: pointer;
+  min-height: 300px;
+  width: 100%;
+  min-width: 368px;
+  box-sizing: border-box;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+
+  &_selected {
+    border-color: var(--cluster-card-border-selected-color);
+  }
+
+  &_blocking {
+    border-color: var(--cluster-card-border-blocking-color);
+  }
+
+  &_selectedBlocking {
+    border-color: var(--cluster-card-border-selected-blocking-color);
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-300);
+    min-width: 0;
+  }
+
+  &__title {
+    min-width: 0;
+    font-size: var(--body-1-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-1-lineheight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__status {
+    flex-shrink: 0;
+  }
+
+  &__state {
+    font-size: var(--body-2-size);
+    line-height: var(--line-height-500);
+    color: var(--cluster-card-text-secondary);
+  }
+
+  &__concerns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-100);
+  }
+
+  &__product {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-200);
+    min-width: 0;
+    width: 100%;
+  }
+
+  &__productName {
+    flex-shrink: 0;
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    letter-spacing: var(--letter-spacing-050p);
+    color: var(--cluster-card-text-secondary);
+  }
+
+  &__version {
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  &__metrics {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-200);
+  }
+
+  &__metricsRow {
+    display: grid;
+    gap: var(--space-200);
+
+    &:first-child {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &:last-child {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  &__metric {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-100);
+    padding: var(--space-200);
+    border-radius: var(--radius-150);
+    background-color: var(--color-bg-primary-default);
+  }
+
+  &__metricLabel {
+    display: flex;
+    align-items: center;
+    gap: var(--space-100);
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    color: var(--cluster-card-text-secondary);
+  }
+
+  &__metricIcon {
+    color: var(--cluster-card-metric-icon-color);
+  }
+
+  &__metricIcon_mm {
+    color: var(--cluster-card-mm-icon-color);
+  }
+
+  &__metricValue {
+    font-size: var(--body-1-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-1-lineheight);
+    color: var(--cluster-card-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__description {
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    color: var(--cluster-card-text-secondary);
+    letter-spacing: var(--letter-spacing-050p);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-height: var(--line-height-200);
+    user-select: none;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+  }
+
+  &__actions {
+    display: flex;
+  }
+}

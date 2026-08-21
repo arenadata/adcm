@@ -68,6 +68,14 @@ const clustersSlice = createSlice({
         state.clusters[index] = cluster;
       }
     },
+    removeCluster(state, action: PayloadAction<number>) {
+      const clusterId = action.payload;
+      const prevLength = state.clusters.length;
+      state.clusters = state.clusters.filter((cluster) => cluster.id !== clusterId);
+      if (state.clusters.length !== prevLength) {
+        state.totalCount -= 1;
+      }
+    },
     cleanupClusters() {
       return createInitialState();
     },
@@ -111,6 +119,6 @@ const clustersSlice = createSlice({
   },
 });
 
-const { setLoadState, cleanupClusters, upsertCluster } = clustersSlice.actions;
-export { getClusters, refreshClusters, cleanupClusters, setLoadState, upsertCluster };
+const { setLoadState, cleanupClusters, upsertCluster, removeCluster } = clustersSlice.actions;
+export { getClusters, refreshClusters, cleanupClusters, setLoadState, upsertCluster, removeCluster };
 export default clustersSlice.reducer;

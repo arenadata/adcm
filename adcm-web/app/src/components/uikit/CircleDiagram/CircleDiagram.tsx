@@ -1,37 +1,75 @@
-import type React from 'react';
 import s from './CircleDiagram.module.scss';
 import cn from 'classnames';
-import { ReactComponent as Circle } from './circle.svg';
+
+export type CircleDiagramSize = 'small' | 'medium';
 
 export interface CircleDiagramProps {
-  totalCount: number;
-  currentCount: number;
-  className?: string;
-  isDoubleMode?: boolean;
+  up: number;
+  down: number;
+  size?: CircleDiagramSize;
 }
 
-const dash = 471.1;
+const CIRCLE_CX = 85;
+const CIRCLE_CY = 85;
+const CIRCLE_R = 75;
+const STROKE_WIDTH = 20;
+const CIRCUMFERENCE = 471.1;
 
-const percentToDashPercent = (percent: number) => dash * (1 - percent / 100);
+const sizeClassMap: Record<CircleDiagramSize, string> = {
+  small: s.circleDiagram_size_small,
+  medium: s.circleDiagram_size_medium,
+};
 
-const CircleDiagram = ({ totalCount, currentCount, className, isDoubleMode }: CircleDiagramProps) => {
-  const circleDiagramClasses = cn(s.circleDiagram, className);
+const CircleDiagram = ({ up, down, size = 'small' }: CircleDiagramProps) => {
+  const sum = up + down;
+  const isEmpty = sum === 0;
+  const upArcLength = isEmpty ? 0 : (up / sum) * CIRCUMFERENCE;
+  const downArcLength = isEmpty ? 0 : (down / sum) * CIRCUMFERENCE;
 
-  const percents = isDoubleMode
-    ? 100 - Math.round((currentCount / (currentCount + totalCount)) * 100)
-    : totalCount >= currentCount
-      ? Math.round((100 * currentCount) / totalCount)
-      : 100;
-
-  const styles = {
-    '--dash': dash,
-    '--dash-percent': percentToDashPercent(percents),
-  } as React.CSSProperties;
+  const circleDiagramClasses = cn(s.circleDiagram, sizeClassMap[size]);
 
   return (
-    <div className={circleDiagramClasses} style={styles}>
-      <Circle />
-      <div className={s.circleDiagram__counter}> {`${currentCount}/${totalCount}`}</div>
+    <div className={circleDiagramClasses}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 170" fill="none" aria-hidden>
+        {isEmpty ? (
+          <circle
+            cx={CIRCLE_CX}
+            cy={CIRCLE_CY}
+            r={CIRCLE_R}
+            stroke="var(--circle-diagram-empty-stroke)"
+            strokeWidth={STROKE_WIDTH}
+            fill="none"
+          />
+        ) : (
+          <>
+            <circle
+              cx={CIRCLE_CX}
+              cy={CIRCLE_CY}
+              r={CIRCLE_R}
+              className={s.circleDiagram__segment}
+              stroke="var(--circle-diagram-up-color)"
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+              strokeDasharray={`${upArcLength} ${CIRCUMFERENCE - upArcLength}`}
+              strokeDashoffset={0}
+              transform={`rotate(-90 ${CIRCLE_CX} ${CIRCLE_CY})`}
+            />
+            <circle
+              cx={CIRCLE_CX}
+              cy={CIRCLE_CY}
+              r={CIRCLE_R}
+              className={s.circleDiagram__segment}
+              stroke="var(--circle-diagram-down-color)"
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+              strokeDasharray={`${downArcLength} ${CIRCUMFERENCE - downArcLength}`}
+              strokeDashoffset={-upArcLength}
+              transform={`rotate(-90 ${CIRCLE_CX} ${CIRCLE_CY})`}
+            />
+          </>
+        )}
+      </svg>
+      <div className={s.circleDiagram__counter}>{sum}</div>
     </div>
   );
 };

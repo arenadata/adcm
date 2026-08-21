@@ -4,7 +4,7 @@ import { Button } from '@uikit';
 import TableToolbar from '@commonComponents/Table/TableToolbar/TableToolbar';
 import { openCreateDialog } from '@store/adcm/clusters/clustersActionsSlice';
 
-const ClustersTableHeader = () => {
+const ClustersTableToolbar = () => {
   const dispatch = useDispatch();
 
   const handleCreateClusterClick = () => {
@@ -19,4 +19,4 @@ const ClustersTableHeader = () => {
   );
 };
 
-export default ClustersTableHeader;
+export default ClustersTableToolbar;

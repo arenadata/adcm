@@ -1,9 +1,11 @@
 /* eslint-disable spellcheck/spell-checker */
 import type React from 'react';
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { Icon, Statusable, Tab, TabsBlock } from '@uikit';
 import type { TabsBlockProps } from './TabsBlock';
+import TabButton from './TabButton';
 
 const pageStyles = {
   marginTop: '30px',
@@ -169,4 +171,32 @@ export const ComplexTabs: Story = {
   render: (args) => {
     return <ClusterTabsExample {...args} />;
   },
+};
+
+const AltTabsExample: React.FC = () => {
+  const [active, setActive] = useState('all');
+
+  return (
+    <TabsBlock variant="alt">
+      <TabButton isActive={active === 'all'} onClick={() => setActive('all')}>
+        All <span style={{ color: 'var(--tab-count-color)' }}>20</span>
+      </TabButton>
+      <TabButton isActive={active === 'up'} onClick={() => setActive('up')}>
+        Up <span style={{ color: 'var(--tab-count-color)' }}>15</span>
+      </TabButton>
+      <TabButton isActive={active === 'down'} onClick={() => setActive('down')}>
+        Down <span style={{ color: 'var(--tab-count-color)' }}>5</span>
+      </TabButton>
+      <TabButton isActive={active === 'mm'} onClick={() => setActive('mm')}>
+        Maintenance mode <span style={{ color: 'var(--tab-count-color)' }}>2</span>
+      </TabButton>
+    </TabsBlock>
+  );
+};
+
+export const AltTabs: Story = {
+  parameters: {
+    pages: easyTabsPages,
+  },
+  render: () => <AltTabsExample />,
 };

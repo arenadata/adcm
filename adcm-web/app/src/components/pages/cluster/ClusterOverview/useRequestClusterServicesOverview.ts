@@ -20,13 +20,13 @@ export const useRequestClusterServicesOverview = () => {
     };
   }, [dispatch]);
 
-  const debounceGetClusterHosts = useDebounce(() => {
+  const debounceGetClusterServices = useDebounce(() => {
     dispatch(getClusterServicesStatuses(clusterId));
   }, defaultDebounceDelay);
 
-  const debounceRefreshClusterHosts = useDebounce(() => {
+  const debounceRefreshClusterServices = useDebounce(() => {
     dispatch(refreshClusterServicesStatuses(clusterId));
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetClusterHosts, debounceRefreshClusterHosts, 0, [filter, paginationParams]);
+  useRequestTimer(debounceGetClusterServices, debounceRefreshClusterServices, 0, [clusterId, filter, paginationParams]);
 };

@@ -85,8 +85,11 @@ strong {
 }
 
 .ignore-page-padding {
-  margin-left: calc(-1 * var(--page-padding-h));
-  margin-right: calc(-1 * var(--page-padding-h));
+  margin-left: calc(-1 * var(--space-600));
+  margin-right: calc(-1 * var(--space-600));
+  // should use important for matching space
+  padding-left: var(--space-600) !important;
+  padding-right: var(--space-600) !important;
 }
 
 .scrollBar  {

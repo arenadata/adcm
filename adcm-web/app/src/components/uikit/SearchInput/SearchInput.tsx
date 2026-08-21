@@ -3,33 +3,33 @@ import cn from 'classnames';
 import type { InputProps } from '@uikit/Input/Input';
 import Input from '@uikit/Input/Input';
 import { useForwardRef } from '@hooks';
-import { createChangeEvent } from '@utils/handlerUtils';
 import IconButton from '@uikit/IconButton/IconButton';
+import { useDebouncedSearchValue } from './useDebouncedSearchValue';
 
-const SearchInput = React.forwardRef<HTMLInputElement, InputProps>(({ className, ...props }, ref) => {
-  const localRef = useRef<HTMLInputElement>(null);
-  const reference = useForwardRef(ref, localRef);
+export type SearchInputProps = Omit<InputProps, 'startAdornment' | 'endAdornment'> & {
+  debounceDelay?: number;
+};
 
-  const handleIconClick = () => {
-    if (props.value && localRef.current) {
-      const event = createChangeEvent(localRef.current);
-      event.target.value = '';
-      props.onChange?.(event);
-    }
-  };
+const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
+  ({ className, debounceDelay = 0, value, onChange, ...props }, ref) => {
+    const localRef = useRef<HTMLInputElement>(null);
+    const reference = useForwardRef(ref, localRef);
+    const search = useDebouncedSearchValue(value, onChange, localRef, debounceDelay);
 
-  return (
-    <Input
-      {...props}
-      className={cn(className, 'search-input')}
-      ref={reference}
-      endAdornment={
-        <IconButton icon={props.value ? 'g2-close' : 'g2-magnifying-glass'} onClick={handleIconClick} size={20} />
-      }
-      size={14}
-    />
-  );
-});
+    return (
+      <Input
+        {...props}
+        className={cn(className, 'search-input')}
+        ref={reference}
+        value={search.localValue}
+        onChange={search.onChange}
+        startAdornment={<IconButton icon="g2-magnifying-glass" size={20} />}
+        endAdornment={search.localValue ? <IconButton icon="g2-close" onClick={search.clear} size={20} /> : null}
+        size={14}
+      />
+    );
+  },
+);
 
 SearchInput.displayName = 'SearchInput';
 export default SearchInput;

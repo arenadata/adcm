@@ -1,6 +1,7 @@
 import AnchorBar, { AnchorList } from './AnchorBar/AnchorBar';
 import type { AnchorBarItem } from './AnchorBar/AnchorBar';
 import Badge from './Badge/Badge';
+import type { BadgeStatus } from './Badge/Badge.types';
 import Button from '@uikit/Button/Button';
 import ButtonGroup from './ButtonGroup/ButtonGroup';
 import CheckAll from '@uikit/CheckAll/CheckAll';
@@ -63,10 +64,13 @@ import TabsBlock from '@uikit/Tabs/TabsBlock';
 import Spinner, { SpinnerPanel } from '@uikit/Spinner/Spinner';
 import Tooltip from '@uikit/Tooltip/Tooltip';
 import ToolbarPanel from './ToolbarPanel/ToolbarPanel';
+import VirtualList from './VirtualList/VirtualList';
 import ActionMenu from './ActionMenu/ActionMenu';
 import EllipsedTextTableCell from './Table/TableCell/EllipsedTextTableCell';
 import WarningMessage from './WarningMessage/WarningMessage';
 import MiniMap from '@uikit/MiniMap/MiniMap';
+import NotificationBlock from './NotificationBlock/NotificationBlock';
+import ShowMore from './ShowMore/ShowMore';
 
 export {
   ActionMenu,
@@ -74,6 +78,7 @@ export {
   type AnchorBarItem,
   AnchorList,
   Badge,
+  type BadgeStatus,
   Button,
   ButtonGroup,
   CodeEditor,
@@ -103,6 +108,7 @@ export {
   MarkerIcon,
   MarkedList,
   MiniMap,
+  NotificationBlock,
   type MarkerIconType,
   MultiSelectList,
   MultiSelectPanel,
@@ -119,6 +125,7 @@ export {
   SearchInput,
   Select,
   type SelectOption,
+  ShowMore,
   Spinner,
   SpinnerPanel,
   Statusable,
@@ -139,5 +146,6 @@ export {
   Text,
   ToolbarPanel,
   Tooltip,
+  VirtualList,
   WarningMessage,
 };
