@@ -22,10 +22,6 @@ RUN apk add --no-cache --virtual .build-deps \
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_PYTHON_INSTALL_DIR=/python
 
-# Install Python 3.12
-RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
-    uv python install 3.12
-
 WORKDIR /adcm
 
 # Prepare venv Python 3.12 for ADCM
@@ -39,14 +35,14 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=bind,source=ansible-2.16-python3.10-dependencies.txt,target=ansible-2.16-python3.10-dependencies.txt \
     uv venv -p 3.10 /venv/2.16 && \
     source /venv/2.16/bin/activate && \
-    uv pip install -p 3.10 -r ansible-2.16-python3.10-dependencies.txt
+    uv pip install --python 3.10 -r ansible-2.16-python3.10-dependencies.txt
 
-# Prepare venv Python 3.13 for Ansible 2.21
+# Prepare venv Python 3.12 for Ansible 2.21
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
-    --mount=type=bind,source=ansible-2.21-python3.13-dependencies.txt,target=ansible-2.21-python3.13-dependencies.txt \
-    uv venv -p 3.13 /venv/2.21 && \
+    --mount=type=bind,source=ansible-2.21-python3.12-dependencies.txt,target=ansible-2.21-python3.12-dependencies.txt \
+    uv venv -p 3.12 /venv/2.21 && \
     source /venv/2.21/bin/activate && \
-    uv pip install -p 3.13 -r ansible-2.21-python3.13-dependencies.txt
+    uv pip install --python 3.12 -r ansible-2.21-python3.12-dependencies.txt
 
 FROM python:3.10-alpine3.24
 
@@ -88,16 +84,16 @@ RUN for svc in /etc/sv/*/; do \
 COPY --from=go_builder /code/bin/runstatus /adcm/go/bin/runstatus
 COPY --from=ui_builder /wwwroot /adcm/wwwroot
 COPY --from=python_builder /python /python
-# Copy ADCM vevn
+# Copy ADCM venv
 COPY --from=python_builder /adcm/.venv /adcm/.venv
 # Copy Ansible 2.16 venv
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-bugfix-adcm-8338 /venv/2.16 /venv/2.16
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop /venv/2.16 /venv/2.16
 COPY --from=python_builder /venv/2.16 /venv/2.16
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-bugfix-adcm-8338 /root/.ansible/collections /venv/2.16/collections
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop /root/.ansible/collections /venv/2.16/collections
 # Copy Ansible 2.21 venv
-COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.13-bugfix-adcm-8338 /venv/2.21 /venv/2.21
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop /venv/2.21 /venv/2.21
 COPY --from=python_builder /venv/2.21 /venv/2.21
-COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.13-bugfix-adcm-8338 /root/.ansible/collections /venv/2.21/collections
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop /root/.ansible/collections /venv/2.21/collections
 
 COPY conf /adcm/conf
 COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
