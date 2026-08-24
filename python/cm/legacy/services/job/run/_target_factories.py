@@ -297,7 +297,7 @@ def internal_script_hc_apply(task: Task, job: HcApplyJob, cluster_service: Clust
             msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
         )
 
-    hc_apply_rules = job.params.rules
+    hc_apply_rules = job.params.rules if job.params else None
 
     if not hc_apply_rules:
         hc_apply_rules = task.action.hc_acl
