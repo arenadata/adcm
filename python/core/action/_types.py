@@ -268,7 +268,7 @@ class SimpleInternalJob(InternalJob[Literal["bundle_switch", "bundle_revert", "b
     pass
 
 
-class HcApplyJob(InternalJob[Literal["hc_apply"], HcApplyScriptParams]):
+class HcApplyJob(InternalJob[Literal["hc_apply"], HcApplyScriptParams | None]):
     pass
 
 
