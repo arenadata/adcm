@@ -72,6 +72,5 @@ while true; do
     daily 0800 logrotate logrotate --target all
     daily 1000 clearaudit clearaudit
     daily 0000 collect_statistics collect_statistics --mode send
-    # weekly: Monday evening
-    [ "$(date +%u)" = "1" ] && daily 2200 gather_host_facts gather_host_facts
+    daily 2200 gather_host_facts gather_host_facts
 done
