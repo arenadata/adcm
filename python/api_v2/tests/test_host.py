@@ -16,10 +16,10 @@ import secrets
 from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
+from core.status import FullStatusMap
 from core.types import ADCMCoreType, HostID, HostName
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import (

@@ -1,7 +1,7 @@
 import type { RequestError } from '@api';
 import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import { refreshClusters, upsertCluster } from './clustersSlice';
+import { refreshClusters, upsertCluster, removeCluster } from './clustersSlice';
 import { setCluster } from './clusterSlice';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -16,6 +16,7 @@ import {
 import { createCrudSlice } from '@store/createCrudSlice/createCrudSlice';
 import type { ModalState } from '@models/modal';
 import { excludeUnsupportedPrototypeVersions } from '@utils/contractVersionUtils';
+import { setSelectedClusterId } from './clustersViewSlice';
 
 interface AdcmClusterActionsState extends ModalState<AdcmCluster, 'cluster'> {
   createDialog: {
@@ -76,11 +77,24 @@ const loadPrototypesRelatedData = createAsyncThunk('adcm/clustersActions/loadRel
 const deleteClusterWithUpdate = createAsyncThunk(
   'adcm/clustersActions/deleteClusterWithUpdate',
   async (clusterId: number, thunkAPI) => {
+    const {
+      adcm: {
+        clustersView: { selectedClusterId },
+      },
+    } = thunkAPI.getState();
+
+    if (selectedClusterId === clusterId) {
+      thunkAPI.dispatch(setSelectedClusterId(null));
+    }
+    // Remove immediately so WS concern-delete events don't flash empty concerns in the preview.
+    thunkAPI.dispatch(removeCluster(clusterId));
+
     try {
       await AdcmClustersApi.deleteCluster(clusterId);
       await thunkAPI.dispatch(refreshClusters());
       thunkAPI.dispatch(showSuccess({ message: 'The cluster has been deleted' }));
     } catch (error) {
+      await thunkAPI.dispatch(refreshClusters());
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
     }

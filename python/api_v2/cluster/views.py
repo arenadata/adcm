@@ -58,6 +58,7 @@ from core.legacy.cluster.operations import find_host_candidates_for_cluster
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import (
     ADCMCoreType,
+    ClusterID,
     ComponentNameKey,
     MaintenanceModeOfObjects,
     MaintenanceModeState,
@@ -65,7 +66,7 @@ from core.types import (
 )
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Case, Q, QuerySet, Value, When
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -250,11 +251,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             OpenApiParameter(
                 name="ordering",
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=int,
-                enum=[
+                enum=(
                     "id",
                     "-id",
-                ],
+                ),
                 default="id",
             ),
         ],
@@ -287,11 +287,10 @@ from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleException
             OpenApiParameter(
                 name="ordering",
                 description="Field to sort by. To sort in descending order, precede the attribute name with a '-'.",
-                type=int,
-                enum=[
+                enum=(
                     "id",
                     "-id",
-                ],
+                ),
                 default="id",
             ),
         ],
@@ -333,7 +332,7 @@ class ClusterViewSet(
     ADCMGenericViewSet,
 ):
     queryset = (
-        Cluster.objects.prefetch_related("prototype", "concerns")
+        Cluster.objects.prefetch_related("prototype", "prototype__bundle", "concerns")
         .prefetch_related("services__prototype")
         .order_by("name")
     )
@@ -495,9 +494,20 @@ class ClusterViewSet(
         permission_required=[VIEW_SERVICE_PERM],
         filterset_class=ClusterStatusesServiceFilter,
     )
-    def services_statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002
+    @inject
+    def services_statuses(
+        self,
+        request: Request,
+        cluster_service: FromDishka[ClusterService],
+        *args,  # noqa: ARG002
+        **kwargs,
+    ) -> Response:
         cluster = get_object_for_user(user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=kwargs["pk"])
-        queryset = self.filter_queryset(queryset=self.get_queryset().filter(cluster=cluster))
+        queryset = self.filter_queryset(
+            queryset=self._annotate_services_with_maintenance_mode(
+                cluster_id=cluster.pk, qs=self.get_queryset().filter(cluster=cluster), cluster_service=cluster_service
+            )
+        )
 
         return self.get_paginated_response(
             data=RelatedServicesStatusesSerializer(
@@ -793,6 +803,21 @@ class ClusterViewSet(
         )
         serializer = HostShortSerializer(instance=candidates_allowed_for_user, many=True)
         return Response(data=serializer.data, status=HTTP_200_OK)
+
+    @staticmethod
+    def _annotate_services_with_maintenance_mode(
+        cluster_id: ClusterID, qs: QuerySet[Service], cluster_service: ClusterService
+    ) -> QuerySet[Service]:
+        services_mm = cluster_service.calculate_maintenance_mode(
+            topology=cluster_service.retrieve_topology(cluster_id=cluster_id),
+            objects_own_mm=cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_id,)),
+        ).services
+
+        return qs.annotate(
+            calculated_mm=Case(
+                *(When(id=service_id, then=Value(mm.state.value)) for service_id, mm in services_mm.items())
+            )
+        )
 
 
 @extend_schema_view(

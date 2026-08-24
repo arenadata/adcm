@@ -18,7 +18,7 @@ from core import bundle  # noqa
 from core import action  # noqa
 from core import adcm
 from core import upgrade
-from core import cluster, provider
+from core import cluster, metrics, provider
 from core import logs
 
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "cluster",
     "config",
     "mapping",
+    "metrics",
     "provider",
     "upgrade",
     "logs",

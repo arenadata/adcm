@@ -1,58 +1,50 @@
 :global {
   body.theme-dark {
-    --cluster-overview-service-item-bg-color: var(--color-xdark-new-20);
-    --cluster-overview-service-item-border-color: var(--color-xdark);
-
-    --cluster-overview-service-item-bg-hover-color: var(--color-xdark-new-50);
-    --cluster-overview-service-item-bg-active-color: var(--color-xdark);
+    --cluster-overview-entity-item-bg: var(--color-new-light-30);
+    --cluster-overview-entity-item-border: var(--color-dark-1);
   }
 
   body.theme-light {
-    --cluster-overview-service-item-bg-color: var(--color-xgray-alt-30);
-    --cluster-overview-service-item-border-color: var(--color-xgray-lighter);
-
-    --cluster-overview-service-item-bg-hover-color: var(--color-xgray-alt-50);
-    --cluster-overview-service-item-bg-active-color: var(--color-popup-light);
+    --cluster-overview-entity-item-bg: var(--color-plate-light-50);
+    --cluster-overview-entity-item-border: var(--color-xgray-lighter);
   }
 }
 
 .clusterOverviewServiceItem {
-  padding: 12px 16px 16px 16px;
-  border-radius: 10px;
-  background: var(--cluster-overview-service-item-bg-color);
-  border: 2px solid var(--cluster-overview-service-item-border-color);
-  overflow: hidden;
-  max-width: 100%;
-  width: 200px;
-  height: 81px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-100);
   box-sizing: border-box;
+  padding: var(--space-200);
+  border: 2px solid var(--cluster-overview-entity-item-border);
+  border-radius: var(--radius-200);
+  background-color: var(--cluster-overview-entity-item-bg);
 
-  &:hover {
-    background: var(--cluster-overview-service-item-bg-hover-color);
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-100);
   }
 
   &__title {
-    font-weight: 500;
-    font-size: 18px;
-    margin-bottom: 12px;
-    padding-right: 10px;
-    position: relative;
-    text-overflow: ellipsis;
+    font-size: var(--body-2-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-2-lineheight);
     overflow: hidden;
-    display: block;
-    max-width: 100%;
-    width: fit-content;
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
 
-    &::after {
-      position: absolute;
-      top: 50%;
-      right: 0;
-      transform: translate(0, -50%);
-    }
+  &__mmIcon {
+    flex-shrink: 0;
+    color: var(--color-light-red-30);
   }
 
   &__text {
-    color: var(--color-xgray-light);
+    font-size: var(--caption-1-size);
+    line-height: var(--caption-1-lineheight);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--letter-spacing-050p);
+    color: var(--color-text-placeholder);
   }
 }

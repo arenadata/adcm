@@ -9,6 +9,7 @@ export { useLocalStorage } from './useLocalStorage';
 export { useDispatch } from './useDispatch';
 export { useCheckSession } from './useCheckSession';
 export { useDebounce } from './useDebounce';
+export { useDebouncedValue } from './useDebouncedValue';
 export { useRequestTimer } from './useRequestTimer';
 export { useDownloadFile } from './useDownloadFile';
 export { useForm } from './useForm';

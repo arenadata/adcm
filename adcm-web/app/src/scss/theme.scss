@@ -6,10 +6,15 @@ body.theme-dark {
   --text-txt-default: #98A1B2;
   --text-txt-h-contrast: #F2F4FF;
   --main-colors-color-hight-contrast: var(--color-xwhite-off);
+  --color-text-placeholder: var(--color-gray-usual);
+  --color-text-link: var(--color-blue);
 
   //surfaces
   --surfaces-sf-one: #1A1B1C;
   --surfaces-sf-one-b: #222325;
+  --bg-container: var(--color-new-light-30);
+  --color-bg-primary-default: var(--color-black-12);
+  --color-bg-primary-extra: var(--color-black-16);
 
   //primitives
   --primitives-pmt-selected: #00D2A0;
@@ -23,8 +28,13 @@ body.theme-light {
   // texts
   --text-txt-default: #70758C;
   --main-colors-color-hight-contrast: var(--color-xblack);
+  --color-text-placeholder: var(--color-adcm);
+  --color-text-link: var(--color-blue);
 
   //surfaces
   --surfaces-sf-one: #EEF3FA;
   --surfaces-sf-one-b: #E6EEFA;
+  --bg-container: var(--color-plate-light-30);
+  --color-bg-primary-default: var(--color-colourful-60);
+  --color-bg-primary-extra: var(--color-plate-light-50);
 }

@@ -1,0 +1,457 @@
+/* stylelint-disable no-duplicate-selectors */
+
+/* Collection name: Spaces */
+
+/* Mode: base */
+:root {
+  --control-height-md: var(--space-1000);
+  --control-height-sm: var(--space-800);
+  --control-height-xs: var(--space-500);
+  --button-padding-inline-md: var(--space-400);
+  --button-padding-inline-sm: var(--space-300);
+  --button-gap-md: var(--space-200);
+  --button-gap-sm: var(--space-150);
+  --input-padding-inline-start-md: var(--space-300);
+  --input-padding-inline-end-md: var(--space-100);
+  --input-padding-inline-start-sm: var(--space-200);
+  --input-padding-inline-end-sm: var(--space-150);
+  --input-slot-affordance-md: var(--control-height-sm);
+  --input-slot-affordance-sm: var(--control-height-xs);
+  --input-slot-status-md: var(--graphic-16);
+  --input-slot-status-sm: var(--graphic-16);
+  --form-field-label-input-gap: var(--space-100);
+  --form-field-gap-row: var(--space-400);
+  --form-field-gap-column: var(--space-300);
+  --action-group-item-gap-sm: var(--space-200);
+  --dimension-input-min-width: 200px;
+  --dimension-button-min-width: 72px;
+  --form-field-action-group-gap: var(--space-300);
+  --form-field-label-selection-gap: var(--space-200);
+  --input-padding-inline-start-xs: var(--space-150);
+  --input-padding-inline-end-xs: var(--space-050);
+  --form-field-input-chiplist-gap-row: var(--space-150);
+  --chiplist-item-gap-column: var(--space-200);
+  --chiplist-item-gap-row: var(--space-200);
+  --chiplist-padding-inline: var(--space-300);
+  --chiplist-padding-block: var(--space-200);
+  --form-boolean-list-gap-x: var(--space-400);
+  --dimension-selection-min-width: 180px;
+  --option-height-md: var(--control-height-md);
+  --option-height-sm: var(--control-height-sm);
+  --option-padding-inline-md: var(--space-300);
+  --option-padding-inline-sm: var(--space-200);
+  --option-gap-md: var(--space-200);
+  --option-gap-sm: var(--space-150);
+  --option-list-padding: var(--space-100);
+  --option-list-item-gap: var(--space-100);
+  --control-height-lg: var(--space-1200);
+  --option-height-lg: var(--control-height-lg);
+  --option-padding-inline-lg: var(--space-400);
+  --option-gap-lg: var(--space-300);
+  --button-gap-lg: var(--space-200);
+  --button-padding-inline-lg: var(--space-500);
+  --action-group-item-gap-md: var(--space-200);
+  --action-group-item-gap-lg: var(--space-300);
+  --panel-padding-sm: var(--space-200);
+  --panel-gap-sm: var(--space-200);
+  --filter-panel-max-height: 400px;
+  --panel-footer-gap: var(--space-300);
+  --panel-search-block-gap: var(--space-200);
+  --action-group-item-gap-xs: var(--space-100);
+  --panel-scroll-padding: var(--space-100);
+  --action-group-item-gap-ghost: var(--space-0);
+  --filter-panel-min-width-sm: 200px;
+  --filter-panel-min-width-md: 200px;
+  --filter-panel-min-width-lg: 240px;
+  --filter-panel-list-max-height: 316px;
+  --date-segment-item-gap: var(--space-0);
+  --date-segment-section-gap: var(--space-200);
+  --date-segment-padding-inline: var(--space-050);
+  --date-segment-padding-block: var(--space-050);
+  --treecard-disclosure-width: var(--space-800);
+  --date-segment-day-width: 26px;
+  --date-segment-month-width: 32px;
+  --date-segment-year-width: 44px;
+  --date-segment-time-width: 28px;
+  --treecard-container-padding-block: var(--space-200);
+  --dimension-value-content-min-width: 20px;
+  --panel-padding-md: var(--space-300);
+  --panel-padding-lg: var(--space-500);
+  --panel-gap-md: var(--space-300);
+  --tab-height-lg: var(--control-height-lg);
+  --tab-height-md: var(--control-height-md);
+  --tab-padding-inline-md: var(--space-400);
+  --tab-padding-inline-lg: var(--space-500);
+  --tab-group-item-gap-md: var(--space-100);
+  --tab-group-item-gap-lg: var(--space-200);
+  --tab-group-padding-md: var(--space-100);
+  --tab-group-padding-lg: var(--space-200);
+  --treecard-field-container-max-width: 996px;
+  --scroll-width-xs: var(--space-200);
+  --scroll-width-sm: var(--space-400);
+  --meta-tag-padding-inline: var(--space-150);
+  --meta-tag-padding-block: var(--space-050);
+  --dialog-width-sm: 400px;
+  --dialog-width-md: 520px;
+  --dialog-width-lg: 680px;
+  --dialog-width-xl: 880px;
+  --panel-gap-lg: var(--space-500);
+  --table-header-cell-height-sm: var(--control-height-sm);
+  --table-header-cell-height-md: var(--control-height-md);
+  --table-row-min-height-sm: var(--control-height-md);
+  --table-row-min-height-md: var(--control-height-lg);
+  --table-cell-padding-inline-sm: var(--space-300);
+  --table-cell-padding-inline-md: var(--space-400);
+  --table-cell-padding-blovck-sm: var(--space-100);
+  --table-cell-padding-block-md: var(--space-200);
+  --table-cell-border-width: var(--border-width-subtle);
+  --table-cell-divider-width: var(--border-width-subtle);
+  --table-cell-gap: var(--inner-gap-tight);
+  --table-column-width-checkbox: 48px;
+  --table-column-width-action: 112px;
+  --table-column-width-default-sm: 180px;
+  --table-column-width-default-lg: 220px;
+  --table-header-body-gap-lined: var(--space-0);
+  --table-header-body-gap-wrapped: var(--space-0);
+  --table-body-gap-wrapped: var(--space-200);
+  --table-body-gap-lined: var(--space-0);
+  --table-scroll-gap: var(--space-200);
+  --table-column-width-action-3btns: 144px;
+  --sidebar-width-full: 248px;
+  --tooltip-max-width: 320px;
+  --panel-padding-xs: var(--space-100);
+  --tooltip-trigger-gap: var(--space-200);
+  --table-column-width-default-xs: 80px;
+  --popover-width-md: 460px;
+  --popover-width-lg: 880px;
+  --notification-width-min: 280px;
+  --notification-width-max: 360px;
+  --notification-stack-gap: var(--space-300);
+  --configcard-width: 240px;
+  --toc-width-max: 240px;
+  --toc-width-min: 180px;
+  --dimension-button-filtered-min-width: 120px;
+  --table-controls-gap: var(--space-400);
+  --inner-gap-tight: var(--space-100);
+  --inner-gap-default: var(--space-150);
+  --inner-gap-relaxed: var(--space-200);
+  --inner-gap-loose: var(--space-300);
+  --panel-gap-xl: var(--space-600);
+  --panel-padding-xl: var(--space-600);
+  --dimension-input-min-width-sm: 96px;
+  --filter-panel-min-width-xl: 576px;
+  --table-column-width-default-md: 200px;
+  --card-card-min-width-xs: 92px;
+  --charts-chart-width-sm: var(--graphic-8);
+}
+
+/* Collection name: Foundation */
+
+/* Mode: Mode 1 */
+:root {
+  --border-width-default: 2px;
+  --border-width-subtle: 1px;
+  --graphic-12: 12px;
+  --graphic-16: 16px;
+  --graphic-8: 8px;
+  --graphic-24: 24px;
+  --graphic-28: 28px;
+  --graphic-36: 36px;
+  --graphic-48: 48px;
+}
+
+/* Collection name: Primitive Color */
+
+/* Mode: Mode 1 */
+:root {
+  --logo-spark: #e26a1a;
+  --logo-adqm: #fdb404;
+  --logo-adpg: #5275f0;
+  --logo-adps: #19becf;
+  --logo-adg: #c1173a;
+  --logo-adcm: #73858f;
+  --logo-ads: #7a3efa;
+  --logo-aone: #09bace;
+  --logo-clickhouse: #ffcc03;
+  --logo-adb: #83b23e;
+  --logo-adh: #05a5ff;
+  --logo-prosperity: #eb6000;
+  --logo-adm: #312ff1;
+  --neutral-98: #f7f9fa;
+  --neutral-97: #f4f6f8;
+  --neutral-96: #f1f4f6;
+  --neutral-91: #dee5ea;
+  --neutral-89: #dbdce3;
+  --neutral-87: #d2d9dd;
+  --neutral-82: #c2c9ce;
+  --neutral-78: #b5bec3;
+  --neutral-68: #989ea3;
+  --neutral-51: #626c78;
+  --neutral-40: #434958;
+  --neutral-28: #272931;
+  --neutral-86: #cfd6da;
+  --neutral-84: #cbced3;
+  --neutral-8: #131215;
+  --neutral-9: #151619;
+  --neutral-10: #18181b;
+  --neutral-13: #1f2023;
+  --neutral-15: #22252d;
+  --neutral-17: #272931;
+  --neutral-21: #2e323f;
+  --neutral-23: #333743;
+  --neutral-25: #373c48;
+  --neutral-29: #3f4555;
+  --neutral-31: #44495c;
+  --neutral-48: #84899b;
+  --neutral-56: #84899b;
+  --neutral-66: #a1a3b1;
+  --neutral-88: #dbdce3;
+  --red-950: #681219;
+  --red-900: #8a1922;
+  --red-800: #ad1f2b;
+  --red-700: #d02634;
+  --red-600: #e93544;
+  --red-500: #fb4b5a;
+  --red-400: #ff6875;
+  --red-300: #ff97a0;
+  --red-200: #ffbfc5;
+  --red-100: #ffd5d8;
+  --brand-950: #0b4638;
+  --brand-900: #176351;
+  --brand-800: #197560;
+  --brand-700: #158c70;
+  --brand-600: #1eaf8d;
+  --brand-500: #00d2a0;
+  --brand-400: #00d2a0;
+  --brand-300: #84ead6;
+  --brand-200: #84ead6;
+  --brand-100: #d1fbf5;
+  --brand-050: #e4fbf9;
+  --blue-950: #124768;
+  --blue-900: #1f77ad;
+  --blue-800: #1f77ad;
+  --blue-700: #258ed0;
+  --blue-600: #36a4e9;
+  --blue-500: #47b8ff;
+  --blue-400: #68c5ff;
+  --orange-950: #71300a;
+  --orange-900: #963f0d;
+  --orange-800: #b74e11;
+  --orange-700: #ce5712;
+  --orange-600: #e15f13;
+  --orange-500: #fa6c1a;
+  --orange-400: #ffa069;
+  --yellow-950: #635319;
+  --yellow-900: #866f1e;
+  --yellow-800: #a78b26;
+  --yellow-700: #e7bb1a;
+  --yellow-600: #f6c71e;
+  --yellow-500: #f7ce3b;
+  --yellow-400: #ffde68;
+  --purple-950: #2f1268;
+  --purple-900: #371679;
+  --purple-800: #471c9c;
+  --purple-700: #5623be;
+  --purple-600: #6422e7;
+  --purple-500: #7837fb;
+  --purple-400: #8547ff;
+  --red-050: #ffebec;
+  --blue-300: #c0e7ff;
+  --blue-200: #c0e7ff;
+  --blue-100: #d5efff;
+  --blue-050: #eaf7ff;
+  --orange-300: #ffc197;
+  --orange-200: #ffd9c0;
+  --orange-100: #ffe6d5;
+  --orange-050: #fff3eb;
+  --yellow-300: #ffe897;
+  --yellow-200: #fff1c0;
+  --yellow-100: #fff2cc;
+  --yellow-050: #fffbea;
+  --purple-300: #ba97ff;
+  --purple-200: #d5c0ff;
+  --purple-100: #e3d5ff;
+  --purple-050: #f3ebff;
+  --brand-alpha-500-24: rgb(0 210 160 / 24%);
+  --brand-alpha-500-36: rgb(0 210 160 / 36%);
+  --brand-alpha-500-16: rgb(0 210 160 / 16%);
+  --red-alpha-500-36: rgb(251 75 90 / 36%);
+  --red-alpha-500-24: rgb(251 75 90 / 24%);
+  --red-alpha-500-16: rgb(251 75 90 / 16%);
+  --blue-alpha-500-36: rgb(71 184 255 / 36%);
+  --blue-alpha-500-24: rgb(71 184 255 / 24%);
+  --blue-alpha-500-16: rgb(71 184 255 / 16%);
+  --yellow-alpha-600-24: rgb(255 222 104 / 24%);
+  --yellow-alpha-600-16: rgb(255 222 104 / 16%);
+  --yellow-alpha-600-8: rgb(255 222 104 / 8%);
+  --brand-alpha-700-36: rgb(21 140 112 / 36%);
+  --brand-alpha-700-24: rgb(21 140 112 / 24%);
+  --brand-alpha-700-16: rgb(21 140 112 / 16%);
+  --orange-alpha-500-24: rgb(250 108 26 / 24%);
+  --orange-alpha-500-16: rgb(250 108 26 / 16%);
+  --orange-alpha-500-8: rgb(250 108 26 / 8%);
+  --purple-alpha-500-36: rgb(120 55 251 / 36%);
+  --purple-alpha-500-24: rgb(120 55 251 / 24%);
+  --purple-alpha-500-16: rgb(120 55 251 / 16%);
+  --neutral-alpha-9-0: rgb(21 22 25 / 0%);
+  --neutral-alpha-97-0: rgb(244 246 248 / 0%);
+  --neutral-19: #2a2e37;
+  --green-alpha-500-36: rgb(0 210 140 / 36%);
+  --green-alpha-500-24: rgb(0 210 140 / 24%);
+  --green-alpha-500-16: rgb(0 210 140 / 16%);
+  --green-alpha-700-36: rgb(21 140 100 / 36%);
+  --green-alpha-700-24: rgb(21 140 100 / 24%);
+  --green-alpha-700-16: rgb(21 140 100 / 16%);
+  --green-950: #0b4632;
+  --green-900: #17634a;
+  --green-800: #197556;
+  --green-700: #158c64;
+  --green-600: #1eaf7f;
+  --green-500: #00d28c;
+  --green-400: #00d28c;
+  --green-300: #84eac8;
+  --green-200: #84eac8;
+  --green-100: #d1fbed;
+  --green-050: #e4fbf3;
+  --neutral-alpha-51-16: rgb(98 108 120 / 16%);
+  --neutral-alpha-51-24: rgb(98 108 120 / 24%);
+  --neutral-alpha-8-16: rgb(19 20 22 / 16%);
+  --neutral-alpha-8-12: rgb(19 20 22 / 12%);
+  --neutral-alpha-8-8: rgb(19 20 22 / 8%);
+  --neutral-alpha-8-4: rgb(19 20 22 / 4%);
+  --neutral-alpha-66-16: rgb(132 137 155 / 16%);
+  --neutral-alpha-66-12: rgb(132 137 155 / 12%);
+  --neutral-alpha-66-8: rgb(132 137 155 / 8%);
+  --neutral-alpha-66-4: rgb(132 137 155 / 4%);
+  --red-alpha-500-12: rgb(251 75 90 / 12%);
+  --red-alpha-500-8: rgb(251 75 90 / 8%);
+  --red-alpha-500-4: rgb(251 75 90 / 4%);
+  --blue-alpha-500-12: rgb(71 184 255 / 12%);
+  --blue-alpha-500-8: rgb(71 184 255 / 8%);
+  --blue-alpha-500-4: rgb(71 184 255 / 4%);
+  --neutral-99: #fcfcfd;
+  --neutral-6: #030303;
+  --neutral-alpha-99-0: rgb(252 252 253 / 0%);
+  --neutral-alpha-6-0: rgb(15 13 17 / 0%);
+  --purple-alpha-500-4: rgb(120 55 251 / 4%);
+  --orange-alpha-500-4: rgb(250 108 26 / 4%);
+  --green-alpha-700-8: rgb(21 140 100 / 8%);
+  --green-alpha-500-8: rgb(0 210 140 / 8%);
+  --yellow-alpha-600-4: rgb(255 222 104 / 4%);
+  --brand-alpha-500-8: rgb(0 210 160 / 8%);
+  --brand-alpha-700-8: rgb(21 140 112 / 8%);
+  --purple-alpha-500-8: rgb(120 55 251 / 8%);
+  --neutral-alpha-51-8: rgb(98 108 120 / 8%);
+  --neutral-alpha-51-4: rgb(98 108 120 / 4%);
+}
+
+/* Collection name: Motion */
+
+/* Mode: Mode 1 */
+:root {
+  --hint-show_delay: 200px;
+  --hint-hide_delay: 150px;
+  --notification-motion-enter: 200px;
+  --notification-motion-exit: 150px;
+  --notification-elevation: 12px;
+}
+
+/* Collection name: Radius */
+
+/* Mode: Standard */
+:root {
+  --radius-control: var(--radius-100);
+  --radius-container: var(--radius-150);
+  --radius-panel: var(--radius-200);
+  --radius-overlay: var(--radius-200);
+  --radius-pill: var(--radius-full);
+  --radius-tight: var(--radius-050);
+}
+
+/* Collection name: Primitive Numeric */
+
+/* Mode: base */
+:root {
+  --space-0: 0px;
+  --space-100: 4px;
+  --space-200: 8px;
+  --space-300: 12px;
+  --space-400: 16px;
+  --space-500: 20px;
+  --space-600: 24px;
+  --space-800: 32px;
+  --space-1000: 40px;
+  --space-1200: 48px;
+  --space-1500: 60px;
+  --space-1700: 68px;
+  --space-150: 6px;
+  --radius-0: 0px;
+  --radius-050: 2px;
+  --radius-100: 4px;
+  --radius-150: 6px;
+  --radius-200: 8px;
+  --radius-300: 12px;
+  --radius-400: 16px;
+  --radius-500: 20px;
+  --radius-600: 24px;
+  --radius-full: 9999px;
+  --space-050: 2px;
+  --space-2000: 80px;
+  --space-2500: 100px;
+}
+
+/* Collection name: Primitive Typography */
+
+/* Mode: Standard */
+:root {
+  --family-primary: "Roboto";
+  --family-mono: "JetBrains Mono";
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --font-size-100: 12px;
+  --font-size-200: 13px;
+  --font-size-700: 18px;
+  --font-size-800: 19px;
+  --font-size-300: 14px;
+  --font-size-400: 15px;
+  --font-size-500: 16px;
+  --font-size-600: 17px;
+  --font-size-900: 20px;
+  --font-size-1000: 22px;
+  --font-size-1100: 24px;
+  --font-size-1200: 26px;
+  --line-height-100: 16px;
+  --line-height-200: 20px;
+  --line-height-300: 22px;
+  --line-height-400: 24px;
+  --line-height-500: 26px;
+  --line-height-600: 28px;
+  --line-height-700: 30px;
+  --line-height-800: 32px;
+  --line-height-900: 36px;
+  --line-height-1000: 40px;
+  --line-height-1100: 44px;
+  --font-size-1300: 28px;
+  --font-size-1400: 30px;
+  --font-size-1500: 32px;
+  --font-size-1600: 36px;
+  --font-size-1700: 40px;
+  --font-size-1800: 48px;
+  --font-size-1900: 52px;
+  --font-size-2000: 64px;
+  --line-height-1200: 48px;
+  --line-height-1300: 56px;
+  --line-height-1400: 60px;
+  --line-height-1500: 72px;
+  --weight-light: 300px;
+  --letter-spacing-000: 0px;
+  --letter-spacing-050: -0.16;
+  --letter-spacing-100: -0.32;
+  --letter-spacing-200: -0.48;
+  --letter-spacing-300: -0.64;
+  --letter-spacing-050p: 0.16;
+  --letter-spacing-100p: 0.32;
+  --letter-spacing-150p: 0.48;
+}
+/* stylelint-enable no-duplicate-selectors */

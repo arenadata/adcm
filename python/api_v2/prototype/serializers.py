@@ -78,3 +78,11 @@ class PrototypeRelatedSerializer(ModelSerializer):
     class Meta:
         model = Prototype
         fields = ("id", "name", "display_name", "version")
+
+
+class PrototypeWithEditionRelatedSerializer(ModelSerializer):
+    edition = CharField(source="bundle.edition")
+
+    class Meta:
+        model = Prototype
+        fields = ("id", "name", "display_name", "version", "edition")

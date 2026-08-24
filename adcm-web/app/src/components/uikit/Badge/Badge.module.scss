@@ -27,11 +27,12 @@
   align-items: center;
   flex-shrink: 0;
   max-width: 100%;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 16px;
+  padding: var(--space-050) var(--space-150);
+  border-radius: var(--radius-100);
+  font-size: var(--body-3-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--body-3-lineheight);
+  letter-spacing: var(--letter-spacing-050p);
 
   &__content {
     min-width: 0;

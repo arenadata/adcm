@@ -30,6 +30,9 @@ class ClusterRepoI(Protocol):
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
         ...
 
+    def get_clusters_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
+        ...
+
     def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
         # use carefully, this info is already available in many scenarios
         ...

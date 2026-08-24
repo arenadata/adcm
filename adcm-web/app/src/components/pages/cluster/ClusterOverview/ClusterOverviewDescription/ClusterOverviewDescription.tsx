@@ -1,4 +1,3 @@
-import PageSection from '@commonComponents/PageSection/PageSection';
 import { useStore, useDispatch } from '@hooks';
 import { IconButton } from '@uikit';
 import type { AdcmCluster } from '@models/adcm';
@@ -16,14 +15,16 @@ const ClusterOverviewDescription = () => {
   };
 
   return (
-    <>
-      <PageSection title="Description">
-        <div className={s.clusterOverviewDescription}>
-          <span>{cluster?.description || ''}</span>
-          <IconButton icon="g1-edit" size={32} onClick={() => handleDescriptionChangeClick(cluster)} />
-        </div>
-      </PageSection>
-    </>
+    <div className={s.clusterOverviewDescription}>
+      <span className={s.clusterOverviewDescription__text}>{cluster?.description || ''}</span>
+      <IconButton
+        className={s.clusterOverviewDescription__edit}
+        icon="g1-edit"
+        size={32}
+        onClick={() => handleDescriptionChangeClick(cluster)}
+        title="Edit description"
+      />
+    </div>
   );
 };
 

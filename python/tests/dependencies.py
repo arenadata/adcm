@@ -21,7 +21,6 @@ import os
 
 from application.di.containers import get_main_providers
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ADCMEntity, Bundle, ConfigLog, TaskLog
 from cm.tests.mocks.task_runner import (
     ETFMockWithEnvPreparation,
@@ -50,6 +49,7 @@ from core.legacy.job.runners import (
 )
 from core.result import Success
 from core.settings import Directories
+from core.status import FullStatusMap
 from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
 from dishka.provider import provide
 from django.db.models import Model

@@ -60,6 +60,7 @@ class APIRoot(APIRootView):
         "audit": "audit:root",
         "bundles": "bundle-list",
         "hosts": "host-list",
+        "cluster-metrics": "cluster-metrics-list",
         "hostproviders": "provider-list",
         "prototypes": "prototype-list",
         "jobs": "joblog-list",

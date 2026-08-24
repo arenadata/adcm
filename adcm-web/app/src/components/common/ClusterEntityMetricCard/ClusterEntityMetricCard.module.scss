@@ -1,0 +1,70 @@
+:global {
+  body.theme-dark {
+    --cluster-entity-metric-dot-up: var(--color-xgreen-saturated);
+    --cluster-entity-metric-dot-down: var(--color-eggshell);
+    --cluster-entity-metric-text-primary: var(--color-xgray-lighter);
+    --cluster-entity-metric-text-secondary: var(--color-gray-usual);
+  }
+
+  body.theme-light {
+    --cluster-entity-metric-dot-up: var(--color-green-logo);
+    --cluster-entity-metric-dot-down: var(--color-orange);
+    --cluster-entity-metric-text-primary: var(--color-xgray-new-darker);
+    --cluster-entity-metric-text-secondary: var(--color-adcm);
+  }
+}
+
+.clusterEntityMetricCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--metric-card-gap, var(--space-300));
+  padding: var(--metric-card-padding, var(--space-200));
+  border-radius: var(--metric-card-radius, var(--radius-150));
+  background-color: var(--metric-card-background, transparent);
+
+  &__title {
+    align-self: center;
+    font-size: var(--metric-card-title-size, var(--body-2-size));
+    font-weight: var(--metric-card-title-weight, var(--weight-medium));
+    line-height: var(--metric-card-title-line-height, var(--body-2-lineheight));
+    letter-spacing: var(--metric-card-title-letter-spacing, var(--letter-spacing-050p));
+    color: var(--cluster-entity-metric-text-primary);
+  }
+
+  &__legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--metric-card-legend-gap, var(--space-300));
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    letter-spacing: var(--letter-spacing-050p);
+    color: var(--cluster-entity-metric-text-secondary);
+  }
+
+  &__legendItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-100);
+  }
+
+  &__legendCount {
+    color: var(--cluster-entity-metric-text-primary);
+    font-weight: var(--weight-medium);
+  }
+
+  &__dot {
+    width: var(--graphic-8);
+    height: var(--graphic-8);
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &_up {
+      background-color: var(--cluster-entity-metric-dot-up);
+    }
+
+    &_down {
+      background-color: var(--cluster-entity-metric-dot-down);
+    }
+  }
+}

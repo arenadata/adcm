@@ -1,0 +1,31 @@
+:global {
+  body.theme-dark {
+    --clusters-widget-grid-empty-bg: var(--color-new-dark-30);
+    --clusters-widget-grid-empty-border: var(--color-dark-1);
+    --clusters-widget-grid-empty-color: var(--color-gray-usual);
+  }
+
+  body.theme-light {
+    --clusters-widget-grid-empty-bg: var(--color-plate-light-30);
+    --clusters-widget-grid-empty-border: var(--color-xgray-lighter);
+    --clusters-widget-grid-empty-color: var(--color-adcm);
+  }
+}
+
+.clustersWidgetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(368px, 1fr));
+  gap: var(--space-300);
+
+  &__empty {
+    grid-column: 1 / -1;
+    background: var(--clusters-widget-grid-empty-bg);
+    border: 2px solid var(--clusters-widget-grid-empty-border);
+    border-radius: var(--radius-150);
+    padding: var(--space-300);
+    text-align: center;
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    color: var(--clusters-widget-grid-empty-color);
+  }
+}

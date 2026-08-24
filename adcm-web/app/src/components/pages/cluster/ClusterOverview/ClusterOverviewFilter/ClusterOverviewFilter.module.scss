@@ -1,7 +1,32 @@
-.clusterOverviewFilter {
-  margin-bottom: 24px;
+:global {
+  body.theme-dark {
+    --cluster-overview-filter-count-color: var(--color-gray-usual);
+  }
 
-  button {
-    width: 64px;
+  body.theme-light {
+    --cluster-overview-filter-count-color: var(--color-adcm);
+  }
+}
+
+.clusterOverviewFilter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-300);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-300);
+
+  &__tabs {
+    flex-shrink: 0;
+  }
+
+  &__count {
+    color: var(--cluster-overview-filter-count-color);
+    font-weight: var(--weight-regular);
+  }
+
+  &__search {
+    width: 197px;
+    max-width: 100%;
   }
 }

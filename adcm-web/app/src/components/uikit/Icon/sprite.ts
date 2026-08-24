@@ -7,6 +7,7 @@ export const allowIconsNames = [
   'check-hollow',
   'chevron',
   'chevron-double',
+  'doc',
   'dots',
   'download',
   'eye',

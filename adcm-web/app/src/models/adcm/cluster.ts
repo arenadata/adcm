@@ -12,6 +12,7 @@ export interface AdcmClusterPrototype {
   displayName: string;
   type: string;
   version: string;
+  edition?: string;
 }
 
 export interface AdcmCluster {

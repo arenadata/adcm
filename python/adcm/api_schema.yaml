@@ -590,7 +590,7 @@ components:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
         prototype:
-          $ref: '#/components/schemas/PrototypeRelated'
+          $ref: '#/components/schemas/PrototypeWithEditionRelated'
         concerns:
           type: array
           items:
@@ -2630,6 +2630,29 @@ components:
       - displayName
       - name
       - versions
+    PrototypeWithEditionRelated:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 1000
+        displayName:
+          type: string
+          maxLength: 1000
+        version:
+          type: string
+          maxLength: 1000
+        edition:
+          type: string
+      required:
+      - id
+      - name
+      - displayName
+      - version
+      - edition
     Provider:
       type: object
       properties:
@@ -2886,10 +2909,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          $ref: '#/components/schemas/MaintenanceModeEnum'
       required:
       - id
       - name
       - status
+      - maintenanceMode
     RelatedServicesStatuses:
       type: object
       properties:
@@ -2906,6 +2932,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          allOf:
+          - $ref: '#/components/schemas/MaintenanceModeEnum'
+          readOnly: true
         components:
           type: array
           items:
@@ -2915,6 +2945,7 @@ components:
       - name
       - displayName
       - status
+      - maintenanceMode
       - components
     RelatedUser:
       type: object
@@ -18652,6 +18683,23 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: maintenanceMode
+        schema:
+          type: string
+          enum:
+          - 'off'
+          - 'on'
+        description: |-
+          Host maintenance mode
+
+          * `on` - on
+          * `off` - off
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: offset
         schema:
           type: integer
@@ -18659,7 +18707,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
@@ -18704,6 +18752,11 @@ paths:
       description: Get information about cluster service statuses.
       summary: Get information about cluster service statuses.
       parameters:
+      - in: query
+        name: displayName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by service display name.
       - in: path
         name: clusterId
         schema:
@@ -18716,6 +18769,18 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: maintenanceMode
+        schema:
+          type: string
+          enum:
+          - 'off'
+          - 'on'
+        description: |-
+          Service maintenance mode
+
+          * `on` - on
+          * `off` - off
+      - in: query
         name: offset
         schema:
           type: integer
@@ -18723,7 +18788,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
