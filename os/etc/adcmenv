@@ -102,7 +102,7 @@ ensure_directory_structure() {
 }
 
 ensure_mandatory_db_settings_provided() {
-  echo "Checking env variables..."
+  echo "Checking DB env variables..."
 
   mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
   missing_vars=""
@@ -124,7 +124,20 @@ ensure_mandatory_db_settings_provided() {
     exit 1
   fi
 
-  echo "Env variables: OK"
+  echo "DB env variables: OK"
+}
+
+ensure_worker_status_service_url_provided() {
+  echo "Checking worker env variables..."
+
+  if [ -z "${CONSUL_URL}" ] && [ -z "${DEFAULT_ADCM_URL}" ]; then
+    echo "ERROR: one of the following environment variables must be specified:" >&2
+    echo "  CONSUL_URL - the worker discovers the status service URL in Consul" >&2
+    echo "  DEFAULT_ADCM_URL - used directly when there is no Consul discovery result" >&2
+    exit 1
+  fi
+
+  echo "Worker env variables: OK"
 }
 
 check_compatibility() {

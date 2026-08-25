@@ -20,12 +20,15 @@ connected automatically on import. Call `install_for_worker()` once, from
 the worker entrypoint only.
 """
 
+from typing import NoReturn
 import logging
 import logging.config
 
 from application.loggers import task_worker_logging_config_from_env
+from celery.exceptions import WorkerShutdown
 from celery.signals import celeryd_after_setup, worker_before_create_process, worker_init, worker_process_init
 from cm.legacy.status_api import status_service_url
+from core.result import is_fail
 from django.db import connections
 
 from integrations.celery.errors import JobFailedFlowError
@@ -35,7 +38,7 @@ from integrations.celery.pg.transport import discard_engines_inherited_from_fork
 logger = logging.getLogger("worker.celery")
 
 
-class StatusServiceUrlResolutionError(Exception):
+class StatusServiceUrlResolutionError(WorkerShutdown):
     ...
 
 
@@ -89,18 +92,13 @@ def setup_status_service_url(sender, **_) -> None:
     created, so the resolved URL is inherited by every forked child.
     """
     resolver = sender.app.di_container.get(ResolveExternalStatusServiceURL)
-    resolved_url = resolver.resolve()
 
-    if not resolved_url:
-        message = (
-            "Could not resolve external status service url: "
-            "no Consul discovery result and DEFAULT_ADCM_URL is not set. "
-            "The worker cannot report status events without it, refusing to start."
-        )
-        raise StatusServiceUrlResolutionError(message)
+    result = resolver.resolve()
+    if is_fail(result):
+        _refuse_to_start(result.value)
 
-    status_service_url.set_external(resolved_url)
-    logger.info("Worker status events will be sent to %s", resolved_url)
+    status_service_url.set_external(result.value)
+    logger.info("Worker status events will be sent to %s", result.value)
 
 
 # Logging
@@ -130,3 +128,16 @@ def install_for_worker() -> None:
     worker_process_init.connect(close_inherited_connections_in_child)
     worker_init.connect(setup_status_service_url)
     celeryd_after_setup.connect(configure_logging)
+
+
+def _refuse_to_start(reason: str) -> NoReturn:
+    message = (
+        f"Could not resolve external status service url: {reason}. "
+        "The worker cannot report status events without it, refusing to start."
+    )
+    # worker_init fires before celery configures logging, so nothing is attached
+    # to the logger tree yet and the record reaches stderr via logging's last
+    # resort handler; the message is repeated by SystemExit on process exit
+    logger.critical(message)
+
+    raise StatusServiceUrlResolutionError(message)
