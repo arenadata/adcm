@@ -58,7 +58,7 @@ class Command(BaseCommand):
         ) as stderr:
             ansible_process = subprocess.Popen(
                 ansible_command,  # noqa: S603
-                env=get_environ(venv="2.21"),
+                env=get_environ(venv="2.16"),
                 stdout=stdout,
                 stderr=stderr,
             )
