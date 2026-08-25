@@ -16,6 +16,7 @@ import os
 
 from application.di.providers.environment import ConsulSettings
 from cm.legacy.status_api import status_service_url
+from core.result import Fail, Success
 from django.test import SimpleTestCase, override_settings
 from integrations.celery.external_status_service_url import (
     ResolveExternalStatusServiceURL,
@@ -224,34 +225,50 @@ class TestResolveExternalStatusServiceURL(TestCase):
             {"Service": {"Meta": {"status_service_url": "http://discovered:8000/status/api/v1/"}}}
         ]
 
-        url = self.resolver(repo=repo, consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
+        result = self.resolver(repo=repo, consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
-        self.assertEqual(url, "http://discovered:8000/status/api/v1/")
+        self.assertEqual(result, Success("http://discovered:8000/status/api/v1/"))
         backend.discover.assert_called_once_with("adcm", tag="the-uuid")
 
     def test_falls_back_to_default_adcm_url_when_meta_missing(self):
         backend = Mock()
         backend.discover.return_value = [{"Service": {"Meta": {}}}]
 
-        url = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
+        result = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
-        self.assertEqual(url, "http://fallback:8000/status/api/v1/")
+        self.assertEqual(result, Success("http://fallback:8000/status/api/v1/"))
 
     def test_falls_back_to_default_adcm_url_when_discovery_fails(self):
         backend = Mock()
         backend.discover.side_effect = RuntimeError("consul down")
 
-        url = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
+        result = self.resolver(consul_backend=backend, default_adcm_url="http://fallback:8000").resolve()
 
-        self.assertEqual(url, "http://fallback:8000/status/api/v1/")
+        self.assertEqual(result, Success("http://fallback:8000/status/api/v1/"))
 
     def test_without_consul_uses_default_adcm_url(self):
-        url = self.resolver(consul_backend=None, default_adcm_url="http://fallback:8000").resolve()
+        # regression (ADCM-8379): the "no source configured" guard was inverted,
+        # so a worker with DEFAULT_ADCM_URL set failed as if it had nothing
+        result = self.resolver(consul_backend=None, default_adcm_url="http://fallback:8000").resolve()
 
-        self.assertEqual(url, "http://fallback:8000/status/api/v1/")
+        self.assertEqual(result, Success("http://fallback:8000/status/api/v1/"))
 
-    def test_returns_none_without_any_source(self):
-        self.assertIsNone(self.resolver(consul_backend=None, default_adcm_url=None).resolve())
+    def test_fails_without_any_source(self):
+        result = self.resolver(consul_backend=None, default_adcm_url=None).resolve()
+
+        self.assertEqual(
+            result, Fail("neither CONSUL_URL nor DEFAULT_ADCM_URL is set, at least one of them is mandatory")
+        )
+
+    def test_fails_with_its_own_reason_when_consul_yields_nothing(self):
+        # a configured source that came up empty is a different failure from
+        # having no source at all, and must be reported as such
+        backend = Mock()
+        backend.discover.return_value = []
+
+        result = self.resolver(consul_backend=backend, default_adcm_url=None).resolve()
+
+        self.assertEqual(result, Fail("no Consul discovery result and DEFAULT_ADCM_URL is not set"))
 
     def test_repo_is_not_queried_when_consul_is_not_configured(self):
         repo = Mock()
@@ -270,9 +287,13 @@ class TestSetupStatusServiceUrl(TestCase):
     """
 
     @staticmethod
-    def make_parent(*, resolved_url: str | None) -> Mock:
+    def make_parent(result: Success[str] | Fail[str]) -> Mock:
+        """A celery worker `sender` whose DI container hands out a resolver returning `result`."""
+        resolver = Mock()
+        resolver.resolve.return_value = result
+
         parent = Mock()
-        parent.app.di_container.get.return_value.resolve.return_value = resolved_url
+        parent.app.di_container.get.return_value = resolver
         return parent
 
     def setUp(self):
@@ -282,13 +303,22 @@ class TestSetupStatusServiceUrl(TestCase):
         self.addCleanup(patcher.stop)
 
     def test_start_fails_when_url_cannot_be_resolved(self):
-        parent = self.make_parent(resolved_url=None)
+        parent = self.make_parent(Fail("no Consul discovery result and DEFAULT_ADCM_URL is not set"))
 
-        with self.assertRaises(StatusServiceUrlResolutionError):
+        with self.assertRaisesRegex(StatusServiceUrlResolutionError, "DEFAULT_ADCM_URL is not set"):
+            setup_status_service_url(sender=parent)
+
+    def test_refusal_carries_the_resolvers_own_reason(self):
+        # regression (ADCM-8379): the reason used to be a hardcoded string
+        parent = self.make_parent(
+            Fail("neither CONSUL_URL nor DEFAULT_ADCM_URL is set, at least one of them is mandatory")
+        )
+
+        with self.assertRaisesRegex(StatusServiceUrlResolutionError, "at least one of them is mandatory"):
             setup_status_service_url(sender=parent)
 
     def test_start_sets_external_url_when_resolved(self):
-        parent = self.make_parent(resolved_url="http://adcm.local:8000/status/api/v1/")
+        parent = self.make_parent(Success("http://adcm.local:8000/status/api/v1/"))
 
         setup_status_service_url(sender=parent)
 

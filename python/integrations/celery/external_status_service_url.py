@@ -15,6 +15,7 @@ from typing import Any
 import logging
 
 from core.adcm import ADCMRepoI
+from core.result import Fail, Success
 
 from integrations.celery.helpers import read_adcm_uuid
 from integrations.consul import ConsulBackend, url_with_base_path
@@ -53,24 +54,25 @@ class ResolveExternalStatusServiceURL:
     default_adcm_url: str | None
     status_base_path: str
 
-    def resolve(self) -> str | None:
+    def resolve(self) -> Success[str] | Fail[str]:
+        if self.consul_backend is None and not self.default_adcm_url:
+            return Fail("neither CONSUL_URL nor DEFAULT_ADCM_URL is set, at least one of them is mandatory")
+
         if self.consul_backend is not None:
             adcm_uuid = read_adcm_uuid(self.repo)
             try:
                 entries = self.consul_backend.discover(ADCM_SERVICE_NAME, tag=adcm_uuid)
+                url = extract_status_service_url(entries)
+                if url:
+                    return Success(url)
             except Exception:  # noqa: BLE001
                 logger.exception("Failed to discover ADCM in Consul")
-                entries = []
-
-            url = extract_status_service_url(entries)
-            if url:
-                return url
 
         if self.default_adcm_url:
             # consul-less fallback: same formula the backend uses to build the URL
             # it advertises in Consul meta (see application.startup.consul); when
             # discovery works, the advertised URL above wins - it is authoritative
             # for scheme and base path
-            return url_with_base_path(self.default_adcm_url, self.status_base_path)
+            return Success(url_with_base_path(self.default_adcm_url, self.status_base_path))
 
-        return None
+        return Fail("no Consul discovery result and DEFAULT_ADCM_URL is not set")

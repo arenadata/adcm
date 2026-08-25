@@ -21,6 +21,12 @@ run_celery() {
 }
 
 if [ "$#" -eq 0 ]; then
+  # only the worker itself needs these; control commands (celery inspect, ...)
+  # talk to an already running one
+  ensure_mandatory_db_settings_provided &&
+  ensure_worker_status_service_url_provided ||
+  exit $?
+
   if [ -n "${WORKER_LOG_LEVEL}" ]; then
     run_celery worker --loglevel "${WORKER_LOG_LEVEL}"
   else
