@@ -10,16 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
+from collections import defaultdict, deque
 from collections.abc import Generator, Iterable
 from functools import partial
 from operator import attrgetter, itemgetter
 from pathlib import Path
+from typing import Literal, cast
 import json
 import hashlib
 
 from core import action, bundle
-from core.types import ADCMCoreType, BundleID, PrototypeID
+from core.types import (
+    ADCMCoreType,
+    BindObjectDescriptor,
+    BundleID,
+    ImportName,
+    PrototypeID,
+    PrototypeImportSchema,
+)
 from django.conf import settings
 from django.db import IntegrityError
 from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
@@ -185,6 +193,34 @@ class BundleRepo(bundle.BundleRepoI):
         ).get(id=prototype_id)
         path = Path(settings.BUNDLE_DIR, hash_)
         return bundle.BundleContext(id=bundle_id, root=path, contract_version=contract_version)
+
+    def retrieve_prototype_imports(
+        self, prototype_ids: Iterable[PrototypeID]
+    ) -> dict[BindObjectDescriptor, dict[ImportName, PrototypeImportSchema]]:
+        imports = defaultdict(dict)
+
+        for import_ in PrototypeImport.objects.filter(prototype_id__in=prototype_ids).values(
+            "prototype__type",
+            "prototype__name",
+            "name",
+            "min_version",
+            "max_version",
+            "min_strict",
+            "max_strict",
+            "required",
+        ):
+            type_ = cast(  # only cluster and service can have imports
+                Literal[ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE], ADCMCoreType(import_["prototype__type"])
+            )
+            bind_object_descriptor = BindObjectDescriptor(type=type_, name=import_["prototype__name"])
+            imports[bind_object_descriptor][import_["name"]] = PrototypeImportSchema(
+                **import_,
+            )
+
+        return imports
+
+    def retrieve_prototype_ids(self, bundle_id: BundleID) -> set[PrototypeID]:
+        return set(Prototype.objects.filter(bundle_id=bundle_id).values_list("id", flat=True))
 
     def retrieve_contract_version(self, bundle_id: BundleID) -> bundle.ContractVersionTag:
         return Bundle.objects.values_list("contract_version", flat=True).get(pk=bundle_id)

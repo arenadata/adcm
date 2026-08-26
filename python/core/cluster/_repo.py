@@ -13,9 +13,11 @@
 from collections.abc import Iterable
 from typing import Protocol
 
-from core.cluster._types import ClusterTopology
+from core.cluster._types import ClusterTopology, ExportData
 from core.types import (
     ActionHostGroupID,
+    ClusterBindSchema,
+    ClusterHierarchyBeforeUpgradeBinds,
     ClusterID,
     ClusterObjectDesc,
     ComponentDesc,
@@ -23,6 +25,7 @@ from core.types import (
     MaintenanceModeOfObjects,
     MaintenanceModeState,
     ServiceDesc,
+    ServiceID,
 )
 
 
@@ -44,4 +47,20 @@ class ClusterRepoI(Protocol):
         ...
 
     def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
+        ...
+
+    def retrieve_export_data(self, clusters: Iterable[ClusterID], services: Iterable[ServiceID]) -> ExportData:
+        """
+        Collects specified Clusters' and Services' data.
+        Returns this data in exports format to import them to some other objects.
+        """
+        ...
+
+    def create_binds(self, binds: Iterable[ClusterBindSchema], ignore_conflicts: bool) -> None:
+        ...
+
+    def delete_hierarchy_binds(self, cluster_id: ClusterID) -> None:
+        ...
+
+    def retrieve_hierarchy_before_upgrade_binds(self, cluster_id: ClusterID) -> ClusterHierarchyBeforeUpgradeBinds:
         ...

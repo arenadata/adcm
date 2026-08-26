@@ -12,6 +12,7 @@
 
 
 from cm.models import (
+    Action,
     Bundle,
     Component,
     ConfigLog,
@@ -592,3 +593,37 @@ class TestUpgrade(ADCMDjangoAPISuite):
         config = ConfigLog.objects.get(id=service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)
+
+    def test_adcm_8315_revert_upgrade_after_removing_service_and_component(self):
+        self.accept_license_of_first_service()
+        # removed_service - a service that exists in the cluster_1 but doesn't exist in cluster_upgrade
+        # and will remove after upgrade, so it should be restored on revert;
+        # service_1 exists in both clusters. It sets in cluster_1 yet and will be removed after upgrade by api,
+        # such removal is a deliberate user's action, so service_1 shouldn't be restored on revert;
+        removed_service, *_ = self.uc.add_services_to_cluster(
+            names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
+        )
+
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.cluster_1.refresh_from_db(fields=["prototype"])
+        self.assertEqual(self.cluster_1.prototype.version, self.cluster_upgrade.bundle.version)
+
+        response = self.client.v2[self.service_1].delete()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        revert_action = Action.objects.get(prototype=self.cluster_1.prototype, name="revert_upgrade")
+        response = self.client.v2[self.cluster_1, "actions", revert_action, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        launched_task = self.task_runner.expect_task_launched(task_id=response.json()["id"])
+        self.task_runner.run_task(launched_task.id)
+        self.assert_task_status_is(task_id=launched_task.id, status="success")
+
+        # check revert is success
+        self.cluster_1.refresh_from_db(fields=["prototype"])
+        self.assertEqual(self.cluster_1.prototype.version, self.bundle_1.version)
+        # check service removed by upgrade is restored, service removed by user isn't
+        self.assertFalse(self.cluster_1.services.filter(prototype__name=self.service_1.prototype.name).exists())
+        self.assertTrue(self.cluster_1.services.filter(prototype__name=removed_service.prototype.name).exists())

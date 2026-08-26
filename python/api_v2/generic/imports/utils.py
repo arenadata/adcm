@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.errors import raise_adcm_ex
-from cm.legacy.api import is_version_suitable
 from cm.models import (
     ADCMEntityStatus,
     Cluster,
@@ -24,6 +23,7 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.status import convert_to_entity_status
+from core.versions import is_version_suitable
 from django.db.models import QuerySet
 
 from api_v2.generic.imports.types import (
@@ -104,7 +104,7 @@ def _get_import_candidates_of_single_prototype_export(
     prototype_import: PrototypeImport,
     queryset: QuerySet[Cluster] | QuerySet[Service],
 ) -> list[CommonImportCandidate] | None:
-    if not is_version_suitable(version=prototype_export.prototype.version, prototype_import=prototype_import):
+    if not is_version_suitable(version=prototype_export.prototype.version, versions_object=prototype_import):
         return None
 
     out = []

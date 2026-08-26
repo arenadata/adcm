@@ -21,8 +21,14 @@ from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.legacy.cluster.types import HostComponentEntry
 from core.result import Fail
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
-from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
+from core.types import (
+    ADCMCoreType,
+    ClusterID,
+    CoreObjectDescriptor,
+    Descriptor,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rbac.models import Policy
@@ -35,6 +41,7 @@ from cm.legacy.api import check_license
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
 from cm.legacy.services.concern import create_issue, retrieve_issue
 from cm.legacy.services.concern.cases import (
+    object_imports_has_issue,
     recalculate_concerns_on_cluster_upgrade,
 )
 from cm.legacy.services.concern.checks import object_configuration_has_issue
@@ -126,12 +133,15 @@ def bundle_revert(
     cluster_service: ClusterService,
     config_service: core.config.ConfigService,
     config_scenarios: ConfigScenarios,
+    before_upgrade_scenarios: BeforeUpgradeScenarios,
 ) -> None:
     if isinstance(obj, Cluster):
         upgraded_bundle = obj.prototype.bundle
         before_upgrade = ClusterBeforeUpgrade(**obj.before_upgrade)
+        before_upgrade_binds = cluster_service.repo.retrieve_hierarchy_before_upgrade_binds(cluster_id=obj.pk)
         old_bundle = Bundle.objects.get(pk=before_upgrade.bundle_id)
         old_proto = Prototype.objects.get(bundle=old_bundle, name=old_bundle.name, type=ObjectType.CLUSTER)
+
         _revert_object(
             obj=obj,
             old_proto=old_proto,
@@ -180,20 +190,27 @@ def bundle_revert(
         Component.objects.filter(cluster=obj, prototype__bundle=upgraded_bundle).delete()
 
         for service_name in before_upgrade.services:
+            is_deleted_from_bundle = service_name in before_upgrade.deleted_services
             prototype = Prototype.objects.get(bundle=old_bundle, name=service_name, type=ObjectType.SERVICE)
 
             if not Service.objects.filter(prototype=prototype, cluster=obj).exists():
+                if not is_deleted_from_bundle:
+                    # Services may be removed after upgrade and can't be recovered from before_upgrade (ADCM-8315)
+                    logger.warning("Service %s wasn't restored", service_name)
+                    continue
+
                 service = callbacks.add_service_to_cluster(obj, prototype)
+                deleted_service = before_upgrade.deleted_services[service_name]
                 _restore_deleted_objects(
                     obj=service,
-                    before_upgrade=before_upgrade.deleted_services[service.name],
+                    before_upgrade=deleted_service,
                     config_service=config_service,
                 )
 
                 for component in service.components.all():  # pyright: ignore [reportAttributeAccessIssue]
                     _restore_deleted_objects(
                         obj=component,
-                        before_upgrade=before_upgrade.deleted_services[service_name].components[component.name],
+                        before_upgrade=deleted_service.components[component.name],
                         config_service=config_service,
                     )
 
@@ -218,6 +235,24 @@ def bundle_revert(
             cluster_service=cluster_service,
             checks_func=check_nothing,
         )
+
+        before_upgrade_scenarios.restore_binds(
+            cluster=Descriptor(id=obj.pk, type=ADCMCoreType.CLUSTER),
+            before_upgrade_binds=before_upgrade_binds,
+            prototype_imports=before_upgrade_scenarios.bundle_service.retrieve_prototype_imports(
+                bundle_id=old_bundle.pk
+            ),
+        )
+        concerns_created = False
+        for orm_object in (obj, *obj.services.all()):  # recheck potentially affected objects
+            owner = orm_object_to_core_descriptor(orm_object)
+            if retrieve_issue(owner=owner, cause=ConcernCause.IMPORT) is None and object_imports_has_issue(
+                target=orm_object
+            ):  # TODO: make core-friendly, move into restore_binds()
+                create_issue(owner=owner, cause=ConcernCause.IMPORT)
+                concerns_created = True
+        if concerns_created:
+            redistribute_issues_and_flags(topology=retrieve_cluster_topology(obj.pk))
 
     if isinstance(obj, Provider):
         before_upgrade = ProviderBeforeUpgrade(**obj.before_upgrade)

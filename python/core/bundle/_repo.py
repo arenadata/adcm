@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from typing import Protocol
 
 from core.bundle._definitions import DefinitionsMap
 from core.bundle._types import BundleContext, BundleInfo, ComponentKey, ContractVersionTag, InstalledBundleVersion
-from core.types import BundleID, PrototypeID
+from core.types import BindObjectDescriptor, BundleID, ImportName, PrototypeID, PrototypeImportSchema
 
 
 class BundleRepoI(Protocol):
@@ -34,6 +35,14 @@ class BundleRepoI(Protocol):
         ...
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
+        ...
+
+    def retrieve_prototype_imports(
+        self, prototype_ids: Iterable[PrototypeID]
+    ) -> dict[BindObjectDescriptor, dict[ImportName, PrototypeImportSchema]]:
+        ...
+
+    def retrieve_prototype_ids(self, bundle_id: BundleID) -> set[PrototypeID]:
         ...
 
     def update_prototype_license_to_accept(self, license_hash: str) -> None:
