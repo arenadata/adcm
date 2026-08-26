@@ -18,6 +18,7 @@ from itertools import chain
 from typing import TypeAlias
 
 from core.types import (
+    ClusterBindSchema,
     ClusterID,
     ComponentID,
     ComponentName,
@@ -90,3 +91,21 @@ class ClusterTopology:
                 return component
         else:
             raise KeyError(f"No component with id {component_id}")
+
+
+@dataclass(slots=True, frozen=True)
+class Export:
+    name: str
+    version: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExportData:
+    clusters: dict[ClusterID, Export]
+    services: dict[ServiceID, Export]
+
+    def retrieve_export_by_bind(self, bind: ClusterBindSchema) -> Export | None:
+        if bind.source_service_id is not None:
+            return self.services.get(bind.source_service_id)
+
+        return self.clusters.get(bind.source_cluster_id)

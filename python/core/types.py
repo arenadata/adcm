@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
+from collections import UserDict, deque
 from dataclasses import dataclass
 from enum import Enum, auto
+from itertools import chain
 from typing import Generic, Literal, NamedTuple, NewType, TypeAlias, TypeVar
+
+from pydantic import BaseModel
 
 CurrentADCMVersion = NewType("CurrentADCMVersion", str)
 
@@ -26,6 +29,7 @@ ProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
+PrototypeVersion: TypeAlias = str
 
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
@@ -46,11 +50,13 @@ IsCreated: TypeAlias = bool
 GroupCheckLogID: TypeAlias = int
 CheckLogID: TypeAlias = int
 
+PrototypeName: TypeAlias = str
 ProviderName: TypeAlias = str
 HostName: TypeAlias = str
 ClusterName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
+ImportName: TypeAlias = str
 
 
 MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
@@ -268,3 +274,41 @@ class MaintenanceModeOfObjects:
             iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, mm in entities.items()))
 
         return dict(iterables)
+
+
+class PrototypeImportSchema(BaseModel):
+    name: str
+    min_version: str
+    max_version: str
+    min_strict: bool
+    max_strict: bool
+    required: bool
+
+
+class ClusterBindSchema(BaseModel):
+    cluster_id: ClusterID
+    source_cluster_id: ClusterID
+    service_id: ServiceID | None
+    source_service_id: ServiceID | None
+
+
+@dataclass(slots=True, frozen=True)
+class BindObjectDescriptor:
+    type: Literal[ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE]
+    name: PrototypeName
+
+
+class ClusterHierarchyBeforeUpgradeBinds(UserDict):
+    data: dict[BindObjectDescriptor, list[ClusterBindSchema]]
+
+    @property
+    def source_cluster_ids(self) -> set[ClusterID]:
+        return {bind.source_cluster_id for bind in chain.from_iterable(self.data.values())}
+
+    @property
+    def source_service_ids(self) -> set[ServiceID]:
+        return {
+            bind.source_service_id
+            for bind in chain.from_iterable(self.data.values())
+            if bind.source_service_id is not None
+        }

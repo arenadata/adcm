@@ -38,7 +38,15 @@ from core.bundle._validate import (
     check_dynamic_config_definition,
     check_has_valid_definitions_set,
 )
-from core.types import BundleID, CoreObjectDescriptor, CurrentADCMVersion, PrototypeID
+from core.types import (
+    BindObjectDescriptor,
+    BundleID,
+    CoreObjectDescriptor,
+    CurrentADCMVersion,
+    ImportName,
+    PrototypeID,
+    PrototypeImportSchema,
+)
 
 
 @dataclass(slots=True)
@@ -203,6 +211,13 @@ class BundleService:
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> BundleContext:
         return self.repo.retrieve_bundle_context_from_prototype(prototype_id=prototype_id)
+
+    def retrieve_prototype_imports(
+        self, bundle_id: BundleID
+    ) -> dict[BindObjectDescriptor, dict[ImportName, PrototypeImportSchema]]:
+        prototype_ids = self.repo.retrieve_prototype_ids(bundle_id=bundle_id)
+
+        return self.repo.retrieve_prototype_imports(prototype_ids=prototype_ids)
 
     def clear_old_versions_adcm_bundles(self) -> None:
         self.repo.clear_old_versions_adcm_bundles()

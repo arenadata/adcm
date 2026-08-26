@@ -35,6 +35,7 @@ from cm.models import (
     Upgrade,
 )
 from core.config._types import ChangeRequest
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
@@ -3452,6 +3453,7 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
         # revert upgrade
         config_service = self.container.get(core.config.ConfigService)
         cluster_service = self.container.get(core.cluster.ClusterService)
+        before_upgrade_scensrios = self.container.get(BeforeUpgradeScenarios)
         config_scenarios = ConfigScenarios(config_service=config_service)
         callbacks = build_switch_revert_callbacks(
             config_service=config_service, rbac_scenarios=RBACScenarios(), cluster_service=cluster_service
@@ -3462,6 +3464,7 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
             config_service=config_service,
             cluster_service=cluster_service,
             config_scenarios=config_scenarios,
+            before_upgrade_scenarios=before_upgrade_scensrios,
         )
 
         # CHGs must be restored

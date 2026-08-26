@@ -46,6 +46,7 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
@@ -233,6 +234,7 @@ class ScenariosProvider(Provider):
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
     config_scenarios = provide(ConfigScenarios)
+    before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
 
 
 class LogsServiceProvider(Provider):

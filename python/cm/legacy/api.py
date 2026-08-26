@@ -14,9 +14,10 @@ from functools import partial
 from typing import Literal, TypedDict
 import json
 
-from adcm_version import compare_prototype_versions
 from core.cluster import ClusterService
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
+from core.versions import is_version_suitable
+from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic, on_commit
 from rbac.roles import apply_policy_for_new_config
 from rbac.scenarios import RBACScenarios
@@ -38,8 +39,10 @@ from cm.legacy.issue import (
     unlink_concern_from_object,
     update_hierarchy_issues,
 )
+from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern import create_issue, delete_concerns_of_removed_objects, delete_issue, retrieve_issue
 from cm.legacy.services.concern.cases import (
+    recalculate_own_concerns_on_add_clusters,
     recalculate_own_concerns_on_add_hosts,
 )
 from cm.legacy.services.concern.checks import (
@@ -50,6 +53,7 @@ from cm.legacy.services.concern.checks import (
 from cm.legacy.services.concern.distribution import (
     ConcernRelatedObjects,
     distribute_concern_on_related_objects,
+    redistribute_issues_and_flags,
 )
 from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag
 from cm.legacy.services.concern.locks import get_lock_on_object
@@ -57,6 +61,7 @@ from cm.legacy.services.job.run import update_related_configs
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.legacy.status_api import (
     notify_about_new_concern,
+    notify_about_redistributed_concerns_from_maps,
     send_config_creation_event,
 )
 from cm.legacy.utils import obj_ref
@@ -65,6 +70,7 @@ from cm.models import (
     ADCM,
     ActionHostGroup,
     ADCMEntity,
+    AnsibleConfig,
     Cluster,
     ClusterBind,
     Component,
@@ -98,24 +104,34 @@ def check_license(prototype: Prototype) -> None:
         )
 
 
-def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
-    if (
-        prototype_import.min_strict
-        and compare_prototype_versions(version, prototype_import.min_version) <= 0
-        or prototype_import.min_version
-        and compare_prototype_versions(version, prototype_import.min_version) < 0
-    ):
-        return False
+def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
+    if prototype.type != "cluster":
+        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
 
-    if (
-        prototype_import.max_strict
-        and compare_prototype_versions(version, prototype_import.max_version) >= 0
-        or prototype_import.max_version
-        and compare_prototype_versions(version, prototype_import.max_version) > 0
-    ):
-        return False
+    check_license(prototype)
 
-    return True
+    with atomic():
+        cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
+        obj_conf = init_object_config(prototype, cluster)
+        cluster.config = obj_conf
+        cluster.save()
+
+        AnsibleConfig.objects.create(
+            value={"defaults": {"forks": DEFAULT_FORKS_AMOUNT}},
+            object_id=cluster.id,
+            object_type=ContentType.objects.get_for_model(Cluster),
+        )
+
+        added, removed = {}, {}
+        if recalculate_own_concerns_on_add_clusters(cluster):
+            added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+
+    reset_hc_map()
+    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+
+    logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
+
+    return cluster
 
 
 def add_host(
@@ -375,7 +391,7 @@ def get_export(cluster: Cluster, service: Service | None, proto_import: Prototyp
             continue
 
         export_proto[prototype_export.prototype.pk] = True
-        if not is_version_suitable(version=prototype_export.prototype.version, prototype_import=proto_import):
+        if not is_version_suitable(version=prototype_export.prototype.version, versions_object=proto_import):
             continue
 
         if prototype_export.prototype.type == "cluster":
@@ -543,7 +559,7 @@ def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataFo
                 f'Export {obj_ref(obj=export_obj)} does not match import name "{prototype_import.name}"',
             )
 
-        if not is_version_suitable(version=export_obj.prototype.version, prototype_import=prototype_import):
+        if not is_version_suitable(version=export_obj.prototype.version, versions_object=prototype_import):
             raise_adcm_ex(
                 "BIND_ERROR",
                 f'Import "{export_obj.prototype.name}" of { proto_ref(prototype=prototype_import.prototype)} '

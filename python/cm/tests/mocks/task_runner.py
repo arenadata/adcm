@@ -20,6 +20,7 @@ from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.logs import LogsService
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
@@ -68,6 +69,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -78,6 +80,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             manage_services=manage_services,
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
         self._failed_job = failed_job
@@ -127,6 +130,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -137,6 +141,7 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
             manage_services=manage_services,
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
         self.imitators = change_jobs or {}

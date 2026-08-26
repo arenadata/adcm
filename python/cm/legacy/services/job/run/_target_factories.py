@@ -42,6 +42,7 @@ from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.logs import LogsService
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
@@ -110,6 +111,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         cluster_service: ClusterService,
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
         self._rbac_scenarios = rbac_scenarios
@@ -125,6 +127,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                 rbac_scenarios=rbac_scenarios,
                 config_scenarios=config_scenarios,
                 cluster_service=cluster_service,
+                before_upgrade_scenarios=before_upgrade_scenarios,
             ),
             "hc_apply": partial(internal_script_hc_apply, cluster_service=cluster_service),
             "config_apply": partial(
@@ -243,6 +246,7 @@ def internal_script_bundle_revert(
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
+    before_upgrade_scenarios: BeforeUpgradeScenarios,
 ) -> InternalScriptResult:
     _ = job
 
@@ -266,6 +270,7 @@ def internal_script_bundle_revert(
             cluster_service=cluster_service,
             config_service=config_service,
             config_scenarios=config_scenarios,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
     except ObjectDoesNotExist as error:

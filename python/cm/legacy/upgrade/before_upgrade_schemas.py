@@ -12,6 +12,7 @@
 
 from typing import Annotated, TypeAlias
 
+from core.types import ClusterBindSchema
 from pydantic import BaseModel, Field
 
 ComponentName: TypeAlias = str
@@ -45,6 +46,10 @@ class _ConfigHostGroupWithRawConfig(BaseModel):
     hosts: ListOfHosts
 
 
+class _WithBinds(BaseModel):
+    binds: Annotated[list[ClusterBindSchema], Field(default_factory=list)]
+
+
 class ConfigHostGroupWithIdConfigBeforeUpgrade(BaseModel):
     config_id: int | None = None
     hosts: ListOfHosts
@@ -74,7 +79,7 @@ class ServiceHostComponentMapBeforeUpgrade(BaseModel):
     host: str
 
 
-class ServiceBeforeUpgrade(_BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup):
+class ServiceBeforeUpgrade(_BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds):
     ...
 
 
@@ -98,7 +103,9 @@ class DeletedServiceBeforeUpgrade(DeletedObjectBeforeUpgrade):
     components: Annotated[dict[ComponentName, DeletedObjectBeforeUpgrade], Field(default_factory=dict)]
 
 
-class ClusterBeforeUpgrade(_WithBundleID, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup):
+class ClusterBeforeUpgrade(
+    _WithBundleID, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds
+):
     hc: Annotated[list[ServiceHostComponentMapBeforeUpgrade], Field(default_factory=list)]
     # todo add better typehint (see ImportsDict from context._imports)
     imports: Annotated[dict, Field(default_factory=dict)]
