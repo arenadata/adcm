@@ -93,6 +93,7 @@ export const inlineEditConfigurationSchema: ConfigurationSchema = {
         host: {
           type: 'string',
           title: 'Host',
+          description: 'Inline string with suggestions: select from the list or type a custom value',
           default: 'localhost',
           readOnly: false,
           adcmMeta: {
@@ -185,7 +186,7 @@ export const inlineEditConfigurationData: ConfigurationData = {
     timeout: 30,
     ratio: 0.75,
     pi_approx: Math.PI,
-    host: 'localhost',
+    host: 'custom-host.example.com',
     protocol: 'https',
     environment: null,
   },
