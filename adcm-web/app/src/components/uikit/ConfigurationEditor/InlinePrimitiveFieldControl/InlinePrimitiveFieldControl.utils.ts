@@ -35,3 +35,13 @@ export const getInlinePrimitiveFieldControlType = (
 
 export const isInlineEditablePrimitiveField = (fieldSchema: SchemaDefinition): boolean =>
   getInlinePrimitiveFieldControlType(fieldSchema) !== null;
+
+export const filterInlineStringSuggestions = (suggestions: string[], value: string): string[] => {
+  if (!value) {
+    return suggestions;
+  }
+
+  const normalizedValue = value.toLowerCase();
+
+  return suggestions.filter((suggestion) => suggestion.toLowerCase().includes(normalizedValue));
+};

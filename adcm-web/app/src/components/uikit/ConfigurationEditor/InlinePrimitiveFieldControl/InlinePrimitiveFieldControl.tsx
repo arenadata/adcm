@@ -76,6 +76,7 @@ const InlinePrimitiveFieldControl = ({
           value={value}
           isReadonly={isReadonly}
           autoFocus={autoFocus}
+          suggestions={fieldSchema.adcmMeta?.stringExtra?.suggestions}
           onChange={handleStringChange}
         />
       );
