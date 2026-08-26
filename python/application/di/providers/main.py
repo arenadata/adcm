@@ -19,6 +19,7 @@ from cm.impl.adcm.repo import ADCMRepo
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
+from cm.impl.concern.repo import ConcernRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
 from cm.impl.job.repo import JobClaimer, JobRepo
@@ -42,6 +43,7 @@ from core.action.job import (
     TaskRunnerTerminator,
     TerminationSignaller,
 )
+from core.concern.repo import ConcernRepoI
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
@@ -183,6 +185,12 @@ class ClusterProvider(Provider):
 
     repo = provide(ClusterRepo, provides=core.cluster.ClusterRepoI)
     service = provide(core.cluster.ClusterService)
+
+
+class ConcernProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ConcernRepo, provides=ConcernRepoI)
 
 
 class ProviderProvider(Provider):

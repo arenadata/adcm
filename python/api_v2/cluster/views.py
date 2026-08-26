@@ -53,6 +53,7 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
+from core.concern.repo import ConcernRepoI
 from core.legacy.bundle.operations import build_requires_dependencies_map
 from core.legacy.cluster.operations import find_host_candidates_for_cluster
 from core.legacy.cluster.types import HostComponentEntry
@@ -60,6 +61,7 @@ from core.types import (
     ADCMCoreType,
     ClusterID,
     ComponentNameKey,
+    Descriptor,
     MaintenanceModeOfObjects,
     MaintenanceModeState,
     ServiceNameKey,
@@ -67,6 +69,7 @@ from core.types import (
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Case, Q, QuerySet, Value, When
+from django.db.transaction import atomic
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -395,21 +398,45 @@ class ClusterViewSet(
         )
     )
     @inject
-    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
+    def partial_update(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        status_scenarios: FromDishka[StatusScenarios],
+        concern_repo: FromDishka[ConcernRepoI],
+        **kwargs,  # noqa: ARG002
+    ):
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         valid_data = serializer.validated_data
 
-        if valid_data.get("name") and instance.concerns.filter(type=ConcernType.LOCK).exists():
-            raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only if no locking concern exists")
+        added = {}
 
-        if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
-            raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only in the 'created' state")
+        with atomic():
+            if valid_data.get("name") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+                raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only if no locking concern exists")
 
-        instance.name = valid_data.get("name", instance.name)
-        instance.description = valid_data.get("description", instance.description)
-        instance.save(update_fields=["name", "description"])
+            if valid_data.get("name") and valid_data.get("name") != instance.name and instance.state != "created":
+                raise AdcmEx(code="CLUSTER_CONFLICT", msg="Name change is available only in the 'created' state")
+
+            previous_name = instance.name
+
+            instance.name = valid_data.get("name", instance.name)
+            instance.description = valid_data.get("description", instance.description)
+            instance.save(update_fields=["name", "description"])
+
+            if instance.name != previous_name:
+                renamed_in_concerns = concern_repo.update_object_name_in_concerns(
+                    object_=Descriptor(id=instance.pk, type=ADCMCoreType.CLUSTER),
+                    previous_name=previous_name,
+                    new_name=instance.name,
+                )
+                added = concern_repo.get_concerns_distribution(concern_ids=renamed_in_concerns)
+
+        if added:
+            # concerns with updated names are sent to UI as new ones, there's no event for their update
+            status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed={})
 
         status_scenarios.send_object_update_event(
             instance.pk,

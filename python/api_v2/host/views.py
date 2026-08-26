@@ -29,8 +29,10 @@ from cm.legacy.api import delete_host
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
-from core.types import ADCMCoreType, MaintenanceModeState
+from core.concern.repo import ConcernRepoI
+from core.types import ADCMCoreType, Descriptor, MaintenanceModeState
 from dishka import FromDishka
+from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -266,7 +268,14 @@ class HostViewSet(
         )
     )
     @inject
-    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
+    def partial_update(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        status_scenarios: FromDishka[StatusScenarios],
+        concern_repo: FromDishka[ConcernRepoI],
+        **kwargs,  # noqa: ARG002
+    ):
         instance = self.get_object()
         self._is_original_host = not instance.original
 
@@ -276,17 +285,35 @@ class HostViewSet(
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
 
-        if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
-            raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
+        added = {}
 
-        if (
-            valid.get("fqdn")
-            and valid.get("fqdn") != instance.fqdn
-            and (instance.cluster or instance.state != "created")
-        ):
-            raise AdcmEx(code="HOST_UPDATE_ERROR")
+        with atomic():
+            if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+                raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
 
-        serializer.save()
+            if (
+                valid.get("fqdn")
+                and valid.get("fqdn") != instance.fqdn
+                and (instance.cluster or instance.state != "created")
+            ):
+                raise AdcmEx(code="HOST_UPDATE_ERROR")
+
+            previous_name = instance.fqdn
+
+            serializer.save()
+
+            if instance.fqdn != previous_name:
+                renamed_in_concerns = concern_repo.update_object_name_in_concerns(
+                    object_=Descriptor(id=instance.pk, type=ADCMCoreType.HOST),
+                    previous_name=previous_name,
+                    new_name=instance.fqdn,
+                )
+                added = concern_repo.get_concerns_distribution(concern_ids=renamed_in_concerns)
+
+        if added:
+            # concerns with updated names are sent to UI as new ones, there's no event for their update
+            status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed={})
+
         status_scenarios.send_object_update_event(
             instance.pk,
             ADCMCoreType.HOST.value,

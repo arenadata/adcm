@@ -230,7 +230,7 @@ layers = [
     "core.bundle",
     "core.action",
     # core.upgrade may be moved later if required
-    "core.config | core.mapping | core.cluster | core.provider | core.upgrade | core.logs",
+    "core.config | core.mapping | core.cluster | core.concern | core.provider | core.upgrade | core.logs",
     "core.templates | core.secrets",
     "core.errors | core.settings",
     "core.types",
