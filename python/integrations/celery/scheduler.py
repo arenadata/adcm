@@ -95,13 +95,17 @@ class CeleryTaskMonitor(TaskMonitor):
 
     def retrieve_known_celery_task_ids(self) -> set[str]:
         celery_inspect = self.celery.control.inspect()
-        scheduled_celery_tasks = celery_inspect.scheduled()
-        active_celery_tasks = celery_inspect.active()
+        # If there are no nodes, the commands return None, and we cast them into an empty dictionary
+        reserved_celery_tasks = celery_inspect.reserved() or {}
+        scheduled_celery_tasks = celery_inspect.scheduled() or {}
+        active_celery_tasks = celery_inspect.active() or {}
 
         return set(
             map(
                 itemgetter("id"),
-                chain.from_iterable(chain(scheduled_celery_tasks.values(), active_celery_tasks.values())),
+                chain.from_iterable(
+                    chain(scheduled_celery_tasks.values(), active_celery_tasks.values(), reserved_celery_tasks.values())
+                ),
             )
         )
 
@@ -131,10 +135,20 @@ class CeleryTaskMonitor(TaskMonitor):
         if task_related_celery_ids.intersection(celery_task_ids):
             return TaskLivenessStatus.ALIVE
 
-        latest_finished_job_date = max(filter(None, map(attrgetter("finish_date"), jobs)))
-        unknown_threshold = datetime.now(tz=UTC) - self.trust_gap
-        if latest_finished_job_date > unknown_threshold:
-            return TaskLivenessStatus.UNKNOWN
+        # finish_dates will be missing for tasks with one or the first running job.
+        # Meanwhile, the trust gap is needed to “give time” for the new job to start
+        # (and therefore it will be displayed in the scheduled or active list)
+        # If none of the jobs have a finish_date assigned and they are not listed in the set above,
+        # this most likely means that there’s no point in waiting for the trust gap in the hope that it will appear.
+        finish_dates = tuple(filter(None, map(attrgetter("finish_date"), jobs)))
+
+        if finish_dates:
+            latest_finished_job_date = max(finish_dates)
+
+            unknown_threshold = datetime.now(tz=UTC) - self.trust_gap
+
+            if latest_finished_job_date > unknown_threshold:
+                return TaskLivenessStatus.UNKNOWN
 
         return TaskLivenessStatus.DEAD
 
