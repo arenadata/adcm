@@ -1009,6 +1009,19 @@ class TestClusterStatuses(ADCMDjangoAPISuite):
         self.assertTrue(response["count"] == len(response["results"]) == 1)
         self.assertEqual(response["results"][0]["id"], self.service_11.pk)
 
+    def test_adcm_8390_filter_services_statuses_by_mm_no_services_success(self):
+        self.cluster_2.services.all().delete()
+
+        for value in ("on", "off"):
+            with self.subTest(value):
+                response = (self.client.v2[self.cluster_2] / "statuses" / "services").get(
+                    query={"maintenanceMode": value}
+                )
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                response = response.json()
+                self.assertTrue(response["count"] == len(response["results"]) == 0)
+
     def test_filter_services_statuses_by_name_success(self):
         # set prototypes' display_names
         for i, service in enumerate(self.cluster_1.services.all()):

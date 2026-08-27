@@ -47,6 +47,7 @@ from cm.models import (
     ConcernType,
     Host,
     HostComponent,
+    MaintenanceMode,
     ObjectType,
     Prototype,
     Service,
@@ -68,7 +69,7 @@ from core.types import (
 )
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Case, Q, QuerySet, Value, When
+from django.db.models import Case, CharField, Q, QuerySet, Value, When
 from django.db.transaction import atomic
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -842,7 +843,10 @@ class ClusterViewSet(
 
         return qs.annotate(
             calculated_mm=Case(
-                *(When(id=service_id, then=Value(mm.state.value)) for service_id, mm in services_mm.items())
+                *(When(id=service_id, then=Value(mm.state.value)) for service_id, mm in services_mm.items()),
+                # default is required for case without services when filter by MM is used (ADCM-8390)
+                default=Value(MaintenanceMode.OFF.value),
+                output_field=CharField(),
             )
         )
 
