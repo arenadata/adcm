@@ -24,6 +24,9 @@ def ansible_encrypt(msg: str) -> bytes:
 
 
 def ansible_encrypt_and_format(msg: str) -> str:
+    if msg == "":  # since ADCM-8325 we do not encrypt empty strings
+        return msg
+
     ciphertext = ansible_encrypt(msg=msg)
 
     return f"{settings.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, settings.ENCODING_UTF_8)}"
