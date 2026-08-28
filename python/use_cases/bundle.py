@@ -27,6 +27,7 @@ from core.types import BundleID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 logger = logging.getLogger("adcm")
 

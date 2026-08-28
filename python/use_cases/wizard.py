@@ -59,6 +59,7 @@ from django.db.transaction import atomic
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 from use_cases.dto import InputConfigConverter
 from use_cases.transition.job.schedule import TaskStarter

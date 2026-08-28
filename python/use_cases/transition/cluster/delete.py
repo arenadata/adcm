@@ -47,6 +47,7 @@ from django.db.models import F
 from django.db.transaction import atomic, on_commit
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask

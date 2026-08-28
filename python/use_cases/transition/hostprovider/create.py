@@ -30,6 +30,7 @@ from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 
 @dataclass(slots=True)

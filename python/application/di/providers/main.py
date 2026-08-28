@@ -79,6 +79,7 @@ from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
+import core.bundle
 
 from application.types import TaskRunnerMode
 
@@ -160,9 +161,12 @@ class BundleProvider(Provider):
 
     @provide
     def parsers(self) -> core.bundle.parsing.BundleParsers:
+        # imported lazily: parser schemas are pydantic-heavy and only needed when parsing a bundle
+        from core.bundle._parsing import v_2_1 as v_2_1_parsing
+
         v_2_1 = (
             core.bundle.VersionInfo(tag="2.1", status=core.bundle.ContractVersionStatus.SUPPORTED),
-            core.bundle.parsing.v_2_1.Parser(),
+            v_2_1_parsing.Parser(),
         )
         return [v_2_1]
 

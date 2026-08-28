@@ -29,6 +29,7 @@ from django.db import transaction
 from django.db.models import Count, QuerySet
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 
 @dataclass(slots=True)

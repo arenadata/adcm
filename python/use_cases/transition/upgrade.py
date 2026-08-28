@@ -28,6 +28,7 @@ from core.types import TaskID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 from use_cases.dto import UpgradeActionDTO
 from use_cases.legacy.upgrade import build_switch_revert_callbacks
