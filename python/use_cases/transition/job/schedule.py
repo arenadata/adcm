@@ -76,6 +76,7 @@ from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_409_CONFLICT
 import core
+import core.bundle
 
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 

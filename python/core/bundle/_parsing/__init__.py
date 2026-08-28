@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NB: version sub-packages (`v_1_0`, `v_2_0`, `v_2_1`) are deliberately NOT imported here.
+# They are ~200ms of pydantic model building and are needed only when a bundle is actually parsed,
+# while this package is on the import path of every process (Django settings -> core -> ...).
+# Import them explicitly at the point of use: `from core.bundle._parsing import v_2_1`.
 from core.bundle._contract_version import is_contract_version_supported
-from core.bundle._parsing import v_1_0, v_2_0, v_2_1
 from core.bundle._parsing.restrictions import check_adcm_min_version, extract_parsing_meta, pick_suitable_parser
 from core.bundle._parsing.types import (
     BundleParser,
@@ -31,7 +34,4 @@ __all__ = [
     "extract_parsing_meta",
     "is_contract_version_supported",
     "pick_suitable_parser",
-    "v_1_0",
-    "v_2_0",
-    "v_2_1",
 ]

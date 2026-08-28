@@ -28,13 +28,11 @@ from core.types import CurrentADCMVersion
 from dishka import Provider, Scope, provide
 from django.conf import settings as django_settings
 from integrations import consul, vault
-from integrations.celery.pg.transport import make_broker_url
 from integrations.celery.settings import CelerySettings
 from integrations.consul import ConsulBackend
 from jobs.scheduler.settings import SchedulerSettings
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import URL
 import pydantic
 
 from application.constants import SECRETS_FILENAME
@@ -157,6 +155,10 @@ class EnvironmentProvider(Provider):
         consul_backend: ConsulBackend | None,
         default_adcm_url: DefaultURL | None,
     ) -> CelerySettings:
+        # imported lazily: `sqlalchemy` to avoid importing PG transport (kombu, psycopg, sqlalchemy.orm)
+        from integrations.celery.pg.transport import make_broker_url
+        from sqlalchemy import URL
+
         db = parse_settings_from_env(EnvDBSettings, "database")
         # Build via URL.create so credentials/host/db and options are properly
         # percent-encoded — a password containing @ : / ? # would otherwise

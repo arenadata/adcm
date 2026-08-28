@@ -13,8 +13,6 @@
 # order is important
 from core import config  # noqa
 from core import mapping
-from core.legacy import bundle_alt  # noqa
-from core import bundle  # noqa
 from core import action  # noqa
 from core import adcm
 from core import upgrade
@@ -24,8 +22,6 @@ from core import logs
 __all__ = [
     "action",
     "adcm",
-    "bundle",
-    "bundle_alt",
     "cluster",
     "config",
     "mapping",
