@@ -81,35 +81,39 @@ COPY os/etc /etc
 RUN for svc in /etc/sv/*/; do \
         ln -s "/adcm/run/runit/$(basename "${svc}")" "${svc}supervise"; \
     done
-COPY --from=go_builder /code/bin/runstatus /adcm/go/bin/runstatus
-COPY --from=ui_builder /wwwroot /adcm/wwwroot
-COPY --from=python_builder /python /python
+COPY --from=go_builder --chown=adcm:adcm /code/bin/runstatus /adcm/go/bin/runstatus
+COPY --from=ui_builder --chown=adcm:adcm /wwwroot /adcm/wwwroot
+COPY --from=python_builder --chown=adcm:adcm /python /python
 # Copy ADCM venv
-COPY --from=python_builder /adcm/.venv /adcm/.venv
+COPY --from=python_builder --chown=adcm:adcm /adcm/.venv /adcm/.venv
 # Copy Ansible 2.16 venv
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop /venv/2.16 /venv/2.16
-COPY --from=python_builder /venv/2.16 /venv/2.16
-COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop /root/.ansible/collections /venv/2.16/collections
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop --chown=adcm:adcm /venv/2.16 /venv/2.16
+COPY --from=python_builder --chown=adcm:adcm /venv/2.16 /venv/2.16
+COPY --from=hub.adsw.io/ansible/ansible:2.16.4-python3.10-develop --chown=adcm:adcm /root/.ansible/collections /venv/2.16/collections
 # Copy Ansible 2.21 venv
-COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop /venv/2.21 /venv/2.21
-COPY --from=python_builder /venv/2.21 /venv/2.21
-COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop /root/.ansible/collections /venv/2.21/collections
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop --chown=adcm:adcm /venv/2.21 /venv/2.21
+COPY --from=python_builder --chown=adcm:adcm /venv/2.21 /venv/2.21
+COPY --from=hub.adsw.io/ansible/ansible:2.21.2-python3.12-develop --chown=adcm:adcm /root/.ansible/collections /venv/2.21/collections
 
-COPY conf /adcm/conf
-COPY python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
-COPY python/ansible_collections/arenadata/adcm /venv/2.16/collections/ansible_collections/arenadata/adcm
-COPY python/ansible_collections/arenadata/adcm /venv/2.21/collections/ansible_collections/arenadata/adcm
+COPY --chown=adcm:adcm conf /adcm/conf
+COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
+COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm /venv/2.16/collections/ansible_collections/arenadata/adcm
+COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm /venv/2.21/collections/ansible_collections/arenadata/adcm
 
-COPY python /adcm/python
+COPY --chown=adcm:adcm python /adcm/python
 
 RUN /adcm/.venv/bin/python -m compileall -q -j 0 /adcm/python && \
     /venv/2.16/bin/python -m compileall -q -j 0 /venv/2.16/collections/ansible_collections/arenadata/adcm && \
-    /venv/2.21/bin/python -m compileall -q -j 0 /venv/2.21/collections/ansible_collections/arenadata/adcm
+    /venv/2.21/bin/python -m compileall -q -j 0 /venv/2.21/collections/ansible_collections/arenadata/adcm && \
+    find /adcm/python -type d -name "__pycache__" -exec chown -R adcm:adcm {} + && \
+    find /venv/2.16/collections/ansible_collections/arenadata/adcm -type d -name "__pycache__" -exec chown -R adcm:adcm {} + && \
+    find /venv/2.21/collections/ansible_collections/arenadata/adcm -type d -name "__pycache__" -exec chown -R adcm:adcm {} +
 
 RUN ln -s -f /usr/local/bin/python3 /usr/bin/python3 && \
     ln -s -f /usr/bin/python3 /usr/bin/python  && \
     ln -s /tmp/.ansible /home/adcm/.ansible  && \
-    ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py
+    ln -s /adcm/python/application/scripts/manage_secrets.py /adcm/python/manage_secrets.py && \
+    chown -h adcm:adcm /adcm/python/manage_secrets.py
 
 # Hand only the runtime-writable paths to the non-root user; the enabled ssl vhost
 # is written to /adcm/data (see make_nginx_default_config).
@@ -119,9 +123,10 @@ RUN ln -s -f /usr/local/bin/python3 /usr/bin/python3 && \
 #                signalling services); tmpfs it under a read-only rootfs
 RUN mkdir -p /adcm/data/log /adcm/run && \
     chmod 700 /adcm/run && \
-    chown -R adcm:adcm /adcm /venv
+    chown -R adcm:adcm /adcm/run /adcm/data
 
-RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput
+RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput && \
+    chown -R adcm:adcm /adcm/wwwroot/static
 
 ENV PYTHONPATH=/adcm/python
 ENV HOME=/home/adcm
