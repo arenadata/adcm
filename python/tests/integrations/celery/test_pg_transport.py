@@ -22,6 +22,7 @@ the event loop, pidbox over fanout, cross-process delivery — lives in
 
 from queue import Empty
 from unittest import TestCase
+from unittest.mock import patch
 import time
 
 from django.db import connection as django_connection
@@ -183,6 +184,18 @@ class PGTransportStorageTest(DjangoTestCase):
         second = self.channel._get_or_create_queue("q_decl")
 
         self.assertEqual(first.id, second.id)
+
+    def test_queue_declare_survives_a_lost_insert_race(self):
+        # two workers booting at once both declare `celery`: patching the lookup
+        # to miss reproduces the window where the other process committed the row
+        # after our SELECT but before our INSERT
+        existing = self.channel._get_or_create_queue("q_race")
+
+        with patch("sqlalchemy.orm.Query.first", return_value=None):
+            recovered = self.channel._get_or_create_queue("q_race")
+
+        self.assertEqual(recovered.id, existing.id)
+        self.assertEqual(self.channel.session.query(Queue).filter(Queue.name == "q_race").count(), 1)
 
     def test_ensure_tables_is_idempotent(self):
         engine, _ = transport._ENGINES[self.dsn]
