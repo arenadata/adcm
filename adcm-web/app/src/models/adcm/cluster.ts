@@ -1,5 +1,6 @@
 import type { AdcmConcerns } from './concern';
 import type { AdcmEntityState } from './common';
+import type { AdcmContractVersion } from './bundle';
 
 export enum AdcmClusterStatus {
   Up = 'up',
@@ -13,6 +14,7 @@ export interface AdcmClusterPrototype {
   type: string;
   version: string;
   edition?: string;
+  contractVersion?: AdcmContractVersion;
 }
 
 export interface AdcmCluster {

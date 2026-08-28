@@ -35,6 +35,10 @@
   border-radius: var(--radius-200);
   background-color: var(--cluster-details-panel-bg);
 
+  &__warning {
+    margin-bottom: 0;
+  }
+
   &__header {
     display: flex;
     align-items: flex-start;

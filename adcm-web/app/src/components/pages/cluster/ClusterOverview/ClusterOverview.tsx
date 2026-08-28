@@ -11,6 +11,7 @@ import ClusterOverviewBottomBundleInfo from './ClusterOverviewBottom/ClusterOver
 import { useRequestClusterOverviewMetrics } from '@pages/cluster/ClusterOverview/useRequestClusterOverviewMetrics';
 import { useResetClusterOverviewState } from '@pages/cluster/ClusterOverview/useResetClusterOverviewState';
 import EditClusterDescriptionDialog from '@pages/ClustersPage/Dialogs/EditClusterDescriptionDialog/EditClusterDescriptionDialog';
+import ClusterContractVersionWarning from '@commonComponents/ClusterContractVersionWarning/ClusterContractVersionWarning';
 import s from './ClusterOverview.module.scss';
 
 const ClusterOverview: React.FC = () => {
@@ -35,7 +36,7 @@ const ClusterOverview: React.FC = () => {
   return (
     <div className={s.clusterOverview} data-test="cluster-overview">
       <ClusterOverviewDescription />
-      {/* warning block */}
+      <ClusterContractVersionWarning cluster={cluster} />
       <ClusterOverviewTopGrid />
       <ClusterOverviewEntities />
       <div className={s.clusterOverview__bottomWrap}>

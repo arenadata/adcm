@@ -35,6 +35,7 @@ export class AdcmPrototypesApi {
     const queryParams = {
       type: filter.type || undefined,
       bundleId: filter.bundleId || undefined,
+      id__in: filter.ids?.length ? filter.ids : undefined,
       contractVersionStatus: filter.contractVersionStatus || undefined,
       contractVersionValue: filter.contractVersionValue || undefined,
       sortColumn: sortParams?.sortBy,
@@ -43,7 +44,7 @@ export class AdcmPrototypesApi {
       limit: paginationParams?.perPage,
     };
 
-    const query = qs.stringify(queryParams);
+    const query = qs.stringify(queryParams, { arrayFormat: 'comma' });
 
     const response = await httpClient.get<Batch<AdcmPrototype>>(`/api/v2/prototypes/?${query}`);
     return response.data;
