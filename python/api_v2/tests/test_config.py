@@ -21,6 +21,7 @@ import unittest
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.legacy.services.job.context._base import get_inventory_data
 from cm.models import (
     ADCM,
     Action,
@@ -34,10 +35,11 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.cluster import ClusterService
 from core.config._types import ChangeRequest
 from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rbac.scenarios import RBACScenarios
@@ -962,14 +964,19 @@ class TestServiceConfig(ADCMDjangoAPISuite):
     def test_adcm_7586_secrets_encryption(self):
         """
         Based on ADCM-7586 bug born from inconsistency of empty values encryption + ansible preparation.
+        Consistency restored in ADCM-8325
         Default and empty values save tested via API (where empty values are allowed), ansible via service.
         """
         config_service = self.container.get(core.config.ConfigService)
 
         is_encrypted_plain = ("is_encrypted_plain", config_service.secrets.is_encrypted)
-        is_encrypted_map_value = (
+        is_encrypted_map_values = (
             "is_encrypted_map_values",
             lambda x: isinstance(x, dict) and all(map(config_service.secrets.is_encrypted, x.values())),
+        )
+        is_empty_map_values = (
+            "is_empty_map_values",
+            lambda x: isinstance(x, dict) and all(map(partial(eq, ""), x.values())),
         )
         is_none = ("is_none", partial(eq, None))
         is_empty = ("is_empty", partial(eq, ""))
@@ -982,10 +989,15 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             "is_encrypted_in_ansible_dict_map_value",
             lambda x: isinstance(x, dict) and all(map(is_encrypted_in_ansible_dict[1], x.values())),
         )
+        is_empty_in_ansible_dict_map_value = (
+            "is_empty_in_ansible_dict_map_value",
+            lambda x: isinstance(x, dict) and all(map(partial(eq, ""), x.values())),
+        )
 
         default_checks = {
-            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default", "sfile_empty_default"),
-            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
+            is_encrypted_map_values: ("smap_default",),
+            is_empty_map_values: ("smap_empty_default",),
             # empty default for plain values are converted to None's
             is_none: (
                 "pass_empty_default",
@@ -995,18 +1007,21 @@ class TestServiceConfig(ADCMDjangoAPISuite):
                 "smap_no_default",
                 "sfile_no_default",
             ),
+            is_empty: ("sfile_empty_default",),
         }
         save_with_empty_checks = {
             is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
             is_empty: ("pass_empty_default", "stext_empty_default", "sfile_empty_default"),
-            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_map_values: ("smap_default",),
+            is_empty_map_values: ("smap_empty_default",),
             is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
         }
         ansible_ready_format_checks = {
             is_encrypted_in_ansible_dict: ("pass_default", "stext_default"),
             is_empty: ("pass_empty_default", "stext_empty_default"),
             is_path: ("sfile_default", "sfile_empty_default"),
-            is_encrypted_in_ansible_dict_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_in_ansible_dict_map_value: ("smap_default",),
+            is_empty_in_ansible_dict_map_value: ("smap_empty_default",),
             is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
         }
 
@@ -1047,6 +1062,54 @@ class TestServiceConfig(ADCMDjangoAPISuite):
         )
 
         self.check_values(values=result.values, checks=ansible_ready_format_checks)
+
+    def test_adcm_8325_secret_empty_strings_not_encrypted(self):
+        service_name = "adcm_8325_secrets_config"
+        expected_initial = {
+            "secretfile": None,  # with empty default
+            "secretfile_with_empty_default_file": "",  # with filepath to empty file as default
+            "password": None,
+            "patterned_password": None,
+            "secrettext": None,
+            "patterned_secrettext": None,
+            "secretmap": None,
+        }
+        data_empty = {k: "" for k in expected_initial}
+        data_empty["secretmap"] = {"key1": ""}
+        expected_empty = data_empty
+
+        service, *_ = self.uc.add_services_to_cluster(names=[service_name], cluster=self.cluster_1)
+        config = ConfigLog.objects.get(id=service.config.current)
+        response = self.client.v2[service, CONFIGS, config].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(config.config, expected_initial)
+        self.assertDictEqual(response.json()["config"], expected_initial)
+
+        response = self.client.v2[service, CONFIGS].post(data={"config": data_empty, "adcmMeta": {}})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        service.refresh_from_db()
+        config = ConfigLog.objects.get(id=service.config.current)
+        response = self.client.v2[service, CONFIGS, config].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(config.config, expected_empty)
+        self.assertDictEqual(response.json()["config"], expected_empty)
+
+        # check inventory for service with empty strings config
+        inventory = get_inventory_data(
+            target=ActionTargetDescriptor(type=ADCMCoreType.SERVICE, id=service.id),
+            is_host_action=False,
+            cluster_service=self.uc.container.get(ClusterService),
+        )
+        inv_config = inventory["all"]["vars"]["services"][service_name]["config"]
+
+        self.assertIsNotNone(inv_config.pop("secretfile"))  # here is path to file
+        self.assertIsNotNone(inv_config.pop("secretfile_with_empty_default_file"))  # here is path to file
+        expected_empty.pop("secretfile")
+        expected_empty.pop("secretfile_with_empty_default_file")
+        self.assertDictEqual(inv_config, expected_empty)
 
 
 class TestServiceCHG(ADCMDjangoAPISuite):

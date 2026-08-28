@@ -116,6 +116,7 @@
     - boolean
   contract_version: '2.1'
   venv: '2.16'
+
 - name: service_1
   type: service
   version: '1.0'
@@ -194,6 +195,7 @@
         - name: string_field
           type: string
           default: string value
+
 - name: service_2
   type: service
   version: '1.0'
@@ -211,9 +213,11 @@
   actions:
     action_1_service_2: *id002
     action_2_service_2: *id002
+
 - name: service_3_manual_add
   type: service
   version: '1.0'
+
 - name: service_4_save_config_without_required_field
   type: service
   version: '1.0'
@@ -247,6 +251,7 @@
             type: config
             strict: false
             name: list
+
 - name: service_5_variant_type_without_values
   type: service
   version: '1.0'
@@ -258,6 +263,7 @@
         type: builtin
         strict: true
         name: host_in_cluster
+
 - name: adcm_8014_8016
   type: service
   version: '1.0'
@@ -313,6 +319,7 @@
       default:
         string: value
       required: true
+
 - name: service_6_delete_with_action
   type: service
   version: '1004'
@@ -321,6 +328,7 @@
     regular_action: *id002
   components:
     component: {}
+
 - name: service_1_clone
   type: service
   version: '1.0'
@@ -329,6 +337,7 @@
   actions: *id005
   import: *id006
   components: *id007
+
 - name: adcm_5756
   type: service
   version: bug
@@ -357,6 +366,8 @@
         - name: listofstuff
           type: list
           required: false
+
+
 - name: service_with_miss_config_service
   type: service
   version: hehe
@@ -365,6 +376,7 @@
     will_miss_config:
       description: This component will not have config after upgrade
       config: *id008
+
 - name: adcm_7807
   type: service
   version: '19'
@@ -375,6 +387,7 @@
     - name: b_value
       type: integer
       default: 100
+
 - name: adcm_7586
   type: service
   version: '14'
@@ -425,3 +438,37 @@
       type: secretfile
       required: false
       default: secretfile.txt
+
+- name: adcm_8325_secrets_config
+  type: service
+  version: '14'
+  config: &secret_config
+    - name: secretfile
+      type: secretfile
+      required: false
+      default: ""
+    - name: secretfile_with_empty_default_file
+      type: secretfile
+      required: false
+      default: "empty_file.txt"
+    - name: password
+      type: password
+      required: False
+      default: ""
+    - name: patterned_password
+      type: password
+      pattern: &zero_or_more_digits '^\d*$'
+      required: False
+      default: ""
+    - name: secrettext
+      type: secrettext
+      required: False
+      default: ""
+    - name: patterned_secrettext
+      type: secrettext
+      pattern: *zero_or_more_digits
+      required: False
+      default: ""
+    - name: secretmap
+      type: secretmap
+      required: False

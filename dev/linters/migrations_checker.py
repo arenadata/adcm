@@ -22,8 +22,10 @@ import argparse
 ALLOWED_IMPORTS = (
     "ansible",
     "collections",
+    "dataclasses",
     "datetime",
     "django",
+    "enum",
     "functools",
     "hashlib",
     "json",

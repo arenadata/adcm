@@ -93,7 +93,7 @@ class TestPrototype(ADCMDjangoAPISuite):
 
         filters = {
             "id": (prototype.pk, 0, 1),
-            "bundleId": (prototype.bundle.id, 0, 22),
+            "bundleId": (prototype.bundle.id, 0, 23),
             "displayName": (prototype.display_name, "wrong", 2),
             "type": (ObjectType.CLUSTER.value, ObjectType.ADCM.value, 2),
         }

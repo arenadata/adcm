@@ -60,8 +60,9 @@ class AnsibleSecrets:
     def encrypt(self, value: str) -> str:
         """
         Encrypt string value if it's not encrypted yet, otherwise return value itself
+        Leave empty strings untouched (ADCM-8325)
         """
-        if self.is_encrypted(value):
+        if self.is_encrypted(value) or not value:
             return value
 
         encrypted = self._vault.encrypt(b_plaintext=bytes(value, "utf-8"), secret=self._secret)
