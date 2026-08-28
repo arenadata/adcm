@@ -107,8 +107,8 @@ class Channel(virtual.Channel):
     snapshot. Two deliberate deviations: ``_get`` commits in ``finally``
     because the claim (``FOR UPDATE SKIP LOCKED`` + ``visible=False``) must be
     published and its locks released even when it raises ``Empty``, and
-    ``_get_or_create_queue`` recovers an insert race by rolling back and
-    re-reading instead of propagating. Fanout (``_put_fanout``) bypasses the
+    ``_get_or_create_queue`` commits its own insert so a concurrently declaring
+    process is not blocked behind it. Fanout (``_put_fanout``) bypasses the
     session entirely via the autocommit LISTEN/NOTIFY connection, while
     ``_put``'s wakeup NOTIFY is deliberately sent inside the storage
     transaction so it is delivered on COMMIT together with the row it
@@ -264,13 +264,9 @@ class Channel(virtual.Channel):
     def _get_or_create_queue(self, queue: str) -> Queue:
         obj = self.session.query(Queue).filter(Queue.name == queue).first()
         if obj is None:
-            obj = Queue(queue)
-            self.session.add(obj)
-            try:
-                self.session.commit()
-            except OperationalError:
-                self.session.rollback()
-                obj = self.session.query(Queue).filter(Queue.name == queue).one()
+            self.session.execute(pg_insert(Queue).values(name=queue).on_conflict_do_nothing(index_elements=["name"]))
+            self.session.commit()
+            obj = self.session.query(Queue).filter(Queue.name == queue).one()
         return obj
 
     def _new_queue(self, queue, **kwargs) -> None:  # noqa: ARG002
