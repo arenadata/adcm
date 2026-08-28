@@ -39,6 +39,7 @@ dependencies = [
     "pydantic-settings>=2.13.0,<3",
     "jinja2>=3.1.6,<4",
     "pyyaml>=6.0.3,<7",
+    "setuptools>=84.0",
 ]
 
 [dependency-groups]
