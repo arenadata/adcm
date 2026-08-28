@@ -26,6 +26,7 @@ from cm.models import (
 from core.types import TaskID
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -627,3 +628,54 @@ class TestUpgrade(ADCMDjangoAPISuite):
         # check service removed by upgrade is restored, service removed by user isn't
         self.assertFalse(self.cluster_1.services.filter(prototype__name=self.service_1.prototype.name).exists())
         self.assertTrue(self.cluster_1.services.filter(prototype__name=removed_service.prototype.name).exists())
+
+
+class TestUpgradeActivatableGroupInSelectionGroup(ADCMDjangoAPISuite):
+    """ADCM-8370: activation flag of activatable group inside selection group is lost on upgrade"""
+
+    maxDiff = None
+
+    ACTIVATABLE_GROUP = "/tiered_storage/hdfs_tiered_storage/custom_site"
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        # generic setup isn't used in here, because none of its bundles and objects are required for this case
+        cls._initialize_roles_and_adcm()
+
+        bundles_dir = cls.test_bundles_dir / "bugs" / "ADCM-8370"
+        cls.bundle_v1 = cls.uc.upload_bundle(src=bundles_dir / "v1")
+        cls.bundle_v2 = cls.uc.upload_bundle(src=bundles_dir / "v2")
+
+        cls.upgrade = Upgrade.objects.get(name="v2", bundle=cls.bundle_v2)
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle_v1, name="Dev tools cluster")
+
+    def test_adcm_8370_activation_of_group_in_selection_group_kept_after_upgrade(self):
+        activated_config = {
+            "tiered_storage": {
+                "hdfs_tiered_storage": {
+                    "fetch.chunk.cache.retention.ms": 600000,
+                    "custom_site": {"custom_core_site": "core", "custom_hdfs_site": "hdfs"},
+                },
+                "_selection": "hdfs_tiered_storage",
+            }
+        }
+        activated_meta = {self.ACTIVATABLE_GROUP: {"isActive": True}}
+
+        response = self.client.v2[self.cluster, "configs"].post(
+            data={"config": activated_config, "adcmMeta": activated_meta, "description": "activate custom_site"}
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
+        self.assertDictEqual(response.json()["adcmMeta"], activated_meta)
+
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.cluster.refresh_from_db()
+        self.assertEqual(self.cluster.prototype.version, "2")
+
+        response = self.client.v2[self.cluster, "configs", self.cluster.config.current].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        config_after_upgrade = response.json()
+        self.assertDictEqual(config_after_upgrade["adcmMeta"], activated_meta)
+        self.assertDictEqual(config_after_upgrade["config"], activated_config)

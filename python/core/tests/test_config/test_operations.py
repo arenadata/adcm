@@ -13,10 +13,11 @@
 from collections.abc import Callable
 from copy import deepcopy
 
+from unittest_parametrize import param, parametrize
+
 from core.config._config import detect_active_groups
 from core.config._operations import (
     ValidationResult,
-    adapt_configuration_for_new_specification,
     apply_changes,
     prepare_config_for_ansible,
     prepare_config_from_defaults,
@@ -252,41 +253,41 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
     def test_values_required_in_root_is_empty_fail(self):
         cases = self.prepare_empty_cases("justval")
 
-        for case_name, param, value in cases:
+        for case_name, parameter, value in cases:
             with self.subTest(case_name):
-                specification = FullSpec.from_parameters(param)
-                config = Configuration(values={param.identifier.name: value})
+                specification = FullSpec.from_parameters(parameter)
+                config = Configuration(values={parameter.identifier.name: value})
 
                 result = self.validate_changes(new=config, previous=config, specification=specification)
 
                 self.expect_exactly_one_violation_for(
-                    result, param_is=param, check_is="value", reason_contains="should not be empty"
+                    result, param_is=parameter, check_is="value", reason_contains="should not be empty"
                 )
 
     def test_values_required_in_group_is_empty_fail(self):
         group = ParameterGroup(identifier=name_id("g"))
         cases = self.prepare_empty_cases(group.identifier.name, "justval")
 
-        for case_name, param, value in cases:
+        for case_name, parameter, value in cases:
             with self.subTest(case_name):
-                specification = FullSpec.from_parameters(group, param)
-                config = Configuration(values={group.identifier.name: {param.identifier.name: value}})
+                specification = FullSpec.from_parameters(group, parameter)
+                config = Configuration(values={group.identifier.name: {parameter.identifier.name: value}})
 
                 result = self.validate_changes(new=config, previous=config, specification=specification)
 
                 self.expect_exactly_one_violation_for(
-                    result, param_is=param, check_is="value", reason_contains="should not be empty"
+                    result, param_is=parameter, check_is="value", reason_contains="should not be empty"
                 )
 
     def test_values_requied_in_deactivated_group_success(self):
         group = ParameterGroup(identifier=name_id("g"), activation=Activation())
         cases = self.prepare_empty_cases(group.identifier.name, "justval")
 
-        for case_name, param, value in cases:
+        for case_name, parameter, value in cases:
             with self.subTest(case_name):
-                specification = FullSpec.from_parameters(group, param)
+                specification = FullSpec.from_parameters(group, parameter)
                 config = Configuration(
-                    values={group.identifier.name: {param.identifier.name: value}},
+                    values={group.identifier.name: {parameter.identifier.name: value}},
                     attributes={group.identifier.full: Attributes(is_active=False)},
                 )
 
@@ -297,15 +298,15 @@ class TestValidateNewChangesInMainConfiguration(ConfigTestCase):
     def test_values_incorrect_type_fail(self):
         cases = self.prepare_invalid_type_cases()
 
-        for case_name, param, value, type_in_error in cases:
+        for case_name, parameter, value, type_in_error in cases:
             with self.subTest(case_name):
-                specification = FullSpec.from_parameters(param)
-                config = Configuration(values={param.identifier.name: value})
+                specification = FullSpec.from_parameters(parameter)
+                config = Configuration(values={parameter.identifier.name: value})
 
                 result = self.validate_changes(new=config, previous=config, specification=specification)
 
                 self.expect_exactly_one_violation_for(
-                    result, param_is=param, check_is="value", reason_contains=f"should be of type {type_in_error}"
+                    result, param_is=parameter, check_is="value", reason_contains=f"should be of type {type_in_error}"
                 )
 
     def test_string_pattern_mismatch_fail(self):
@@ -613,228 +614,6 @@ class TestPrepareConfigForAnsible(ConfigTestCase):
         self.assertDictEqual(result.value.values, expected_values)
 
 
-class TestAdaptConfigurationForNewSpecification(ConfigTestCase):
-    maxDiff = None
-
-    def test_change_values_with_nones_in_defaults(self):
-        old_spec = FullSpec.from_parameters(
-            StringParameter(identifier=name_id("will_have_default"), is_required=False),
-            StringParameter(identifier=name_id("have_default"), is_required=True),
-        )
-        new_spec = FullSpec.from_parameters(
-            StringParameter(identifier=name_id("will_have_default"), is_required=True),
-            StringParameter(identifier=name_id("have_default"), is_required=False),
-        )
-        old_defaults = Defaults(values={"/will_have_default": None, "/have_default": 12})
-        new_defaults = Defaults(values={"/will_have_default": 54, "/have_default": None})
-        configuration = Configuration(values={k.strip("/"): v for k, v in old_defaults.values.items()}, attributes={})
-
-        expected_config = {"will_have_default": 54, "have_default": 12}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=configuration,
-            specification=old_spec,
-            new_specification=new_spec,
-            defaults=old_defaults,
-            new_defaults=new_defaults,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, expected_config)
-
-    def test_activation_gone_after_upgrade(self):
-        old_spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("a"), activation=Activation()),
-            StringParameter(identifier=name_id("a", "b")),
-        )
-        new_spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("a")),
-            StringParameter(identifier=name_id("a", "b")),
-        )
-        defaults = Defaults(values={"/a/b": None})
-        configuration = Configuration(values={"a": {"b": None}}, attributes={"/a": Attributes(is_active=True)})
-
-        result = adapt_configuration_for_new_specification(
-            configuration=configuration,
-            specification=old_spec,
-            new_specification=new_spec,
-            defaults=defaults,
-            new_defaults=defaults,
-            include_synchronization=False,
-        )
-
-        actual_attributes = self.expect_success(result).value.attributes
-        self.assertDictEqual(actual_attributes, {})
-
-    def test_adcm_7429_activation_same_after_upgrade_with_correct_sync(self):
-        old_spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("a")),
-            StringParameter(identifier=name_id("a", "b")),
-            ParameterGroup(identifier=name_id("c")),
-            StringParameter(identifier=name_id("c", "b")),
-            ParameterGroup(identifier=name_id("d"), activation=Activation(is_desyncable=True)),
-            ParameterGroup(identifier=name_id("e"), activation=Activation(is_desyncable=True)),
-        )
-        new_spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("a"), activation=Activation()),
-            StringParameter(identifier=name_id("a", "b"), is_required=True),
-            ParameterGroup(identifier=name_id("c"), activation=Activation(is_desyncable=True)),
-            StringParameter(identifier=name_id("c", "b")),
-            ParameterGroup(identifier=name_id("d"), activation=Activation(is_desyncable=True)),
-            ParameterGroup(identifier=name_id("e"), activation=Activation(is_desyncable=False)),
-        )
-        old_defaults = Defaults(values={"/a/b": None, "/c/b": None})
-        new_defaults = Defaults(values={"/a/b": None, "/c/b": None}, activation={"/c": True})
-        configuration = Configuration(
-            values={"a": {"b": None}, "c": {"b": None}},
-            attributes={
-                "/d": Attributes(is_active=True, is_synced=True),
-                "/e": Attributes(is_active=False, is_synced=False),
-            },
-        )
-
-        expected_attributes = {
-            "/a": Attributes(is_active=False, is_synced=True),
-            "/a/b": Attributes(is_synced=True),
-            "/c": Attributes(is_active=True, is_synced=True),
-            "/c/b": Attributes(is_synced=True),
-            "/d": Attributes(is_active=True, is_synced=True),
-            "/e": Attributes(is_active=False, is_synced=False),
-        }
-
-        result = adapt_configuration_for_new_specification(
-            configuration=configuration,
-            specification=old_spec,
-            new_specification=new_spec,
-            defaults=old_defaults,
-            new_defaults=new_defaults,
-            include_synchronization=True,
-        )
-
-        actual_attributes = self.expect_success(result).value.attributes
-        self.assertDictEqual(actual_attributes, expected_attributes)
-
-    def test_unchanged_with_selection_group(self):
-        spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection()),
-            ParameterGroup(identifier=name_id("s", "a")),
-            StringParameter(identifier=name_id("s", "a", "av")),
-            ParameterGroup(identifier=name_id("s", "b")),
-            StringParameter(identifier=name_id("s", "b", "bv")),
-        )
-        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"}, selection={"/s": "a"})
-        values = {"s": {"a": {"av": "1"}}}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=Configuration(values=values),
-            specification=spec,
-            new_specification=spec,
-            defaults=defaults,
-            new_defaults=defaults,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, values)
-
-    def test_unchanged_with_selection_group_value_none(self):
-        spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection()),
-            ParameterGroup(identifier=name_id("s", "a")),
-            StringParameter(identifier=name_id("s", "a", "av")),
-            ParameterGroup(identifier=name_id("s", "b")),
-            StringParameter(identifier=name_id("s", "b", "bv")),
-        )
-        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"}, selection={"/s": "a"})
-        values = {"s": None}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=Configuration(values=values),
-            specification=spec,
-            new_specification=spec,
-            defaults=defaults,
-            new_defaults=defaults,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, values)
-
-    def test_changed_with_selection_group(self):
-        spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection()),
-            ParameterGroup(identifier=name_id("s", "a")),
-            StringParameter(identifier=name_id("s", "a", "av")),
-            ParameterGroup(identifier=name_id("s", "b")),
-            StringParameter(identifier=name_id("s", "b", "bv")),
-        )
-        defaults = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"})
-        values = {"s": {"b": {"bv": "1"}}}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=Configuration(values=values),
-            specification=spec,
-            new_specification=spec,
-            defaults=defaults,
-            new_defaults=defaults,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, values)
-
-    def test_changed_with_selection_group_defaulted_value(self):
-        spec = FullSpec.from_parameters(
-            ParameterGroup(identifier=name_id("s"), selection=Selection()),
-            ParameterGroup(identifier=name_id("s", "a")),
-            StringParameter(identifier=name_id("s", "a", "av")),
-            ParameterGroup(identifier=name_id("s", "b")),
-            StringParameter(identifier=name_id("s", "b", "bv")),
-        )
-        defaults_old = Defaults(values={"/s/a/av": "1", "/s/b/bv": "2"})
-        defaults_new = Defaults(values={"/s/a/av": None, "/s/b/bv": "2"})
-        values = {"s": {"b": {"bv": "1"}}}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=Configuration(values=values),
-            specification=spec,
-            new_specification=spec,
-            defaults=defaults_old,
-            new_defaults=defaults_new,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, values)
-
-    def test_secrets_do_not_upgrade(self):
-        # ADCM-7444
-        spec = FullSpec.from_parameters(
-            StringParameter(identifier=name_id("p"), is_secret=False),
-            StringParameter(identifier=name_id("s"), is_secret=True),
-            MapParameter(identifier=name_id("pm"), is_secret=False),
-            MapParameter(identifier=name_id("sm"), is_secret=True),
-        )
-        defaults_old = Defaults(values={"/p": "old", "/s": "old", "/pm": {"o": "ld"}, "/sm": {"o": "ld"}})
-        defaults_new = Defaults(values={"/p": "new", "/s": "new", "/pm": {"n": "ew"}, "/sm": {"n": "ew"}})
-        values = {"p": "old", "s": "old", "pm": {"o": "ld"}, "sm": {"o": "ld"}}
-
-        expected_values = {"p": "new", "s": "old", "pm": {"n": "ew"}, "sm": {"o": "ld"}}
-
-        result = adapt_configuration_for_new_specification(
-            configuration=Configuration(values=values),
-            specification=spec,
-            new_specification=spec,
-            defaults=defaults_old,
-            new_defaults=defaults_new,
-            include_synchronization=False,
-        )
-
-        actual_values = self.expect_success(result).value.values
-        self.assertDictEqual(actual_values, expected_values)
-
-
 class TestPrepareConfigFromDefaults(ConfigTestCase):
     def prepare_spec_and_raw_defaults(self, as_default: str | None) -> tuple[FullSpec, Defaults]:
         spec = FullSpec.from_parameters(
@@ -928,6 +707,25 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
 
         return spec, defaults
 
+    def build_spec_and_defaults_with_activatable(self) -> tuple[FullSpec, Defaults]:
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("s", "g1")),
+            StringParameter(identifier=name_id("s", "g1", "a")),
+            ParameterGroup(identifier=name_id("s", "g1", "act1"), activation=Activation()),
+            StringParameter(identifier=name_id("s", "g1", "act1", "v")),
+            ParameterGroup(identifier=name_id("s", "g2")),
+            StringParameter(identifier=name_id("s", "g2", "b")),
+            ParameterGroup(identifier=name_id("s", "g2", "act2"), activation=Activation()),
+            StringParameter(identifier=name_id("s", "g2", "act2", "v")),
+        )
+        defaults = Defaults(
+            values={"/s/g1/a": "1", "/s/g1/act1/v": "1v", "/s/g2/b": "2", "/s/g2/act2/v": "2v"},
+            activation={"/s/g1/act1": False, "/s/g2/act2": True},
+        )
+
+        return spec, defaults
+
     def assert_success_on_apply_and_validate(
         self,
         changes: list[ChangeRequest],
@@ -946,6 +744,88 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
         validate_result = self.validate(new=new_config, previous=config, spec=spec)
 
         self.expect_success(validate_result)
+
+    def build_spec_and_defaults_with_nested_selection(self) -> tuple[FullSpec, Defaults]:
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("s", "g1")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner"), selection=Selection()),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i1")),
+            StringParameter(identifier=name_id("s", "g1", "inner", "i1", "v")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i2")),
+            StringParameter(identifier=name_id("s", "g1", "inner", "i2", "v")),
+            ParameterGroup(identifier=name_id("s", "g2")),
+            StringParameter(identifier=name_id("s", "g2", "b")),
+        )
+        defaults = Defaults(
+            values={"/s/g1/inner/i1/v": "1", "/s/g1/inner/i2/v": "2", "/s/g2/b": "b"},
+            selection={"/s": "g2", "/s/g1/inner": "i1"},
+        )
+
+        return spec, defaults
+
+    def build_spec_and_defaults_with_activatable_in_nested_selection(self) -> tuple[FullSpec, Defaults]:
+        spec = FullSpec.from_parameters(
+            ParameterGroup(identifier=name_id("s"), selection=Selection(is_required=False)),
+            ParameterGroup(identifier=name_id("s", "g1")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner"), selection=Selection()),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i1")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i1", "act1"), activation=Activation()),
+            StringParameter(identifier=name_id("s", "g1", "inner", "i1", "act1", "v")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i2")),
+            ParameterGroup(identifier=name_id("s", "g1", "inner", "i2", "act2"), activation=Activation()),
+            StringParameter(identifier=name_id("s", "g1", "inner", "i2", "act2", "v")),
+            ParameterGroup(identifier=name_id("s", "g2")),
+            StringParameter(identifier=name_id("s", "g2", "b")),
+        )
+        defaults = Defaults(
+            values={"/s/g1/inner/i1/act1/v": "1", "/s/g1/inner/i2/act2/v": "2", "/s/g2/b": "b"},
+            selection={"/s": "g2", "/s/g1/inner": "i1"},
+            activation={"/s/g1/inner/i1/act1": True, "/s/g1/inner/i2/act2": False},
+        )
+
+        return spec, defaults
+
+    def test_switch_to_group_with_nested_selection_sets_attributes_of_default_option_only(self):
+        spec, defaults = self.build_spec_and_defaults_with_activatable_in_nested_selection()
+        config = Configuration(values={"s": {"g2": {"b": "b"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        # activatable group of non-default option of nested selection group isn't part of configuration,
+        # so it should have no attributes
+        expected_config = Configuration(
+            values={"s": {"g1": {"inner": {"i1": {"act1": {"v": "1"}}}}}},
+            attributes={"/s/g1/inner/i1/act1": Attributes(is_active=True)},
+        )
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_switch_to_group_with_nested_selection_takes_its_default_option_only(self):
+        spec, defaults = self.build_spec_and_defaults_with_nested_selection()
+        config = Configuration(values={"s": {"g2": {"b": "b"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        # only default option of nested selection group should be there, not all of them
+        expected_config = Configuration(values={"s": {"g1": {"inner": {"i1": {"v": "1"}}}}})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_switch_to_group_with_nested_selection_without_default_option(self):
+        spec, defaults = self.build_spec_and_defaults_with_nested_selection()
+        defaults.selection["/s/g1/inner"] = None
+        config = Configuration(values={"s": {"g2": {"b": "b"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        expected_config = Configuration(values={"s": {"g1": {"inner": None}}})
+
+        apply_result = self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+        new_config, _ = self.expect_success(apply_result).value
+        self.assertDictEqual(new_config.values, expected_config.values)
 
     def test_from_none_to_valid_defaults(self):
         spec, defaults = self.build_spec_and_defaults_simple()
@@ -1063,4 +943,144 @@ class TestSelectionGroupApplyAndValidate(ConfigTestCase):
 
         self.expect_exactly_one_violation_for(
             apply_result, param_is="/s/sg1/sv", check_is="structure", reason_contains="no such key"
+        )
+
+    @parametrize(
+        ("config", "switch_to", "expected_config"),
+        [
+            param(
+                Configuration(
+                    values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+                    attributes={"/s/g1/act1": Attributes(is_active=True)},
+                ),
+                "g2",
+                Configuration(
+                    values={"s": {"g2": {"b": "2", "act2": {"v": "2v"}}}},
+                    attributes={"/s/g2/act2": Attributes(is_active=True)},
+                ),
+                id="from_another_group",
+            ),
+            param(
+                Configuration(values={"s": None}),
+                "g1",
+                Configuration(
+                    values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+                    attributes={"/s/g1/act1": Attributes(is_active=False)},
+                ),
+                id="from_none",
+            ),
+        ],
+    )
+    def test_switch_group_sets_attributes_of_new_group_from_defaults(
+        self, config: Configuration, switch_to: str, expected_config: Configuration
+    ):
+        spec, defaults = self.build_spec_and_defaults_with_activatable()
+        changes = [ChangeRequest.for_group_selection(name="/s", value=switch_to)]
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_switch_group_to_none_removes_attributes_of_previous_group(self):
+        spec, defaults = self.build_spec_and_defaults_with_activatable()
+        config = Configuration(
+            values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+            attributes={"/s/g1/act1": Attributes(is_active=True)},
+        )
+        changes = [ChangeRequest.for_group_selection(name="/s", value=None)]
+
+        expected_config = Configuration(values={"s": None}, attributes={})
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_switch_group_to_same_one_keeps_attributes(self):
+        spec, defaults = self.build_spec_and_defaults_with_activatable()
+        config = Configuration(
+            values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+            attributes={"/s/g1/act1": Attributes(is_active=True)},
+        )
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        expected_config = config
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
+        )
+
+    def test_set_same_value_is_not_a_change(self):
+        spec, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [ChangeRequest.for_value(name="/s/g1/a", value="4")]
+
+        apply_result = self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+        new_config, has_changed = self.expect_success(apply_result).value
+        self.assertFalse(has_changed)
+        self.assertDictEqual(new_config.values, config.values)
+
+        self.expect_success(self.validate(new=new_config, previous=config, spec=spec))
+
+    def test_non_string_selection_value_is_not_supported(self):
+        _, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": {"g1": {"a": "4"}}})
+        changes = [ChangeRequest.for_group_selection(name="/s", value=1)]
+
+        with self.assertRaises(TypeError):
+            self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+    def test_selection_change_of_non_group_value_is_not_supported(self):
+        _, defaults = self.build_spec_and_defaults_simple()
+        config = Configuration(values={"s": "not a group"})
+        changes = [ChangeRequest.for_group_selection(name="/s", value="g1")]
+
+        with self.assertRaises(TypeError):
+            self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+    def test_change_activation_of_absent_group_fails(self):
+        _, defaults = self.build_spec_and_defaults_with_activatable()
+        config = Configuration(
+            values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+            attributes={"/s/g1/act1": Attributes(is_active=True)},
+        )
+        changes = [ChangeRequest.for_activation_attribute(name="/s/g2/act2", value=True)]
+
+        apply_result = self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+        self.expect_exactly_one_violation_for(
+            apply_result, param_is="/s/g2/act2", check_is="structure", reason_contains="no such key"
+        )
+
+    def test_change_activation_to_same_value_is_not_a_change(self):
+        _, defaults = self.build_spec_and_defaults_with_activatable()
+        config = Configuration(
+            values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+            attributes={"/s/g1/act1": Attributes(is_active=True)},
+        )
+        changes = [ChangeRequest.for_activation_attribute(name="/s/g1/act1", value=True)]
+
+        apply_result = self.apply_changes(changes=changes, config=config, defaults=defaults)
+
+        _, has_changed = self.expect_success(apply_result).value
+        self.assertFalse(has_changed)
+
+    def test_switch_group_and_change_activation_of_new_group(self):
+        spec, defaults = self.build_spec_and_defaults_with_activatable()
+        config = Configuration(
+            values={"s": {"g1": {"a": "1", "act1": {"v": "1v"}}}},
+            attributes={"/s/g1/act1": Attributes(is_active=True)},
+        )
+        changes = [
+            ChangeRequest.for_group_selection(name="/s", value="g2"),
+            ChangeRequest.for_activation_attribute(name="/s/g2/act2", value=False),
+        ]
+
+        expected_config = Configuration(
+            values={"s": {"g2": {"b": "2", "act2": {"v": "2v"}}}},
+            attributes={"/s/g2/act2": Attributes(is_active=False)},
+        )
+
+        self.assert_success_on_apply_and_validate(
+            changes=changes, config=config, spec=spec, defaults=defaults, expected_config=expected_config
         )
