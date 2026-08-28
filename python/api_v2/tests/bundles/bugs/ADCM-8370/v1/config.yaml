@@ -1,0 +1,52 @@
+- name: Dev_tools
+  type: cluster
+  description: Cluster for developers
+  version:  1
+  edition: community
+  allow_maintenance_mode: true
+  venv: "2.16"
+  contract_version: "2.1"
+
+  config:    
+    - name: tiered_storage
+      display_name: "Tiered Storage Settings"
+      type: selection_group
+      default: disabled_tiered_storage
+      subs:
+        - name: disabled_tiered_storage
+          display_name: "Disabled"
+          type: group
+          subs:
+            - name: tr_disabled
+              display_name: "No configuration required"
+              type: string
+              required: no
+              ui_options:
+                advanced: true
+              read_only: any
+        - name: hdfs_tiered_storage
+          display_name: "HDFS Tiered Storage"
+          type: group
+          subs:
+            - name: fetch.chunk.cache.retention.ms
+              description: "Cache retention time ms, where '-1' represents infinite retention."
+              display_name: fetch.chunk.cache.retention.ms
+              type: integer
+              default: 600000
+            - name: custom_site
+              description: "Custom core-site.xml and hdfs-site.xml for integrating with 3rd-party HDFS cluster"
+              display_name: "Custom core-site.xml and hdfs-site.xml"
+              type: group
+              activatable: True
+              active: False
+              subs:
+                - name: custom_core_site
+                  display_name: "Custom core-site.xml"
+                  type: text
+                  default: ""
+                  required: no
+                - name: custom_hdfs_site
+                  display_name: "Custom hdfs-site.xml"
+                  type: text
+                  default: ""
+                  required: no

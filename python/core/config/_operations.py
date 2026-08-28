@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial, reduce
@@ -41,7 +41,6 @@ from core.config._names import (
     full_name_without_root_prefix,
     is_part_of_group,
     join_level_name_with_group_name,
-    level_names_to_full_name,
     remove_group_from_name,
 )
 from core.config._predicates import is_non_empty_string, is_none, is_not_none, is_str
@@ -56,7 +55,6 @@ from core.config._types import (
     Defaults,
     FlatConfiguration,
     ParameterFullName,
-    ParameterLevelName,
 )
 from core.config._validate import (
     Validators,
@@ -509,92 +507,47 @@ def adapt_configuration_for_new_specification(
     defaults: Defaults,
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
-    # now I don't see another approach  to distinct cases of host group / main config
-    # without guessing, so made a flag
     include_synchronization: bool,
-) -> Success[Configuration] | Fail[Violations]:
-    # todo: clarify this function after logic confirmed by tests,
-    #       now it's a bit of mess and joggling
+) -> Success[Configuration]:
+    previous_values = nested_to_flat(configuration=configuration, specification=specification).values
+    previous_default_values = nested_to_flat(
+        configuration=prepare_config_from_defaults(defaults=defaults, specification=specification),
+        specification=specification,
+    ).values
 
-    previous_default_config = prepare_config_from_defaults(defaults=defaults, specification=specification)
-
-    groups_with_selection = {name for name, group in new_specification.groups.items() if group.selection}
-    parameters_and_groups_with_selection = groups_with_selection | set(new_specification.parameters)
-
-    relevant_changes = []
-    for change in _find_changes_from_level(
-        values=configuration.values, reference=previous_default_config.values, level=new_specification.hierarchy
-    ):
-        is_existing_selection_change = change.type == "selection" and change.parameter in groups_with_selection
-        is_existing_value_change = change.type == "value" and change.parameter in parameters_and_groups_with_selection
-
-        if is_existing_selection_change or is_existing_value_change:
-            relevant_changes.append(change)
-
-    new_configuration = prepare_config_from_defaults(defaults=new_defaults, specification=new_specification)
-
-    apply_result = apply_changes(changes=relevant_changes, configuration=new_configuration, defaults=new_defaults)
-
-    match apply_result:
-        case Success((config_with_changed_values, _)):
-            new_configuration = config_with_changed_values
-        case Fail():
-            return apply_result
-
-    present_in_new_config = set(nested_to_flat(configuration=new_configuration, specification=new_specification).values)
-
-    # if default became None, old default should be kept
-    new_none_defaults = {
-        name for name, value in new_defaults.values.items() if value is None and defaults.values.get(name) is not None
-    }
-    if new_none_defaults:
-        changed_parameters = {change.parameter for change in relevant_changes}
-        present_and_change_required = (new_none_defaults - changed_parameters) & present_in_new_config
-        keep_old_default_changes = [
-            ChangeRequest.for_value(name=name, value=defaults.values[name]) for name in present_and_change_required
-        ]
-        apply_result = apply_changes(
-            changes=keep_old_default_changes, configuration=new_configuration, defaults=new_defaults
-        )
-
-        match apply_result:
-            case Success((config_with_changed_values, _)):
-                new_configuration = config_with_changed_values
-            case Fail():
-                return apply_result
-
-    current_config_flat = nested_to_flat(configuration=configuration, specification=specification)
-    present_secrets = (
-        spec.get_secret_parameters_names(new_specification)
-        .intersection(present_in_new_config)
-        .intersection(current_config_flat.values)
+    chosen_options = _resolve_chosen_options(
+        new_specification=new_specification,
+        new_defaults=new_defaults,
+        previous_values=previous_values,
+        previous_default_values=previous_default_values,
     )
-    for name in present_secrets:
-        set_by_full_name(name=name, new_value=current_config_flat.values[name], values=new_configuration.values)
 
-    for name, old_attributes in configuration.attributes.items():
-        if not old_attributes.activation:
-            continue
+    values = _pick_values_for_new_specification(
+        new_specification=new_specification,
+        defaults=defaults,
+        new_defaults=new_defaults,
+        previous_values=previous_values,
+        chosen_options=chosen_options,
+    )
 
-        new_attributes = new_configuration.attributes.get(name)
-        if new_attributes and new_attributes.activation:
-            new_attributes.is_active = old_attributes.is_active
+    attributes = _build_attributes_for_new_specification(
+        new_specification=new_specification,
+        new_defaults=new_defaults,
+        previous_attributes=configuration.attributes,
+        chosen_options=chosen_options,
+    )
+
+    for name, chosen in chosen_options.items():
+        if chosen is None:
+            # `None` is a possible value of selection group, same as in `prepare_config_from_defaults`
+            values[name] = None
 
     if include_synchronization:
-        # sync groups
-        for name, attrs in new_configuration.attributes.items():
-            attrs.is_synced = _detect_is_synced_value(
-                name=name,
-                previous_attributes=configuration.attributes,
-            )
+        _set_synchronization(
+            attributes=attributes, present_parameters=set(values), previous_attributes=configuration.attributes
+        )
 
-        # sync for parameters
-        for name in present_in_new_config:
-            new_configuration.attributes[name] = Attributes(
-                is_synced=_detect_is_synced_value(name=name, previous_attributes=configuration.attributes)
-            )
-
-    return Success(new_configuration)
+    return Success(Configuration(values=flat_to_nested(values), attributes=attributes))
 
 
 def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "attr_diff"], dict]:
@@ -619,6 +572,160 @@ def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "att
 # Utilities
 
 
+def _resolve_chosen_options(
+    new_specification: spec.FullSpec,
+    new_defaults: Defaults,
+    previous_values: ConfigValues,
+    previous_default_values: ConfigValues,
+) -> dict[ParameterFullName, str | None]:
+    """
+    Detect option of each selection group of new specification.
+
+    Selection group is "not changed" when its whole subtree in previous configuration
+    is the same as in previous default configuration: neither the option nor values in it were touched.
+    Such group takes new default option, changed one keeps the option chosen by user.
+    """
+    # outer groups should be resolved first, because they define which nested ones are present at all
+    selection_groups = sorted(
+        (name for name, group in new_specification.groups.items() if group.selection),
+        key=lambda name: len(full_name_to_level_names(name)),
+    )
+
+    chosen_options = {}
+
+    for name in selection_groups:
+        if not _is_present_in_chosen_options(name=name, chosen_options=chosen_options):
+            continue
+
+        is_changed = _extract_subtree(values=previous_values, group=name) != _extract_subtree(
+            values=previous_default_values, group=name
+        )
+        if not is_changed:
+            chosen_options[name] = new_defaults.selection.get(name)
+            continue
+
+        previously_chosen = _detect_chosen_option(values=previous_values, group=name)
+        if previously_chosen is None:
+            # nothing was chosen by user and that is their choice too
+            chosen_options[name] = None
+            continue
+
+        if join_level_name_with_group_name(name=previously_chosen, group=name) in new_specification.groups:
+            chosen_options[name] = previously_chosen
+        else:
+            # option that is gone from new specification can't be kept, so new default is used instead
+            chosen_options[name] = new_defaults.selection.get(name)
+
+    return chosen_options
+
+
+def _pick_values_for_new_specification(
+    new_specification: spec.FullSpec,
+    defaults: Defaults,
+    new_defaults: Defaults,
+    previous_values: ConfigValues,
+    chosen_options: dict[ParameterFullName, str | None],
+) -> dict[ParameterFullName, ConfigParameterValue]:
+    """
+    Pick value for each parameter that is present in new specification:
+    the one set by user is kept, untouched one takes new default.
+    """
+    values = {}
+    secret_parameters = spec.get_secret_parameters_names(new_specification)
+
+    for name in new_specification.parameters:
+        if not _is_present_in_chosen_options(name=name, chosen_options=chosen_options):
+            continue
+
+        previous_default = defaults.values.get(name)
+        has_previous_value = name in previous_values
+
+        if name in secret_parameters and has_previous_value:
+            # secrets are never migrated to new defaults, see ADCM-7444
+            values[name] = previous_values[name]
+        elif has_previous_value and previous_values[name] != previous_default:
+            values[name] = previous_values[name]
+        elif name in new_defaults.values and new_defaults.values[name] is None and previous_default is not None:
+            # if default became `None`, old default should be kept
+            values[name] = previous_default
+        else:
+            values[name] = new_defaults.values.get(name)
+
+    return values
+
+
+def _build_attributes_for_new_specification(
+    new_specification: spec.FullSpec,
+    new_defaults: Defaults,
+    previous_attributes: dict[ParameterFullName, Attributes],
+    chosen_options: dict[ParameterFullName, str | None],
+) -> dict[ParameterFullName, Attributes]:
+    """Activation set by user wins over new default, groups unknown to previous configuration take new default"""
+    attributes = {}
+
+    for name, group in new_specification.groups.items():
+        if not group.activation:
+            continue
+
+        if not _is_present_in_chosen_options(name=name, chosen_options=chosen_options):
+            continue
+
+        previous = previous_attributes.get(name)
+        is_active = (
+            previous.is_active
+            if previous is not None and previous.activation
+            else new_defaults.activation.get(name, False)
+        )
+
+        attributes[name] = Attributes(is_active=is_active)
+
+    return attributes
+
+
+def _set_synchronization(
+    attributes: dict[ParameterFullName, Attributes],
+    present_parameters: set[ParameterFullName],
+    previous_attributes: dict[ParameterFullName, Attributes],
+) -> None:
+    for name, group_attributes in attributes.items():
+        group_attributes.is_synced = _detect_is_synced_value(name=name, previous_attributes=previous_attributes)
+
+    for name in present_parameters:
+        if name in attributes:
+            continue
+
+        attributes[name] = Attributes(
+            is_synced=_detect_is_synced_value(name=name, previous_attributes=previous_attributes)
+        )
+
+
+def _is_present_in_chosen_options(name: ParameterFullName, chosen_options: dict[ParameterFullName, str | None]) -> bool:
+    """Detect whether `name` belongs to options that are chosen in their selection groups"""
+    for selection_group, chosen in chosen_options.items():
+        if not is_part_of_group(name=name, group=selection_group):
+            continue
+
+        if chosen is None:
+            return False
+
+        if not is_part_of_group(name=name, group=join_level_name_with_group_name(name=chosen, group=selection_group)):
+            return False
+
+    return True
+
+
+def _extract_subtree(values: ConfigValues, group: ParameterFullName) -> dict:
+    return {name: value for name, value in values.items() if is_part_of_group(name=name, group=group)}
+
+
+def _detect_chosen_option(values: ConfigValues, group: ParameterFullName) -> str | None:
+    for name in values:
+        if is_part_of_group(name=name, group=group):
+            return remove_group_from_name(name=name, group=group).lstrip("/").split("/")[0]
+
+    return None
+
+
 def _apply_value_change_registering_violation(
     key: ParameterFullName, value: Any, target: Configuration, violations: Violations
 ) -> _HasChanged:
@@ -634,9 +741,66 @@ def _apply_value_change_registering_violation(
     return False
 
 
+def _extract_group_defaults(
+    defaults: Defaults, group: ParameterFullName, *, relative_to: ParameterFullName
+) -> ConfigValues:
+    """Get defaults of parameters in `group` as nested values with names relative to `relative_to` group"""
+    group_defaults = {
+        param: default_value
+        for param, default_value in defaults.values.items()
+        if is_part_of_group(name=param, group=group)
+    }
+
+    _keep_only_default_selections(defaults=defaults, group=group, flat_values=group_defaults)
+
+    if not group_defaults:
+        return {}
+
+    return flat_to_nested(
+        {remove_group_from_name(name=param, group=relative_to): value for param, value in group_defaults.items()}
+    )
+
+
+def _keep_only_default_selections(
+    defaults: Defaults, group: ParameterFullName, flat_values: dict[ParameterFullName, ConfigParameterValue]
+) -> None:
+    """
+    Drop values of non-default options of selection groups nested in `group`,
+    so extracted defaults are a correct configuration of `group`, not a sum of all its possible options.
+    """
+    # in order to keep algorithm working, ensure groups are patched from "deepest" to closest to root,
+    # see ADCM-7418 for problematic case
+    nested_selection_groups = sorted(
+        (name for name in defaults.selection if is_part_of_group(name=name, group=group)),
+        key=lambda name: len(full_name_to_level_names(name)),
+        reverse=True,
+    )
+
+    for selection_group in nested_selection_groups:
+        default_selection = defaults.selection[selection_group]
+        default_group = (
+            join_level_name_with_group_name(name=default_selection, group=selection_group)
+            if default_selection
+            else None
+        )
+
+        children = tuple(name for name in flat_values if is_part_of_group(name=name, group=selection_group))
+        for name in children:
+            if default_group and is_part_of_group(name=name, group=default_group):
+                continue
+
+            flat_values.pop(name)
+
+        if not default_group:
+            # same "hack" as in `prepare_config_from_defaults`: `None` is a possible value of selection group
+            flat_values[selection_group] = None
+
+
 def _apply_selection_group_change_registering_violation(
     key: ParameterFullName, value: Any, target: Configuration, defaults: Defaults, violations: Violations
 ) -> _HasChanged:
+    new_attributes = {}
+
     if value is not None:
         if not isinstance(value, str):
             message = (
@@ -658,16 +822,40 @@ def _apply_selection_group_change_registering_violation(
             return False
 
         new_group_key = join_level_name_with_group_name(name=value, group=key)
-        group_defaults = {
-            remove_group_from_name(name=param, group=key): default_value
-            for param, default_value in defaults.values.items()
-            if is_part_of_group(name=param, group=new_group_key)
+        group_defaults = _extract_group_defaults(defaults=defaults, group=new_group_key, relative_to=key)
+        # only options that are default ones for nested selection groups get into configuration,
+        # so attributes should be limited to them the same way values are
+        default_selections = {
+            name: chosen
+            for name, chosen in defaults.selection.items()
+            if is_part_of_group(name=name, group=new_group_key)
+        }
+        new_attributes = {
+            name: Attributes(is_active=is_active)
+            for name, is_active in defaults.activation.items()
+            if is_part_of_group(name=name, group=new_group_key)
+            and _is_present_in_chosen_options(name=name, chosen_options=default_selections)
         }
         # else required for case when non-existent group is specified or no default found for some reason,
         # yet we need to consider provided name as group in order to process it as valid entry
-        value = flat_to_nested(group_defaults) if group_defaults else {value: {}}
+        value = group_defaults or {value: {}}
 
-    return _apply_value_change_registering_violation(key=key, value=value, target=target, violations=violations)
+    has_changed = _apply_value_change_registering_violation(key=key, value=value, target=target, violations=violations)
+    if has_changed:
+        # attributes of previously chosen option have no meaning for the newly chosen one
+        _replace_attributes_of_group(group=key, new_attributes=new_attributes, target=target)
+
+    return has_changed
+
+
+def _replace_attributes_of_group(
+    group: ParameterFullName, new_attributes: dict[ParameterFullName, Attributes], target: Configuration
+) -> None:
+    names_of_group = tuple(name for name in target.attributes if is_part_of_group(name=name, group=group))
+    for name in names_of_group:
+        target.attributes.pop(name)
+
+    target.attributes.update(new_attributes)
 
 
 def _apply_activation_change_registering_violation(
@@ -683,58 +871,6 @@ def _apply_activation_change_registering_violation(
         violations.append(violation)
 
     return False
-
-
-def _find_changes_from_level(
-    values: ConfigValues,
-    reference: ConfigValues,
-    level: spec.SpecHierarchyLevel,
-    level_names: tuple[ParameterLevelName, ...] = (),
-) -> Generator[ChangeRequest, None, None]:
-    match level.rule:
-        case spec.HierarchyValidationRule.ALL:
-            present_at_level = set(reference.keys())
-
-            present_parameters = present_at_level.difference(level.child_groups.keys()).intersection(values.keys())
-            for name in present_parameters:
-                new_value = values[name]
-                if new_value != reference[name]:
-                    chosen_group_name = level_names_to_full_name((*level_names, name))
-                    yield ChangeRequest.for_value(name=chosen_group_name, value=new_value)
-
-            present_groups = present_at_level.intersection(level.child_groups).intersection(values.keys())
-            for name in present_groups:
-                child_level = level.child_groups[name]
-                child_values = values[name]
-                if not isinstance(child_values, dict):
-                    # todo check AT MOST ONE
-                    if (
-                        child_level.rule != spec.HierarchyValidationRule.ALL
-                        and child_values is None
-                        and reference[name] is not None
-                    ):
-                        chosen_group_name = level_names_to_full_name((*level_names, name))
-                        yield ChangeRequest.for_group_selection(name=chosen_group_name, value=None)
-
-                    continue
-
-                yield from _find_changes_from_level(
-                    values=child_values, reference=reference[name], level=child_level, level_names=(*level_names, name)
-                )
-
-        case spec.HierarchyValidationRule.AT_MOST_ONE | spec.HierarchyValidationRule.EXACTLY_ONE:
-            if values == reference:
-                return
-
-            name = next(iter(values.keys()), None)
-            if name not in level.child_groups:
-                # either incorrect data came or option is invalid for new hierarchy
-                return
-
-            group_name = level_names_to_full_name(level_names)
-            # it is based on current apply implementation, you may need a separate type for it later,
-            # if you'll need to distinguish cases or add more clarity in what's happening
-            yield ChangeRequest.for_value(name=group_name, value=values)
 
 
 def _detect_is_synced_value(name: ParameterFullName, previous_attributes: dict[ParameterFullName, Attributes]) -> bool:
