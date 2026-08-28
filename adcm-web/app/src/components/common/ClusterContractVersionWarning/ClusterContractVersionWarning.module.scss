@@ -1,0 +1,21 @@
+.contractVersionWarning {
+  margin-bottom: 24px;
+  border-width: 2px;
+  background: var(--cluster-contract-warning-bg);
+}
+
+:global {
+  body.theme-dark {
+    --cluster-contract-version-color: var(--color-xwhite-off);
+    --cluster-contract-warning-bg: var(--color-new-dark-50);
+  }
+
+  body.theme-light {
+    --cluster-contract-version-color: var(--color-dark-1);
+    --cluster-contract-warning-bg: var(--color-xwhite-off);
+  }
+}
+
+.version {
+  color: var(--cluster-contract-version-color);
+}

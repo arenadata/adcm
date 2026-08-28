@@ -32,6 +32,7 @@ export enum AdcmPrototypeType {
 export interface AdcmPrototypesFilter {
   bundleId?: number;
   type?: AdcmPrototypeType;
+  ids?: number[];
   contractVersionStatus?: AdcmContractVersionStatus;
   contractVersionValue?: string;
 }

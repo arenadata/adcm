@@ -2,11 +2,13 @@
   body.theme-dark {
     --warning-text-color: var(--color-xgray-lighter);
     --warning-error-color: var(--color-xred);
+    --warning-warning-color: var(--color-eggshell);
   }
 
   body.theme-light {
     --warning-text-color: var(--color-xgray-light);
     --warning-error-color: var(--color-xred-light);
+    --warning-warning-color: var(--color-warning-orange);
   }
 }
 
@@ -22,8 +24,8 @@
   background: var(--warning-background-color);
 
   &_warning {
-    --warning-border-color: var(--color-orangex);
-    --warning-icon-color: var(--color-orangex);
+    --warning-border-color: var(--warning-warning-color);
+    --warning-icon-color: var(--warning-warning-color);
     --warning-background-color: transparent;
   }
 

@@ -1,11 +1,14 @@
 import { useStore } from '@hooks';
 import { useParams } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import { Badge } from '@uikit';
 import {
   capitalizeEdition,
   formatCpuVcores,
   formatResourceValue,
 } from '@pages/ClustersPage/ClustersWidget/ClustersWidget.utils';
+import { getContractVersionBadgeStatus } from '@utils/contractVersionUtils';
+import { orElseGet } from '@utils/checkUtils';
 import ClusterOverviewInfoCard from './ClusterOverviewInfoCard';
 import ClusterOverviewMetricCard from './ClusterOverviewMetricCard';
 import s from './ClusterOverviewTopGrid.module.scss';
@@ -17,11 +20,16 @@ const ClusterOverviewTopGrid = () => {
   const metrics = useStore((state) => state.adcm.clustersMetrics.metricsByClusterId[clusterId]);
 
   const version = cluster?.prototype.version;
+  const versionBadgeStatus = getContractVersionBadgeStatus(cluster?.prototype.contractVersion?.status);
   const clusterInfoItems = [
     { label: 'Product', value: cluster?.prototype.displayName ?? '—' },
     {
       label: 'Version',
-      value: version ? <Badge status="info">{version}</Badge> : '—',
+      value: orElseGet<string, ReactNode>(
+        version,
+        (version) => <Badge status={versionBadgeStatus}>{version}</Badge>,
+        '—',
+      ),
     },
     { label: 'Edition', value: capitalizeEdition(cluster?.prototype.edition) || '—' },
   ];

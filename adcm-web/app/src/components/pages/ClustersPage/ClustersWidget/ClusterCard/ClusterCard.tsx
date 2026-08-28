@@ -10,6 +10,7 @@ import { clusterStatusLabels, getClusterBadgeStatus } from '@pages/ClustersPage/
 import { isBlockingConcernPresent } from '@utils/concernUtils';
 import { firstUpperCase } from '@utils/stringUtils';
 import { capitalizeEdition } from '@pages/ClustersPage/ClustersWidget/ClustersWidget.utils';
+import { getContractVersionBadgeStatus } from '@utils/contractVersionUtils';
 import ClusterCardMetrics from './ClusterCardMetrics';
 import s from './ClusterCard.module.scss';
 
@@ -28,6 +29,7 @@ const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isSelected, onSelect
   const edition = capitalizeEdition(cluster.prototype.edition);
   const clusterTitle = cluster.name || cluster.prototype.displayName;
   const clusterStatus = getClusterBadgeStatus(cluster.status);
+  const versionBadgeStatus = getContractVersionBadgeStatus(cluster.prototype.contractVersion?.status);
 
   const handleCardClick = useCallback(() => {
     onSelect(cluster.id);
@@ -74,7 +76,12 @@ const ClusterCard: React.FC<ClusterCardProps> = ({ cluster, isSelected, onSelect
 
       <div className={s.clusterCard__product}>
         <span className={s.clusterCard__productName}>{cluster.prototype.displayName}</span>
-        <Badge className={s.clusterCard__version} status="info" truncate title={cluster.prototype.version}>
+        <Badge
+          className={s.clusterCard__version}
+          status={versionBadgeStatus}
+          truncate
+          title={cluster.prototype.version}
+        >
           {cluster.prototype.version}
         </Badge>
         {edition && <Badge status="info">{edition}</Badge>}

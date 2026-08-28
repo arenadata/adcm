@@ -1,6 +1,6 @@
 import type { TableColumn, BaseStatus } from '@uikit';
-import type { BadgeStatus } from '@uikit/Badge/Badge.types';
 import { AdcmBundleSignatureStatus, AdcmContractVersionStatus } from '@models/adcm/bundle';
+import { contractVersionBadgeStatuses } from '@utils/contractVersionUtils';
 
 export const columns: TableColumn[] = [
   {
@@ -52,8 +52,4 @@ export const bundleContractVersionTooltips: Partial<Record<AdcmContractVersionSt
   [AdcmContractVersionStatus.Deprecated]: 'Deprecated',
 };
 
-export const bundleContractVersionBadgeStatuses: Record<AdcmContractVersionStatus, BadgeStatus> = {
-  [AdcmContractVersionStatus.Unsupported]: 'danger',
-  [AdcmContractVersionStatus.Deprecated]: 'warning',
-  [AdcmContractVersionStatus.Supported]: 'info',
-};
+export { contractVersionBadgeStatuses as bundleContractVersionBadgeStatuses };
