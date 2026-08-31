@@ -53,6 +53,7 @@ from cm.models import (
     Service,
 )
 from cm.transition.status import StatusScenarios
+from core.action.job import JobService
 from core.cluster import ClusterService
 from core.concern.repo import ConcernRepoI
 from core.legacy.bundle.operations import build_requires_dependencies_map
@@ -451,9 +452,16 @@ class ClusterViewSet(
 
     @audit_delete(name="Cluster deleted", object_=cluster_from_lookup, removed_on_success=True)
     @inject
-    def destroy(self, request, *args, cluster_service: FromDishka[ClusterService], **kwargs):  # noqa: ARG002
+    def destroy(
+        self,
+        request,  # noqa: ARG002
+        *args,  # noqa: ARG002
+        cluster_service: FromDishka[ClusterService],
+        job_service: FromDishka[JobService],
+        **kwargs,  # noqa: ARG002
+    ):
         cluster = self.get_object()
-        delete_cluster(cluster=cluster, cluster_service=cluster_service)
+        delete_cluster(cluster=cluster, cluster_service=cluster_service, job_service=job_service)
 
         return Response(status=HTTP_204_NO_CONTENT)
 
