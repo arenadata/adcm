@@ -28,7 +28,7 @@ WORKDIR /adcm
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --python 3.12 --group run --locked
+    uv sync --python 3.12.14 --group run --locked
 
 # Prepare venv Python 3.10 for Ansible 2.16
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
@@ -42,7 +42,9 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=bind,source=ansible-2.21-python3.12-dependencies.txt,target=ansible-2.21-python3.12-dependencies.txt \
     uv venv -p 3.12 /venv/2.21 && \
     source /venv/2.21/bin/activate && \
-    uv pip install --python 3.12 -r ansible-2.21-python3.12-dependencies.txt
+    uv pip install --python 3.12.14 -r ansible-2.21-python3.12-dependencies.txt
+
+RUN /python/cpython-3.12.14-linux-x86_64-musl/bin/python3.12 -m pip uninstall -y --break-system-packages pip
 
 FROM python:3.10-alpine3.24
 
