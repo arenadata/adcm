@@ -172,7 +172,6 @@ const ConfigurationEditor = ({
       const newFieldPath = [...node.data.path, fieldName];
       const newNodeKey = buildNodeKey(newFieldPath);
       setSelectedNodeKey(newNodeKey);
-      setFocusNodeKey(newNodeKey);
       const newConfiguration = addField(configuration, newFieldPath, value);
       onConfigurationChange(newConfiguration);
     },
