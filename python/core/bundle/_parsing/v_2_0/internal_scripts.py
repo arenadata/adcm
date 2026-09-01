@@ -107,3 +107,58 @@ class ServiceManageParams:
     services: Annotated[
         list[ServiceManageServiceItem], Field(min_length=1), AfterValidator(ensure_unique_service_names)
     ]
+
+
+# Host Duplicates Apply / Config Host Group Apply
+
+
+@dataclass(slots=True, frozen=True)
+class ActionConfigReference:
+    """A value taken from the action's configuration at task runtime, addressed by key."""
+
+    config_key: str
+
+
+@dataclass(slots=True, frozen=True)
+class TypeBasedHostGroupOwnerRule:
+    type: Literal["cluster", "provider"]
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceHostGroupOwnerRule:
+    type: Literal["service"]
+    service_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class ComponentHostGroupOwnerRule:
+    type: Literal["component"]
+    service_name: str
+    component_name: str
+
+
+HostGroupOwnerRule = Annotated[
+    TypeBasedHostGroupOwnerRule | ServiceHostGroupOwnerRule | ComponentHostGroupOwnerRule,
+    Field(discriminator="type"),
+]
+
+
+@dataclass(slots=True)
+class HostDuplicatesApplyParams:
+    operation: Literal["add", "remove"]
+    # the action-config key holding the name of the source cluster whose hosts are shared
+    source: ActionConfigReference
+    # remove only: owner of the configuration host group (named after the source cluster)
+    # that tracks the shared hosts - the fallback when the source cluster is already deleted
+    group: Annotated[HostGroupOwnerRule | None, Field(default=None)]
+
+
+@dataclass(slots=True)
+class ConfigHostGroupApplyParams:
+    operation: Literal["ensure", "remove"]
+    # the action-config key holding the name of the source cluster; the group is named after it
+    source: ActionConfigReference
+    # owner of the configuration host group; the task owner when not given
+    owner: Annotated[HostGroupOwnerRule | None, Field(default=None)]
+    # set when the group is created
+    description: Annotated[str, Field(default="")]

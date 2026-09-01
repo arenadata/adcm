@@ -216,6 +216,52 @@ class ServiceManageScriptParams:
     services: list[ServiceManageServiceEntry]
 
 
+@dataclass(slots=True, frozen=True)
+class ActionConfigKeyRef:
+    """A value taken from the task's action configuration, addressed by key ('/'-separated for nesting)."""
+
+    config_key: str
+
+
+@dataclass(slots=True, frozen=True)
+class TypeBasedHostGroupOwner:
+    type: Literal["cluster", "provider"]
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceHostGroupOwner:
+    type: Literal["service"]
+    service_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class ComponentHostGroupOwner:
+    type: Literal["component"]
+    service_name: str
+    component_name: str
+
+
+HostGroupOwner = Annotated[
+    TypeBasedHostGroupOwner | ServiceHostGroupOwner | ComponentHostGroupOwner,
+    Field(discriminator="type"),
+]
+
+
+@dataclass(slots=True)
+class HostDuplicatesApplyScriptParams:
+    operation: Literal["add", "remove"]
+    source: ActionConfigKeyRef
+    group: HostGroupOwner | None = None
+
+
+@dataclass(slots=True)
+class ConfigHostGroupApplyScriptParams:
+    operation: Literal["ensure", "remove"]
+    source: ActionConfigKeyRef
+    owner: HostGroupOwner | None = None
+    description: str = ""
+
+
 class BundleInfo(NamedTuple):
     # root is directory of bundle like /adcm/data/bundle/somehash
     root: Path
@@ -415,8 +461,23 @@ class ServiceManageScript(_InternalScript[Literal["service_manage"], ServiceMana
     ...
 
 
+class HostDuplicatesApplyScript(_InternalScript[Literal["host_duplicates_apply"], HostDuplicatesApplyScriptParams]):
+    ...
+
+
+class ConfigHostGroupApplyScript(
+    _InternalScript[Literal["config_host_group_apply"], ConfigHostGroupApplyScriptParams]
+):
+    ...
+
+
 _InternalScriptVariants = Annotated[
-    SimpleInternalScript | HcApplyScript | ConfigApplyScript | ServiceManageScript,
+    SimpleInternalScript
+    | HcApplyScript
+    | ConfigApplyScript
+    | ServiceManageScript
+    | HostDuplicatesApplyScript
+    | ConfigHostGroupApplyScript,
     Field(discriminator="path"),
 ]
 
