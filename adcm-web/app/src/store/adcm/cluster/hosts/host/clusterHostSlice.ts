@@ -6,6 +6,7 @@ import { AdcmClusterHostComponentsStatus } from '@models/adcm';
 import { RequestState } from '@models/loadState';
 import { createSlice } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
@@ -142,13 +143,10 @@ const clusterHostSlice = createSlice({
     });
     builder.addCase(wsActions.create_host_concern, (state, action) => {
       const { id: clusterHostId, changes: newConcern } = action.payload.object;
-      if (
-        state.clusterHost?.id === clusterHostId &&
-        state.clusterHost.concerns.every((concern) => concern.id !== newConcern.id)
-      ) {
+      if (state.clusterHost?.id === clusterHostId) {
         state.clusterHost = {
           ...state.clusterHost,
-          concerns: [...state.clusterHost.concerns, newConcern],
+          concerns: upsertConcern(state.clusterHost.concerns, newConcern),
         };
       }
     });
