@@ -62,6 +62,8 @@ const FieldNodeContent = ({
 
   const inlineField = useInlineField({ node, fieldNodeData, onChange });
 
+  const shouldAutoFocusInlineField = shouldFocus && inlineField.isEditable && !isPrimitiveValueSet(fieldNodeData.value);
+
   useEffect(() => {
     if (!shouldFocus) {
       return;
@@ -72,9 +74,12 @@ const FieldNodeContent = ({
       return;
     }
 
-    onClick(node, ref);
+    if (!isPrimitiveValueSet(fieldNodeData.value)) {
+      onClick(node, ref);
+    }
+
     onFocusHandled?.();
-  }, [shouldFocus, inlineField.isEditable, node, onClick, onFocusHandled]);
+  }, [shouldFocus, inlineField.isEditable, fieldNodeData.value, node, onClick, onFocusHandled]);
 
   const handleIsActiveChange = useCallback(
     (isActive: boolean) => {
@@ -218,7 +223,7 @@ const FieldNodeContent = ({
               fieldSchema={fieldNodeData.fieldSchema}
               value={fieldNodeData.value}
               isReadonly={fieldNodeData.isReadonly}
-              autoFocus={shouldFocus && inlineField.isEditable}
+              autoFocus={shouldAutoFocusInlineField}
               onChange={inlineField.onChange}
             />
           ) : (

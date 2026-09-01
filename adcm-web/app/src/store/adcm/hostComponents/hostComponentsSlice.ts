@@ -9,6 +9,7 @@ import { showError } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 
 interface AdcmHostComponentsState {
@@ -116,11 +117,9 @@ const hostComponentsSlice = createSlice({
       const { id: hostComponentId, changes: newConcern } = action.payload.object;
       state.hostComponents = updateIfExists<AdcmServiceComponent>(
         state.hostComponents,
-        (hostComponent) =>
-          hostComponent.id === hostComponentId &&
-          hostComponent.concerns.every((concern) => concern.id !== newConcern.id),
+        (hostComponent) => hostComponent.id === hostComponentId,
         (hostComponent) => ({
-          concerns: [...hostComponent.concerns, newConcern],
+          concerns: upsertConcern(hostComponent.concerns, newConcern),
         }),
       );
     });

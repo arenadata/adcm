@@ -12,6 +12,7 @@ import {
   getUniqueClusterPrototypeIds,
   mergeClusterPreservingContractVersion,
 } from '@utils/contractVersionUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 type AdcmClustersState = {
   clusters: AdcmCluster[];
@@ -129,9 +130,9 @@ const clustersSlice = createSlice({
       const { id: clusterId, changes: newConcern } = action.payload.object;
       state.clusters = updateIfExists<AdcmCluster>(
         state.clusters,
-        (cluster) => cluster.id === clusterId && cluster.concerns.every((concern) => concern.id !== newConcern.id),
+        (cluster) => cluster.id === clusterId,
         (cluster) => ({
-          concerns: [...cluster.concerns, newConcern],
+          concerns: upsertConcern(cluster.concerns, newConcern),
         }),
       );
     });

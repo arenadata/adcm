@@ -6,6 +6,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 interface AdcmSettingsState {
   adcmSettings: AdcmSettings | null;
@@ -43,13 +44,10 @@ const adcmSettingsSlice = createSlice({
     });
     builder.addCase(wsActions.create_adcm_concern, (state, action) => {
       const { id: adcmId, changes: newConcern } = action.payload.object;
-      if (
-        state.adcmSettings?.id === adcmId &&
-        state.adcmSettings.concerns.every((concern) => concern.id !== newConcern.id)
-      ) {
+      if (state.adcmSettings?.id === adcmId) {
         state.adcmSettings = {
           ...state.adcmSettings,
-          concerns: [...state.adcmSettings.concerns, newConcern],
+          concerns: upsertConcern(state.adcmSettings.concerns, newConcern),
         };
       }
     });
