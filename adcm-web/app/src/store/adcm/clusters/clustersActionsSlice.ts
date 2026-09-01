@@ -105,9 +105,7 @@ const renameClusterWithUpdate = createAsyncThunk(
   'adcm/clustersActions/renameClusterWithUpdate',
   async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
     try {
-      const cluster = await AdcmClustersApi.patchCluster(id, { name });
-      thunkAPI.dispatch(upsertCluster(cluster));
-      thunkAPI.dispatch(setCluster(cluster));
+      await AdcmClustersApi.patchCluster(id, { name });
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

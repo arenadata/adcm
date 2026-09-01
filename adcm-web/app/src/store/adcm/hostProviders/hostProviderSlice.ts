@@ -4,6 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import type { RequestError } from '@api';
 import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
@@ -76,13 +77,10 @@ const hostProviderSlice = createSlice({
     });
     builder.addCase(wsActions.create_hostprovider_concern, (state, action) => {
       const { id: hostProviderId, changes: newConcern } = action.payload.object;
-      if (
-        state.hostProvider?.id === hostProviderId &&
-        state.hostProvider.concerns.every((concern) => concern.id !== newConcern.id)
-      ) {
+      if (state.hostProvider?.id === hostProviderId) {
         state.hostProvider = {
           ...state.hostProvider,
-          concerns: [...state.hostProvider.concerns, newConcern],
+          concerns: upsertConcern(state.hostProvider.concerns, newConcern),
         };
       }
     });

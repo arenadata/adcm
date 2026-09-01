@@ -9,6 +9,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 interface AdcmServiceComponentState {
   serviceComponent?: AdcmServiceComponent;
@@ -116,13 +117,10 @@ const serviceComponentSlice = createSlice({
     });
     builder.addCase(wsActions.create_component_concern, (state, action) => {
       const { id: serviceComponentId, changes: newConcern } = action.payload.object;
-      if (
-        state.serviceComponent?.id === serviceComponentId &&
-        state.serviceComponent.concerns.every((concern) => concern.id !== newConcern.id)
-      ) {
+      if (state.serviceComponent?.id === serviceComponentId) {
         state.serviceComponent = {
           ...state.serviceComponent,
-          concerns: [...state.serviceComponent.concerns, newConcern],
+          concerns: upsertConcern(state.serviceComponent.concerns, newConcern),
         };
       }
     });

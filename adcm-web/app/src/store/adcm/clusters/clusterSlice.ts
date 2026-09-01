@@ -14,6 +14,7 @@ import {
   getUniqueClusterPrototypeIds,
   mergeClusterPreservingContractVersion,
 } from '@utils/contractVersionUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 interface AdcmClusterState {
   cluster?: AdcmCluster;
@@ -115,10 +116,10 @@ const clusterSlice = createSlice({
     });
     builder.addCase(wsActions.create_cluster_concern, (state, action) => {
       const { id: clusterId, changes: newConcern } = action.payload.object;
-      if (state.cluster?.id === clusterId && state.cluster.concerns.every((concern) => concern.id !== newConcern.id)) {
+      if (state.cluster?.id === clusterId) {
         state.cluster = {
           ...state.cluster,
-          concerns: [...state.cluster.concerns, newConcern],
+          concerns: upsertConcern(state.cluster.concerns, newConcern),
         };
       }
     });

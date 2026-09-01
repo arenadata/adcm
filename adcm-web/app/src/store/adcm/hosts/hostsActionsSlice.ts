@@ -183,7 +183,7 @@ const deleteHostsWithUpdate = createAsyncThunk(
 
 const updateHost = createAsyncThunk('adcm/hostsActions/updateHost', async ({ id, name }: AdcmRenameArgs, thunkAPI) => {
   try {
-    return await AdcmHostsApi.patchHost(id, { name });
+    await AdcmHostsApi.patchHost(id, { name });
   } catch (error) {
     thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
     return thunkAPI.rejectWithValue(error);
@@ -194,7 +194,6 @@ const updateHostWithUpdate = createAsyncThunk(
   'adcm/hostsActions/updateHostWithUpdate',
   async (arg: AdcmRenameArgs, thunkAPI) => {
     await thunkAPI.dispatch(updateHost(arg)).unwrap();
-    thunkAPI.dispatch(getHosts());
   },
 );
 

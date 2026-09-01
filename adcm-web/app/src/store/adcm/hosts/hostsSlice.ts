@@ -5,6 +5,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import { AdcmHostsApi } from '@api';
 import { updateIfExists } from '@utils/objectUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
 
@@ -95,32 +96,22 @@ const hostsSlice = createSlice({
 
       let hosts = updateIfExists<AdcmHost>(
         state.hosts,
-        (host) => {
-          if (host.id !== hostId) return false;
-
-          return host.concerns.every((concern) => concern.id !== newConcern.id);
-        },
+        (host) => host.id === hostId,
         (host) => ({
-          concerns: [...host.concerns, newConcern],
+          concerns: upsertConcern(host.concerns, newConcern),
         }),
       );
 
       hosts = updateIfExists<AdcmHost>(
         hosts,
-        (host) => {
-          const duplicate = host.duplicates.find(({ id }) => id === hostId);
-
-          if (!duplicate) return false;
-
-          return duplicate.concerns.every((concern) => concern.id !== newConcern.id);
-        },
+        (host) => host.duplicates.some(({ id }) => id === hostId),
         (host) => ({
           ...host,
           duplicates: host.duplicates.map((duplicate) => {
             if (hostId === duplicate.id) {
               return {
                 ...duplicate,
-                concerns: [...duplicate.concerns, newConcern],
+                concerns: upsertConcern(duplicate.concerns, newConcern),
               };
             }
 

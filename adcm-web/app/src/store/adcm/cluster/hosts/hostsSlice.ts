@@ -6,6 +6,7 @@ import { defaultSpinnerDelay } from '@constants';
 import type { AdcmClusterHost } from '@models/adcm/clusterHosts';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { updateIfExists } from '@utils/objectUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { LoadState } from '@models/loadState';
 
 type AdcmClusterHostsState = {
@@ -97,9 +98,9 @@ const clusterHostsSlice = createSlice({
       const { id: hostId, changes: newConcern } = action.payload.object;
       state.hosts = updateIfExists<AdcmClusterHost>(
         state.hosts,
-        (host) => host.id === hostId && host.concerns.every((concern) => concern.id !== newConcern.id),
+        (host) => host.id === hostId,
         (host) => ({
-          concerns: [...host.concerns, newConcern],
+          concerns: upsertConcern(host.concerns, newConcern),
         }),
       );
     });

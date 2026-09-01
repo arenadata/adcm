@@ -9,6 +9,7 @@ import { getErrorMessage } from '@utils/httpResponseUtils';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 interface AdcmHostState {
   host?: AdcmHost;
@@ -122,10 +123,10 @@ const hostSlice = createSlice({
     });
     builder.addCase(wsActions.create_host_concern, (state, action) => {
       const { id: hostId, changes: newConcern } = action.payload.object;
-      if (state.host?.id === hostId && state.host.concerns.every((concern) => concern.id !== newConcern.id)) {
+      if (state.host?.id === hostId) {
         state.host = {
           ...state.host,
-          concerns: [...state.host.concerns, newConcern],
+          concerns: upsertConcern(state.host.concerns, newConcern),
         };
       }
     });

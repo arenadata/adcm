@@ -4,6 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmHostProvidersApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
@@ -85,10 +86,9 @@ const hostProvidersSlice = createSlice({
       const { id: hostProviderId, changes: newConcern } = action.payload.object;
       state.hostProviders = updateIfExists<AdcmHostProvider>(
         state.hostProviders,
-        (hostProvider) =>
-          hostProvider.id === hostProviderId && hostProvider.concerns.every((concern) => concern.id !== newConcern.id),
+        (hostProvider) => hostProvider.id === hostProviderId,
         (hostProvider) => ({
-          concerns: [...hostProvider.concerns, newConcern],
+          concerns: upsertConcern(hostProvider.concerns, newConcern),
         }),
       );
     });
