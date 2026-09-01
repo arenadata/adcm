@@ -493,6 +493,47 @@ class ConfigApplySchema(_BaseModel):
         return self
 
 
+# Host Duplicates Apply / Config Host Group Apply
+
+
+class ActionConfigReferenceSchema(_BaseModel):
+    config_key: str
+
+
+class TypeBasedHostGroupOwnerRule(_BaseModel):
+    type: Literal["cluster", "provider"]
+
+
+class ServiceHostGroupOwnerRule(_BaseModel):
+    type: Literal["service"]
+    service_name: str
+
+
+class ComponentHostGroupOwnerRule(_BaseModel):
+    type: Literal["component"]
+    service_name: str
+    component_name: str
+
+
+HOST_GROUP_OWNER_RULE = Annotated[
+    TypeBasedHostGroupOwnerRule | ServiceHostGroupOwnerRule | ComponentHostGroupOwnerRule,
+    Field(discriminator="type"),
+]
+
+
+class HostDuplicatesApplySchema(_BaseModel):
+    operation: Literal["add", "remove"]
+    source: ActionConfigReferenceSchema
+    group: Annotated[HOST_GROUP_OWNER_RULE | None, Field(default=None)]
+
+
+class ConfigHostGroupApplySchema(_BaseModel):
+    operation: Literal["ensure", "remove"]
+    source: ActionConfigReferenceSchema
+    owner: Annotated[HOST_GROUP_OWNER_RULE | None, Field(default=None)]
+    description: Annotated[str, Field(default="")]
+
+
 #######
 # BASE SCRIPTS
 #######
@@ -538,6 +579,18 @@ class _InternalConfigApplyScript(_BaseModel):
     params: ConfigApplySchema
 
 
+class _InternalHostDuplicatesApplyScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["host_duplicates_apply"]
+    params: HostDuplicatesApplySchema
+
+
+class _InternalConfigHostGroupApplyScript(_BaseModel):
+    script_type: Literal["internal"]
+    script: Literal["config_host_group_apply"]
+    params: ConfigHostGroupApplySchema
+
+
 class _BaseScriptSchema(_BaseModel):
     name: str
     display_name: Annotated[str | None, Field(default=None)]
@@ -565,6 +618,14 @@ class PythonScriptSchema(_BaseScriptSchema, _PythonScript):
 
 
 class InternalConfigApplyScriptSchema(_BaseScriptSchema, _InternalConfigApplyScript):
+    ...
+
+
+class InternalHostDuplicatesApplyScriptSchema(_BaseScriptSchema, _InternalHostDuplicatesApplyScript):
+    ...
+
+
+class InternalConfigHostGroupApplyScriptSchema(_BaseScriptSchema, _InternalConfigHostGroupApplyScript):
     ...
 
 
@@ -913,12 +974,26 @@ class InternalConfigApplyTaskScriptSchema(InternalConfigApplyScriptSchema, _With
     ...
 
 
+class InternalHostDuplicatesApplyTaskScriptSchema(InternalHostDuplicatesApplyScriptSchema, _WithAllowToTerminateField):
+    ...
+
+
+class InternalConfigHostGroupApplyTaskScriptSchema(
+    InternalConfigHostGroupApplyScriptSchema, _WithAllowToTerminateField
+):
+    ...
+
+
 class _BaseTaskSchema(_BaseActionSchema):
     type: Literal["task"]
 
 
 INTERNAL_TASK_SCRIPTS_SCHEMA = Annotated[
-    InternalBundleSwitchTaskScriptSchema | InternalBundleRevertTaskScriptSchema | InternalHcApplyTaskScriptSchema,
+    InternalBundleSwitchTaskScriptSchema
+    | InternalBundleRevertTaskScriptSchema
+    | InternalHcApplyTaskScriptSchema
+    | InternalHostDuplicatesApplyTaskScriptSchema
+    | InternalConfigHostGroupApplyTaskScriptSchema,
     Field(discriminator="script"),
 ]
 
@@ -926,7 +1001,9 @@ INTERNAL_TASK_SCRIPTS_JINJA_SCHEMA = Annotated[
     InternalBundleSwitchTaskScriptSchema
     | InternalBundleRevertTaskScriptSchema
     | InternalHcApplyTaskScriptSchema
-    | InternalConfigApplyTaskScriptSchema,
+    | InternalConfigApplyTaskScriptSchema
+    | InternalHostDuplicatesApplyTaskScriptSchema
+    | InternalConfigHostGroupApplyTaskScriptSchema,
     Field(discriminator="script"),
 ]
 

@@ -15,7 +15,9 @@ This collection provides Ansible plugins for managing clusters, services, and ho
 - `adcm_change_flag` - Raise or Lower flags on Cluster, Service, Component, Provider or Host
 - `adcm_change_maintenance_mode` - Change Host, Service or Component maintenance mode
 - `adcm_check` - Log check results to structured JSON log storage
+- `adcm_cluster_info` - Report another cluster managed by this ADCM
 - `adcm_config` - Change config values in runtime
+- `adcm_config_host_group_info` - Report configuration host groups of an object
 - `adcm_custom_log` - Add entries to log storage
 - `adcm_delete_host` - Delete Host
 - `adcm_delete_service` - Delete service from cluster

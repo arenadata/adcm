@@ -222,6 +222,52 @@ class ServiceManageScriptParams:
     services: list[ServiceManageServiceEntry]
 
 
+@dataclass(slots=True, frozen=True)
+class ActionConfigKeyRef:
+    """A value taken from the task's action configuration, addressed by key ('/'-separated for nesting)."""
+
+    config_key: str
+
+
+@dataclass(slots=True, frozen=True)
+class TypeBasedHostGroupOwner:
+    type: Literal["cluster", "provider"]
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceHostGroupOwner:
+    type: Literal["service"]
+    service_name: str
+
+
+@dataclass(slots=True, frozen=True)
+class ComponentHostGroupOwner:
+    type: Literal["component"]
+    service_name: str
+    component_name: str
+
+
+HostGroupOwner = Annotated[
+    TypeBasedHostGroupOwner | ServiceHostGroupOwner | ComponentHostGroupOwner,
+    Field(discriminator="type"),
+]
+
+
+@dataclass(slots=True)
+class HostDuplicatesApplyScriptParams:
+    operation: Literal["add", "remove"]
+    source: ActionConfigKeyRef
+    group: HostGroupOwner | None = None
+
+
+@dataclass(slots=True)
+class ConfigHostGroupApplyScriptParams:
+    operation: Literal["ensure", "remove"]
+    source: ActionConfigKeyRef
+    owner: HostGroupOwner | None = None
+    description: str = ""
+
+
 # JOB
 #
 # `type` and `script` act as discriminators of the `Job` union below, so they're mandatory here.
@@ -280,8 +326,21 @@ class ServiceManageJob(InternalJob[Literal["service_manage"], ServiceManageScrip
     pass
 
 
+class HostDuplicatesApplyJob(InternalJob[Literal["host_duplicates_apply"], HostDuplicatesApplyScriptParams]):
+    pass
+
+
+class ConfigHostGroupApplyJob(InternalJob[Literal["config_host_group_apply"], ConfigHostGroupApplyScriptParams]):
+    pass
+
+
 _InternalJobVariants = Annotated[
-    SimpleInternalJob | HcApplyJob | ConfigApplyJob | ServiceManageJob,
+    SimpleInternalJob
+    | HcApplyJob
+    | ConfigApplyJob
+    | ServiceManageJob
+    | HostDuplicatesApplyJob
+    | ConfigHostGroupApplyJob,
     Field(discriminator="script"),
 ]
 

@@ -22,12 +22,16 @@ import json
 import traceback
 
 from core.action import (
+    ActionConfigKeyRef,
     AnsibleJob,
     AssociatedProcess,
     ConfigApplyChangeEntry,
     ConfigApplyJob,
+    ConfigHostGroupApplyJob,
     HcAclRule,
     HcApplyJob,
+    HostDuplicatesApplyJob,
+    HostGroupOwner,
     Job,
     ScriptType,
     ServiceManageJob,
@@ -38,6 +42,7 @@ from core.action import (
 )
 from core.action.job import TaskUpdateDTO
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
@@ -55,6 +60,13 @@ from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
+from use_cases.transition.config_host_group import (
+    ConfigHostGroupOwner,
+    ensure_config_host_group,
+    remove_config_host_group,
+    retrieve_group_host_names,
+)
+from use_cases.transition.host.share import share_cluster_hosts, unshare_cluster_hosts
 from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.converters import CoreObject, core_type_to_model
@@ -91,11 +103,13 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     Component,
+    Host,
     LogStorage,
     Process,
     Prototype,
     TaskLog,
 )
+from cm.transition.status import StatusScenarios
 
 logger = getLogger("adcm")
 
@@ -112,6 +126,8 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
         before_upgrade_scenarios: BeforeUpgradeScenarios,
+        config_service: ConfigService,
+        status_scenarios: StatusScenarios,
     ):
         self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
         self._rbac_scenarios = rbac_scenarios
@@ -139,6 +155,17 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                 internal_script_before_upgrade_clean,
                 cluster_uc=reset_cluster_before_upgrade,
                 provider_uc=reset_provider_before_upgrade,
+            ),
+            "host_duplicates_apply": partial(
+                internal_script_host_duplicates_apply,
+                config_service=config_service,
+                rbac_scenarios=rbac_scenarios,
+                status_scenarios=status_scenarios,
+                cluster_service=cluster_service,
+            ),
+            "config_host_group_apply": partial(
+                internal_script_config_host_group_apply,
+                rbac_scenarios=rbac_scenarios,
             ),
         }
 
@@ -452,6 +479,189 @@ def internal_script_before_upgrade_clean(
         with_updates=True,
     )
     return InternalScriptResult(code=0, message=result_message)
+
+
+def internal_script_host_duplicates_apply(
+    task: Task,
+    job: HostDuplicatesApplyJob,
+    config_service: ConfigService,
+    rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
+    cluster_service: ClusterService,
+) -> InternalScriptResult:
+    script_name = "host_duplicates_apply"
+    cluster_id = _cluster_id_of_task_owner(task=task, script_name=script_name)
+    source_name = _value_from_action_config(task=task, reference=job.params.source, script_name=script_name)
+
+    if job.params.operation == "add":
+        source_cluster_id = Cluster.objects.values_list("id", flat=True).filter(name=source_name).first()
+        if source_cluster_id is None:
+            raise AdcmEx(
+                code="CLUSTER_NOT_FOUND",
+                msg=f'Cluster "{source_name}" is not managed by this ADCM, so its hosts can\'t be duplicated in here',
+            )
+
+        if source_cluster_id == cluster_id:
+            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg="A cluster can't hold duplicates of its own hosts")
+
+        outcome = share_cluster_hosts(
+            source_cluster_id=source_cluster_id,
+            target_cluster_id=cluster_id,
+            config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
+        )
+
+        result_message = _build_result_message(
+            script_name=script_name,
+            full_complete_message=f'the hosts of "{source_name}" are duplicated in here '
+            f"({len(outcome.created)} created, {len(outcome.existing)} were already available)",
+            without_updates_message="the hosts were duplicated",
+            with_updates=bool(outcome.created),
+        )
+        return InternalScriptResult(code=0, message=result_message)
+
+    # operation == "remove"
+    names = set(_duplicates_of_source(cluster_id=cluster_id, source_name=source_name))
+
+    # The source cluster may already be deleted, taking `original.cluster` with it; the
+    # configuration host group that tracks the shared hosts (named after the source cluster)
+    # is what outlasts it.
+    if job.params.group is not None:
+        group_owner = _resolve_host_group_owner(task=task, rule=job.params.group, script_name=script_name)
+        names |= set(retrieve_group_host_names(owner=group_owner, name=source_name))
+
+    outcome = unshare_cluster_hosts(
+        target_cluster_id=cluster_id,
+        fqdns=names,
+        cluster_service=cluster_service,
+        rbac_scenarios=rbac_scenarios,
+    )
+
+    result_message = _build_result_message(
+        script_name=script_name,
+        full_complete_message=f'the duplicates of "{source_name}" hosts are removed ({len(outcome.removed)} deleted)',
+        without_updates_message="the duplicates were removed",
+        with_updates=bool(outcome.removed),
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def internal_script_config_host_group_apply(
+    task: Task,
+    job: ConfigHostGroupApplyJob,
+    rbac_scenarios: RBACScenarios,
+) -> InternalScriptResult:
+    script_name = "config_host_group_apply"
+    owner = _resolve_host_group_owner(task=task, rule=job.params.owner, script_name=script_name)
+    name = _value_from_action_config(task=task, reference=job.params.source, script_name=script_name)
+
+    if job.params.operation == "ensure":
+        cluster_id = _cluster_id_of_task_owner(task=task, script_name=script_name)
+        hosts = _duplicates_of_source(cluster_id=cluster_id, source_name=name)
+
+        outcome = ensure_config_host_group(
+            owner=owner,
+            name=name,
+            hosts=hosts,
+            rbac_scenarios=rbac_scenarios,
+            description=job.params.description,
+        )
+
+        result_message = _build_result_message(
+            script_name=script_name,
+            full_complete_message=f'the "{name}" configuration host group is in place '
+            f"({len(outcome.added)} host(s) added)",
+            without_updates_message="the group was set up",
+            with_updates=outcome.created or bool(outcome.added),
+        )
+        return InternalScriptResult(code=0, message=result_message)
+
+    # operation == "remove"
+    outcome = remove_config_host_group(owner=owner, name=name)
+
+    result_message = _build_result_message(
+        script_name=script_name,
+        full_complete_message=f'the "{name}" configuration host group is removed '
+        f"(held {len(outcome.held)} host(s))",
+        without_updates_message="the group was removed",
+        with_updates=outcome.existed,
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def _cluster_id_of_task_owner(task: Task, script_name: str) -> ClusterID:
+    if not task.owner or task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+        raise AdcmEx(
+            code="WRONG_OWNER",
+            msg=f"Internal script `{script_name}` can only be defined in cluster, service or component context",
+        )
+
+    if task.owner.type == ADCMCoreType.CLUSTER:
+        return task.owner.id
+
+    return task.owner.related_objects.cluster.id
+
+
+def _value_from_action_config(task: Task, reference: ActionConfigKeyRef, script_name: str) -> str:
+    value = task.config or {}
+    for part in reference.config_key.strip("/").split("/"):
+        if not isinstance(value, dict) or part not in value:
+            raise AdcmEx(
+                code="INTERNAL_SERVER_ERROR",
+                msg=f"Internal script `{script_name}` expects the action configuration "
+                f'to have "{reference.config_key}"',
+            )
+        value = value[part]
+
+    if not isinstance(value, str) or not value:
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f'"{reference.config_key}" of the action configuration must be a non-empty string '
+            f"for internal script `{script_name}`",
+        )
+
+    return value
+
+
+def _duplicates_of_source(cluster_id: ClusterID, source_name: str) -> dict[str, int]:
+    """Hosts of the cluster that are duplicates of hosts of the cluster named `source_name`."""
+
+    return dict(
+        Host.objects.filter(
+            cluster_id=cluster_id, original__isnull=False, original__cluster__name=source_name
+        ).values_list("fqdn", "id")
+    )
+
+
+def _resolve_host_group_owner(task: Task, rule: HostGroupOwner | None, script_name: str) -> ConfigHostGroupOwner:
+    if rule is None:
+        if task.owner is None or task.owner.type in {ADCMCoreType.HOST, ADCMCoreType.ADCM}:
+            raise AdcmEx(
+                code="WRONG_OWNER",
+                msg=f"Internal script `{script_name}` can't default the group owner "
+                "from a task without a cluster, service, component or provider owner",
+            )
+
+        return core_type_to_model(core_type=task.owner.type).objects.get(pk=task.owner.id)
+
+    # same resolution as `_extract_apply_config_target`, to preserve a single mechanism
+    # with the adcm_config plugin's object addressing
+    from ansible_plugin.base import CoreObjectTargetDescription, VarsContextSection, _from_target_description
+    from ansible_plugin.errors import PluginTargetDetectionError
+
+    context = VarsContextSection(**context_m.get_run_context(task=task))
+    target_description = CoreObjectTargetDescription(**asdict(rule))
+
+    try:
+        target = _from_target_description(target_description, context)
+    except PluginTargetDetectionError as e:
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg=f"Internal script `{script_name}` names a non-existing group owner {asdict(rule)}",
+        ) from e
+
+    return core_type_to_model(core_type=target.type).objects.get(pk=target.id)
 
 
 def _build_result_message(
