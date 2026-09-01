@@ -12,7 +12,10 @@
 
 package status
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestHostDuplicates(t *testing.T) {
 	// Data
@@ -65,5 +68,51 @@ func TestHostDuplicates(t *testing.T) {
 	actual = hd.GetForID(notExist)
 	if len(actual) != 0 {
 		t.Errorf("expected empty for not existing id, got: %d", actual)
+	}
+}
+
+// TestHostDuplicatesConcurrent guards against unsynchronized access to the duplicates map.
+// Register and GetForID are called from concurrent HTTP handlers
+// (POST /host-duplicates/ and POST /host/:hostid/ respectively),
+// so GetForID must take the same mutex as Register.
+// Without that the test crashes with "concurrent map read and map write"
+// or, with -race, reports a DATA RACE on every run.
+func TestHostDuplicatesConcurrent(t *testing.T) {
+	hd := newHostDuplicates()
+
+	const (
+		workers    = 100
+		iterations = 100
+		// Every worker also hammers this key, so readers and writers
+		// constantly collide on the same inner map, not only on the outer one.
+		sharedID = 100000
+	)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			<-start
+			for j := 0; j < iterations; j++ {
+				hd.Register(id, []int{id + 1, id + 2})
+				hd.GetForID(id)
+				hd.Register(sharedID, []int{id})
+				hd.GetForID(sharedID)
+			}
+		}(i)
+	}
+
+	close(start)
+	wg.Wait()
+
+	for i := 0; i < workers; i++ {
+		if got := hd.GetForID(i); len(got) != 2 {
+			t.Errorf("expected 2 duplicates for id %d, got %d: %d", i, len(got), got)
+		}
+	}
+	if got := hd.GetForID(sharedID); len(got) != workers {
+		t.Errorf("expected %d duplicates for shared id, got %d", workers, len(got))
 	}
 }
