@@ -293,13 +293,13 @@ class TestInventoryAndMaintenanceMode(GenericTestCase):
         self.assertEqual(JobLog.objects.count(), 0)
 
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=object_,
                 payload=payload,
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
 
         inventory = prepare_ansible_inventory(
             task=JobRepo().get_task(task_id),

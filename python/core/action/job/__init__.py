@@ -27,17 +27,12 @@ from core.action.job._repo import (
 )
 from core.action.job._service import JobService
 from core.action.job._termination import (
-    DirectOSTerminationSignaller,
     ExecutorTerminator,
-    IndirectRepoTerminationSignaller,
     TaskRunnerTerminator,
-    TerminationSignaller,
 )
 
 __all__ = [
-    "DirectOSTerminationSignaller",
     "ExecutorTerminator",
-    "IndirectRepoTerminationSignaller",
     "JobRepoI",
     "JobService",
     "JobShortFilter",
@@ -52,7 +47,6 @@ __all__ = [
     "TaskShortFilter",
     "TaskUpdateDTO",
     "TaskUpdateMainFieldsDTO",
-    "TerminationSignaller",
     "errors",
     "operations",
 ]

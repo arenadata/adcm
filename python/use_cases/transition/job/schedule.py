@@ -13,7 +13,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, NamedTuple, Protocol, TypeAlias, cast
+from typing import NamedTuple, TypeAlias, cast
 
 from cm.converters import (
     orm_object_to_action_target_descriptor,
@@ -94,11 +94,6 @@ class JobConfig(NamedTuple):
     specification: core.config.spec.FullSpec
 
 
-class TaskStarter(Protocol):
-    def __call__(self, task_orm: TaskLog, /) -> Any:
-        ...
-
-
 class _ActionLaunchObjects:
     """
     Utility container to process differences in action's target/owner in one place
@@ -154,7 +149,6 @@ class _ScheduleTask(ABC):
     config_service: core.config.ConfigService
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
-    start_task: TaskStarter
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
     retrieve_sir: RetrieveStartImpossibleReason
@@ -326,8 +320,6 @@ class _ScheduleTask(ABC):
             self.rbac_scenarios.re_apply_policy_for_jobs(task=orm_task)
 
         self.status_scenarios.send_task_status_update_event(task_id=task_id, status=JobStatus.CREATED.value)
-
-        self.start_task(orm_task)
 
         return orm_task
 

@@ -18,8 +18,10 @@ from core.cluster import ClusterService
 from core.types import MaintenanceModeOfObjects, MaintenanceModeState, MMReason, ObjectMM, TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
-from tests.dependencies import TaskRunnerOverride
+from tests.dependencies import TaskRunnerOverride, make_overridden_container
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched, expect_task_launched
+import dishka
 
 
 class MMUtilsMixin:
@@ -47,10 +49,6 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
     def setUpTestData(cls) -> None:
         cls._initialize_roles_and_adcm()
 
-        cls.executor_with_failed_first_job_overrides = (
-            TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),
-        )
-
         bundle_mm_plugins_mm_actions = cls.uc.upload_bundle(
             src=cls.test_bundles_dir / "maintenance_mode" / "mm_plugins_mm_actions"
         )
@@ -62,32 +60,35 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
         cls.host = cls.uc.add_host(provider=provider, fqdn="host")
 
-    def expect_task_launched_with_name(self, name: str) -> TaskID:
-        task_id = self.task_runner.expect_task_launched().id
-        actual_name = TaskLog.objects.values_list("name", flat=True).get()
+    def make_container_with_failed_first_job(self) -> dishka.Container:
+        # can't be prepared in `setUpTestData`: django deep copies class attributes, container isn't copyable
+        return make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)))
+
+    def assert_task_name_is(self, task_id: TaskID, name: str) -> None:
+        actual_name = TaskLog.objects.values_list("name", flat=True).get(id=task_id)
         self.assertEqual(actual_name, name)
-        return task_id
 
     def test_no_task_run_without_hc_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response = self.do_change_mm_request(obj=self.service)
+        with assert_no_task_launched():
+            response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.ON)
-        self.task_runner.expect_task_not_launched()
 
     def test_task_run_if_hc_exists_service(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response = self.do_change_mm_request(obj=self.service)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
+        self.assert_task_name_is(launched.task_id(), "adcm_turn_on_maintenance_mode")
 
     def test_start_impossible_reason_does_not_affects_mm_actions(self):
         mm_action_name = "adcm_turn_on_maintenance_mode"
@@ -116,58 +117,63 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
     def test_no_task_run_without_hc_component(self):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response = self.do_change_mm_request(obj=self.component)
+        with assert_no_task_launched():
+            response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.ON)
-        self.task_runner.expect_task_not_launched()
 
     def test_task_run_if_hc_exists_component(self):
         self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response = self.do_change_mm_request(obj=self.component)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
+        self.assert_task_name_is(launched.task_id(), "adcm_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_without_hc(self):
         self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
 
-        response = self.do_change_mm_request(obj=self.host)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
+        self.assert_task_name_is(launched.task_id(), "adcm_host_turn_on_maintenance_mode")
 
     def test_task_run_if_obj_is_host_hc_exists(self):
         self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
 
-        response = self.do_change_mm_request(obj=self.host)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
+        self.assert_task_name_is(launched.task_id(), "adcm_host_turn_on_maintenance_mode")
 
     def test_mm_not_changed_on_fail_service(self):
         self.uc.add_host_to_cluster(cluster=self.cluster, host=self.host)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.service.maintenance_mode
 
-        response = self.do_change_mm_request(obj=self.service)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.service)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, MaintenanceMode.CHANGING)
-        task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
+        task_id = launched.task_id()
+        self.assert_task_name_is(task_id, "adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
+        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
 
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
@@ -177,14 +183,16 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.component.maintenance_mode
 
-        response = self.do_change_mm_request(obj=self.component)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.component)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, MaintenanceMode.CHANGING)
-        task_id = self.expect_task_launched_with_name("adcm_turn_on_maintenance_mode")
+        task_id = launched.task_id()
+        self.assert_task_name_is(task_id, "adcm_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
+        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
 
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
@@ -194,14 +202,16 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(self.host, self.component)])
         initial_object_mm = self.host.maintenance_mode
 
-        response = self.do_change_mm_request(obj=self.host)
+        with expect_task_launched() as launched:
+            response = self.do_change_mm_request(obj=self.host)
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        task_id = self.expect_task_launched_with_name("adcm_host_turn_on_maintenance_mode")
+        task_id = launched.task_id()
+        self.assert_task_name_is(task_id, "adcm_host_turn_on_maintenance_mode")
 
-        self.task_runner.run_task(task_id=task_id, overrides=self.executor_with_failed_first_job_overrides)
+        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)
@@ -227,12 +237,13 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         self.assertEqual(sir, expected_sir)
 
         # turn MM off via action
-        response = endpoint.post(data={"maintenanceMode": "off"})
+        with expect_task_launched() as launched:
+            response = endpoint.post(data={"maintenanceMode": "off"})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, MaintenanceMode.CHANGING)
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched.task_id()
 
         # ensure correct task was launched
         task = TaskLog.objects.get(pk=task_id)

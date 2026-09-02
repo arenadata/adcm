@@ -17,7 +17,6 @@ Keep here providers that aren't Django-dependant, so they can be used during sta
 from typing import Annotated, TypeVar
 import os
 
-from adcm.feature_flags import use_new_job_scheduler
 from core import secrets
 from core.ext_utils.pydantic import represent_missing_and_others_errors_without_description
 from core.files.directories import ADCMBundleDir, BundlesDir
@@ -37,7 +36,7 @@ import pydantic
 
 from application.constants import SECRETS_FILENAME
 from application.environment import directories_from_env
-from application.types import ADCMMaintenanceMode, SecretsSource, TaskRunnerMode
+from application.types import ADCMMaintenanceMode, SecretsSource
 
 _EnvSettingsT = TypeVar("_EnvSettingsT", bound=BaseSettings)
 
@@ -123,13 +122,6 @@ class EnvironmentProvider(Provider):
             case _:
                 message = f"Unexpected secrets backend: {env_var_name}={secret_backend_env_value}"
                 raise secrets.SecretBaseError(message)
-
-    @provide
-    def task_runner_mode(self) -> TaskRunnerMode:
-        if use_new_job_scheduler():
-            return TaskRunnerMode.SCHEDULLER
-
-        return TaskRunnerMode.INSTANT
 
     @provide
     def vault_settings(self) -> vault.ClientSettings:

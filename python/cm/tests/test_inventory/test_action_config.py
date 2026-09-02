@@ -160,13 +160,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     ),
                 )
             with self.container() as container:
-                container.get(ScheduleTask).do(
+                launched_task = container.get(ScheduleTask).do(
                     action_orm=action,
                     target=object_,
                     payload=RunActionDTO(configuration=configuration),
                 )
 
-            task_id = self.task_runner.expect_task_launched().id
+            task_id = launched_task.pk
 
             task = JobRepo().get_task(id=task_id)
             job, *_ = JobRepo().get_task_jobs(task.id)
@@ -213,13 +213,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     ),
                 )
             with self.container() as container:
-                container.get(ScheduleTask).do(
+                launched_task = container.get(ScheduleTask).do(
                     action_orm=action,
                     target=self.host_1,
                     payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
                 )
 
-            task_id = self.task_runner.expect_task_launched().id
+            task_id = launched_task.pk
 
             task = JobRepo().get_task(id=task_id)
             job, *_ = JobRepo().get_task_jobs(task.id)
@@ -253,13 +253,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
 
         task = TaskLog.objects.get(id=task_id)
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -283,13 +283,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -318,13 +318,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["reqsec"]["key"])

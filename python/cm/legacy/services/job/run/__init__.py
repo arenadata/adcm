@@ -12,15 +12,13 @@
 
 from cm.legacy.services.job.run._config import create_related_configs, get_new_related_configs, update_related_configs
 from cm.legacy.services.job.run._target_factories import ExecutionTargetFactory
-from cm.legacy.services.job.run._task import distribute_concerns, restart_task, run_task_in_local_subprocess, start_task
+from cm.legacy.services.job.run._task import distribute_concerns, run_task_in_local_subprocess
 
 __all__ = [
     "ExecutionTargetFactory",
     "create_related_configs",
     "distribute_concerns",
     "get_new_related_configs",
-    "restart_task",
     "run_task_in_local_subprocess",
-    "start_task",
     "update_related_configs",
 ]

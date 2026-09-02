@@ -15,6 +15,7 @@ from audit.alt.api import audit_create, audit_delete
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host_provider
 from cm.models import ObjectType, Prototype, Provider
+from core.action.job import JobService
 from dishka import FromDishka
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -158,9 +159,16 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         return Response(data=ProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
     @audit_delete(name="Provider deleted", object_=provider_from_lookup, removed_on_success=True)
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(
+        self,
+        request,  # noqa: ARG002
+        *args,  # noqa: ARG002
+        job_service: FromDishka[JobService],
+        **kwargs,  # noqa: ARG002
+    ):
         host_provider = self.get_object()
-        delete_host_provider(host_provider)
+        delete_host_provider(host_provider, job_service=job_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
 

@@ -12,19 +12,16 @@
 
 from dataclasses import dataclass
 
-from core.action._types import JobSpec
+from core.action._types import ExecutionStatus, JobSpec
 from core.action.job._repo import JobRepoI, LogCreateDTO, TaskCreateDTO, TaskUpdateMainFieldsDTO
-from core.action.job._termination import TerminationSignaller
 from core.action.job.errors import JobTerminationError, JobValidationError, TaskCreateError
 from core.action.job.operations import is_terminatable_status
-from core.result import Fail
 from core.types import ActionID, JobID, TaskID
 
 
 @dataclass(slots=True)
 class JobService:
     repo: JobRepoI
-    signaller: TerminationSignaller
 
     def retrieve_scripts(self, action_id: ActionID) -> tuple[JobSpec, ...]:
         return self.repo.find_scripts_of_action(action_id=action_id)
@@ -61,9 +58,9 @@ class JobService:
             message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"
             raise JobValidationError(message)
 
-        result = self.signaller.signal_termination_for_task(task)
-        if isinstance(result, Fail):
-            message = f"Task #{task_id} termination failed: {result.value}"
+        changed = self.repo.change_task_status(id=task_id, previous=task.status, new=_revoke_status_for(task.status))
+        if not changed:
+            message = f"Task #{task_id} termination failed due to status change, try again later"
             raise JobTerminationError(message)
 
     def terminate_job(self, job_id: JobID) -> None:
@@ -77,7 +74,16 @@ class JobService:
             message = f"Job #{job_id} termination is not allowed due to status: {job.status.value}"
             raise JobValidationError(message)
 
-        result = self.signaller.signal_termination_for_job(job)
-        if isinstance(result, Fail):
-            message = f"Job #{job_id} termination failed: {result.value}"
+        changed = self.repo.change_job_status(id=job_id, previous=job.status, new=_revoke_status_for(job.status))
+        if not changed:
+            message = f"Job #{job_id} termination failed due to status change, try again later"
             raise JobTerminationError(message)
+
+
+def _revoke_status_for(current: ExecutionStatus) -> ExecutionStatus:
+    """
+    Nothing was started yet for a task/job in `CREATED`, so it's revoked at once,
+    otherwise runner has to be given a chance to stop gracefully
+    """
+
+    return ExecutionStatus.REVOKED if current == ExecutionStatus.CREATED else ExecutionStatus.REVOKING

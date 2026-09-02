@@ -27,8 +27,9 @@ import dishka
 import django.test
 
 from tests._base import WithIndependentDirectories
-from tests.dependencies import get_default_overridden_providers, get_task_runner_manager
+from tests.dependencies import get_default_overridden_providers
 from tests.deprecated import BundleLogicMixin
+from tests.task_flow import TaskFlowMixin
 from tests.use_cases import UseCases
 
 APPLICATION_JSON = "application/json"
@@ -47,6 +48,7 @@ class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, WithIndependentDirec
         cls.base_dir = Path(__file__).parent.parent.parent
 
         container = dishka.make_container(*get_default_overridden_providers())
+        cls.container = container
 
         init_roles()
         init(container=container)
@@ -64,13 +66,7 @@ class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, WithIndependentDirec
         self._clean_directories()
 
 
-class BaseTestCase(django.test.TestCase, WithPreparedFSAndInitADCM, BundleLogicMixin):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.task_runner = get_task_runner_manager()
-
+class BaseTestCase(TaskFlowMixin, django.test.TestCase, WithPreparedFSAndInitADCM, BundleLogicMixin):
     def setUp(self) -> None:
         super().setUp()
 

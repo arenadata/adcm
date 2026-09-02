@@ -74,7 +74,7 @@ class LocalTaskQueuer(TaskQueuer):
     repo = repo
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        pid = run_task_in_local_subprocess(task=self.repo.retrieve_task_orm(task_id=task_id), command="start")
+        pid = run_task_in_local_subprocess(task=self.repo.retrieve_task_orm(task_id=task_id))
 
         return WorkerInfo(environment=self.env, worker_id=pid)
 

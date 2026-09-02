@@ -205,6 +205,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
+
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
             concern.delete()
@@ -251,6 +257,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         def run_action(_object, object_action) -> list[tuple[int, int]]:
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
 
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
@@ -441,6 +453,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
+
         expected_concern_reason = {
             "message": ConcernMessage.LOCKED_BY_JOB.template.message,
             "placeholder": {
@@ -590,6 +608,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
                 action = Action.objects.get(name="action_1_comp_1", prototype=component.prototype)
                 response = self.client.v2[component, "actions", action, "run"].post()
                 self.assertEqual(response.status_code, HTTP_200_OK)
+
+                # concerns are distributed when task is scheduled, not when action is launched,
+                # so object stays free of them until scheduler picks the task up
+                self.assertEqual(len(component.concerns.all()), 1)
+
+                self.task_runner().schedule_task(response.json()["id"])
 
                 response = self.client.v2[concerns.last()].delete()
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)

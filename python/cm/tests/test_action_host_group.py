@@ -93,9 +93,11 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
         action = Action.objects.get(prototype=self.cluster.prototype, name="dummy")
 
         with self.container() as container:
-            container.get(ScheduleTask).do(action_orm=action, target=self.action_group, payload=RunActionDTO())
+            launched_task = container.get(ScheduleTask).do(
+                action_orm=action, target=self.action_group, payload=RunActionDTO()
+            )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.task_object, self.action_group)
         self.assertEqual(task.owner_id, self.cluster.id)
@@ -136,9 +138,11 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with self.container() as container:
-            container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
+            launched_task = container.get(ScheduleTask).do(
+                action_orm=action, target=action_group, payload=RunActionDTO()
+            )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
         result_env = get_env_for_jinja_scripts(task=task)
 
@@ -162,9 +166,11 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
         action_group = ActionHostGroup.objects.get(id=group_id)
 
         with self.container() as container:
-            container.get(ScheduleTask).do(action_orm=action, target=action_group, payload=RunActionDTO())
+            launched_task = container.get(ScheduleTask).do(
+                action_orm=action, target=action_group, payload=RunActionDTO()
+            )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = JobRepo().get_task(task_id)
         job, *_ = JobRepo().get_task_jobs(task.id)
 

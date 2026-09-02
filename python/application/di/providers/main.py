@@ -32,16 +32,12 @@ from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
 from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
-from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
 from core.action.job import (
-    DirectOSTerminationSignaller,
     ExecutorTerminator,
-    IndirectRepoTerminationSignaller,
     TaskRunnerTerminator,
-    TerminationSignaller,
 )
 from core.concern.repo import ConcernRepoI
 from core.dynamic_bundle.render import BundleRenderer
@@ -72,7 +68,6 @@ from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
     ScheduleTask,
-    TaskStarter,
 )
 from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
@@ -80,8 +75,6 @@ from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess,
 import core
 import yaml
 import core.bundle
-
-from application.types import TaskRunnerMode
 
 
 class PathResolverProvider(Provider):
@@ -121,32 +114,6 @@ class JobProvider(Provider):
 
     task_runner_terminator = provide(TaskRunnerTerminator)
     executor_terminator = provide(ExecutorTerminator)
-
-    @provide
-    def termination_signaller(
-        self,
-        task_runner_mode: TaskRunnerMode,
-        repo: core.action.job.JobRepoI,
-        executor_terminator: ExecutorTerminator,
-        task_runner_terminator: TaskRunnerTerminator,
-    ) -> TerminationSignaller:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return IndirectRepoTerminationSignaller(repo)
-
-            case TaskRunnerMode.INSTANT:
-                return DirectOSTerminationSignaller(
-                    task_runner_terminator=task_runner_terminator, executor_terminator=executor_terminator
-                )
-
-    @provide
-    def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return lambda _: None
-
-            case TaskRunnerMode.INSTANT:
-                return start_task
 
 
 class WizardProvider(Provider):

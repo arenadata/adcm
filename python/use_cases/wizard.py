@@ -62,7 +62,6 @@ import core
 import core.bundle
 
 from use_cases.dto import InputConfigConverter
-from use_cases.transition.job.schedule import TaskStarter
 
 
 @dataclass(slots=True, frozen=True)
@@ -159,7 +158,6 @@ class PerformWizardProcessOperation:
 
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     fill_wizard_step_spec: FillWizardStepSpec[ActionArgs, TaskArgs]
-    start_task: TaskStarter
     rbac_scenarios: RBACScenarios
     available_contract_versions: core.bundle.AvailableContractVersions
 
@@ -382,13 +380,10 @@ class PerformWizardProcessOperation:
 
                 self.wizard_service.revoke_next_steps(process_id=process.process_id, step_id=payload.params.step_id)
 
-                # todo write pid to task (executor)
-                # todo actually should use starter to avoid hardcoding
                 task_orm = TaskLog.objects.get(id=task_id)
 
                 self.rbac_scenarios.re_apply_policy_for_jobs(task=task_orm)
 
-                self.start_task(task_orm)
                 return None
 
             case core.action.wizard.StepType.MAPPING:
