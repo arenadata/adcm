@@ -88,6 +88,8 @@ components:
         displayName:
           type: string
           maxLength: 1000
+        description:
+          type: string
         startImpossibleReason:
           type: string
           nullable: true
@@ -123,6 +125,8 @@ components:
         displayName:
           type: string
           maxLength: 1000
+        description:
+          type: string
         startImpossibleReason:
           type: string
           nullable: true
@@ -150,6 +154,7 @@ components:
       - id
       - name
       - displayName
+      - description
       - startImpossibleReason
       - isAllowToTerminate
       - hostComponentMapRules
