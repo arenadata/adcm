@@ -15,8 +15,6 @@ from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
-import time
-import signal
 import os.path
 
 from core.action import ScriptType
@@ -1323,41 +1321,6 @@ class TaskLog(ADCMModel):
 
     __error_code__ = "TASK_NOT_FOUND"
 
-    def cancel(self, obj_deletion=False):
-        """
-        Cancel running task process
-        task status will be updated in separate process of task runner
-        """
-        if self.pid == 0:
-            raise AdcmEx(
-                "NOT_ALLOWED_TERMINATION",
-                "Termination is too early, try to execute later",
-            )
-        errors = {
-            JobStatus.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
-            JobStatus.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
-            JobStatus.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
-        }
-        action = self.action
-        if action and not action.allow_to_terminate and not obj_deletion:
-            raise AdcmEx(
-                "NOT_ALLOWED_TERMINATION",
-                f"not allowed termination task #{self.pk} for action #{action.pk}",
-            )
-        if self.status in [JobStatus.FAILED, JobStatus.ABORTED, JobStatus.SUCCESS]:
-            raise AdcmEx(*errors.get(self.status))
-        i = 0
-        while not JobLog.objects.filter(task=self, status=JobStatus.RUNNING) and i < 10:
-            time.sleep(0.5)
-            i += 1
-        if i == 10:
-            raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
-
-        try:
-            os.kill(self.pid, signal.SIGTERM)
-        except OSError as e:
-            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
-
     @property
     def duration(self) -> float | None:
         if self.finish_date is None or self.start_date is None:
@@ -1386,20 +1349,6 @@ class JobLog(AbstractSubAction):
             return self.task.action
         except (ObjectDoesNotExist, AttributeError):
             return None
-
-    def cancel(self):
-        if not self.allow_to_terminate:
-            raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
-
-        if self.status != JobStatus.RUNNING or self.pid == 0:
-            raise AdcmEx(
-                "JOB_TERMINATION_ERROR",
-                f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}",
-            )
-        try:
-            os.kill(self.pid, signal.SIGTERM)
-        except OSError as e:
-            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
     @property
     def duration(self) -> float | None:

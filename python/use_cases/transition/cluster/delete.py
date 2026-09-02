@@ -48,6 +48,7 @@ from django.db.transaction import atomic, on_commit
 from rbac.scenarios import RBACScenarios
 import core
 import core.bundle
+import core.action.job
 
 from use_cases.dto import RunActionDTO
 from use_cases.transition.job.schedule import ScheduleTask
@@ -117,6 +118,7 @@ class DeleteServiceFromAPI:
 
     delete_service: DeleteService
     schedule_task: ScheduleTask
+    job_service: core.action.job.JobService
 
     @atomic
     def do(self, service: Service) -> None:
@@ -148,7 +150,7 @@ class DeleteServiceFromAPI:
         ):
             raise error
 
-        cancel_locking_tasks(obj=service, obj_deletion=True)
+        cancel_locking_tasks(obj=service, job_service=self.job_service, obj_deletion=True)
 
         if delete_action and (related_mapping_exists or service.state != "created"):
             self.schedule_task.do(action_orm=delete_action, target=service, payload=RunActionDTO())

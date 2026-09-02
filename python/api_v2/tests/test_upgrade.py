@@ -32,6 +32,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched
 from unittest_parametrize import parametrize
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
@@ -207,10 +208,10 @@ class TestUpgrade(ADCMDjangoAPISuite):
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
 
-        launched_task = self.task_runner.expect_task_launched(task_id=data["id"])
+        launched_task = data["id"]
 
-        self.task_runner.run_task(launched_task.id)
-        self.assert_task_status_is(task_id=launched_task.id, status="success")
+        self.task_runner().launch_task(launched_task)
+        self.assert_task_status_is(task_id=launched_task, status="success")
         self.cluster_1.refresh_from_db()
         self.assertEqual(
             self.cluster_1.prototype.version, self.upgrade_cluster_via_action_simple.action.prototype.version
@@ -263,10 +264,10 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
         self.assertTrue(set(data.keys()).issuperset({"id", "childJobs", "startTime"}))
-        launched_task = self.task_runner.expect_task_launched(data["id"])
+        launched_task = data["id"]
 
-        self.task_runner.run_task(launched_task.id)
-        self.assert_task_status_is(launched_task.id, "success")
+        self.task_runner().launch_task(launched_task)
+        self.assert_task_status_is(launched_task, "success")
         self.provider.refresh_from_db()
         self.assertEqual(self.provider.prototype.version, self.upgrade_host_via_action_simple.action.prototype.version)
 
@@ -503,8 +504,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
-            task_id = self.task_runner.expect_task_launched().id
-            self.task_runner.run_task(task_id)
+            task_id = response.json()["id"]
+            self.task_runner().launch_task(task_id)
             self.assert_task_status_is(task_id, "success")
 
             response = (self.client.v2 / "jobs").get()
@@ -518,30 +519,30 @@ class TestUpgrade(ADCMDjangoAPISuite):
     @parametrize("config_type_strict", ["incorrect value", ""], ids=["incorrect_value", "empty_value"])
     def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, config_type_strict):
         checked_configuration = "variant_config_type_strict"
-        response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
-            data={
-                "configuration": {
-                    "config": {
-                        "simple": "val",
-                        "file": "content",
-                        "grouped": {
-                            "simple": 5,
-                            "second": 4.3,
-                            "structure": {
-                                "nested": {"attr": "foo", "op": "bar", "tech": "false"},
-                                "quantity": 122,
+        with assert_no_task_launched():
+            response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
+                data={
+                    "configuration": {
+                        "config": {
+                            "simple": "val",
+                            "file": "content",
+                            "grouped": {
+                                "simple": 5,
+                                "second": 4.3,
+                                "structure": {
+                                    "nested": {"attr": "foo", "op": "bar", "tech": "false"},
+                                    "quantity": 122,
+                                },
                             },
+                            "after": ["x", "y"],
+                            checked_configuration: config_type_strict,
                         },
-                        "after": ["x", "y"],
-                        checked_configuration: config_type_strict,
+                        "adcmMeta": {},
                     },
-                    "adcmMeta": {},
                 },
-            },
-        )
+            )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.task_runner.expect_task_not_launched()
         data = response.json()
         self.assertEqual(data["code"], "UPGRADE_OPERATION_ERROR")
         self.assertIn(f"/{checked_configuration}", data["desc"])
@@ -585,10 +586,10 @@ class TestUpgrade(ADCMDjangoAPISuite):
         response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
         # run upgrade action
-        launched_task = self.task_runner.expect_task_launched()
-        self.task_runner.run_task(launched_task.id)
+        launched_task = response.json()["id"]
+        self.task_runner().launch_task(launched_task)
 
-        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task.id)
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task)
         self.assertEqual(task_status, "success")
         # config migrated
         config = ConfigLog.objects.get(id=service.config.current)
@@ -618,9 +619,9 @@ class TestUpgrade(ADCMDjangoAPISuite):
         response = self.client.v2[self.cluster_1, "actions", revert_action, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        launched_task = self.task_runner.expect_task_launched(task_id=response.json()["id"])
-        self.task_runner.run_task(launched_task.id)
-        self.assert_task_status_is(task_id=launched_task.id, status="success")
+        launched_task = response.json()["id"]
+        self.task_runner().launch_task(launched_task)
+        self.assert_task_status_is(task_id=launched_task, status="success")
 
         # check revert is success
         self.cluster_1.refresh_from_db(fields=["prototype"])

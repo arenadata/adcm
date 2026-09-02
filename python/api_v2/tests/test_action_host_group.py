@@ -1007,8 +1007,14 @@ class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
+                # concerns are distributed when task is scheduled, not when action is launched,
+                # so nothing is locked until scheduler picks the task up
+                self.assertFalse(ConcernItem.objects.exists())
+
+                task_id = response.json()["id"]
+                self.task_runner().schedule_task(task_id)
+
                 with self.subTest(f"[{message_name}] Run SUCCESS"):
-                    task_id = self.task_runner.expect_task_launched().id
                     task = TaskLog.objects.get(id=task_id)
                     self.assertEqual(task.task_object, action_run_target)
 
@@ -1070,7 +1076,7 @@ class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
                     self.assertEqual(response.status_code, HTTP_201_CREATED)
 
                 with self.subTest(f"[{message_name}] Finish Task Audit SUCCESS"):
-                    self.task_runner.run_launched_task()
+                    self.task_runner().launch_task(task_id)
 
                     self.check_last_audit_record(
                         operation_name=f"{action.display_name} action completed",
@@ -1093,7 +1099,7 @@ class TestActionsOnActionHostGroup(ADCMDjangoAPISuite):
             data={"configuration": {"config": {"val": 4}, "adcmMeta": {}}}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = response.json()["id"]
 
         response = (self.client.v2 / "tasks" / task_id / "logs" / "download").get()
 

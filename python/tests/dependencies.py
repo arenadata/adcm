@@ -12,10 +12,9 @@
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from functools import cache, partial
+from functools import cache
 from pathlib import Path
 from tempfile import gettempdir
-from unittest.mock import patch
 from uuid import uuid4
 import os
 
@@ -41,34 +40,20 @@ from core.legacy.job.runners import (
     ExecutionTargetFactoryI,
     ExternalSettings,
     IntegrationsSettings,
-    JobFilterPredicate,
     JobProcessor,
     RunnerEnvironment,
-    TaskRunner,
-    always_true,
 )
 from core.result import Success
 from core.settings import Directories
 from core.status import FullStatusMap
-from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
+from core.types import ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID
 from dishka.provider import provide
 from django.db.models import Model
 from rbac.scenarios import RBACScenarios
 from requests import Response
-from use_cases.transition.job.schedule import TaskStarter
 import dishka
 
 _PYTHON_DIR = Path(__file__).parent.parent
-
-
-@dataclass(slots=True)
-class FakePopen:
-    pid: int
-
-
-@dataclass(slots=True)
-class LaunchedTaskInTest:
-    id: TaskID
 
 
 @dataclass(slots=True)
@@ -76,55 +61,6 @@ class StatusEventCall:
     obj_id: int
     obj_type: str
     changes: dict
-
-
-@dataclass(slots=True)
-class TaskRunnerTestManager:
-    _latest_launched: LaunchedTaskInTest | None = field(default=None)
-
-    def start(self, task_orm: TaskLog) -> PID:
-        if self._latest_launched:
-            raise RuntimeError("Not it is not possible to run two tasks without 'reset'")
-
-        # for now patch feels easier that copying actual start
-
-        from cm.legacy.services.job.run._task import start_task
-
-        with patch("cm.legacy.services.job.run._task.subprocess.Popen", return_value=FakePopen(pid=-1)):
-            result = start_task(task_orm)
-
-        self._latest_launched = LaunchedTaskInTest(id=task_orm.pk)
-
-        return result
-
-    def reset(self) -> None:
-        self._latest_launched = None
-
-    def expect_task_launched(self, task_id: int | None = None) -> LaunchedTaskInTest:
-        assert self._latest_launched  # noqa: S101
-        launched = self._latest_launched
-        if task_id is not None:
-            assert launched.id == task_id  # noqa: S101
-        return launched
-
-    def expect_task_not_launched(self) -> None:
-        assert self._latest_launched is None  # noqa: S101
-
-    def run_launched_task(self, task_id: TaskID | None = None, overrides: Iterable[dishka.Provider] = ()) -> None:
-        task_id_ = self.expect_task_launched(task_id).id
-        self.run_task(task_id=task_id_, overrides=overrides)
-
-    def run_task(self, task_id: TaskID, overrides: Iterable[dishka.Provider] = ()) -> None:
-        container = dishka.make_container(*get_default_overridden_providers(), *overrides)
-
-        with container(context={JobFilterPredicate: always_true}):
-            runner = container.get(TaskRunner)
-            runner.run(task_id=task_id)
-
-
-@cache
-def get_task_runner_manager() -> TaskRunnerTestManager:
-    return TaskRunnerTestManager()
 
 
 @dataclass(slots=True)
@@ -200,19 +136,6 @@ def prepare_process_bound_directories() -> Directories:
         logs=root / "log",
         temp=root / "tmp",
     )
-
-
-def _reset_runner_manager_and_start(task: TaskLog, runner_manager: TaskRunnerTestManager):
-    runner_manager.reset()
-    return runner_manager.start(task)
-
-
-class TaskStarterOverride(dishka.Provider):
-    @dishka.provide(scope=dishka.Scope.APP)
-    def task_starter(self) -> TaskStarter:
-        task_runner_manager = get_task_runner_manager()
-        # reset is called for "natural" task reset, so duplicated start call will break only in unnatural cases
-        return partial(_reset_runner_manager_and_start, runner_manager=task_runner_manager)
 
 
 class DummySecretBackend(secrets.SecretsBackend):
@@ -407,13 +330,23 @@ class MockWithEnvProvider(dishka.Provider):
     job_factory = provide(ETFMockWithEnvPreparation, provides=ExecutionTargetFactoryI)
 
 
+def make_overridden_container(*overrides: dishka.Provider) -> dishka.Container:
+    """
+    Builds a container with default test providers and given overrides on top.
+
+    Required because overrides can't be applied to an already built container,
+    so suite's own one can't be reused for a task run with changed dependencies.
+    """
+
+    return dishka.make_container(*get_default_overridden_providers(), *overrides)
+
+
 def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
     return (
         *get_main_providers(),
         EnvironmentOverride(),
         StatusScenariosOverride(),
         RBACScenariosOverride(),
-        TaskStarterOverride(),
         TaskRunnerOverride(),
     )
 

@@ -208,24 +208,24 @@ class TaskTestMixin:
         )
 
     def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
+        response = self.client.v2[object_, "actions", action, "run"].post(
             data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id=task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id=task_id)
 
         task = TaskLog.objects.get(id=task_id)
 
         return task, task.joblog_set.last()
 
     def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
+        response = self.client.v2[object_, "actions", action, "run"].post(
             data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
 
         task = TaskLog.objects.get(id=task_id)
         job = task.joblog_set.last()

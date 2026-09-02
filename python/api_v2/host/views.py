@@ -28,6 +28,7 @@ from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from cm.transition.status import StatusScenarios
+from core.action.job import JobService
 from core.cluster import ClusterService
 from core.concern.repo import ConcernRepoI
 from core.types import ADCMCoreType, Descriptor, MaintenanceModeState
@@ -253,10 +254,17 @@ class HostViewSet(
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
     @inject
-    def destroy(self, request, *args, cluster_service: FromDishka[ClusterService], **kwargs):  # noqa: ARG002
+    def destroy(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        cluster_service: FromDishka[ClusterService],
+        job_service: FromDishka[JobService],
+        **kwargs,  # noqa: ARG002
+    ):
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
-        delete_host(host=host, cluster_service=cluster_service)
+        delete_host(host=host, cluster_service=cluster_service, job_service=job_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @(

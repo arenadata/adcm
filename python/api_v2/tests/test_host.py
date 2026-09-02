@@ -154,6 +154,12 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.host.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
+
         response = self.client.v2[self.host].patch(
             data={"name": "new-name"},
         )
@@ -175,6 +181,12 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.host.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
 
         response = self.client.v2[self.host].patch(data={"name": "new-name"})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -904,14 +916,14 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.status, "created")
         self.assertEqual(task.task_object, self.host)
         self.assertEqual(task.owner_id, self.host.pk)
         self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         task.refresh_from_db()
         self.assertEqual(task.status, "success")
 
@@ -933,14 +945,14 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.status, "created")
         self.assertEqual(task.task_object, self.host)
         self.assertEqual(task.owner_id, self.host.pk)
         self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         task.refresh_from_db()
         self.assertEqual(task.status, "success")
 

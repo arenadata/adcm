@@ -33,7 +33,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
-from tests.utils import assert_dict_contains_subset
+from tests.utils import assert_dict_contains_subset, expect_task_launched
 
 from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.helpers import create_bundle_and_prototype_rows
@@ -270,22 +270,23 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         action = Action.objects.get(name="wizard_operation_as_first", prototype=self.cluster_1.prototype)
         process = self.start_process(self.cluster_1, action)
         expected_display_name = f"{action.display_name} (find me In here)"
-        self.submit_step(
-            owner=self.cluster_1,
-            action=action,
-            process_id=process.pk,
-            data={
-                "method": ProcessOperationType.SUBMIT,
-                "params": {
-                    "processSyncKey": process.sync_key,
-                    "stepId": process.current_step.pk,
+        with expect_task_launched() as launched:
+            self.submit_step(
+                owner=self.cluster_1,
+                action=action,
+                process_id=process.pk,
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "processSyncKey": process.sync_key,
+                        "stepId": process.current_step.pk,
+                    },
                 },
-            },
-        )
+            )
 
-        launched_task = self.task_runner.expect_task_launched()
+        launched_task = launched.task_id()
 
-        response = (self.client.v2 / "tasks" / launched_task.id).get()
+        response = (self.client.v2 / "tasks" / launched_task).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["displayName"], expected_display_name)
 
@@ -294,7 +295,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         self.assertEqual(response.status_code, HTTP_200_OK)
         response = response.json()["results"]
 
-        task_with_step_response = [task for task in response if task["id"] == launched_task.id][0]
+        task_with_step_response = [task for task in response if task["id"] == launched_task][0]
         self.assertEqual(task_with_step_response["displayName"], expected_display_name)
 
     def test_adcm_process_action_errors(self):
@@ -587,18 +588,19 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-                self.submit_step_r(
-                    target=host,
-                    action=action,
-                    process_id=process.pk,
-                    data={
-                        "method": ProcessOperationType.SUBMIT,
-                        "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
-                    },
-                )
+                with expect_task_launched() as launched:
+                    self.submit_step_r(
+                        target=host,
+                        action=action,
+                        process_id=process.pk,
+                        data={
+                            "method": ProcessOperationType.SUBMIT,
+                            "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
+                        },
+                    )
 
-                launched_task = self.task_runner.expect_task_launched()
-                self.task_runner.run_task(launched_task.id)
+                launched_task = launched.task_id()
+                self.task_runner().launch_task(launched_task)
 
                 step_3_operation.refresh_from_db()
                 self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
@@ -636,7 +638,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
-                launched_task = self.task_runner.expect_task_launched(response.json()["id"])
+                launched_task = response.json()["id"]
 
                 # remove job lock
                 self.delete_concern_by_name(object_=host, name="job_lock")

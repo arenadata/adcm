@@ -82,9 +82,9 @@ from tests.dependencies import (
     get_container_manager,
     get_default_overridden_providers,
     get_status_scenarios_manager,
-    get_task_runner_manager,
 )
 from tests.deprecated import AuditMixin, BusinessLogicMixin, TaskTestMixin
+from tests.task_flow import TaskFlowMixin
 from tests.use_cases import UseCases
 from tests.utils import calculate_time_with_delta, extract_from_nested_structure
 
@@ -103,7 +103,7 @@ SETUP_MINIMAL: Final = SuiteSetup(environment="minimal")
 SETUP_WITH_RBAC: Final = SuiteSetup(environment="with-rbac")
 
 
-class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
+class _ADCMTestCase(TaskFlowMixin, django.test.SimpleTestCase, WithIndependentDirectories):
     suite_setup: SuiteSetup = SETUP_MINIMAL
 
     base_dir = Path(__file__).parent.parent.parent
@@ -117,14 +117,12 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
         cls.container = get_container_manager().container
 
         cls.uc = UseCases(container=cls.container)
-        cls.task_runner = get_task_runner_manager()
 
         super().setUpClass()
 
     def setUp(self) -> None:
         super().setUp()
 
-        self.task_runner.reset()
         get_status_scenarios_manager().reset()
 
     @classmethod

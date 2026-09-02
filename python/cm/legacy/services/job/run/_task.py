@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from pathlib import Path
-from typing import Literal
 import logging
 import subprocess
 
@@ -24,27 +23,9 @@ from cm.legacy.services.concern.distribution import distribute_concern_on_relate
 from cm.legacy.services.concern.locks import create_task_flag_concern, create_task_lock_concern
 from cm.legacy.status_api import notify_about_new_concern
 from cm.legacy.utils import get_env_with_venv_path
-from cm.models import ActionHostGroup, TaskLog
+from cm.models import TaskLog
 
 logger = logging.getLogger("adcm")
-
-
-def start_task(task: TaskLog) -> PID:
-    _distribute_concerns(task=task)
-    return run_task_in_local_subprocess(task=task, command="start")
-
-
-def restart_task(task: TaskLog) -> PID:
-    _distribute_concerns(task=task)
-    return run_task_in_local_subprocess(task=task, command="restart")
-
-
-def _distribute_concerns(task: TaskLog) -> None:
-    target = task.task_object
-    if isinstance(target, ActionHostGroup):
-        target = target.object
-
-    distribute_concerns(task=task, target=target)
 
 
 def distribute_concerns(task: TaskLog, target: TaskTargetCoreObject) -> None:
@@ -60,14 +41,13 @@ def distribute_concerns(task: TaskLog, target: TaskTargetCoreObject) -> None:
         task.save(update_fields=["lock_id"])
 
 
-def run_task_in_local_subprocess(task: TaskLog, command: Literal["start", "restart"]) -> PID:
+def run_task_in_local_subprocess(task: TaskLog) -> PID:
     err_file = open(  # noqa: SIM115
         Path(settings.LOG_DIR, "task_runner.err"), "a+", encoding="utf-8"
     )
 
     cmd = [
         str(settings.CODE_DIR / "task_runner.py"),
-        command,
         str(task.pk),
     ]
     logger.debug(f"Task #{task.id} run cmd: {' '.join(cmd)}")

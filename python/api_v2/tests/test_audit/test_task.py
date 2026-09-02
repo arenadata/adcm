@@ -29,9 +29,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from tests.dependencies import TaskRunnerOverride
+from tests.dependencies import TaskRunnerOverride, make_overridden_container
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched
 
 
 class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
@@ -67,8 +68,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
             user__username="admin",
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
 
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action completed",
@@ -92,8 +93,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
             user__username="admin",
         )
 
-        overrides = (TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),)
-        self.task_runner.run_launched_task(overrides=overrides)
+        container = make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)))
+        self.task_runner(container).launch_task(response.json()["id"])
 
         self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action completed",
@@ -104,12 +105,12 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         )
 
     def test_run_not_exists_action_fail(self):
-        response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
@@ -120,12 +121,12 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
 
     def test_run_action_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
