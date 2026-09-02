@@ -14,9 +14,7 @@ from collections.abc import Collection
 from functools import partial
 from operator import itemgetter
 from typing import Literal, TypeAlias
-from unittest.mock import patch
 import json
-import unittest
 
 from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
@@ -597,21 +595,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
             ["host-1", "host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8", "host-13", "host-14"],
         )
 
-    def test_retrieve_jinja_config_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_retrieve_jinja_config()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_retrieve_jinja_config_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_retrieve_jinja_config()
-
-        patched.assert_called()
-
-    def _test_retrieve_jinja_config(self):
+    def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -631,21 +615,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
-    def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_adcm_6013_jinja_config_with_min_max()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_adcm_6013_jinja_config_with_min_max()
-
-        patched.assert_called()
-
-    def _test_adcm_6013_jinja_config_with_min_max(self):
+    def test_adcm_6013_jinja_config_with_min_max(self):
         action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -674,21 +644,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
         expected_response["id"] = action.id
         self.assertDictEqual(response.json(), expected_response)
 
-    def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_adcm_4703_action_retrieve_returns_500()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_adcm_4703_action_retrieve_returns_500()
-
-        patched.assert_called()
-
-    def _test_adcm_4703_action_retrieve_returns_500(self) -> None:
+    def test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
                 response = self.client.v2[object_, "actions"].get()

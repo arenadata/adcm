@@ -3341,20 +3341,6 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
                         response.json()["desc"],
                     )
 
-    def test_jinja_config_old_processing(self) -> None:
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_jinja_config()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_jinja_config_new_processing(self) -> None:
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_jinja_config()
-
-        patched.assert_called()
-
     def test_adcm_6686_string_empty_default(self):
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_empty_string_default")
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -3365,7 +3351,7 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
         for param in {"string", "password", "text", "secrettext"}:
             self.assertIsNone(response["configuration"]["config"][param])
 
-    def _test_jinja_config(self) -> None:
+    def test_jinja_config(self) -> None:
         ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
 

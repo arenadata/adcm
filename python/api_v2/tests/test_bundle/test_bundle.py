@@ -15,7 +15,6 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Any
 import tarfile
-import unittest
 
 from cm.legacy.bundle import _get_file_hashes
 from cm.legacy.services.adcm import adcm_config
@@ -588,7 +587,6 @@ class TestBundle(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 2)
 
-    @unittest.skip("Unskip after ADCM-7491")
     def test_adcm_7398_upload_provider_bundle_with_templates_fail(self) -> None:
         bundle_file = prepare_bundle_file(
             source_dir=self.test_bundles_dir / "invalid_bundles" / "provider_groups_v1.0_community",
