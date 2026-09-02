@@ -17,6 +17,7 @@ from uuid import uuid4
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
+from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.models import (
     ADCM,
     Action,
@@ -29,6 +30,7 @@ from cm.models import (
     Process,
     ProcessStep,
 )
+from core.dynamic_bundle.types import ContextGathererI
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from tests.deprecated import BusinessLogicMixin
@@ -692,3 +694,91 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
             response.json()["desc"],
             f"Execution of step {action.display_name} is not allowed. The bundle for revert is unsupported",
         )
+
+    def test_env_for_action_process(self):
+        host = self.create_host(provider=self.provider, name="test-host", cluster=self.cluster_1)
+        self.create_mapping(cluster=self.cluster_1, entries=[(host, self.component_1)])
+
+        action = Action.objects.get(name="wizard_cluster_action", prototype=self.cluster_1.prototype)
+        process_id = self.start_process_r(target=self.cluster_1, action=action).json()["id"]
+        process = Process.objects.get(pk=process_id)
+
+        step_1_config = ProcessStep.objects.get(process_id=process_id, name="step_1_config")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": step_1_config.id,
+                    "configuration": {
+                        "config": {"float": 0.2, "step_variant_from_config": "entry1"},
+                        "adcmMeta": {},
+                    },
+                },
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        process.refresh_from_db(fields=["sync_key"])
+        step_2_mapping = ProcessStep.objects.get(process=process, name="step_2_mapping")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": step_2_mapping.id,
+                    "hostComponentMapDelta": {"remove": [{"hostId": host.id, "componentId": self.component_1.id}]},
+                },
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        process.refresh_from_db(fields=["sync_key"])
+        step_3_operation = ProcessStep.objects.get(process=process, name="step_3_operation")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_action_context = {
+            "name": "wizard_cluster_action",
+            "owner_group": "CLUSTER",
+            "process": {
+                "current": {"stage": "first_stage", "step": "step_3_operation"},
+                "stages": {
+                    "first_stage": {
+                        "step_1_config": {"config": {"float": 0.2, "step_variant_from_config": "entry1"}},
+                        "step_2_mapping": {
+                            "groups": {
+                                f"{self.service_1.prototype.name}.{self.component_1.prototype.name}.remove": [
+                                    "test-host"
+                                ]
+                            }
+                        },
+                    }
+                },
+            },
+        }
+        args = TaskArgs(
+            target_object=self.cluster_1,
+            owner_object=self.cluster_1,
+            action=action,
+            wizard_process_id=process_id,
+        )
+        with self.container() as container:
+            context_gatherer = container.get(ContextGathererI[ActionArgs, TaskArgs])
+
+        env = context_gatherer.prepare_context_for_task(args=args)
+        self.assertDictEqual(env["action"], expected_action_context)

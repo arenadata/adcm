@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 
 from audit.models import AuditLog
 from cm.models import (
@@ -1063,7 +1062,6 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             user__username=self.test_user.username,
         )
 
-    @unittest.skip("ADCM-7319 Missing file for spec, investigation required")
     def test_upgrade_cluster_incorrect_data_fail(self):
         response = self.client.v2[
             self.cluster_1,

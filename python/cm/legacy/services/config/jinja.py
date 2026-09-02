@@ -49,7 +49,6 @@ def get_jinja_config(
 
     # As part of the ADCM-6747 task, we are leaving the old mechanism
     # for preparing the configuration from the jinja file.
-    # use_new_approach = use_new_bundle_parsing_approach(env=os.environ, headers={})
     return _get_jinja_config_old(
         data=template_builder.data, action=action, config_file=jinja_conf_file, resolver=resolver
     )

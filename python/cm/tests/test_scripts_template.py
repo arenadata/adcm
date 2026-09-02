@@ -11,16 +11,12 @@
 # limitations under the License.
 
 from pathlib import Path
-from uuid import uuid4
-import unittest
 
 from core.dynamic_bundle.types import ContextGathererI
-from core.legacy.action.process.types import ProcessState
-from django.utils import timezone
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
+from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
@@ -28,9 +24,6 @@ from cm.models import (
     Action,
     ConfigLog,
     MaintenanceMode,
-    Process,
-    ProcessStep,
-    ProcessStepInput,
 )
 
 
@@ -155,116 +148,6 @@ class TestScriptsTemplateEnvironment(TaskTestMixin, ADCMDjangoAPISuite):
             "action": {
                 "name": "host_action_on_component",
                 "owner_group": "service_one_component.component_1",
-            },
-        }
-        self.assertDictEqual(env, expected_env)
-
-    # redo correctly after ADCM-7517
-    @unittest.skip("ADCM-7517")
-    def test_env_for_action_process(self):
-        # this case is quite BS even in original, won't fix it now
-        action = Action.objects.get(prototype=self.cluster.prototype, display_name="action_on_cluster")
-        spec = [
-            {
-                "name": "keystore_path",
-                "type": "string",
-            },
-            {
-                "name": "keystore_password",
-                "type": "password",
-            },
-        ]
-        process = Process.objects.create(
-            action=action,
-            target_id=1,
-            target_type="test_type",
-            owner_id=1,
-            owner_type="test_type",
-            flow_spec=[
-                {
-                    "name": "manage_ssl_stage",
-                    "steps": [
-                        {
-                            "name": f"configure_step_{j + 1}",
-                            "config_template": "blah",
-                        }
-                        for j in range(3)
-                    ]
-                    + [{"name": "operation_step_4"}],
-                },
-                {"name": "manage_kerberos_stage", "steps": [{"name": f"configure_step_{j + 1}"} for j in range(2)]},
-            ],
-            created_at=timezone.now(),
-            sync_key=uuid4(),
-            state="created",
-        )
-
-        for j in range(3):
-            step = ProcessStep.objects.create(
-                process=process,
-                name=f"configure_step_{j + 1}",
-                display_name=f"Configure Step {j + 1}",
-                step_spec=spec,
-                created_at=timezone.now(),
-                state=ProcessState.COMPLETED,
-            )
-            ProcessStepInput.objects.create(
-                step=step,
-                configuration={
-                    "values": {
-                        "keystore_path": f"/etc/security/ssl/step{j + 1}",
-                        "keystore_password": {"__ansible_vault": ansible_encrypt_and_format("pass")},
-                    },
-                    "attributes": {},
-                },
-                created_at=timezone.now(),
-            )
-        ProcessStep.objects.create(
-            process=process,
-            name="operation_step_4",
-            display_name="Operation Step 4",
-            step_spec={"operation": {"button": "button operation"}},
-            created_at=timezone.now(),
-            state="created",
-        )
-        args = TaskArgs(
-            target_object=self.cluster,
-            owner_object=self.cluster,
-            action=self.cluster_action,
-            wizard_process_id=process.pk,
-        )
-        encrypted_env = self.context_gatherer.prepare_context_for_task(args=args)
-        env = decrypt_secrets(source=encrypted_env)
-        expected_env = {
-            **self.expected_env_part,
-            "action": {
-                "name": "action_on_cluster",
-                "owner_group": "CLUSTER",
-                "process": {
-                    # don't even ask
-                    "current": None,
-                    "stages": {
-                        "manage_ssl_stage": {
-                            "configure_step_1": {
-                                "config": {"keystore_path": "/etc/security/ssl/step1", "keystore_password": "pass"}
-                            },
-                            "configure_step_2": {
-                                "config": {"keystore_path": "/etc/security/ssl/step2", "keystore_password": "pass"}
-                            },
-                            "configure_step_3": {
-                                "config": {"keystore_path": "/etc/security/ssl/step3", "keystore_password": "pass"}
-                            },
-                        },
-                        "manage_kerberos_stage": {
-                            "configure_step_1": {
-                                "config": {"keystore_path": "/etc/security/ssl/step1", "keystore_password": "pass"}
-                            },
-                            "configure_step_2": {
-                                "config": {"keystore_path": "/etc/security/ssl/step2", "keystore_password": "pass"}
-                            },
-                        },
-                    },
-                },
             },
         }
         self.assertDictEqual(env, expected_env)
