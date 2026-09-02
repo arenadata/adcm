@@ -17,17 +17,22 @@ from uuid import uuid4
 import json
 
 from core.action import (
+    ActionConfigKeyRef,
     AssociatedProcess,
     CallingProcess,
     ConfigApplyChangeEntry,
     ConfigApplyParameterEntry,
+    ConfigHostGroupApplyScriptParams,
     HcAclRule,
+    HostDuplicatesApplyScriptParams,
+    ServiceHostGroupOwner,
     ServiceManageScriptParams,
     ServiceManageServiceEntry,
     TaskMappingDelta,
     TypeBasedConfigApplyTarget,
 )
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -40,6 +45,7 @@ from django.conf import settings
 from django.db.models import Model
 from django.urls import reverse
 from pydantic import TypeAdapter, ValidationError
+from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_200_OK
 from tests.base import BaseTestCase
 from tests.deprecated import TaskTestMixin
@@ -52,11 +58,24 @@ from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run._target_factories import (
     internal_script_config_apply,
+    internal_script_config_host_group_apply,
     internal_script_hc_apply,
+    internal_script_host_duplicates_apply,
     internal_script_service_manage,
     prepare_ansible_environment,
 )
-from cm.models import Action, Component, ConfigLog, Host, HostComponent, MaintenanceMode, Service, get_object_cluster
+from cm.models import (
+    Action,
+    Component,
+    ConfigHostGroup,
+    ConfigLog,
+    Host,
+    HostComponent,
+    MaintenanceMode,
+    Service,
+    get_object_cluster,
+)
+from cm.transition.status import StatusScenarios
 
 
 class DummyObject:
@@ -792,3 +811,234 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         self.assertTrue(
             Service.objects.filter(cluster=self.cluster, prototype__name="another_service_two_components").exists()
         )
+
+
+class TestClusterAttachmentInternalScripts(BaseTestCase, TaskTestMixin):
+    """host_duplicates_apply and config_host_group_apply internal scripts"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        bundles_dir = self.base_dir / "python" / "cm" / "tests" / "bundles"
+
+        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
+
+        self.provider = self.uc.add_provider(bundle=provider_bundle, name="Test provider")
+
+        self.source = self.uc.add_cluster(bundle=cluster_bundle, name="Source cluster")
+        self.source_host_1 = self.uc.add_host(provider=self.provider, fqdn="shared-1", cluster=self.source)
+        self.source_host_2 = self.uc.add_host(provider=self.provider, fqdn="shared-2", cluster=self.source)
+
+        self.target = self.uc.add_cluster(bundle=cluster_bundle, name="Target cluster")
+        self.service, *_ = self.uc.add_services_to_cluster(cluster=self.target, names=["service_two_components"])
+        self.component_1 = self.service.components.get(prototype__name="component_1")
+
+        self.service_name = self.service.prototype.name
+
+        self.config_service = self.uc.container.get(ConfigService)
+        self.cluster_service = self.uc.container.get(ClusterService)
+        self.rbac_scenarios = self.uc.container.get(RBACScenarios)
+        self.status_scenarios = self.uc.container.get(StatusScenarios)
+
+    def make_task(self, config: dict | None) -> object:
+        task = DummyObject()
+
+        owner = DummyObject()
+        owner.id = self.service.id
+        owner.type = orm_object_to_core_type(self.service)
+        owner.prototype_id = self.service.prototype_id
+
+        related_objects = DummyObject()
+        cluster = DummyObject()
+        cluster.id = self.target.id
+        cluster.prototype_id = self.target.prototype_id
+        related_objects.cluster = cluster
+        owner.related_objects = related_objects
+
+        task.owner = owner
+        task.config = config
+        task.selector = {
+            "cluster": {"id": self.target.id, "name": self.target.name},
+            "service": {"id": self.service.id, "name": self.service_name},
+        }
+
+        return task
+
+    def make_job(self, params: object) -> object:
+        job = DummyObject()
+        job.id = 999
+        job.params = params
+
+        return job
+
+    def run_duplicates(self, operation: str, group: object = None):
+        task = self.make_task(config={"cluster_name": self.source.name})
+        job = self.make_job(
+            HostDuplicatesApplyScriptParams(
+                operation=operation, source=ActionConfigKeyRef(config_key="cluster_name"), group=group
+            )
+        )
+        return internal_script_host_duplicates_apply(
+            task=task,
+            job=job,
+            config_service=self.config_service,
+            rbac_scenarios=self.rbac_scenarios,
+            status_scenarios=self.status_scenarios,
+            cluster_service=self.cluster_service,
+        )
+
+    def run_group(self, operation: str, description: str = ""):
+        task = self.make_task(config={"cluster_name": self.source.name})
+        job = self.make_job(
+            ConfigHostGroupApplyScriptParams(
+                operation=operation,
+                source=ActionConfigKeyRef(config_key="cluster_name"),
+                owner=ServiceHostGroupOwner(type="service", service_name=self.service_name),
+                description=description,
+            )
+        )
+        return internal_script_config_host_group_apply(task=task, job=job, rbac_scenarios=self.rbac_scenarios)
+
+    def target_duplicates(self) -> dict[str, Host]:
+        return {host.fqdn: host for host in Host.objects.filter(cluster=self.target, original__isnull=False)}
+
+    def test_add_duplicates(self):
+        result = self.run_duplicates("add")
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("2 created, 0 were already available", result.message)
+
+        duplicates = self.target_duplicates()
+        self.assertEqual(set(duplicates), {"shared-1", "shared-2"})
+        self.assertEqual(duplicates["shared-1"].original_id, self.source_host_1.pk)
+
+        # originals stayed with the source cluster
+        self.source_host_1.refresh_from_db()
+        self.assertEqual(self.source_host_1.cluster_id, self.source.pk)
+
+        # re-run changes nothing and says so
+        result = self.run_duplicates("add")
+        self.assertEqual(result.code, 0)
+        self.assertIn("but the hosts were duplicated earlier", result.message)
+        self.assertEqual(len(self.target_duplicates()), 2)
+
+    def test_add_unknown_source_cluster(self):
+        task = self.make_task(config={"cluster_name": "no-such-cluster"})
+        job = self.make_job(
+            HostDuplicatesApplyScriptParams(operation="add", source=ActionConfigKeyRef(config_key="cluster_name"))
+        )
+
+        with self.assertRaises(AdcmEx) as err:
+            internal_script_host_duplicates_apply(
+                task=task,
+                job=job,
+                config_service=self.config_service,
+                rbac_scenarios=self.rbac_scenarios,
+                status_scenarios=self.status_scenarios,
+                cluster_service=self.cluster_service,
+            )
+
+        self.assertIn("no-such-cluster", err.exception.msg)
+        self.assertEqual(self.target_duplicates(), {})
+
+    def test_missing_config_key(self):
+        task = self.make_task(config={})
+        job = self.make_job(
+            HostDuplicatesApplyScriptParams(operation="add", source=ActionConfigKeyRef(config_key="cluster_name"))
+        )
+
+        with self.assertRaises(AdcmEx) as err:
+            internal_script_host_duplicates_apply(
+                task=task,
+                job=job,
+                config_service=self.config_service,
+                rbac_scenarios=self.rbac_scenarios,
+                status_scenarios=self.status_scenarios,
+                cluster_service=self.cluster_service,
+            )
+
+        self.assertIn("cluster_name", err.exception.msg)
+
+    def test_ensure_and_remove_group(self):
+        self.run_duplicates("add")
+        duplicates = self.target_duplicates()
+        self.uc.set_hostcomponent(
+            cluster=self.target, entries=[(host, self.component_1) for host in duplicates.values()]
+        )
+
+        result = self.run_group("ensure", description="per-cluster settings")
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("2 host(s) added", result.message)
+
+        group = ConfigHostGroup.objects.get(object_id=self.service.pk, name=self.source.name)
+        self.assertEqual(group.description, "per-cluster settings")
+        self.assertEqual(sorted(group.hosts.values_list("fqdn", flat=True)), ["shared-1", "shared-2"])
+
+        # re-run changes nothing
+        result = self.run_group("ensure")
+        self.assertIn("but the group was set up earlier", result.message)
+
+        result = self.run_group("remove")
+        self.assertEqual(result.code, 0)
+        self.assertIn("held 2 host(s)", result.message)
+        self.assertFalse(ConfigHostGroup.objects.filter(object_id=self.service.pk, name=self.source.name).exists())
+
+        result = self.run_group("remove")
+        self.assertIn("but the group was removed earlier", result.message)
+
+    def test_remove_duplicates_unmaps_and_deletes(self):
+        self.run_duplicates("add")
+        duplicates = self.target_duplicates()
+        self.uc.set_hostcomponent(
+            cluster=self.target, entries=[(host, self.component_1) for host in duplicates.values()]
+        )
+
+        result = self.run_duplicates("remove")
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("2 deleted", result.message)
+        self.assertEqual(self.target_duplicates(), {})
+        self.assertFalse(HostComponent.objects.filter(cluster=self.target).exists())
+
+        # originals are untouched
+        self.source_host_1.refresh_from_db()
+        self.assertEqual(self.source_host_1.cluster_id, self.source.pk)
+
+        result = self.run_duplicates("remove")
+        self.assertIn("but the duplicates were removed earlier", result.message)
+
+    def test_remove_duplicates_via_group_after_source_is_gone(self):
+        self.run_duplicates("add")
+        duplicates = self.target_duplicates()
+        self.uc.set_hostcomponent(
+            cluster=self.target, entries=[(host, self.component_1) for host in duplicates.values()]
+        )
+        self.run_group("ensure")
+
+        # the source cluster is renamed (or deleted): duplicates can't be found through it
+        # any more, but the tracking group still names them
+        group_name = self.source.name
+        self.source.name = "renamed to break the trail"
+        self.source.save(update_fields=["name"])
+
+        task = self.make_task(config={"cluster_name": group_name})
+        job = self.make_job(
+            HostDuplicatesApplyScriptParams(
+                operation="remove",
+                source=ActionConfigKeyRef(config_key="cluster_name"),
+                group=ServiceHostGroupOwner(type="service", service_name=self.service_name),
+            )
+        )
+        result = internal_script_host_duplicates_apply(
+            task=task,
+            job=job,
+            config_service=self.config_service,
+            rbac_scenarios=self.rbac_scenarios,
+            status_scenarios=self.status_scenarios,
+            cluster_service=self.cluster_service,
+        )
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("2 deleted", result.message)
+        self.assertEqual(self.target_duplicates(), {})

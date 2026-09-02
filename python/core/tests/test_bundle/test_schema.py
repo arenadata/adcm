@@ -19,6 +19,8 @@ from core.legacy.bundle_alt.schema import (
     TYPE_SCHEMA_MAP,
     ActionProcessSpec,
     InternalConfigApplyScriptSchema,
+    InternalConfigHostGroupApplyTaskScriptSchema,
+    InternalHostDuplicatesApplyTaskScriptSchema,
     TaskSchema,
     _BaseUpgradeSchema,
 )
@@ -1523,3 +1525,82 @@ class TestWizardSchema(TestCase):
         """
         parsed_data = yaml.safe_load(yaml_input_of_jinja)
         InternalConfigApplyScriptSchema.model_validate(parsed_data[0])
+
+    def test_host_duplicates_apply_pass(self):
+        yaml_input_of_jinja = """
+            - name: share_hosts
+              display_name: "Share the source cluster hosts"
+              script_type: internal
+              script: host_duplicates_apply
+              params:
+                operation: add
+                source:
+                  config_key: cluster_name
+            - name: release_hosts
+              display_name: "Release the shared hosts"
+              script_type: internal
+              script: host_duplicates_apply
+              allow_to_terminate: false
+              params:
+                operation: remove
+                source:
+                  config_key: cluster_name
+                group:
+                  type: service
+                  service_name: adb_clusters
+        """
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+        for entry in parsed_data:
+            InternalHostDuplicatesApplyTaskScriptSchema.model_validate(entry)
+
+    def test_host_duplicates_apply_unknown_operation_fail(self):
+        yaml_input_of_jinja = """
+            name: share_hosts
+            script_type: internal
+            script: host_duplicates_apply
+            params:
+              operation: attach
+              source:
+                config_key: cluster_name
+        """
+        with self.assertRaises(ValidationError, msg="operation should be add or remove"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            InternalHostDuplicatesApplyTaskScriptSchema.model_validate(parsed_data)
+
+    def test_config_host_group_apply_pass(self):
+        yaml_input_of_jinja = """
+            - name: ensure_group
+              display_name: "Ensure the per-cluster group"
+              script_type: internal
+              script: config_host_group_apply
+              params:
+                operation: ensure
+                source:
+                  config_key: cluster_name
+                owner:
+                  type: service
+                  service_name: adb_clusters
+                description: "Per-cluster settings"
+            - name: drop_group
+              script_type: internal
+              script: config_host_group_apply
+              params:
+                operation: remove
+                source:
+                  config_key: cluster_name
+        """
+        parsed_data = yaml.safe_load(yaml_input_of_jinja)
+        for entry in parsed_data:
+            InternalConfigHostGroupApplyTaskScriptSchema.model_validate(entry)
+
+    def test_config_host_group_apply_needs_source_fail(self):
+        yaml_input_of_jinja = """
+            name: ensure_group
+            script_type: internal
+            script: config_host_group_apply
+            params:
+              operation: ensure
+        """
+        with self.assertRaises(ValidationError, msg="source is required"):
+            parsed_data = yaml.safe_load(yaml_input_of_jinja)
+            InternalConfigHostGroupApplyTaskScriptSchema.model_validate(parsed_data)

@@ -578,3 +578,107 @@ class TestUpgradeScripts(TestCase):
                     parser.parse_scripts(
                         raw, template_path=FILE_IN_ROOT, action_allow_to_terminate=False, mode="upgrade"
                     )
+
+
+class TestClusterAttachmentScripts(TestCase):
+    """host_duplicates_apply and config_host_group_apply internal scripts"""
+
+    scripts_yaml = """
+    - name: share hosts
+      script: host_duplicates_apply
+      script_type: internal
+      params:
+        operation: add
+        source:
+          config_key: cluster_name
+    - name: release hosts
+      script: host_duplicates_apply
+      script_type: internal
+      params:
+        operation: remove
+        source:
+          config_key: cluster_name
+        group:
+          type: service
+          service_name: adb_clusters
+    - name: ensure group
+      script: config_host_group_apply
+      script_type: internal
+      params:
+        operation: ensure
+        source:
+          config_key: cluster_name
+        owner:
+          type: service
+          service_name: adb_clusters
+        description: "per-cluster settings"
+    - name: drop group
+      script: config_host_group_apply
+      script_type: internal
+      params:
+        operation: remove
+        source:
+          config_key: cluster_name
+    """
+
+    def test_parse_in_action_mode_success(self):
+        scripts = yaml.safe_load(self.scripts_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                parsed = parser.parse_scripts(
+                    scripts, template_path=Path(), action_allow_to_terminate=False, mode="action"
+                )
+
+                self.assertEqual(len(parsed), 4)
+                self.assertEqual(parsed[0].params, {"operation": "add", "source": {"config_key": "cluster_name"}})
+                self.assertEqual(parsed[1].params["group"], {"type": "service", "service_name": "adb_clusters"})
+                self.assertEqual(parsed[2].params["description"], "per-cluster settings")
+
+    def test_rejected_in_upgrade_and_wizard_modes_fail(self):
+        scripts = yaml.safe_load(self.scripts_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            for mode in ("upgrade", "wizard"):
+                with self.subTest(f"{version}-{mode}"):
+                    with self.assertRaises(BundleParsingError, msg="'host_duplicates_apply'"):
+                        parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode=mode)
+
+    def test_not_supported_for_1_0_fail(self):
+        scripts = yaml.safe_load(self.scripts_yaml)
+
+        for _, parser in filter(lambda x: x[0] == "1.0", get_parsers()):
+            with self.assertRaises(BundleParsingError, msg="'host_duplicates_apply'"):
+                parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+    def test_unknown_operation_fail(self):
+        as_yaml = """
+        - name: share hosts
+          script: host_duplicates_apply
+          script_type: internal
+          params:
+            operation: ensure
+            source:
+              config_key: cluster_name
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="operation"):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
+
+    def test_source_is_required_fail(self):
+        as_yaml = """
+        - name: ensure group
+          script: config_host_group_apply
+          script_type: internal
+          params:
+            operation: ensure
+        """
+        scripts = yaml.safe_load(as_yaml)
+
+        for version, parser in filter(lambda x: x[0] != "1.0", get_parsers()):
+            with self.subTest(version):
+                with self.assertRaises(BundleParsingError, msg="source"):
+                    parser.parse_scripts(scripts, template_path=Path(), action_allow_to_terminate=False, mode="action")
