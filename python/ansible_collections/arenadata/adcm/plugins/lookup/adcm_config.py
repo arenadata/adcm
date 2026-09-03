@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from typing import NamedTuple
+from typing import Any, NamedTuple
 import sys
 
 sys.path.append("/adcm/python")
@@ -71,54 +72,69 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         logger.debug("run %s %s", terms, kwargs)
 
-        job_id = variables["job"]["id"]
-        ret = []
-
-        if len(terms) < 3:
-            msg = "not enough arguments to set config ({} of 3)"
-            raise AnsibleError(msg.format(len(terms)))
-
-        conf = {terms[1]: terms[2]}
-
-        if terms[0] == "service":
-            if "cluster" not in variables:
-                raise AnsibleError("there is no cluster in hostvars")
-            cluster = variables["cluster"]
-            if "service_name" in kwargs:
-                res = set_service_config_by_name(
-                    job_id=job_id, cluster_id=cluster["id"], service_name=kwargs["service_name"], config=conf
-                )
-            elif "job" in variables and "service_id" in variables["job"]:
-                res = set_service_config(
-                    job_id=job_id, cluster_id=cluster["id"], service_id=variables["job"]["service_id"], config=conf
-                )
-            else:
-                msg = "no service_id in job or service_name and service_version in params"
-                raise AnsibleError(msg)
-        elif terms[0] == "cluster":
-            if "cluster" not in variables:
-                raise AnsibleError("there is no cluster in hostvars")
-            cluster = variables["cluster"]
-            res = set_cluster_config(job_id=job_id, cluster_id=cluster["id"], config=conf)
-        elif terms[0] == "provider":
-            if "provider" not in variables:
-                raise AnsibleError("there is no host provider in hostvars")
-            provider = variables["provider"]
-            res = set_provider_config(job_id=job_id, provider_id=provider["id"], config=conf)
-        elif terms[0] == "host":
-            if "adcm_hostid" not in variables:
-                raise AnsibleError("there is no adcm_hostid in hostvars")
-            res = set_host_config(job_id=job_id, host_id=variables["adcm_hostid"], config=conf)
-        else:
-            raise AnsibleError(f"unknown object type: {terms[0]}")
-
-        ret.append(res.value)
-        return ret
+        return [call_adcm_config_lookup(terms=terms, variables=variables, kwargs=kwargs).value]
 
 
 class PluginResult(NamedTuple):
     value: dict | int | str
     changed: bool
+
+
+def call_adcm_config_lookup(
+    terms: Sequence[Any], variables: Mapping[str, Any], kwargs: Mapping[str, Any]
+) -> PluginResult:
+    """
+    Ansible-independent part of `adcm_config` lookup call
+    """
+    job_id = variables["job"]["id"]
+
+    if len(terms) < 3:
+        msg = "not enough arguments to set config ({} of 3)"
+        raise AnsibleError(msg.format(len(terms)))
+
+    conf = {terms[1]: terms[2]}
+
+    obj = detect_target(terms=terms, variables=variables, kwargs=kwargs)
+
+    return update_config(obj=obj, conf=conf, job_id=job_id)
+
+
+def detect_target(terms: Sequence[Any], variables: Mapping[str, Any], kwargs: Mapping[str, Any]) -> ADCM | CoreObject:
+    """
+    Detect object which config should be changed based on lookup arguments and ansible variables
+    """
+    if terms[0] == "service":
+        if "cluster" not in variables:
+            raise AnsibleError("there is no cluster in hostvars")
+        cluster = variables["cluster"]
+        if "service_name" in kwargs:
+            return get_service_by_name(cluster["id"], kwargs["service_name"])
+        if "job" in variables and "service_id" in variables["job"]:
+            return Service.obj.get(
+                id=variables["job"]["service_id"], cluster__id=cluster["id"], prototype__type="service"
+            )
+
+        msg = "no service_id in job or service_name and service_version in params"
+        raise AnsibleError(msg)
+
+    if terms[0] == "cluster":
+        if "cluster" not in variables:
+            raise AnsibleError("there is no cluster in hostvars")
+        cluster = variables["cluster"]
+        return Cluster.obj.get(id=cluster["id"])
+
+    if terms[0] == "provider":
+        if "provider" not in variables:
+            raise AnsibleError("there is no host provider in hostvars")
+        provider = variables["provider"]
+        return Provider.obj.get(id=provider["id"])
+
+    if terms[0] == "host":
+        if "adcm_hostid" not in variables:
+            raise AnsibleError("there is no adcm_hostid in hostvars")
+        return Host.obj.get(id=variables["adcm_hostid"])
+
+    raise AnsibleError(f"unknown object type: {terms[0]}")
 
 
 def update_config(obj: ADCM | CoreObject, conf: dict, job_id: int) -> PluginResult:
@@ -172,33 +188,3 @@ def update_config(obj: ADCM | CoreObject, conf: dict, job_id: int) -> PluginResu
         return PluginResult(next(iter(conf.values())), True)
 
     return PluginResult(conf, True)
-
-
-def set_cluster_config(job_id: int, cluster_id: int, config: dict) -> PluginResult:
-    obj = Cluster.obj.get(id=cluster_id)
-
-    return update_config(obj=obj, conf=config, job_id=job_id)
-
-
-def set_host_config(job_id: int, host_id: int, config: dict) -> PluginResult:
-    obj = Host.obj.get(id=host_id)
-
-    return update_config(obj=obj, conf=config, job_id=job_id)
-
-
-def set_provider_config(job_id: int, provider_id: int, config: dict) -> PluginResult:
-    obj = Provider.obj.get(id=provider_id)
-
-    return update_config(obj=obj, conf=config, job_id=job_id)
-
-
-def set_service_config_by_name(job_id: int, cluster_id: int, service_name: str, config: dict) -> PluginResult:
-    obj = get_service_by_name(cluster_id, service_name)
-
-    return update_config(obj=obj, conf=config, job_id=job_id)
-
-
-def set_service_config(job_id: int, cluster_id: int, service_id: int, config: dict) -> PluginResult:
-    obj = Service.obj.get(id=service_id, cluster__id=cluster_id, prototype__type="service")
-
-    return update_config(obj=obj, conf=config, job_id=job_id)
