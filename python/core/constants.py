@@ -23,3 +23,5 @@ MM_ACTION_NAMES = frozenset(
         ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
     }
 )
+
+ADCM_DELETE_SERVICE_ACTION_NAME = "adcm_delete_service"

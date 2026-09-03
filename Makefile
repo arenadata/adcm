@@ -12,12 +12,12 @@ build:
 	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
-	time docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
-	time uv sync --inexact --group unittests
+	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
+	uv sync --inexact --group unittests
 	DJANGO_SETTINGS_MODULE=adcm.settings_setups.test \
 	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
-	time uv run python/manage.py test python -v 2 --parallel --keepdb
-	docker stop postgres
+	uv run python/manage.py test python -v 2 --parallel --keepdb \
+	|| docker stop postgres
 
 pretty:
 	uv sync --inexact --group lint

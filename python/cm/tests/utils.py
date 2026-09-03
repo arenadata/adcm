@@ -12,6 +12,7 @@
 
 from uuid import uuid4
 
+from core.action import ScriptType
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
@@ -29,6 +30,7 @@ from cm.models import (
     Host,
     HostComponent,
     JobLog,
+    JobStatus,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
@@ -185,7 +187,7 @@ def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
     return TaskLog.objects.create(
         action=action or gen_action(prototype=obj.prototype),
         object_id=obj.pk,
-        status="CREATED",
+        status=JobStatus.CREATED,
         task_object=obj,
         start_date=timezone.now(),
         finish_date=timezone.now(),
@@ -195,7 +197,9 @@ def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
 def gen_job_log(task: TaskLog) -> JobLog:
     return JobLog.objects.create(
         task=task,
-        status="CREATED",
+        status=JobStatus.CREATED,
+        script_type=ScriptType.ANSIBLE.value,
+        script="main.yaml",
         start_date=timezone.now(),
         finish_date=timezone.now(),
     )

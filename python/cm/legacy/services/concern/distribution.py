@@ -17,6 +17,7 @@ from itertools import chain
 from operator import itemgetter
 from typing import TypeAlias
 
+from core.concern.types import ConcernRelatedObjects
 from core.legacy.cluster.types import ClusterTopology
 from core.types import (
     ADCMCoreType,
@@ -267,17 +268,28 @@ def _update_db_concerns_state(added: AffectedObjectConcernMap, removed: Affected
 
 # PUBLIC distribute_concern_on_related_objects
 
-ConcernRelatedObjects: TypeAlias = dict[ADCMCoreType, set[ObjectID]]
+
+def detect_concern_distribution(owner: CoreObjectDescriptor, concern_type: ConcernType) -> ConcernRelatedObjects:
+    """
+    Compute which objects a concern of `concern_type` owned by `owner` should be linked to.
+    Read-only: nothing is persisted.
+    """
+    distribution_targets = _find_concern_distribution_targets(owner=owner)
+    if owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT) and concern_type in (
+        ConcernType.LOCK,
+        ConcernType.ISSUE,
+    ):
+        _distribute_by_hosts(distribution_targets)
+
+    return distribution_targets
 
 
 def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID) -> ConcernRelatedObjects:
-    distribution_targets = _find_concern_distribution_targets(owner=owner)
-    if (
-        owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT)
-        and ConcernItem.objects.filter(pk=concern_id, type__in=[ConcernType.LOCK, ConcernType.ISSUE]).exists()
-    ):
-        _distribute_by_hosts(distribution_targets)
+    concern_type = ConcernItem.objects.values_list("type", flat=True).get(pk=concern_id)
+    distribution_targets = detect_concern_distribution(owner=owner, concern_type=ConcernType(concern_type))
+
     _add_concern_links_to_objects_in_db(targets=distribution_targets, concern_id=concern_id)
+
     return distribution_targets
 
 

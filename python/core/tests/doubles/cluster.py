@@ -11,13 +11,11 @@
 # limitations under the License.
 
 from collections.abc import Iterable
-from typing import Protocol
+from dataclasses import dataclass, field
 
-from core.cluster._types import ClusterTopology, ExportData
+from core.cluster import ClusterRepoI, ClusterTopology
 from core.types import (
     ActionHostGroupID,
-    ClusterBindSchema,
-    ClusterHierarchyBeforeUpgradeBinds,
     ClusterID,
     ClusterObjectDesc,
     ComponentDesc,
@@ -25,42 +23,31 @@ from core.types import (
     MaintenanceModeOfObjects,
     MaintenanceModeState,
     ServiceDesc,
-    ServiceID,
 )
 
 
-class ClusterRepoI(Protocol):
+@dataclass(slots=True)
+class FakeClusterRepo(ClusterRepoI):
+    topologies: dict[ClusterID, ClusterTopology] = field(default_factory=dict)
+
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
-        ...
+        return self.topologies[cluster_id]
 
     def get_topologies_for_clusters(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
-        ...
+        return {cluster_id: self.topologies[cluster_id] for cluster_id in cluster_ids}
 
     def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
-        # use carefully, this info is already available in many scenarios
-        ...
+        _ = object_
+        raise NotImplementedError
 
     def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
-        ...
+        _ = cluster_ids
+        raise NotImplementedError
 
     def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
-        ...
+        _ = ahg_id
+        raise NotImplementedError
 
     def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
-        ...
-
-    def retrieve_export_data(self, clusters: Iterable[ClusterID], services: Iterable[ServiceID]) -> ExportData:
-        """
-        Collects specified Clusters' and Services' data.
-        Returns this data in exports format to import them to some other objects.
-        """
-        ...
-
-    def create_binds(self, binds: Iterable[ClusterBindSchema], ignore_conflicts: bool) -> None:
-        ...
-
-    def delete_hierarchy_binds(self, cluster_id: ClusterID) -> None:
-        ...
-
-    def retrieve_hierarchy_before_upgrade_binds(self, cluster_id: ClusterID) -> ClusterHierarchyBeforeUpgradeBinds:
-        ...
+        _ = target, value
+        raise NotImplementedError

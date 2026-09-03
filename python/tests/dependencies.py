@@ -32,6 +32,7 @@ from cm.tests.mocks.task_runner import (
 from cm.transition.status import StatusScenarios
 from core import secrets
 from core.action.job import JobRepoI
+from core.action.scheduler import ProcessStarter
 from core.files.directories import ADCMBundleDir
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -46,7 +47,7 @@ from core.legacy.job.runners import (
 from core.result import Success
 from core.settings import Directories
 from core.status import FullStatusMap
-from core.types import ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID
+from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
 from dishka.provider import provide
 from django.db.models import Model
 from rbac.scenarios import RBACScenarios
@@ -54,6 +55,14 @@ from requests import Response
 import dishka
 
 _PYTHON_DIR = Path(__file__).parent.parent
+
+
+@dataclass(slots=True)
+class FakeProcessStarter(ProcessStarter):
+    pid: PID = -1
+
+    def start(self, task_id: TaskID, venv: str, code_dir: Path, log_dir: Path) -> PID:  # noqa: ARG002
+        return self.pid
 
 
 @dataclass(slots=True)
@@ -136,6 +145,14 @@ def prepare_process_bound_directories() -> Directories:
         logs=root / "log",
         temp=root / "tmp",
     )
+
+
+class ProcessStarterOverride(dishka.Provider):
+    scope = dishka.Scope.APP
+
+    @provide
+    def process_starter(self) -> ProcessStarter:
+        return FakeProcessStarter()
 
 
 class DummySecretBackend(secrets.SecretsBackend):
@@ -347,6 +364,7 @@ def get_default_overridden_providers() -> tuple[dishka.Provider, ...]:
         EnvironmentOverride(),
         StatusScenariosOverride(),
         RBACScenariosOverride(),
+        ProcessStarterOverride(),
         TaskRunnerOverride(),
     )
 

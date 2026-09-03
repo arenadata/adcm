@@ -18,6 +18,7 @@ from cm.legacy import status_api
 from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.runners import EventNotifier, JobSequenceRunner, StatusServerInteractor
 from cm.legacy.services.status import notify
+from core.action.scheduler import ProcessStarter
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -34,7 +35,8 @@ from core.secrets import Secret, SecretsBackend
 from core.settings import Directories
 from dishka import Provider, Scope, from_context, provide, provide_all
 from django.utils import timezone
-from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning
+from integrations.local.scheduler import LocalProcessStarter
+from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask
 
 
 class SubprocessRunnerEnvironment:
@@ -94,4 +96,5 @@ class TaskRunnerProvider(Provider):
 class JobUseCaseProvider(Provider):
     scope = Scope.APP
 
-    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken)
+    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken, StartTask)
+    process_starter = provide(LocalProcessStarter, provides=ProcessStarter)

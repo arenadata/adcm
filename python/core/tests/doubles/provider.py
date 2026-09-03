@@ -10,26 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
-from typing import Literal, Protocol
+from dataclasses import dataclass, field
 
-from core.types import ADCMCoreType, ClusterID, Descriptor, HostID, ObjectMM, ProviderID, ProviderObjectDesc
-
-
-@dataclass(slots=True, frozen=True)
-class HostInfo(Descriptor[Literal[ADCMCoreType.HOST]]):
-    """
-    A `HostDesc` (usable anywhere a plain host descriptor is expected) enriched with what's
-    commonly needed alongside it — its cluster (if any) and own maintenance mode.
-    """
-
-    cluster_id: ClusterID | None
-    maintenance_mode: ObjectMM
+from core.provider import HostInfo, ProviderRepoI
+from core.types import HostID, ObjectMM, ProviderID, ProviderObjectDesc
 
 
-class ProviderRepoI(Protocol):
+@dataclass(slots=True)
+class FakeProviderRepo(ProviderRepoI):
+    hosts: tuple[HostInfo, ...] = field(default_factory=tuple)
+
     def find_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostInfo, ...]:
-        ...
+        _ = provider_id
+        return self.hosts
 
     def get_hosts_own_maintenance_mode(self, object_: ProviderObjectDesc) -> dict[HostID, ObjectMM]:
-        ...
+        _ = object_
+        raise NotImplementedError
