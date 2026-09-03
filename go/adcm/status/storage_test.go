@@ -91,17 +91,15 @@ func TestHostDuplicatesConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
+		wg.Go(func() {
 			<-start
 			for j := 0; j < iterations; j++ {
-				hd.Register(id, []int{id + 1, id + 2})
-				hd.GetForID(id)
-				hd.Register(sharedID, []int{id})
+				hd.Register(i, []int{i + 1, i + 2})
+				hd.GetForID(i)
+				hd.Register(sharedID, []int{i})
 				hd.GetForID(sharedID)
 			}
-		}(i)
+		})
 	}
 
 	close(start)
