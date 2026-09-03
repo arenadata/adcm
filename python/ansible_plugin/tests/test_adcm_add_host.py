@@ -13,8 +13,7 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
-from cm.models import Component, Host, Prototype
-from tests.dependencies import RBACScenariosDummy
+from cm.models import Component, Host
 from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.errors import PluginContextError, PluginRuntimeError, PluginValidationError
@@ -32,7 +31,6 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         bundle = cls.uc.upload_bundle(cls.bundles_dir / "second_provider")
         cls.target_provider = cls.uc.add_provider(bundle=bundle, name="Target Provider")
-        cls.host_prototype = Prototype.objects.get(bundle=bundle, type="host")
         cls.tp_host = cls.uc.add_host(provider=cls.target_provider, fqdn="of-target-provider", cluster=cls.cluster)
 
         cls.service_1, *_ = cls.uc.add_services_to_cluster(["service_1"], cluster=cls.cluster)
@@ -57,16 +55,15 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 call_context=job,
             )
 
-            with patch(f"{EXECUTOR_MODULE}.add_host") as add_host_mock:
+            with patch(f"{EXECUTOR_MODULE}.CreateHost.do") as create_host_mock:
                 result = executor.execute()
 
             self.assertIsNone(result.error)
-            add_host_mock.assert_called_once_with(
-                provider=self.target_provider,
-                prototype=self.host_prototype,
-                fqdn="special",
+            create_host_mock.assert_called_once_with(
+                hostprovider=self.target_provider,
+                name="special",
+                cluster=None,
                 description="this is the best host ever",
-                rbac_scenarios=RBACScenariosDummy(),
             )
 
         with self.subTest("Only fqdn"):
@@ -74,16 +71,15 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
                 executor_type=ADCMAddHostPluginExecutor, call_arguments={"fqdn": "cool"}, call_context=job
             )
 
-            with patch(f"{EXECUTOR_MODULE}.add_host") as add_host_mock:
+            with patch(f"{EXECUTOR_MODULE}.CreateHost.do") as create_host_mock:
                 result = executor.execute()
 
             self.assertIsNone(result.error)
-            add_host_mock.assert_called_once_with(
-                provider=self.target_provider,
-                prototype=self.host_prototype,
-                fqdn="cool",
+            create_host_mock.assert_called_once_with(
+                hostprovider=self.target_provider,
+                name="cool",
+                cluster=None,
                 description="",
-                rbac_scenarios=RBACScenariosDummy(),
             )
 
         with self.subTest("Check return value"):
@@ -113,12 +109,12 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             call_context=job,
         )
 
-        with patch(f"{EXECUTOR_MODULE}.add_host") as add_host_mock:
+        with patch(f"{EXECUTOR_MODULE}.CreateHost.do") as create_host_mock:
             result = executor.execute()
 
         self.assertIsInstance(result.error, PluginValidationError)
         self.assertIn("test - Extra inputs are not permitted", result.error.message)
-        add_host_mock.assert_not_called()
+        create_host_mock.assert_not_called()
 
     def test_duplicate_fqdn_fail(self) -> None:
         task = self.prepare_task(owner=self.target_provider, name="dummy")

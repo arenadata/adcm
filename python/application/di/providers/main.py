@@ -16,6 +16,7 @@ import os
 
 from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
 from cm.impl.adcm.repo import ADCMRepo
+from cm.impl.bundle.context import ActionArgs, ContextGatherer, TaskArgs
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
@@ -31,7 +32,6 @@ from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
-from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
@@ -65,7 +65,7 @@ from use_cases.transition.config import (
     UpdateConfigurationOfObject,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
-from use_cases.transition.hostprovider.create import CreateHostprovider
+from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
@@ -247,6 +247,7 @@ class UseCaseProvider(Provider):
 
     create_cluster = provide(CreateCluster)
     create_provider = provide(CreateHostprovider)
+    create_host = provide(CreateHost)
 
     # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
     add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)

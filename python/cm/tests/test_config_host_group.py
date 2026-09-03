@@ -14,7 +14,7 @@
 from tests.base import BaseTestCase
 
 from cm.models import ConfigLog
-from cm.tests.utils import gen_cluster, gen_config, gen_group, gen_prototype_config
+from cm.tests.utils import gen_cluster, gen_config, gen_prototype_config
 
 
 class ConfigHostGroupTest(BaseTestCase):
@@ -60,7 +60,7 @@ class ConfigHostGroupTest(BaseTestCase):
 
     def test_create_group(self):
         """Test create groups for objects"""
-        group = gen_group("group", self.cluster.id, "cluster")
+        group = self.uc.add_config_host_group(owner=self.cluster, name="group")
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
         config_log = ConfigLog.objects.get(id=group.config.current)
 
@@ -78,7 +78,7 @@ class ConfigHostGroupTest(BaseTestCase):
         self.assertDictEqual(config_log.attr, cl_attr)
 
     def test_get_config_spec(self):
-        group = gen_group("group", self.cluster.id, "cluster")
+        group = self.uc.add_config_host_group(owner=self.cluster, name="group")
         spec = {
             "group": {
                 "type": "group",
@@ -109,7 +109,7 @@ class ConfigHostGroupTest(BaseTestCase):
         self.assertDictEqual(group.get_config_spec(), spec)
 
     def test_create_group_keys(self):
-        group = gen_group("group", self.cluster.id, "cluster")
+        group = self.uc.add_config_host_group(owner=self.cluster, name="group")
         gen_prototype_config(
             prototype=self.cluster.prototype,
             name="level1_1",

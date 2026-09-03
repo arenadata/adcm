@@ -15,7 +15,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 import os
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.transition.ansible import ansible_decrypt
 
 if TYPE_CHECKING:
     from cm.models import ADCMEntity

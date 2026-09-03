@@ -19,7 +19,7 @@ import tarfile
 
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
-from cm.legacy.api import add_host_to_cluster
+from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
@@ -35,8 +35,6 @@ from cm.models import (
     HostComponent,
     JobLog,
     JobStatus,
-    ObjectType,
-    Prototype,
     Provider,
     Service,
     TaskLog,
@@ -48,19 +46,13 @@ from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from django.db.models import QuerySet
 from django.db.transaction import atomic
-from infra.services import get_config_service
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.scenarios import RBACScenarios
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.services.user import perform_user_creation
-from use_cases.transition.cluster.create import (
-    CreateServicesFromPrototypes,
-)
-from use_cases.transition.hostprovider.create import create_host
 
 APPLICATION_JSON = "application/json"
 
@@ -99,33 +91,20 @@ class BundleLogicMixin:
 
 
 class BusinessLogicMixin(BundleLogicMixin):
-    def add_host(self, provider: Provider, fqdn: str, cluster: Cluster | None = None) -> Host:
-        host_id = create_host(
-            hostprovider=provider,
-            name=fqdn,
-            cluster=cluster,
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(),
+    @classmethod
+    def add_host_to_cluster(cls, cluster: Cluster, host: Host) -> Host:
+        perform_host_to_cluster_map(
+            cluster_id=cluster.pk,
+            hosts=[host.pk],
+            status_service=cls.uc.container.get(StatusScenarios),
+            rbac_scenarios=cls.uc.container.get(RBACScenarios),
         )
+        # `perform_host_to_cluster_map` updates the DB without touching the passed-in ORM instance,
+        # unlike the old `add_host_to_cluster` it replaces — refresh it in place so callers that don't
+        # capture the return value (many don't) still see `host.cluster` populated.
+        host.refresh_from_db(fields=["cluster"])
 
-        return Host.objects.get(id=host_id)
-
-    @staticmethod
-    def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
-        return add_host_to_cluster(cluster=cluster, host=host, rbac_scenarios=RBACScenarios())
-
-    @staticmethod
-    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[Service]:
-        service_prototypes = Prototype.objects.filter(
-            type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
-        ).values_list("id", flat=True)
-        services = CreateServicesFromPrototypes(
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(),
-        ).do(cluster=cluster, prototype_ids=list(service_prototypes))
-        return Service.objects.filter(id__in=[service.id for service in services])
+        return host
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
@@ -192,7 +171,6 @@ class TaskTestMixin:
         owner: ADCM | Cluster | Service | Component | Provider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
-        feature_scripts_jinja: bool = False,
         **action_search_kwargs,
     ) -> Task:
         owner_descriptor = CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner))
@@ -204,7 +182,6 @@ class TaskTestMixin:
             orm_target=host or owner,
             action=action.id,
             payload=payload or TaskPayloadDTO(),
-            feature_scripts_jinja=feature_scripts_jinja,
         )
 
     def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:

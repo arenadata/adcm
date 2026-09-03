@@ -49,13 +49,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.db.transaction import atomic
-from infra.services import get_config_service
 from rbac.roles import re_apply_policy_for_jobs
 from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
 from use_cases.transition.service_manage import ManageClusterServices
+import core
 
 from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
@@ -115,6 +115,9 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
     ):
         self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
         self._rbac_scenarios = rbac_scenarios
+        # Reaching into `config_scenarios` for its `config_service` is just simpler than adding another
+        # constructor dependency right now; `config_service` should become its own injected dependency.
+        self._config_service = config_scenarios.config_service
         self._supported_internal_scripts = {
             "bundle_switch": partial(
                 internal_script_bundle_switch,
@@ -165,7 +168,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                         )
                     )
                     finalizers = (*self._default_ansible_finalizers, *finalizers)
-                    environment_builders = (prepare_ansible_environment,)
+                    environment_builders = (partial(prepare_ansible_environment, config_service=self._config_service),)
                 case ScriptType.PYTHON:
                     executor = PythonProcessExecutor(
                         config=PythonExecutorConfig(
@@ -213,7 +216,9 @@ def internal_script_bundle_switch(
 
     from cm.legacy.bundle_switch_revert import bundle_switch
 
-    config_service = get_config_service()
+    # Reaching into `config_scenarios` for its `config_service` is just simpler than adding another
+    # constructor dependency right now; `config_service` should become its own injected dependency.
+    config_service = config_scenarios.config_service
     callbacks = build_switch_revert_callbacks(
         config_service=config_service,
         rbac_scenarios=rbac_scenarios,
@@ -257,7 +262,9 @@ def internal_script_bundle_revert(
 
         from cm.legacy.bundle_switch_revert import bundle_revert
 
-        config_service = get_config_service()
+        # Reaching into `config_scenarios` for its `config_service` is just simpler than adding another
+        # constructor dependency right now; `config_service` should become its own injected dependency.
+        config_service = config_scenarios.config_service
         callbacks = build_switch_revert_callbacks(
             config_service=config_service,
             rbac_scenarios=rbac_scenarios,
@@ -590,7 +597,11 @@ def _switch_hc_if_required(task: Task) -> None:
 
 
 def prepare_ansible_environment(
-    task: Task, job: AnsibleJob, configuration: ExternalSettings, cluster_service: ClusterService
+    task: Task,
+    job: AnsibleJob,
+    configuration: ExternalSettings,
+    cluster_service: ClusterService,
+    config_service: core.config.ConfigService,
 ) -> None:
     cluster_id, topology = None, None
     if task.owner:
@@ -602,13 +613,17 @@ def prepare_ansible_environment(
     if cluster_id:
         topology = retrieve_cluster_topology(cluster_id)
 
-    job_config = prepare_ansible_job_config(task=task, job=job, configuration=configuration, topology=topology)
+    job_config = prepare_ansible_job_config(
+        task=task, job=job, configuration=configuration, config_service=config_service, topology=topology
+    )
     job_run_dir = configuration.adcm.run_dir / str(job.id)
 
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    inventory = prepare_ansible_inventory(task=task, topology=topology, cluster_service=cluster_service)
+    inventory = prepare_ansible_inventory(
+        task=task, topology=topology, cluster_service=cluster_service, config_service=config_service
+    )
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
@@ -618,7 +633,10 @@ def prepare_ansible_environment(
 
 
 def prepare_ansible_inventory(
-    task: Task, cluster_service: ClusterService, topology: ClusterTopology | None = None
+    task: Task,
+    cluster_service: ClusterService,
+    config_service: core.config.ConfigService,
+    topology: ClusterTopology | None = None,
 ) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
@@ -627,7 +645,7 @@ def prepare_ansible_inventory(
 
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = context_m.get_action_process_context(process, topology)
+        process_context = context_m.get_action_process_context(process, topology, config_service=config_service)
         process_mapping_delta = process_context.cumulative_delta
 
     return context_m.get_inventory_data(
@@ -637,11 +655,16 @@ def prepare_ansible_inventory(
         related_objects=task.owner.related_objects,
         process_mapping_delta=process_mapping_delta,
         cluster_service=cluster_service,
+        config_service=config_service,
     )
 
 
 def prepare_ansible_job_config(
-    task: Task, job: AnsibleJob, configuration: ExternalSettings, topology: ClusterTopology | None = None
+    task: Task,
+    job: AnsibleJob,
+    configuration: ExternalSettings,
+    config_service: core.config.ConfigService,
+    topology: ClusterTopology | None = None,
 ) -> dict[str, Any]:
     job_data = JobData(
         id=job.id,
@@ -673,13 +696,13 @@ def prepare_ansible_job_config(
 
     if task.action_process and topology:
         process = Process.objects.get(id=task.action_process.id)
-        process_context = context_m.get_action_process_context(process, topology)
+        process_context = context_m.get_action_process_context(process, topology, config_service=config_service)
 
     adcm = ADCM.objects.select_related("config").get()
 
     return JobConfig(
         adcm=ADCMJobConfig(
-            uuid=adcm.uuid, config=context_m.get_adcm_configuration(adcm, config_service=get_config_service())
+            uuid=adcm.uuid, config=context_m.get_adcm_configuration(adcm, config_service=config_service)
         ),
         context=context_m.get_run_context(task=task),
         env=JobEnv(

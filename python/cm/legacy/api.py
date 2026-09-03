@@ -19,34 +19,16 @@ from core.action.job.errors import JobOperationError
 from core.cluster import ClusterService
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 from core.versions import is_version_suitable
-from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic, on_commit
-from rbac.roles import apply_policy_for_new_config
 from rbac.scenarios import RBACScenarios
+import core
 
-from cm.converters import (
-    CoreObject,
-    orm_object_to_core_descriptor,
-    orm_object_to_core_type,
-)
+from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx, raise_adcm_ex
-from cm.legacy.adcm_config.config import (
-    process_json_config,
-    save_object_config,
-)
-from cm.legacy.adcm_config.utils import proto_ref
-from cm.legacy.config import init_object_config
 from cm.legacy.issue import (
-    add_concern_to_object,
     unlink_concern_from_object,
-    update_hierarchy_issues,
 )
-from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern import create_issue, delete_concerns_of_removed_objects, delete_issue, retrieve_issue
-from cm.legacy.services.concern.cases import (
-    recalculate_own_concerns_on_add_clusters,
-    recalculate_own_concerns_on_add_hosts,
-)
 from cm.legacy.services.concern.checks import (
     cluster_mapping_has_issue_orm_version,
     object_configuration_has_issue,
@@ -55,24 +37,18 @@ from cm.legacy.services.concern.checks import (
 from cm.legacy.services.concern.distribution import (
     ConcernRelatedObjects,
     distribute_concern_on_related_objects,
-    redistribute_issues_and_flags,
 )
 from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag
 from cm.legacy.services.concern.locks import get_lock_on_object
-from cm.legacy.services.job.run import update_related_configs
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
 from cm.legacy.status_api import (
     notify_about_new_concern,
-    notify_about_redistributed_concerns_from_maps,
-    send_config_creation_event,
 )
 from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
-    ADCM,
     ActionHostGroup,
     ADCMEntity,
-    AnsibleConfig,
     Cluster,
     ClusterBind,
     Component,
@@ -98,6 +74,10 @@ from cm.models import (
 DEFAULT_FORKS_AMOUNT: str = "5"
 
 
+def proto_ref(prototype: Prototype) -> str:
+    return f'{prototype.type} "{prototype.name}" {prototype.version}'
+
+
 def check_license(prototype: Prototype) -> None:
     if prototype.license == "unaccepted":
         raise_adcm_ex(
@@ -106,99 +86,20 @@ def check_license(prototype: Prototype) -> None:
         )
 
 
-def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
-    if prototype.type != "cluster":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be cluster, not {prototype.type}")
-
-    check_license(prototype)
-
-    with atomic():
-        cluster = Cluster.objects.create(prototype=prototype, name=name, description=description)
-        obj_conf = init_object_config(prototype, cluster)
-        cluster.config = obj_conf
-        cluster.save()
-
-        AnsibleConfig.objects.create(
-            value={"defaults": {"forks": DEFAULT_FORKS_AMOUNT}},
-            object_id=cluster.id,
-            object_type=ContentType.objects.get_for_model(Cluster),
-        )
-
-        added, removed = {}, {}
-        if recalculate_own_concerns_on_add_clusters(cluster):
-            added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
-
-    reset_hc_map()
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
-
-    logger.info("cluster #%s %s is added", cluster.pk, cluster.name)
-
-    return cluster
-
-
-def add_host(
-    prototype: Prototype,
-    provider: Provider,
-    fqdn: str,
-    rbac_scenarios: RBACScenarios,
-    description: str = "",
+def add_host_provider(
+    prototype: Prototype, name: str, config_service: core.config.ConfigService, description: str = ""
 ):
-    if prototype.type != "host":
-        raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be host, not {prototype.type}")
-
-    check_license(prototype)
-    if prototype.bundle != provider.prototype.bundle:
-        raise_adcm_ex(
-            "FOREIGN_HOST",
-            f"Host prototype bundle #{prototype.bundle.pk} does not match with "
-            f"host provider bundle #{provider.prototype.bundle.pk}",
-        )
-
-    with atomic():
-        host = Host.objects.create(prototype=prototype, provider=provider, fqdn=fqdn, description=description)
-        obj_conf = init_object_config(prototype, host)
-        host.config = obj_conf
-        host.save()
-        add_concern_to_object(object_=host, concern=get_lock_on_object(object_=provider))
-
-        related_objects = {}
-        concern_id = None
-        if concerns := recalculate_own_concerns_on_add_hosts(host):
-            concern_id = next(iter(concerns[ADCMCoreType.HOST][host.id]))
-            related_objects = distribute_concern_on_related_objects(
-                owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), concern_id=concern_id
-            )
-        if concern := retrieve_issue(
-            owner=CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER), cause=ConcernCause.CONFIG
-        ):
-            host.concerns.add(concern)
-
-        rbac_scenarios.re_apply_object_policy(apply_object=provider)
-
-    reset_hc_map()
-
-    if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
-
-    logger.info("host #%s %s is added", host.pk, host.fqdn)
-
-    return host
-
-
-def add_host_provider(prototype: Prototype, name: str, description: str = ""):
     if prototype.type != "provider":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
 
     check_license(prototype)
     with atomic():
         provider = Provider.objects.create(prototype=prototype, name=name, description=description)
-        obj_conf = init_object_config(prototype, provider)
-        provider.config = obj_conf
-        provider.save()
-
         provider_cod = CoreObjectDescriptor(id=provider.id, type=ADCMCoreType.PROVIDER)
+        config_service.create_initial_configuration_if_required(owner=provider_cod)
+
         concern_id = None
-        if object_configuration_has_issue(provider):
+        if object_configuration_has_issue(provider, config_service=config_service):
             concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
             concern_id = concern.id
             related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
@@ -349,29 +250,6 @@ def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[Concern
         return concern_id, distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
 
     return None, {}
-
-
-def set_object_config_with_plugin(
-    job_id: int, obj: ADCM | CoreObject, config: dict, attr: dict, description: str
-) -> None:
-    old_config_log_id = obj.config.current
-    new_conf = process_json_config(prototype=obj.prototype, obj=obj, new_config=config, new_attr=attr)
-
-    with atomic():
-        config_log = save_object_config(object_config=obj.config, config=new_conf, attr=attr, description=description)
-        apply_policy_for_new_config(config_object=obj, config_log=config_log)
-
-    core_object = orm_object_to_core_descriptor(object_=obj)
-    update_related_configs(
-        job_id=job_id,
-        object_=core_object,
-        object_prototype_id=obj.prototype_id,
-        old_config_id=old_config_log_id,
-        new_config_id=config_log.id,
-    )
-    send_config_creation_event(
-        object_id=obj.id, object_type=obj.prototype.type, changes={"createdBy": config_log.created_by}
-    )
 
 
 def get_hc(cluster: Cluster | None) -> list[dict] | None:
@@ -640,27 +518,6 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
         else:
             if source_proto == export_cluster.prototype:
                 raise_adcm_ex("BIND_ERROR", f"can not multi bind {proto_ref(source_proto)} to {obj_ref(cluster)}")
-
-
-def add_host_to_cluster(cluster: Cluster, host: Host, rbac_scenarios: RBACScenarios) -> Host:
-    if host.cluster:
-        if host.cluster.pk == cluster.pk:
-            raise AdcmEx(code="HOST_CONFLICT", msg="The host is already associated with this cluster.")
-
-        raise AdcmEx(code="FOREIGN_HOST", msg="Host already linked to another cluster.")
-
-    with atomic():
-        host.cluster = cluster
-        host.save(update_fields=["cluster"])
-
-        update_hierarchy_issues(host)
-        update_hierarchy_issues(cluster)
-        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
-
-    reset_hc_map()
-    logger.info("host #%s %s is added to cluster #%s %s", host.pk, host.fqdn, cluster.pk, cluster.name)
-
-    return host
 
 
 def are_configlogs_equal(old: ConfigLog, new: ConfigLog) -> bool:

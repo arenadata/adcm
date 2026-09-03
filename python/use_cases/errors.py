@@ -10,8 +10,76 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
+from functools import wraps
+from typing import TypeVar
+
+from cm.errors import AdcmEx
+from core.bundle import (
+    BundleOperationError,
+    BundleParsingError,
+    BundleProcessingError,
+    BundleSignatureVerificationError,
+    BundleValidationError,
+    LicenseError,
+    UnsupportedBundleError,
+)
+from core.config import DefaultFileMissingError
+from core.errors import ConfigValueError
 from core.types import ADCMMessageError
+
+T = TypeVar("T", bound=Callable)
 
 
 class UseCaseError(ADCMMessageError):
     ...
+
+
+def convert_bundle_errors_to_adcm_ex(func: T) -> T:
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except (BundleProcessingError, UnsupportedBundleError) as e:
+            http_code = 409
+            error_code = "BUNDLE_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except BundleParsingError as e:
+            http_code = 409
+            error_code = "BUNDLE_DEFINITION_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except BundleValidationError as e:
+            http_code = 409
+            error_code = "BUNDLE_VALIDATION_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except LicenseError as e:
+            http_code = 409
+            error_code = "LICENSE_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except ConfigValueError as e:
+            http_code = 409
+            error_code = "CONFIG_VALUE_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except (FileNotFoundError, DefaultFileMissingError) as e:
+            http_code = 409
+            error_code = "BUNDLE_ERROR"
+            message = str(e)
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except BundleSignatureVerificationError as e:
+            http_code = 409
+            error_code = "BUNDLE_SIGNATURE_VERIFICATION_ERROR"
+            message = e.message
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+        except BundleOperationError as e:
+            http_code = 409
+            error_code = "OPERATION_ERROR"
+            message = str(e)
+            raise AdcmEx(msg=message, code=error_code, http_code=http_code) from e
+
+    # pre-existing typing gap, previously hidden by cm.legacy being excluded from pyright
+    return wrapped  # pyright: ignore[reportReturnType]

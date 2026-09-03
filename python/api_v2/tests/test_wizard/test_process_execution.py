@@ -15,9 +15,9 @@ from copy import deepcopy
 from uuid import uuid4
 
 from cm.converters import orm_object_to_core_type
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.models import (
     ADCM,
     Action,

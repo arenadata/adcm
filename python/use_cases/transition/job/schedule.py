@@ -21,19 +21,15 @@ from cm.converters import (
     orm_object_to_core_type,
 )
 from cm.errors import AdcmEx
+from cm.impl.bundle.context import (
+    ActionArgs,
+    TaskArgs,
+)
 from cm.legacy.services import mapping
 from cm.legacy.services.action_process.types import ProcessState
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
-from cm.legacy.services.bundle_alt.render import (
-    ActionArgs,
-    Environment,
-    TaskArgs,
-)
-from cm.legacy.services.config.jinja import get_jinja_config
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
 from cm.legacy.services.job.constants import HC_CONSTRAINT_VIOLATION_ON_UPGRADE_TEMPLATE
-from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template_new
 from cm.legacy.services.job.types import ActionHCRule
 from cm.models import (
     ADCM,
@@ -52,7 +48,7 @@ from cm.models import (
 )
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
-from core.action import AssociatedProcess, ScriptType, TaskMappingDelta, operations
+from core.action import AssociatedProcess, TaskMappingDelta, operations
 from core.bundle import AvailableContractVersions, BundleOperationError, is_contract_version_supported
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
@@ -79,6 +75,7 @@ import core
 import core.bundle
 
 from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
@@ -289,7 +286,6 @@ class _ScheduleTask(ABC):
                         task_args=task_args,
                         is_upgrade_action=is_upgrade_action,
                         job_service=self.job_service,
-                        context_gatherer=self.context_gatherer,
                         bundle_renderer=self.bundle_renderer,
                     )
 
@@ -431,22 +427,8 @@ def _resolve_spec(
     config_service: core.config.ConfigService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> SpecPair | None:
-    if not (action.config_jinja or action.config_template):
+    if not action.config_template:
         return _retrieve_static_spec(action_id=action.pk, config_service=config_service)
-
-    if action.config_jinja:
-        prototype_configs, _ = get_jinja_config(action=action, cluster_relative_object=action_args.owner_object)
-        # todo rework, it shouldn't be imported in here, nor used "plainly" at all
-        from cm.impl.config.repo import build_specification_from_prototype_config_records
-
-        # todo raise error on empty spec?
-        spec, defaults = build_specification_from_prototype_config_records(
-            records=tuple(prototype_configs),
-            group_customization_flag=False,
-            secrets_service=config_service.secrets,
-            bundle_root=bundle_context.root,
-        )
-        return SpecPair(spec=spec, defaults=defaults)
 
     template = parse_template(action.config_template)
 
@@ -497,27 +479,10 @@ def _resolve_scripts(
     task_args: TaskArgs,
     is_upgrade_action: bool,
     job_service: core.action.job.JobService,
-    context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> tuple[core.action.JobSpec, ...]:
-    if not (action.scripts_jinja or action.scripts_template):
+    if not action.scripts_template:
         return job_service.retrieve_scripts(action_id=action.pk)
-
-    if action.scripts_jinja:
-        script_generator = get_job_specs_from_template_new(
-            jinja_path=action.scripts_jinja,
-            allow_to_terminate=action.allow_to_terminate,
-            environment=Environment(bundle_root=bundle_context.root),
-            task_args=task_args,
-            context_gatherer=context_gatherer,
-        )
-
-        scripts = tuple(script_generator)
-        if any(script.script_type == ScriptType.INTERNAL and script.script == "config_apply" for script in scripts):
-            message = "Internal script 'config_apply' can't be used for jinja action"
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
-
-        return scripts
 
     template = parse_template(action.scripts_template)
 

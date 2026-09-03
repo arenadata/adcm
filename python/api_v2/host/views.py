@@ -31,13 +31,13 @@ from cm.transition.status import StatusScenarios
 from core.action.job import JobService
 from core.cluster import ClusterService
 from core.concern.repo import ConcernRepoI
+from core.config import ConfigService
 from core.types import ADCMCoreType, Descriptor, MaintenanceModeState
 from dishka import FromDishka
 from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
@@ -55,8 +55,7 @@ from rest_framework.status import (
 )
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.transition.host.duplicate import create_duplicate
-from use_cases.transition.hostprovider.create import create_host
-import core
+from use_cases.transition.hostprovider.create import CreateHost
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -217,9 +216,7 @@ class HostViewSet(
     def create(
         self,
         request,
-        config_service: FromDishka[core.config.ConfigService],
-        rbac_scenarios: FromDishka[RBACScenarios],
-        status_scenarios: FromDishka[StatusScenarios],
+        create_host_use_case: FromDishka[CreateHost],
         **_,
     ):
         serializer = self.get_serializer(data=request.data)
@@ -238,13 +235,10 @@ class HostViewSet(
                 user=request.user, perms=VIEW_CLUSTER_PERM, klass=Cluster, id=serializer.validated_data["cluster_id"]
             )
 
-        host_id = create_host(
+        host_id = create_host_use_case.do(
             hostprovider=request_provider,
             name=serializer.validated_data["fqdn"],
             cluster=request_cluster,
-            config_service=config_service,
-            rbac_scenarios=rbac_scenarios,
-            status_scenarios=status_scenarios,
         )
         host = Host.objects.get(id=host_id)
 
@@ -374,6 +368,7 @@ class HostViewSet(
         self,
         request: Request,
         *_,
+        config_service: FromDishka[ConfigService],
         rbac_scenarios: FromDishka[RBACScenarios],
         status_scenarios: FromDishka[StatusScenarios],
         **__,
@@ -391,7 +386,7 @@ class HostViewSet(
             host_id=host.id,
             name=data["name"],
             cluster_id=data["cluster_id"],
-            config_service=get_config_service(),
+            config_service=config_service,
             rbac_scenarios=rbac_scenarios,
             status_scenarios=status_scenarios,
         )

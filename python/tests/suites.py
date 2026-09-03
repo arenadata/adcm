@@ -34,7 +34,7 @@ from audit.models import (
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
 from cm.impl.job.repo import JobRepo, _get_selector_for_core_object
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
 from cm.models import (
     ADCM,
     Action,
@@ -53,6 +53,7 @@ from cm.models import (
     TaskLog,
 )
 from core.action import Job
+from core.config import ConfigService
 from core.legacy.job.executors import Executor as JobExecutor
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -65,7 +66,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.utils import timezone
-from infra.services import prepare_container
 from init_db import init
 from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
@@ -146,9 +146,6 @@ class _ADCMTestCase(TaskFlowMixin, django.test.SimpleTestCase, WithIndependentDi
             container_manager.containers[container_environment_name] = container
 
         container_manager.current = container_environment_name
-
-        # TODO: ADCM-7513
-        prepare_container.cache_clear()
 
     @classmethod
     def _initialize_roles_and_adcm(cls) -> None:
@@ -237,6 +234,7 @@ class ADCMPluginExecutorSuite(
                     task=repo.get_task(id=task_id),
                     job=repo.get_job(id=job_id),
                     configuration=configuration,
+                    config_service=container.get(ConfigService),
                 )
 
             return executor_type(arguments=arguments, runtime_vars=context, container=container)

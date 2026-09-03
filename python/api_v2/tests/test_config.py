@@ -18,7 +18,6 @@ from unittest.mock import patch
 import json
 import unittest
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.legacy.services.job.context._base import get_inventory_data
@@ -35,13 +34,13 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from cm.transition.ansible import ansible_decrypt, ansible_encrypt_and_format
 from core.cluster import ClusterService
 from core.config._types import ChangeRequest
 from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -402,11 +401,7 @@ class TestClusterCHG(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.cluster_1),
-            object_id=cls.cluster_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.cluster_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
 
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
@@ -1102,6 +1097,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             target=ActionTargetDescriptor(type=ADCMCoreType.SERVICE, id=service.id),
             is_host_action=False,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(core.config.ConfigService),
         )
         inv_config = inventory["all"]["vars"]["services"][service_name]["config"]
 
@@ -1121,11 +1117,7 @@ class TestServiceCHG(ADCMDjangoAPISuite):
 
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.service_1),
-            object_id=cls.service_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.service_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -1621,11 +1613,7 @@ class TestComponentCHG(ADCMDjangoAPISuite):
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
         cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.component_1),
-            object_id=cls.component_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.component_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -2183,11 +2171,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.provider),
-            object_id=cls.provider.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.provider, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -2967,9 +2951,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         cls.service, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster)
         cls.component = Component.objects.filter(service=cls.service).first()
 
-        cls.cluster_host_group = ConfigHostGroup.objects.create(
-            name="cluster_config_host_group", object_type=cls.cluster.content_type, object_id=cls.cluster.pk
-        )
+        cls.cluster_host_group = cls.uc.add_config_host_group(owner=cls.cluster, name="cluster_config_host_group")
         config = ConfigLog.objects.get(pk=cls.cluster_host_group.config.current)
         config.config.update({"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}})
         config.attr.update(
@@ -2983,9 +2965,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         )
         config.save(update_fields=["config", "attr"])
 
-        cls.service_host_group = ConfigHostGroup.objects.create(
-            name="service_config_host_group", object_type=cls.service.content_type, object_id=cls.service.pk
-        )
+        cls.service_host_group = cls.uc.add_config_host_group(owner=cls.service, name="service_config_host_group")
         config = ConfigLog.objects.get(pk=cls.service_host_group.config.current)
         config.config.update(
             {
@@ -3006,9 +2986,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         )
         config.save(update_fields=["config", "attr"])
 
-        cls.component_host_group = ConfigHostGroup.objects.create(
-            name="component_config_host_group", object_type=cls.component.content_type, object_id=cls.component.pk
-        )
+        cls.component_host_group = cls.uc.add_config_host_group(owner=cls.component, name="component_config_host_group")
         config = ConfigLog.objects.get(pk=cls.component_host_group.config.current)
         config.config.update(
             {
@@ -3302,21 +3280,9 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
 
     def test_change_config_of_config_host_group(self) -> None:
         groups = (
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.cluster),
-                object_id=self.cluster.pk,
-                name="cluster group",
-            ),
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.service),
-                object_id=self.service.pk,
-                name="service group",
-            ),
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.component),
-                object_id=self.component.pk,
-                name="component group",
-            ),
+            self.uc.add_config_host_group(owner=self.cluster, name="cluster group"),
+            self.uc.add_config_host_group(owner=self.service, name="service group"),
+            self.uc.add_config_host_group(owner=self.component, name="component group"),
         )
         for field, cases in self._EXAMPLES["ok"].items():
             for i, correct_value in enumerate(cases):

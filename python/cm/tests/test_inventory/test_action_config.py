@@ -28,14 +28,14 @@ import core
 
 from cm.converters import model_name_to_core_type
 from cm.impl.job.repo import JobRepo
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import prepare_task_for_action
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component, ConcernItem, TaskLog
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.transition.ansible import ansible_decrypt
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -181,6 +181,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     task=task,
                     job=job,
                     configuration=self.configuration,
+                    config_service=self.uc.container.get(core.config.ConfigService),
                     topology=topology,
                 )
 
@@ -233,6 +234,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     task=task,
                     job=job,
                     configuration=self.configuration,
+                    config_service=self.uc.container.get(core.config.ConfigService),
                     topology=retrieve_cluster_topology(self.cluster.pk),
                 )
 
@@ -267,7 +269,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         task = JobRepo().get_task(id=task.id)
         job, *_ = JobRepo().get_task_jobs(task.id)
-        job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
+        job_config = prepare_ansible_job_config(
+            task=task,
+            job=job,
+            configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
+        )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
 
@@ -300,6 +307,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
             topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
@@ -338,6 +346,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
             topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["reqsec"]["key"])
@@ -408,6 +417,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                             task=JobRepo().get_task(task.id),
                             job=job,
                             configuration=self.configuration,
+                            config_service=self.uc.container.get(core.config.ConfigService),
                             topology=retrieve_cluster_topology(self.cluster.pk),
                         )
 

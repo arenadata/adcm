@@ -13,6 +13,3 @@
 from .shared.base import *  # noqa
 from .shared.constants import *  # noqa
 from .shared.dependant import *  # noqa
-
-# temporal patch for infra.services implementation
-DEFAULT_DISHKA_PROVIDERS = "application.di.containers.get_main_providers"

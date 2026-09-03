@@ -54,13 +54,10 @@ class MissingRequirement(NamedTuple):
     name: str
 
 
-def object_configuration_has_issue(target: ObjectWithConfig) -> HasIssue:
-    from infra.services import get_config_service
-
-    service = get_config_service()
+def object_configuration_has_issue(target: ObjectWithConfig, config_service: core.config.ConfigService) -> HasIssue:
     descriptor = orm_object_to_core_descriptor(target)
     try:
-        return service.inspect_has_invalid_configuration(owner=descriptor)
+        return config_service.inspect_has_invalid_configuration(owner=descriptor)
     except core.config.ObjectWithoutConfigError:
         return False
 

@@ -20,7 +20,7 @@ from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.models import Action, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_action_host_group import ScheduleTask

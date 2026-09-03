@@ -12,11 +12,10 @@
 
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Literal, TypeAlias
+from typing import Literal, TypeAlias
 from uuid import UUID, uuid4
 
 from core.action import wizard
-from core.legacy.bundle_alt.schema import ActionProcessStage
 from core.types import (
     ActionID,
     ActionProcessID,
@@ -85,24 +84,6 @@ def create_process(
     )
 
     return ActionProcess.model_validate(process, from_attributes=True)
-
-
-def create_steps(process_id: ActionProcessID, stages: list[ActionProcessStage]) -> list[ProcessStep]:
-    objects = []
-    for stage in stages:
-        for step in stage.steps:
-            objects.append(
-                ProcessStep(
-                    process_id=process_id,
-                    type=step.type.value,
-                    name=step.name,
-                    stage=stage.name,
-                    description=step.extra.description,
-                    display_name=step.extra.display_name,
-                    step_spec=None,
-                )
-            )
-    return ProcessStep.objects.bulk_create(objects)
 
 
 def retrieve_action_orm(action_id: ActionID) -> Action:
@@ -242,10 +223,6 @@ def retrieve_next_step_ids(process_id: ActionProcessID, step_id: ActionProcessSt
     return tuple(
         ProcessStep.objects.filter(process_id=process_id, id__gt=step_id).values_list("id", flat=True).order_by("id")
     )
-
-
-def convert_stages_to_db_format(stages: list[ActionProcessStage]) -> list[dict[str, Any]]:
-    return [stage.model_dump() for stage in stages]
 
 
 def retrieve_cluster_component_definition_keys(cluster_id: ClusterID) -> set[tuple[Literal["component"], str, str]]:

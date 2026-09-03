@@ -13,6 +13,7 @@
 from pathlib import Path
 
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -30,9 +31,8 @@ from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.jinja_env import get_env_for_jinja_scripts
 from cm.legacy.services.job.context import get_inventory_data
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
 from cm.models import Action, ActionHostGroup, Component, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
 
@@ -109,6 +109,7 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
             is_host_action=False,
             delta=None,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(ConfigService),
         )
 
         self.assertIn("target", group_inventory["all"]["children"])
@@ -121,36 +122,11 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
             is_host_action=False,
             delta=None,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(ConfigService),
         )
 
         group_inventory["all"]["children"].pop("target")
         self.assertEqual(group_inventory, owner_inventory)
-
-    def test_get_env_for_jinja_scripts_success(self) -> None:
-        group_id = self.action_group_service.create(
-            CreateDTO(
-                name="simple", description="", owner=CoreObjectDescriptor(id=self.service.id, type=ADCMCoreType.SERVICE)
-            )
-        )
-        self.action_group_service.add_hosts_to_group(group_id=group_id, hosts=(self.host_1.id, self.host_2.id))
-
-        action = Action.objects.get(prototype=self.service.prototype, name="dummy")
-        action_group = ActionHostGroup.objects.get(id=group_id)
-
-        with self.container() as container:
-            launched_task = container.get(ScheduleTask).do(
-                action_orm=action, target=action_group, payload=RunActionDTO()
-            )
-
-        task_id = launched_task.pk
-        task = TaskLog.objects.get(id=task_id)
-        result_env = get_env_for_jinja_scripts(task=task)
-
-        self.assertSetEqual(
-            set(result_env["groups"]),
-            {"target", "CLUSTER", self.service.name, f"{self.service.name}.{self.component.name}"},
-        )
-        self.assertSetEqual(set(result_env["groups"]["target"]), {self.host_1.fqdn, self.host_2.fqdn})
 
     def test_group_not_in_selector_success(self) -> None:
         group_id = self.action_group_service.create(
@@ -177,6 +153,7 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
         config = prepare_ansible_job_config(
             task=task,
             job=job,
+            config_service=self.uc.container.get(ConfigService),
             configuration=ExternalSettings(
                 adcm=ADCMSettings(code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR),
                 ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Kept free of `cm.models` (and anything pulling it in, like `cm.legacy.services.bundle`):
+# `cm.models` imports `ansible_decrypt` at module load time, so such an import would be circular.
 
 from ansible.parsing.vault import VaultAES256, VaultSecret
 from django.conf import settings

@@ -14,7 +14,6 @@ from copy import deepcopy
 from pathlib import Path
 
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from infra.services import get_config_service
 from init_db import init
 from rbac.upgrade.role import init_roles
 from tests.base import WithPreparedFSAndInitADCM
@@ -31,8 +30,7 @@ class TestPrepareNewConfiguration(django.test.TestCase, WithDishkaContainer, Wit
         init_roles()
         with self.container() as container:
             init(container=container)
-
-        self.config_service = get_config_service()
+            self.config_service = container.get(core.config.ConfigService)
 
         self.bundle = self.uc.upload_bundle(Path(__file__).parent / "bundles" / "cluster_full_config")
         self.cluster = self.uc.add_cluster(bundle=self.bundle, name="with-config")

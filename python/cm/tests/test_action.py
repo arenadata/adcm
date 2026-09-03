@@ -28,6 +28,7 @@ from core.action import (
     TypeBasedConfigApplyTarget,
 )
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -50,7 +51,7 @@ from use_cases.transition.service_manage import ManageClusterServices, _build_ma
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
-from cm.legacy.services.job.run._target_factories import (
+from cm.legacy.services.job.run.target_factories import (
     internal_script_config_apply,
     internal_script_hc_apply,
     internal_script_service_manage,
@@ -128,7 +129,11 @@ class TestActionParams(ADCMDjangoAPISuite):
         job_dir: Path = self.directories.run / str(job.id)
         job_dir.mkdir(parents=True)
         prepare_ansible_environment(
-            task=task, job=job, configuration=self.configuration, cluster_service=self.uc.container.get(ClusterService)
+            task=task,
+            job=job,
+            configuration=self.configuration,
+            cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(ConfigService),
         )
 
         ansible_cfg_file: Path = job_dir / "ansible.cfg"

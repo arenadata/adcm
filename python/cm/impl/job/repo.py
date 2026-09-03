@@ -436,7 +436,6 @@ class JobRepo(JobRepoI):
             "name",
             "prototype_id",
             "prototype__type",
-            "scripts_jinja",
             "wizard_template",
             "scripts_template",
         ).get(id=id)
@@ -446,7 +445,6 @@ class JobRepo(JobRepoI):
             owner_prototype=PrototypeDescriptor(
                 id=action["prototype_id"], type=db_record_type_to_core_type(db_record_type=action["prototype__type"])
             ),
-            scripts_jinja=action["scripts_jinja"],
             scripts_template=action["scripts_template"],
             wizard_template=action["wizard_template"],
         )

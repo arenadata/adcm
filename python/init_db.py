@@ -40,6 +40,7 @@ from core.secrets import Secret, SecretsBackend
 from rbac.models import User
 from rest_framework.authtoken.models import Token
 from use_cases import bundle
+import core
 
 TOKEN_LENGTH = 20
 
@@ -119,7 +120,7 @@ def remove_orphan_and_local_locks():
     ).delete()
 
 
-def recheck_issues():
+def recheck_issues(config_service: core.config.ConfigService):
     """
     Drop old issues and re-check from scratch
     Could slow down startup process
@@ -127,7 +128,7 @@ def recheck_issues():
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
     for model in [ADCM, Cluster, Provider]:
         for obj in model.objects.order_by("id"):
-            update_hierarchy_issues(obj)
+            update_hierarchy_issues(obj, config_service=config_service)
 
 
 def init(container: dishka.Container, adcm_conf_file: Path | None = None):
@@ -148,7 +149,7 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
 
     container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file)
 
-    recheck_issues()
+    recheck_issues(config_service=container.get(core.config.ConfigService))
 
     logger.info("ADCM DB is initialized")
 

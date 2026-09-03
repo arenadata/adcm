@@ -15,8 +15,8 @@ import os
 import logging
 
 from cm.legacy import status_api
-from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.runners import EventNotifier, JobSequenceRunner, StatusServerInteractor
+from cm.legacy.services.job.run.target_factories import ExecutionTargetFactory
 from cm.legacy.services.status import notify
 from core.action.scheduler import ProcessStarter
 from core.legacy.job.runners import (

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from core.action.job import TaskPayloadDTO
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -217,7 +218,10 @@ class TestClusterHosts(BaseInventoryTestCase):
         # without related objects it fails
         with self.assertRaises(ObjectDoesNotExist) as err_context:
             get_inventory_data(
-                target=task.target, is_host_action=False, cluster_service=self.uc.container.get(ClusterService)
+                target=task.target,
+                is_host_action=False,
+                cluster_service=self.uc.container.get(ClusterService),
+                config_service=self.uc.container.get(ConfigService),
             )
 
         self.assertIn("Service matching query does not exist.", str(err_context.exception))
@@ -228,6 +232,7 @@ class TestClusterHosts(BaseInventoryTestCase):
             is_host_action=False,
             related_objects=task.owner.related_objects,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(ConfigService),
         )
 
         self.assertSetEqual(set(data["all"]["vars"]), {"cluster", "services"})

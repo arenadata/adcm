@@ -42,7 +42,6 @@ from cm.tests.utils import (
     gen_bundle,
     gen_cluster,
     gen_config,
-    gen_group,
     gen_host,
     gen_prototype,
     gen_provider,
@@ -169,6 +168,7 @@ class TestInventory(GenericTestCase):
                     target=target,
                     is_host_action=action.host_action,
                     cluster_service=self.uc.container.get(ClusterService),
+                    config_service=self.uc.container.get(core.config.ConfigService),
                 )
                 self.assertDictEqual(actual_data, inv)
 
@@ -287,7 +287,7 @@ class TestInventoryAndMaintenanceMode(GenericTestCase):
     def get_all_from_inventory(
         self, action: Action, object_: ObjectWithAction, payload: RunActionDTO, cluster_id: int
     ) -> dict:
-        from cm.legacy.services.job.run._target_factories import prepare_ansible_inventory
+        from cm.legacy.services.job.run.target_factories import prepare_ansible_inventory
 
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
@@ -305,6 +305,7 @@ class TestInventoryAndMaintenanceMode(GenericTestCase):
             task=JobRepo().get_task(task_id),
             topology=retrieve_cluster_topology(cluster_id),
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(core.config.ConfigService),
         )
         return inventory["all"]
 
@@ -404,8 +405,8 @@ class TestInventoryAndMaintenanceMode(GenericTestCase):
         self.host_target_group_1.save()
 
         groups = [
-            gen_group(name="cluster", object_id=self.cluster_target_group.id, model_name="cluster"),
-            gen_group(name="service_1", object_id=self.service_target_group.id, model_name="service"),
+            self.uc.add_config_host_group(owner=self.cluster_target_group, name="cluster"),
+            self.uc.add_config_host_group(owner=self.service_target_group, name="service_1"),
         ]
 
         for group in groups:

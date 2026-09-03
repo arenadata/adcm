@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from core.concern.operations import build_id_chain, build_task_concern
 from core.concern.types import ConcernTarget
+from core.config import ConfigService
 from core.types import ADCMCoreType
 from rbac.scenarios import RBACScenarios
 from tests.suites import GenericTestCase
@@ -115,7 +116,8 @@ class CreateIssueTest(GenericTestCase):
             self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
 
     @patch("cm.legacy.issue._issue_check_map", mock_issue_check_map)
-    def test_inherit_on_creation(self):
+    @patch("cm.legacy.issue.object_configuration_has_issue", return_value=True)
+    def test_inherit_on_creation(self, _mock_config_check):
         """Test if new object in hierarchy inherits existing issues"""
 
         issue_type = ConcernCause.CONFIG
@@ -128,7 +130,7 @@ class CreateIssueTest(GenericTestCase):
 
         self.assertListEqual(list(new_service.concerns.all()), [])
 
-        update_hierarchy_issues(new_service)
+        update_hierarchy_issues(new_service, config_service=self.uc.container.get(ConfigService))
         new_service_issues = [i.id for i in new_service.concerns.all()]
 
         self.assertIn(cluster_issue.id, new_service_issues)
@@ -137,7 +139,7 @@ class CreateIssueTest(GenericTestCase):
         service_prototype = Prototype.objects.create(
             type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
         )
-        update_hierarchy_issues(obj=self.cluster)
+        update_hierarchy_issues(obj=self.cluster, config_service=self.uc.container.get(ConfigService))
         cluster_issue = self.cluster.concerns.filter(cause=ConcernCause.SERVICE).first()
         self.assertEqual(cluster_issue.cause, ConcernCause.SERVICE)
         self.assertEqual(cluster_issue.reason["placeholder"]["target"]["name"], service_prototype.name)
@@ -306,7 +308,7 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Not_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        recheck_issues(cluster1)
+        recheck_issues(cluster1, config_service=self.uc.container.get(ConfigService))
         issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
@@ -318,7 +320,7 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        recheck_issues(cluster1)
+        recheck_issues(cluster1, config_service=self.uc.container.get(ConfigService))
         issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)
@@ -332,7 +334,7 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Non_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        recheck_issues(service)
+        recheck_issues(service, config_service=self.uc.container.get(ConfigService))
         issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
@@ -346,7 +348,7 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        recheck_issues(service)
+        recheck_issues(service, config_service=self.uc.container.get(ConfigService))
         issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.cluster.types import HostComponentEntry
 from tests.suites import GenericTestCase
 
@@ -88,7 +89,7 @@ class TestComponent(GenericTestCase):
 
     def test_service_requires_issue(self):
         service_2 = Service.objects.create(prototype=self.service_proto_2, cluster=self.cluster)
-        update_hierarchy_issues(obj=self.cluster)
+        update_hierarchy_issues(obj=self.cluster, config_service=self.uc.container.get(ConfigService))
         concerns = service_2.concerns.all()
         self.assertEqual(len(concerns), 1)
         self.assertEqual(concerns.first().cause, ConcernCause.REQUIREMENT)

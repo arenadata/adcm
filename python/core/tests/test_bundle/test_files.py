@@ -17,8 +17,8 @@ import shutil
 import tarfile
 import tempfile
 
-from core.legacy.bundle_alt.bundle_load import untar_safe
-from core.legacy.bundle_alt.errors import BundleProcessingError
+from core.bundle._errors import BundleProcessingError
+from core.bundle._files import untar_safe
 
 CONFIG_YAML = """\
 - name: ADBG
