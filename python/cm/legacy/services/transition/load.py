@@ -180,6 +180,7 @@ def create_new_providers(
             prototype=provider_protos[provider_info.bundle],
             name=provider_info.name,
             description=provider_info.description,
+            config_service=config_service,
         )
         result[provider_info.name] = (new_provider.pk, bundle_id)
         _restore_state(target=new_provider, condition=provider_info.condition, config_service=config_service)
@@ -205,6 +206,7 @@ def create_new_hosts(
             fqdn=host_info.name,
             cluster=None,
             rbac_scenarios=rbac_scenarios,
+            config_service=config_service,
         )
         result[host_info.name] = host.id
         _restore_state(target=host, condition=host_info.condition, config_service=config_service)
@@ -360,7 +362,7 @@ def _restore_state(
         config_service.prepare_file_parameter_values_on_fs(
             configuration=condition.config, specification=specification, owner_prefix=owner_prefix
         )
-        if not object_configuration_has_issue(target):
+        if not object_configuration_has_issue(target, config_service=config_service):
             delete_issue(owner=owner, cause=ConcernCause.CONFIG)
 
     target.set_state(condition.state)

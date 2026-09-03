@@ -16,7 +16,6 @@ from operator import itemgetter
 from typing import Literal, TypeAlias
 import json
 
-from cm.legacy.services.jinja_env import _get_action_info
 from cm.models import (
     ADCM,
     Action,
@@ -653,15 +652,6 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
                 for action_id in map(itemgetter("id"), response.json()):
                     response = self.client.v2[object_, "actions", action_id].get()
                     self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def test_get_action_info_success(self) -> None:
-        for object_, group in (
-            (self.cluster, "CLUSTER"),
-            (self.service_1, self.service_1.name),
-            (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
-        ):
-            action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
-            self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
     def test_adcm_8330_conflicting_params(self) -> None:
         # an ansible script's own (arbitrary) params must not be confused with reserved

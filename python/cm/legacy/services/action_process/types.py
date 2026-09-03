@@ -22,7 +22,7 @@ from core.types import (
 )
 
 if TYPE_CHECKING:
-    from cm.legacy.services.bundle_alt.render import ActionArgs
+    from cm.impl.bundle.context import ActionArgs
     from cm.models import Action, ActionHostGroup, Cluster, Component, Host, Service
 
 
@@ -66,7 +66,7 @@ class ProcessContext:
     owner_orm: ProcessOwner
 
     def build_action_args(self, process_id: ActionProcessID | None) -> "ActionArgs":
-        from cm.legacy.services.bundle_alt.render import ActionArgs
+        from cm.impl.bundle.context import ActionArgs
 
         return ActionArgs(
             action=self.action_orm,

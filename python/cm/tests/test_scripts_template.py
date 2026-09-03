@@ -16,8 +16,7 @@ from core.dynamic_bundle.types import ContextGathererI
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     ADCM,
@@ -25,6 +24,7 @@ from cm.models import (
     ConfigLog,
     MaintenanceMode,
 )
+from cm.transition.ansible import ansible_decrypt
 
 
 class TestScriptsTemplateEnvironment(TaskTestMixin, ADCMDjangoAPISuite):

@@ -22,12 +22,12 @@ import tarfile
 import datetime
 import unittest
 
+from core.config import ConfigService
 from core.shortcuts import UTC
 from core.types import ADCMCoreType
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
-from infra.services import get_config_service
 from rbac.models import Policy, Role, User
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
@@ -287,7 +287,7 @@ class TestBundleCollector(BaseTestCase):
 
         configs = get_objects_configurations(
             objects={ADCMCoreType.HOST: {h1_free.id, h2_community.id, h3_enterprise.id, h4_enterprise.id}},
-            config_service=get_config_service(),
+            config_service=self.uc.container.get(ConfigService),
         )
 
         # test
@@ -337,7 +337,7 @@ class TestBundleCollector(BaseTestCase):
                 }
             }
         }
-        actual_inventory = get_inventory()
+        actual_inventory = get_inventory(config_service=self.uc.container.get(ConfigService))
 
         self.assertDictEqual(actual_inventory, expected_inventory)
 

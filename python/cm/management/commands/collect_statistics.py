@@ -17,18 +17,21 @@ import os
 import shutil
 import socket
 
+from application.di.containers import get_main_providers
 from audit.alt.background import audit_background_operation
 from audit.models import AuditLogOperationType
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.core.management import BaseCommand
 from django.db.models import Q
 from django.utils import timezone
+import core
+import dishka
 
 from cm.collect_statistics.collectors import ADCMEntities, BundleCollector, RBACCollector
 from cm.collect_statistics.encoders import TarFileEncoder
 from cm.collect_statistics.senders import SenderSettings, StatisticSender
 from cm.collect_statistics.storages import JSONFile, TarFileWithJSONFileStorage
-from cm.legacy.adcm_config.config import get_adcm_config
 from cm.models import ADCM
 
 SENDER_REQUEST_TIMEOUT = 15.0
@@ -64,13 +67,12 @@ def is_internal() -> bool:
         return False
 
 
-def get_statistics_url() -> str:
+def get_statistics_url(adcm_configuration: core.config.Configuration) -> str:
     scheme = "http"
     url_path = "/api/v1/statistic/adcm"
 
     if (netloc := os.getenv("STATISTICS_URL")) is None:
-        _, config = get_adcm_config(section="statistics_collection")
-        netloc = config["url"]
+        netloc = adcm_configuration.values["statistics_collection"]["url"]
 
     if len(splitted := netloc.split("://")) == 2:
         scheme = splitted[0]
@@ -79,12 +81,11 @@ def get_statistics_url() -> str:
     return urlunparse(components=URLComponents(scheme=scheme, netloc=netloc, path=url_path))
 
 
-def get_enabled() -> bool:
+def get_enabled(adcm_configuration: core.config.Configuration) -> bool:
     if os.getenv("STATISTICS_ENABLED") is not None:
         return os.environ["STATISTICS_ENABLED"].upper() in {"1", "TRUE"}
 
-    attr, _ = get_adcm_config(section="statistics_collection")
-    return bool(attr["active"])
+    return bool(adcm_configuration.attributes["/statistics_collection"].is_active)
 
 
 class Command(BaseCommand):
@@ -115,7 +116,15 @@ class Command(BaseCommand):
             case "send":
                 logger.debug(msg="Statistics collector: 'send' mode is used")
 
-                if not get_enabled():
+                container = dishka.make_container(*get_main_providers())
+                with container() as request_container:
+                    config_service = request_container.get(core.config.ConfigService)
+                    adcm_id = ADCM.objects.values_list("id", flat=True).get()
+                    adcm_configuration = config_service.retrieve_current_configuration(
+                        owner=CoreObjectDescriptor(id=adcm_id, type=ADCMCoreType.ADCM)
+                    )
+
+                if not get_enabled(adcm_configuration):
                     logger.debug(msg="Statistics collector: disabled")
                     return
 
@@ -137,7 +146,7 @@ class Command(BaseCommand):
                 logger.debug(msg="Statistics collector: archive preparation")
                 archive = storage.gather()
                 sender_settings = SenderSettings(
-                    url=get_statistics_url(),
+                    url=get_statistics_url(adcm_configuration),
                     adcm_uuid=statistics_data["adcm"]["uuid"],
                     retries_limit=int(os.getenv("STATISTICS_RETRIES", 10)),
                     retries_frequency=int(os.getenv("STATISTICS_FREQUENCY", 1 * 60 * 60)),  # in seconds

@@ -164,7 +164,9 @@ class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
 
         process = Process.objects.get(id=process_id)
         topology = retrieve_cluster_topology(cluster_id)
-        return get_action_process_context(process=process, topology=topology).to_context()
+        return get_action_process_context(
+            process=process, topology=topology, config_service=self.uc.container.get(core.config.ConfigService)
+        ).to_context()
 
     def test_process_step_sequential_rendering(self):
         bundle = self.uc.upload_bundle(ACTION_PROCESS_BUNDLE)

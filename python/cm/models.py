@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
@@ -22,12 +22,12 @@ from core.concern.types import ConcernCause as _ConcernCause
 from core.concern.types import ConcernType as _ConcernType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.logs import Severity
-from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
+from core.types import ADCMCoreType, ExtraActionTargetType
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, transaction
+from django.db import models
 from django.db.models import QuerySet
 from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
@@ -35,8 +35,8 @@ from django.dispatch import receiver
 import core
 
 from cm.errors import AdcmEx
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
+from cm.transition.ansible import ansible_decrypt
 
 
 class ObjectType(models.TextChoices):
@@ -874,73 +874,6 @@ class ConfigHostGroup(ADCMModel):
 
         return group_keys, custom_group_keys
 
-    def get_group_keys(self):
-        config_log = ConfigLog.objects.get(id=self.config.current)
-
-        return config_log.attr.get("group_keys", {})
-
-    def merge_config(self, object_config: dict, config_host_group: dict, group_keys: dict, config=None):
-        """Merge object config with group config based group_keys"""
-
-        if config is None:
-            config = {}
-
-        for group_key, group_value in group_keys.items():
-            if isinstance(group_value, Mapping):
-                config.setdefault(group_key, {})
-                self.merge_config(
-                    object_config[group_key],
-                    config_host_group[group_key],
-                    group_keys[group_key]["fields"],
-                    config[group_key],
-                )
-            else:
-                if group_value and group_key in config_host_group:
-                    config[group_key] = config_host_group[group_key]
-                else:
-                    if group_key in object_config:
-                        config[group_key] = object_config[group_key]
-
-        return config
-
-    @staticmethod
-    def merge_attr(object_attr: dict, group_attr: dict, group_keys: dict, attr=None):
-        """Merge object attr with group attr based group_keys"""
-
-        if attr is None:
-            attr = {}
-
-        for group_key, group_value in group_keys.items():
-            if isinstance(group_value, Mapping) and group_key in object_attr:
-                if group_value["value"]:
-                    attr[group_key] = group_attr[group_key]
-                else:
-                    attr[group_key] = object_attr[group_key]
-
-        return attr
-
-    def get_config_attr(self):
-        """Return attr for group config without group_keys and custom_group_keys params"""
-
-        config_log = ConfigLog.obj.get(id=self.config.current)
-        return {k: v for k, v in config_log.attr.items() if k not in ("group_keys", "custom_group_keys")}
-
-    def get_config_and_attr(self):
-        """Return merge object config with group config and merge attr"""
-
-        object_cl = ConfigLog.objects.get(id=self.object.config.current)
-        object_config = object_cl.config
-        object_attr = object_cl.attr
-        group_cl = ConfigLog.objects.get(id=self.config.current)
-        host_group = group_cl.config
-        group_keys = group_cl.attr.get("group_keys", {})
-        group_attr = self.get_config_attr()
-        config = self.merge_config(object_config, host_group, group_keys)
-        attr = self.merge_attr(object_attr, group_attr, group_keys)
-        self.prepare_files_for_config(config)
-
-        return config, attr
-
     def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
@@ -1007,20 +940,6 @@ class ConfigHostGroup(ADCMModel):
                 if os.path.exists(filename):  # noqa: PTH101, PTH110
                     os.remove(filename)  # noqa: PTH107
 
-    @transaction.atomic()
-    def save(self, *args, **kwargs):
-        from infra.services import get_config_service
-
-        from cm.converters import orm_object_to_core_descriptor
-
-        super().save(*args, **kwargs)
-        config_service = get_config_service()
-        config_service.create_initial_configuration_of_host_group(
-            group=Descriptor(id=self.pk, type=ADCMHostGroupType.CONFIG),
-            owner=orm_object_to_core_descriptor(self.object),
-        )
-        self.refresh_from_db(fields=("config",))
-
 
 class ActionType(models.TextChoices):
     TASK = "task", "task"
@@ -1061,6 +980,9 @@ class AbstractAction(ADCMModel):
 
     wizard_template = models.JSONField(null=True, default=None)
 
+    # Deprecated: the config_jinja/scripts_jinja mechanic is no longer supported.
+    # Columns are kept for now (existing data), but nothing reads or writes them anymore.
+    # Use config_template/scripts_template instead.
     config_jinja = models.CharField(max_length=1000, blank=True, null=True)
     config_template = models.JSONField(null=True, default=None)
     scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")

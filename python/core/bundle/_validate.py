@@ -18,8 +18,6 @@ from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
 from typing import Final, TypeAlias, cast
 
-import jinja2
-
 from core import action, config
 from core.bundle._definitions import (
     ActionDefinition,
@@ -267,7 +265,6 @@ def check_actions(
             check_no_bundle_switch(scripts=action_definition.scripts)
             check_mm_host_action_is_allowed(action=action_definition, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action_definition.hostcomponentmap, definitions=definitions)
-            check_jinja_templates_are_correct(action=action_definition, bundle_root=bundle_root)
             check_templates_are_correct(action=action_definition, bundle_root=bundle_root)
             check_action_scripts(action=action_definition)
 
@@ -311,13 +308,6 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
                 check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
 
 
-def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
-    if action.config_jinja:
-        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
-    if action.scripts_jinja:
-        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
-
-
 def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
     for template in filter(None, (action.wizard_template, action.config_template, action.scripts_template)):
         check_file_is_correct_template(template=template, bundle_root=bundle_root)
@@ -358,17 +348,6 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
                 case ("component", service_name, component_name):
                     message = f'Unknown component "{component_name}" of service "{service_name}"'
                     raise BundleValidationError(message)
-
-
-def check_file_is_correct_jinja_template(bundle_root: Path, relative_template_path: str) -> None:
-    path = bundle_root / relative_template_path
-
-    try:
-        content = path.read_text(encoding="utf-8")
-        jinja2.Template(source=content)
-    except (FileNotFoundError, jinja2.TemplateError) as e:
-        message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
-        raise BundleValidationError(message) from e
 
 
 def check_file_is_correct_template(bundle_root: Path, template: Template) -> None:

@@ -139,7 +139,6 @@ class ActionInfo(BaseModel):
     id: ActionID
     name: str
     owner_prototype: PrototypeDescriptor
-    scripts_jinja: str
     wizard_template: Template | None
     scripts_template: Template | None = None
 

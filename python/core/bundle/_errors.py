@@ -48,6 +48,10 @@ class BundleValidationError(BundleOperationError):
     """
 
 
+class BundleSignatureVerificationError(BundleOperationError):
+    ...
+
+
 def convert_validation_to_bundle_error(func):
     @wraps(func)
     def wrapped(*args, **kwargs):

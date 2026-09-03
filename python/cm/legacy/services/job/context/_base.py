@@ -28,7 +28,6 @@ from core.types import (
     ObjectID,
 )
 from django.db.models import F
-from infra.services import get_config_service
 import core
 
 from cm.converters import core_type_to_model
@@ -72,12 +71,11 @@ def get_inventory_data(
     target: ActionTargetDescriptor,
     is_host_action: bool,
     cluster_service: ClusterService,
+    config_service: core.config.ConfigService,
     delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
     process_mapping_delta: dict[str, set[tuple[HostID, HostName]]] | None = None,
 ) -> dict:
-    config_service = get_config_service()
-
     if target.type == ExtraActionTargetType.ACTION_HOST_GROUP:
         # Some time ago `_get_inventory_for_action_from_cluster_bundle` required full ORM object to proceed,
         # now it's not the case, so you can optimize this call if you want to.

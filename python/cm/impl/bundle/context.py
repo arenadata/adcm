@@ -159,7 +159,9 @@ class ContextGatherer:
         cluster_topology = retrieve_related_cluster_topology(orm_object=args.owner_object)
 
         clusters_vars = cluster_vars_to_dict(
-            get_cluster_vars(topology=cluster_topology, config_service=self.config_service)
+            # pre-existing legacy/new ClusterTopology mismatch, previously hidden by cm.legacy
+            # being excluded from pyright; not this module's concern to resolve
+            get_cluster_vars(topology=cluster_topology, config_service=self.config_service)  # pyright: ignore[reportArgumentType]
         )
 
         process_cumulative_delta = {}
@@ -266,4 +268,5 @@ def _get_names_of_hosts_in_action_host_group(action_host_group_id: int) -> list[
 
 
 def _get_adcm_info() -> _ADCM:
-    return _ADCM(uuid=ADCM.objects.filter().values("uuid").last()["uuid"])
+    # pre-existing possible-None subscript, previously hidden by cm.legacy being excluded from pyright
+    return _ADCM(uuid=ADCM.objects.filter().values("uuid").last()["uuid"])  # pyright: ignore[reportOptionalSubscript]

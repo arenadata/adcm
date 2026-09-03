@@ -13,7 +13,6 @@
 from uuid import uuid4
 
 from core.action import ScriptType
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from cm.errors import AdcmEx
@@ -25,7 +24,6 @@ from cm.models import (
     Cluster,
     Component,
     ConcernItem,
-    ConfigHostGroup,
     ConfigLog,
     Host,
     HostComponent,
@@ -269,11 +267,3 @@ def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
     object_config.save()
 
     return object_config
-
-
-def gen_group(name, object_id, model_name):
-    return ConfigHostGroup.objects.create(
-        object_id=object_id,
-        object_type=ContentType.objects.get(model=model_name),
-        name=name,
-    )

@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import cast
 from uuid import UUID
 
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.services import mapping
 from cm.legacy.services.action_process.errors import ActionProcessOperationError, ActionProcessPayloadError
 from cm.legacy.services.action_process.operations import (
@@ -34,8 +35,6 @@ from cm.legacy.services.action_process.schema_validation import (
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState, ProcessTarget
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
@@ -62,6 +61,7 @@ import core
 import core.bundle
 
 from use_cases.dto import InputConfigConverter
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 
 @dataclass(slots=True, frozen=True)

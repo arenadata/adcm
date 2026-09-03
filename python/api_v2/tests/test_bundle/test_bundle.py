@@ -126,7 +126,7 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
             self.assertIn("No such file or directory", response.json()["desc"])
 
-        with self.subTest("Mutually exclusive checks for scripts/scripts_jinja."):
+        with self.subTest("Mutually exclusive checks for scripts/scripts_template."):
             new_bundle_file = prepare_bundle_file(
                 source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "mutually_exclusive_scripts"),
                 target_dir=self.test_tmp_dir,

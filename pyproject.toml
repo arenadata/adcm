@@ -198,7 +198,6 @@ root_packages = [
     "cm",
     "core",
     "health",
-    "infra",
     "integrations",
     "jobs",
     "rbac",
@@ -243,7 +242,7 @@ layers = [
 name = "core must not import other modules"
 type = "forbidden"
 source_modules = ["core"]
-forbidden_modules = ["cm", "rbac", "api_v2", "ansible_share", "ansible_collections", "ansible_plugin", "audit", "jobs", "django", "use_cases", "infra", "application", "integrations"]
+forbidden_modules = ["cm", "rbac", "api_v2", "ansible_share", "ansible_collections", "ansible_plugin", "audit", "jobs", "django", "use_cases", "application", "integrations"]
 
 [[tool.importlinter.contracts]]
 name = "core.* modules must not import core.bundle"

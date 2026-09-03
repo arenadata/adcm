@@ -16,8 +16,11 @@ import sys
 import json
 import subprocess
 
+from application.di.containers import get_main_providers
 from django.conf import settings
 from django.core.management import BaseCommand
+import core
+import dishka
 
 from cm.collect_statistics.gather_hardware_info import get_inventory
 
@@ -35,8 +38,13 @@ class Command(BaseCommand):
 
         inventory_file = self._inventory_dir / "inventory.json"
 
+        container = dishka.make_container(*get_main_providers())
+        with container() as request_container:
+            config_service = request_container.get(core.config.ConfigService)
+            inventory = get_inventory(config_service=config_service)
+
         with inventory_file.open(mode="w", encoding="utf-8") as file_:
-            json.dump(get_inventory(), file_)
+            json.dump(inventory, file_)
 
         os.chdir(self._workdir)
 

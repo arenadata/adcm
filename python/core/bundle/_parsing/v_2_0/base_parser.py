@@ -13,21 +13,18 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import Final, Literal
+from typing import Literal
 
 from core.bundle._definitions import Definition, DefinitionsMap
+from core.bundle._errors import BundleParsingError
 from core.bundle._parsing.shared.conversion import convert_object
 from core.bundle._parsing.shared.parser import PydanticParser
 from core.bundle._parsing.v_2_0.targets import (
-    ADCMSchema,
-    Cluster,
     DynamicActionScripts,
     DynamicConfig,
     DynamicUpgradeScripts,
     DynamicWizardScripts,
-    Host,
     ObjectTarget,
-    Provider,
     RootTarget,
     Service,
 )
@@ -36,18 +33,11 @@ from core.bundle._representation import find_parent, repr_from_key
 from core.bundle._types import BundleDefinitionKey
 from core.errors import localize_error
 
-TYPE_SCHEMA_MAP: Final[dict[str, type[RootTarget]]] = {
-    "cluster": Cluster,
-    "service": Service,
-    "provider": Provider,
-    "host": Host,
-    "adcm": ADCMSchema,
-}
 
-
-class Parser(PydanticParser[RootTarget, ObjectTarget]):
-    def _get_schema_mapping(self) -> dict[str, type[RootTarget]]:
-        return TYPE_SCHEMA_MAP
+class BaseParser(PydanticParser[RootTarget, ObjectTarget]):
+    # Shared pipeline for the 2.x contract family (v_2_1.Parser/v_2_2.Parser subclass this and
+    # each supply their own `_get_schema_mapping`). No contract version implements this class
+    # directly - it's a base, not a parser in its own right.
 
     def _get_config_model(self) -> type[DynamicConfig]:
         return DynamicConfig
@@ -111,11 +101,17 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, dict]) -> None:
             match key:
                 case ("host",):
                     parent_key = ("provider",)
-                    parent = definitions[parent_key]
+                    try:
+                        parent = definitions[parent_key]
+                    except KeyError as e:
+                        raise BundleParsingError("There isn't any host provider definition in bundle") from e
 
                 case ("service", _):
                     parent_key = ("cluster",)
-                    parent = definitions[parent_key]
+                    try:
+                        parent = definitions[parent_key]
+                    except KeyError as e:
+                        raise BundleParsingError("There isn't any cluster definition in bundle") from e
                     propagate_from_parent_to_child = (*propagate_from_parent_to_child, "config_group_customization")
 
                     # patch hc_acl entries where can be patched
@@ -126,7 +122,11 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, dict]) -> None:
 
                 case ("component", service_name, _):
                     parent_key = ("service", service_name)
-                    parent = definitions[parent_key]
+                    try:
+                        parent = definitions[parent_key]
+                    except KeyError as e:
+                        message = f'There isn\'t any definition of service "{service_name}" in bundle'
+                        raise BundleParsingError(message) from e
                     propagate_from_parent_to_child = (*propagate_from_parent_to_child, "config_group_customization")
 
                     for requirement in definition.get("requires") or ():
