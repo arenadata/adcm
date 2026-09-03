@@ -24,7 +24,6 @@ from cm.impl.job.repo import TaskTargetCoreObject
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.locks import delete_task_flag_concern, delete_task_lock_concern
 from cm.legacy.services.job.action import check_hostcomponent_and_get_delta, check_no_blocking_concerns
-from cm.legacy.services.job.run import distribute_concerns
 from cm.legacy.status_api import send_task_status_update_event
 from cm.models import Cluster
 from cm.transition.action import RetrieveStartImpossibleReason
@@ -34,6 +33,7 @@ from core.action.scheduler import Claimer, TaskLivenessStatus, TaskMonitorRegist
 from core.legacy.cluster.operations import construct_mapping_from_delta
 from core.legacy.job.runners import RunnerEnvironment
 from core.result import Fail, Success
+from core.scenarios.concern import ConcernScenarios
 from core.types import BundleID, TaskID
 from django.db.transaction import atomic
 from jobs.scheduler import repo
@@ -240,6 +240,7 @@ class Launcher:
     job_repo: JobRepoI
     claimer: Claimer
     scheduler_repo: repo.SchedulerRepo
+    concern_scenarios: ConcernScenarios
 
     def do(self) -> None:
         with atomic(), self.claimer.claim_first_scheduled_or_created_task() as locked:
@@ -257,6 +258,7 @@ class Launcher:
                         job_repo=self.job_repo,
                         scheduler_repo=self.scheduler_repo,
                         retrieve_sir=self.retrieve_start_impossible_reason,
+                        concern_scenarios=self.concern_scenarios,
                     )
 
                 case ExecutionStatus.SCHEDULED:
@@ -276,11 +278,13 @@ def schedule_task(
     job_repo: JobRepoI,
     scheduler_repo: ModuleType,
     retrieve_sir: RetrieveStartImpossibleReason,
+    concern_scenarios: ConcernScenarios,
 ) -> bool:
     target_orm = job_repo.get_target_orm(task_id)
+    task = job_repo.get_task(id=task_id)
 
     # operation step's task should not be validated
-    if not is_operation_step_task(job_repo.get_task(id=task_id).action_process):
+    if not is_operation_step_task(task.action_process):
         validate(
             task_id=task_id,
             target_orm=target_orm,
@@ -289,8 +293,8 @@ def schedule_task(
             retrieve_sir=retrieve_sir,
         )
 
-    task_orm = scheduler_repo.retrieve_task_orm(task_id=task_id)
-    distribute_concerns(task=task_orm, target=target_orm)
+    first_job = job_repo.find_jobs_of_task(task_id=task_id)[0]
+    concern_scenarios.create_job_concern(task=task, first_job=first_job)
 
     launcher_logger.info(f"Task #{task_id} scheduled to {env_type} queuer")
 

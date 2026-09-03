@@ -26,6 +26,8 @@ import dishka
 
 def main():
     parser = argparse.ArgumentParser()
+    # keep for backward compatibility for now
+    parser.add_argument("command", choices=["start", "restart"])
     parser.add_argument("task_id", type=int)
     args = parser.parse_args()
 

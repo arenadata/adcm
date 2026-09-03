@@ -30,7 +30,15 @@ from core.action._types import (
     TaskMappingDelta,
     TaskShortInfo,
 )
-from core.types import ActionID, ActionTargetDescriptor, CoreObjectDescriptor, HostGroupDescriptor, JobID, TaskID
+from core.types import (
+    ActionID,
+    ActionTargetDescriptor,
+    ConcernID,
+    CoreObjectDescriptor,
+    HostGroupDescriptor,
+    JobID,
+    TaskID,
+)
 
 PreparedConfigValues: TypeAlias = dict[str, Any]
 HasChanged: TypeAlias = bool
@@ -101,6 +109,7 @@ class TaskUpdateDTO(BaseModel):
     post_upgrade_hc_map: list[dict] | None = None
     hostcomponentmap: TaskMappingDelta | None = None
     executor: dict | None = None
+    lock_id: ConcernID | None = None
 
 
 class JobUpdateDTO(BaseModel):

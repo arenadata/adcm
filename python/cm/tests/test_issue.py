@@ -12,11 +12,17 @@
 
 from collections.abc import Iterable
 from operator import attrgetter
+from typing import cast
 from unittest.mock import patch
 
+from core.concern.operations import build_id_chain, build_task_concern
+from core.concern.types import ConcernTarget
+from core.types import ADCMCoreType
 from rbac.scenarios import RBACScenarios
 from tests.suites import GenericTestCase
 
+from cm.impl.concern.repo import ConcernRepo
+from cm.impl.job.repo import JobRepo
 from cm.legacy.hierarchy import Tree
 from cm.legacy.issue import (
     add_concern_to_object,
@@ -27,7 +33,6 @@ from cm.legacy.issue import (
 )
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.concern.checks import object_has_required_services_issue_orm_version, object_imports_has_issue
-from cm.legacy.services.concern.locks import create_task_lock_concern
 from cm.legacy.services.status import notify
 from cm.models import (
     ADCMEntity,
@@ -377,9 +382,22 @@ class TestConcernsRedistribution(GenericTestCase):
     @classmethod
     def add_lock(cls, owner: ADCMEntity, affected_objects: Iterable[ADCMEntity]):
         """Check out lock_affected_objects"""
-        job = gen_job_log(gen_task_log(obj=owner))
+        task_orm = gen_task_log(obj=owner)
+        job_orm = gen_job_log(task_orm)
 
-        lock = create_task_lock_concern(task=job.task)
+        # build+persist directly via core operations instead of the legacy job-run path — this test wants a
+        # bare lock concern to hand-distribute itself, not the real distribution logic
+        job_repo = JobRepo()
+        task = job_repo.get_task(id=task_orm.pk)
+        job = job_repo.get_job(id=job_orm.pk)
+        target = ConcernTarget(
+            id=task.target.id,
+            type=cast(ADCMCoreType, task.target.type),
+            name=task.target.name,
+            id_chain=build_id_chain(task.selector),
+        )
+        draft = build_task_concern(task=task, job=job, target=target)
+        lock = ConcernRepo().create(draft)
 
         for obj in affected_objects:
             add_concern_to_object(object_=obj, concern=ConcernItem.objects.get(id=lock))

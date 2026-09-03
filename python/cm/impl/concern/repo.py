@@ -15,7 +15,9 @@ from collections.abc import Collection
 from typing import Final
 
 from core.concern.repo import ConcernDistribution, ConcernRepoI
+from core.concern.types import ConcernDraft, ConcernRelatedObjects
 from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc
+from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 
 from cm.converters import core_type_to_model
@@ -42,6 +44,34 @@ RETURNING concern.id
 
 
 class ConcernRepo(ConcernRepoI):
+    def create(self, draft: ConcernDraft) -> ConcernID:
+        owner_model = core_type_to_model(core_type=draft.owner.type)
+
+        concern = ConcernItem.objects.create(
+            type=draft.type.value,
+            cause=draft.cause.value,
+            name=draft.name,
+            reason=draft.reason,
+            blocking=draft.blocking,
+            owner_id=draft.owner.id,
+            owner_type=ContentType.objects.get_for_model(owner_model),
+        )
+
+        return concern.pk
+
+    def link(self, *, concern_id: ConcernID, targets: ConcernRelatedObjects) -> None:
+        # NOTE: duplicated from `cm.legacy.services.concern.distribution._add_concern_links_to_objects_in_db`,
+        # to be reconciled once concern distribution itself is reworked
+        for core_type, ids in targets.items():
+            orm_model = core_type_to_model(core_type)
+            id_field = f"{orm_model.__name__.lower()}_id"
+            m2m_model = orm_model.concerns.through
+
+            m2m_model.objects.bulk_create(
+                objs=(m2m_model(concernitem_id=concern_id, **{id_field: object_id}) for object_id in ids),
+                ignore_conflicts=True,
+            )
+
     def update_object_name_in_concerns(
         self, object_: ClusterDesc | HostDesc, previous_name: str, new_name: str
     ) -> tuple[ConcernID, ...]:

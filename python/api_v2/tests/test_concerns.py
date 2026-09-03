@@ -14,6 +14,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.concern.distribution import distribute_concern_on_related_objects
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.concern.messages import ConcernMessage
 from cm.models import (
@@ -416,6 +418,75 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             concerns = ConcernItem.objects.filter(owner_id=provider.pk, owner_type=provider.content_type)
             self.assertEqual(len(concerns), 1)
             self.assertEqual(concerns.first().cause, "config")
+
+    def test_outdated_config_flag_does_not_leak_via_shared_host(self) -> None:
+        # `first_service`/`first_service.first_component` have `enable_outdated_config` on;
+        # `second_service` shares a host with `first_component` but has it off, so it should never
+        # get the flag on its own — the only question is whether *distribution* leaks it there anyway,
+        # the way LOCK/ISSUE concerns do (see `test_adcm_6275_concern_propagation_success`)
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_flag_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_service.state = "notcreated"
+        first_service.save(update_fields=["state"])
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="flag_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        response = self.client.v2[first_service, "configs"].post(
+            data={"config": {"string_param": "changed", "int_param": 12}, "adcmMeta": {}, "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        flag_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name
+        concern = ConcernItem.objects.get(
+            name=flag_name, owner_id=first_service.pk, owner_type=first_service.content_type
+        )
+
+        # distribution (the concern's m2m links), not just ownership
+        # `shared_host` is mapped to `first_component`, so it's within `first_service`'s own
+        # hierarchy and should get the flag too — only the objects reachable solely *through*
+        # the shared host (the sibling service and its component) are the actual leak candidates
+        self.assertIn(concern, first_service.concerns.all())
+        self.assertIn(concern, shared_host.concerns.all())
+        for not_leaked_to in (second_service, second_service_component):
+            self.assertNotIn(concern, not_leaked_to.concerns.all())
+
+    def test_config_issue_leaks_via_shared_host(self) -> None:
+        # unlike FLAG (see `test_outdated_config_flag_does_not_leak_via_shared_host`), ISSUE concerns
+        # owned by a service/component *do* widen to whatever else sits on a shared host — this locks
+        # in that leak for the same topology used in the flag test
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_issue_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="issue_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        first_service_cod = CoreObjectDescriptor(id=first_service.pk, type=ADCMCoreType.SERVICE)
+        issue = create_issue(owner=first_service_cod, cause=ConcernCause.CONFIG)
+        distribute_concern_on_related_objects(owner=first_service_cod, concern_id=issue.pk)
+
+        # distribution (the concern's m2m links), not just ownership
+        for leaked_to in (first_service, shared_host, second_service, second_service_component):
+            self.assertIn(issue, leaked_to.concerns.all())
 
     def test_service_requirements(self):
         cluster = self.uc.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")

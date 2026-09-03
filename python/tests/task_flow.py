@@ -18,6 +18,7 @@ from core.action import ExecutionStatus, TaskRunnerEnvironment, WorkerInfo
 from core.action.job import JobRepoI
 from core.action.scheduler import TaskQueuer
 from core.legacy.job.runners import JobFilterPredicate, TaskRunner, always_true
+from core.scenarios.concern import ConcernScenarios
 from core.types import TaskID
 from jobs.scheduler import repo as scheduler_repo_module
 from use_cases.job.scheduler import queue_task, schedule_task
@@ -90,6 +91,7 @@ class TaskFlow:
             job_repo=self.container.get(JobRepoI),
             scheduler_repo=scheduler_repo_module.SchedulerRepo(scheduler_repo_module),
             retrieve_sir=self.container.get(RetrieveStartImpossibleReason),
+            concern_scenarios=self.container.get(ConcernScenarios),
         )
 
     def queue_task(self, task_id: TaskID) -> None:

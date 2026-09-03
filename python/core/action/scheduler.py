@@ -15,12 +15,13 @@ from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
 from typing import Literal, Protocol, TypeAlias
 import time
 
 from core.action._types import ExecutionStatus, JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo
 from core.shortcuts import UTC
-from core.types import JobID, TaskID
+from core.types import PID, JobID, TaskID
 
 
 def utc_now() -> datetime:
@@ -79,6 +80,17 @@ class TaskQueuer(Protocol):
     env: TaskRunnerEnvironment
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
+        ...
+
+
+class ProcessStarter(Protocol):
+    """
+    Starts a task's process on this machine. Kept separate from `TaskQueuer` since queueing is about picking
+    an environment (local/celery/...), while this is specifically "spawn it here, now" — used directly by
+    immediate (non-scheduled) task launch as well as by the local queuer.
+    """
+
+    def start(self, task_id: TaskID, venv: str, code_dir: Path, log_dir: Path) -> PID:
         ...
 
 

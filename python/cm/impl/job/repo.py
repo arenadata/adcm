@@ -153,6 +153,7 @@ class JobRepo(JobRepoI):
 
         return Task(
             id=id,
+            name=task_record.name,
             display_name=task_record.display_name,
             target=target_,
             owner=_get_task_owner(task_record=task_record),
@@ -272,7 +273,7 @@ class JobRepo(JobRepoI):
             filter_kwargs["status__in"] = filter_.statuses
 
         query = TaskLog.objects.filter(**filter_kwargs).values_list(
-            "id", "executor", "status", "lock_id", "action_id", "action__name"
+            "id", "executor", "status", "lock_id", "action_id", "action__name", "action___venv"
         )
         return [_task_log_fields_to_short_info(fields) for fields in query]
 
@@ -500,13 +501,13 @@ class JobClaimer(Claimer):
 
 
 def _task_log_fields_to_short_info(fields: tuple) -> TaskShortInfo:
-    id_, executor, status, lock_id, action_id, action_name = fields
+    id_, executor, status, lock_id, action_id, action_name, action_venv = fields
     return TaskShortInfo(
         id=id_,
         worker=executor,
         status=ExecutionStatus(status.lower()),
         lock_id=lock_id,
-        action=ActionShortInfo(id=action_id, name=action_name),
+        action=ActionShortInfo(id=action_id, name=action_name, venv=action_venv),
     )
 
 
@@ -588,6 +589,7 @@ def _build_job(job: JobLog) -> Job:
         "id": job.pk,
         "pid": job.pid,
         "name": job.name,
+        "display_name": job.display_name,
         "type": script_type,
         "script": job.script,
         "status": ExecutionStatus(job.status),

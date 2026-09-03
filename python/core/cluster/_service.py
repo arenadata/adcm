@@ -17,11 +17,7 @@ from core.cluster._maintenance_mode import calculate_maintenance_mode_for_cluste
 from core.cluster._operations import find_children_excluding_hosts
 from core.cluster._repo import ClusterRepoI
 from core.cluster._types import ClusterTopology
-from core.types import (
-    ClusterID,
-    ClusterObjectDesc,
-    MaintenanceModeOfObjects,
-)
+from core.types import ClusterID, ClusterObjectDesc, MaintenanceModeOfObjects
 
 
 @dataclass(slots=True)
@@ -32,7 +28,10 @@ class ClusterService:
         return self.repo.get_topology_for_cluster(cluster_id=cluster_id)
 
     def retrieve_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
-        return self.repo.get_clusters_topologies(cluster_ids=cluster_ids)
+        return self.repo.get_topologies_for_clusters(cluster_ids=cluster_ids)
+
+    def retrieve_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
+        return self.repo.get_related_cluster_id(object_=object_)
 
     def find_objects_in_hierarchy(
         self, start_from: ClusterObjectDesc, topology: ClusterTopology

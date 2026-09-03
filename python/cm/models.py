@@ -18,6 +18,8 @@ from uuid import uuid4
 import os.path
 
 from core.action import ScriptType
+from core.concern.types import ConcernCause as _ConcernCause
+from core.concern.types import ConcernType as _ConcernType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.logs import Severity
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
@@ -1411,19 +1413,19 @@ class LogStorage(ADCMModel):
 
 
 class ConcernType(models.TextChoices):
-    LOCK = "lock", "lock"
-    ISSUE = "issue", "issue"
-    FLAG = "flag", "flag"
+    LOCK = _ConcernType.LOCK.value, _ConcernType.LOCK.value
+    ISSUE = _ConcernType.ISSUE.value, _ConcernType.ISSUE.value
+    FLAG = _ConcernType.FLAG.value, _ConcernType.FLAG.value
 
 
 class ConcernCause(models.TextChoices):
-    CONFIG = "config", "config"
-    JOB = "job", "job"
-    HOSTCOMPONENT = "host-component", "host-component"
-    IMPORT = "import", "import"
-    SERVICE = "service", "service"
-    REQUIREMENT = "requirement", "requirement"
-    CONFIGURING_PROCESS = "configuring_process", "configuring_process"
+    CONFIG = _ConcernCause.CONFIG.value, _ConcernCause.CONFIG.value
+    JOB = _ConcernCause.JOB.value, _ConcernCause.JOB.value
+    HOSTCOMPONENT = _ConcernCause.HOSTCOMPONENT.value, _ConcernCause.HOSTCOMPONENT.value
+    IMPORT = _ConcernCause.IMPORT.value, _ConcernCause.IMPORT.value
+    SERVICE = _ConcernCause.SERVICE.value, _ConcernCause.SERVICE.value
+    REQUIREMENT = _ConcernCause.REQUIREMENT.value, _ConcernCause.REQUIREMENT.value
+    CONFIGURING_PROCESS = _ConcernCause.CONFIGURING_PROCESS.value, _ConcernCause.CONFIGURING_PROCESS.value
 
 
 class ConcernItem(ADCMModel):

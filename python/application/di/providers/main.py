@@ -45,10 +45,12 @@ from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.scenarios.cluster import BeforeUpgradeScenarios
+from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
 from core.scenarios.config import ConfigScenarios
+from core.scenarios.status import StatusScenariosI
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
-from dishka import Provider, Scope, provide, provide_all
+from dishka import Provider, Scope, alias, provide, provide_all
 from rbac.scenarios import RBACScenarios
 from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
@@ -162,6 +164,7 @@ class ConcernProvider(Provider):
     scope = Scope.APP
 
     repo = provide(ConcernRepo, provides=ConcernRepoI)
+    distribution_scenarios = provide(ConcernDistributionScenarios)
 
 
 class ProviderProvider(Provider):
@@ -206,6 +209,7 @@ class ScenariosProvider(Provider):
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
     status_scenarios = provide(StatusScenarios)
+    status_scenarios_interface = alias(source=StatusScenarios, provides=StatusScenariosI)
     rbac_scenarios = provide(RBACScenarios)
     fill_wizard_step_spec = provide(
         FillWizardStepSpecLegacy,
@@ -213,6 +217,7 @@ class ScenariosProvider(Provider):
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
     config_scenarios = provide(ConfigScenarios)
+    concern_scenarios = provide(ConcernScenarios)
     before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
 
 

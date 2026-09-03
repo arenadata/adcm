@@ -237,6 +237,7 @@ class _BaseJob(BaseModel, Generic[ScriptTypeT, ScriptNameT, ParamsT]):
     id: int
     pid: int
     name: str
+    display_name: str
     type: ScriptTypeT
     script: ScriptNameT
     status: ExecutionStatus
@@ -337,6 +338,7 @@ class HostComponentChanges(NamedTuple):
 
 class Task(BaseModel):
     id: int
+    name: str = ""
     display_name: str = ""
 
     # Owner is an object on which action is defined
@@ -392,6 +394,7 @@ class WorkerInfo(TypedDict):
 class ActionShortInfo:
     id: ActionID
     name: str
+    venv: str
 
     # NOTE: name-based MM action detection is a placeholder, to be revisited in a follow-up iteration
     @property

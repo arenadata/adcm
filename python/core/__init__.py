@@ -17,12 +17,14 @@ from core import action  # noqa
 from core import adcm
 from core import upgrade
 from core import cluster, metrics, provider
+from core import concern
 from core import logs
 
 __all__ = [
     "action",
     "adcm",
     "cluster",
+    "concern",
     "config",
     "mapping",
     "metrics",
