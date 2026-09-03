@@ -1,0 +1,59 @@
+---
+- type: cluster
+  name: cluster_lookup_config
+  version: 1
+  actions: &id001
+    dummy:
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
+  config: &id002
+    - name: plain_s
+      type: string
+      default: initial
+    - name: plain_i
+      type: integer
+      default: 3
+    - name: plain_f
+      type: float
+      default: 1.5
+    - name: plain_o
+      type: option
+      option:
+        first: 1
+        second: 2
+      default: 1
+    - name: plain_b
+      type: boolean
+      default: false
+    - name: secret
+      type: password
+      required: false
+      default: initial secret
+    - name: g1
+      type: group
+      subs:
+        - name: plain_s
+          type: string
+          default: initial in group
+        - name: plain_i
+          type: integer
+          default: 7
+  contract_version: '2.1'
+  venv: '2.16'
+- type: service
+  name: service_1
+  version: 1
+  actions: *id001
+  config: *id002
+  components:
+    component_1:
+      actions: *id001
+      config: *id002
+- type: service
+  name: service_2
+  version: 1
+  actions: *id001
+  config: *id002
