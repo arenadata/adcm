@@ -18,7 +18,7 @@ from functools import wraps
 from types import ModuleType
 import logging
 
-from cm.converters import orm_object_to_action_target_descriptor
+from cm.converters import core_type_to_model, orm_object_to_action_target_descriptor
 from cm.errors import AdcmEx
 from cm.impl.job.repo import TaskTargetCoreObject
 from cm.legacy.services.cluster import retrieve_cluster_topology
@@ -318,12 +318,14 @@ def validate(
     retrieve_sir: RetrieveStartImpossibleReason,
 ) -> None:
     task = job_repo.get_task(id=task_id)
-    if not task.target:
-        raise LauncherError("Task target is absent.")
+    if not (task.target and task.owner):
+        raise LauncherError("Task owner/target is absent.")
 
     action_orm = scheduler_repo.retrieve_action_orm(action_id=task.action.id)
 
-    if not action_orm.allowed(obj=target_orm):
+    # allowance should be checked against owner, not target, dirty fix for ADCM-8424
+    owner_orm = core_type_to_model(task.owner.type).objects.get(id=task.owner.id)
+    if not action_orm.allowed(obj=owner_orm):
         raise LauncherError("Action is not allowed.")
 
     try:
