@@ -171,7 +171,7 @@ const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWiz
   }, [dispatch, clusterId, hostId, actionId, processId, selectedStep]);
 
   const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
-    if (!clusterId || !hostId || !actionId || !process || !step) {
+    if (!clusterId || !hostId || !actionId || !process) {
       return;
     }
 
