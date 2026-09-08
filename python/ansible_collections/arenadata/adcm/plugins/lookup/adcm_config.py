@@ -10,12 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import ABC
 from collections import OrderedDict
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, NamedTuple
+import os
 import re
 import sys
 import json
@@ -30,12 +32,11 @@ from ansible_plugin.utils import get_service_by_name
 from cm.converters import CoreObject, orm_object_to_core_descriptor
 from cm.errors import AdcmEx, raise_adcm_ex
 from cm.legacy.checker import FormatError, SchemaError, process_rule
-from cm.legacy.services.bundle import ADCMBundlePathResolver, BundlePathResolver, PathResolver, is_path_correct
-from cm.legacy.services.config.patterns import Pattern
+from cm.legacy.services.bundle import is_path_correct
 from cm.legacy.services.job.run import update_related_configs
 from cm.legacy.status_api import send_config_creation_event
-from cm.legacy.utils import deep_merge, obj_to_dict
-from cm.legacy.variant import process_variant
+from cm.legacy.utils import deep_merge
+from cm.legacy.variant import get_variant
 from cm.logger import logger
 from cm.models import (
     ADCM,
@@ -59,6 +60,7 @@ from django.conf import settings
 from django.db.transaction import atomic
 from rbac.roles import apply_policy_for_new_config
 from rest_framework.status import HTTP_409_CONFLICT
+from typing_extensions import Self
 
 DOCUMENTATION = """
     lookup: file
@@ -246,7 +248,201 @@ def set_service_config(job_id: int, cluster_id: int, service_id: int, config: di
 
 
 # Everything below is reachable only from this legacy lookup plugin. It used to live in
-# `cm.legacy.adcm_config.config` and `cm.legacy.api`, but nothing besides this plugin called it.
+# `cm.legacy.adcm_config.config`, `cm.legacy.api` and `ConfigHostGroup` model,
+# but nothing besides this plugin called it.
+
+
+def get_config_spec(group: ConfigHostGroup) -> dict:
+    """Return spec for config"""
+    spec = {}
+    for field in PrototypeConfig.objects.filter(prototype=group.object.prototype, action__isnull=True).order_by(
+        "id",
+    ):
+        group_customization = field.group_customization
+        if group_customization is None:
+            group_customization = group.object.prototype.config_group_customization
+        field_spec = {
+            "type": field.type,
+            "group_customization": group_customization,
+            "limits": field.limits,
+        }
+        if field.subname == "":
+            if field.type == "group":
+                field_spec.update({"fields": {}})
+            spec[field.name] = field_spec
+        else:
+            spec[field.name]["fields"][field.subname] = field_spec
+    return spec
+
+
+def create_group_keys(
+    group: ConfigHostGroup,
+    config_spec: dict,
+    group_keys: dict[str, bool] = None,
+    custom_group_keys: dict[str, bool] = None,
+):
+    """
+    Returns a map of fields that are included in a group,
+    as well as a map of fields that cannot be included in a group
+    """
+
+    if group_keys is None:
+        group_keys = {}
+
+    if custom_group_keys is None:
+        custom_group_keys = {}
+
+    for config_key, config_value in config_spec.items():
+        if config_value["type"] == "group":
+            value = None
+
+            if "activatable" in config_value["limits"]:
+                value = False
+
+            group_keys.setdefault(config_key, {"value": value, "fields": {}})
+            custom_group_keys.setdefault(config_key, {"value": config_value["group_customization"], "fields": {}})
+            create_group_keys(
+                group,
+                config_value["fields"],
+                group_keys[config_key]["fields"],
+                custom_group_keys[config_key]["fields"],
+            )
+        else:
+            group_keys[config_key] = False
+            custom_group_keys[config_key] = config_value["group_customization"]
+
+    return group_keys, custom_group_keys
+
+
+def prepare_files_for_config(group: ConfigHostGroup, config=None) -> None:
+    """Creating file for file type field"""
+
+    if group.config is None:
+        return
+
+    if config is None:
+        config = ConfigLog.objects.get(id=group.config.current).config
+
+    fields = PrototypeConfig.objects.filter(
+        prototype=group.object.prototype,
+        action__isnull=True,
+        type__in={"file", "secretfile"},
+    ).order_by("id")
+    for field in fields:
+        filename = ".".join(
+            [
+                group.object.prototype.type,
+                str(group.object.id),
+                "group",
+                str(group.id),
+                field.name,
+                field.subname,
+            ],
+        )
+        filepath = str(settings.FILE_DIR / filename)
+
+        value = config[field.name][field.subname] if field.subname else config[field.name]
+
+        if field.type == "secretfile":
+            value = ansible_decrypt(msg=value)
+
+        if value is not None:
+            # See cm.adcm_config.py:313
+            if field.name == "ansible_ssh_private_key_file" and value != "" and value[-1] == "-":
+                value += "\n"
+
+            with open(filepath, mode="w", encoding=settings.ENCODING_UTF_8) as f:
+                f.write(value)
+
+            os.chmod(filepath, 0o0600)  # noqa: PTH101
+        else:
+            if os.path.exists(filename):  # noqa: PTH101, PTH110
+                os.remove(filename)  # noqa: PTH107
+
+
+def obj_to_dict(obj: Any, keys: Iterable) -> dict:
+    dictionary = {}
+    for key in keys:
+        if hasattr(obj, key):
+            dictionary[key] = getattr(obj, key)
+
+    return dictionary
+
+
+def process_variant(obj, spec, conf) -> None:
+    def set_variant(_spec):
+        limits = _spec["limits"]
+        limits["source"]["value"] = get_variant(obj, conf, limits)
+
+        return limits
+
+    for key in spec:
+        if "type" in spec[key]:
+            if spec[key]["type"] == "variant":
+                spec[key]["limits"] = set_variant(spec[key])
+        else:
+            for subkey in spec[key]:
+                if spec[key][subkey]["type"] == "variant":
+                    spec[key][subkey]["limits"] = set_variant(spec[key][subkey])
+
+
+class Pattern:
+    __slots__ = ("_pattern", "_compiled")
+
+    def __init__(self, regex_pattern: str) -> None:
+        self._pattern = regex_pattern
+        self._compiled = None
+
+    @property
+    def raw(self) -> str:
+        return self._pattern
+
+    @property
+    def compiled(self) -> re.Pattern:
+        if self._compiled:
+            return self._compiled
+
+        self.compile()
+
+        return self._compiled
+
+    @property
+    def is_valid(self) -> bool:
+        try:
+            self.compile()
+            return True
+        except re.error:
+            return False
+
+    def compile(self) -> Self:
+        self._compiled = self._compiled or re.compile(self._pattern)
+        return self
+
+    def matches(self, value: str) -> bool:
+        return bool(self.compiled.search(value))
+
+
+class PathResolver(ABC):
+    __slots__ = ("_root",)
+
+    _root: Path
+
+    @property
+    def bundle_root(self) -> Path:
+        return self._root
+
+    def resolve(self, path: str | Path) -> Path:
+        return self._root / path
+
+
+class BundlePathResolver(PathResolver):
+    def __init__(self, bundle_hash: str):
+        self._root = settings.BUNDLE_DIR / bundle_hash
+
+
+class ADCMBundlePathResolver(PathResolver):
+    def __init__(self):
+        self._root = settings.BASE_DIR / "conf" / "adcm"
 
 
 def proto_ref(prototype: Prototype) -> str:
@@ -446,7 +642,7 @@ def __merge_config_of_group_with_primary_config(
     current_config_of_group: ConfigLog,
     description: str,
 ) -> ConfigLog:
-    spec = group.get_config_spec()
+    spec = get_config_spec(group=group)
     current_group_keys = current_config_of_group.attr["group_keys"]
 
     config = _merge_config_field(
@@ -462,7 +658,7 @@ def __merge_config_of_group_with_primary_config(
         spec=spec,
     )
 
-    group_keys, custom_group_keys = group.create_group_keys(config_spec=spec)
+    group_keys, custom_group_keys = create_group_keys(group=group, config_spec=spec)
 
     attr["group_keys"] = _clear_group_keys(
         group_keys=deep_merge(origin=group_keys, renovator=current_group_keys), spec=spec
@@ -491,7 +687,7 @@ def __update_host_groups_by_primary_object(
         host_group.config.current = config_log.id
         host_group.config.save(update_fields=["previous", "current"])
 
-        host_group.prepare_files_for_config(config=config_log.config)
+        prepare_files_for_config(group=host_group, config=config_log.config)
 
 
 def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
@@ -908,7 +1104,9 @@ def check_group_keys_attr(attr: dict, spec: dict, config_host_group: ConfigHostG
         raise AdcmEx(code="ATTRIBUTE_ERROR", msg='`attr` must contain "group_keys" key')
 
     group_keys = attr.get("group_keys")
-    _, custom_group_keys = config_host_group.create_group_keys(config_spec=config_host_group.get_config_spec())
+    _, custom_group_keys = create_group_keys(
+        group=config_host_group, config_spec=get_config_spec(group=config_host_group)
+    )
     check_structure_for_group_attr(group_keys=group_keys, spec=spec, key_name="group_keys")
     check_agreement_group_attr(group_keys=group_keys, custom_group_keys=custom_group_keys, spec=spec)
 

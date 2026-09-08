@@ -372,20 +372,3 @@ def get_variant(obj, conf, limits):
         value = source["value"]
 
     return value
-
-
-def process_variant(obj, spec, conf) -> None:
-    def set_variant(_spec):
-        limits = _spec["limits"]
-        limits["source"]["value"] = get_variant(obj, conf, limits)
-
-        return limits
-
-    for key in spec:
-        if "type" in spec[key]:
-            if spec[key]["type"] == "variant":
-                spec[key]["limits"] = set_variant(spec[key])
-        else:
-            for subkey in spec[key]:
-                if spec[key][subkey]["type"] == "variant":
-                    spec[key][subkey]["limits"] = set_variant(spec[key][subkey])

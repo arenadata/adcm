@@ -73,15 +73,6 @@ def deep_merge(origin: dict, renovator: Mapping) -> dict:
     return origin
 
 
-def obj_to_dict(obj: Any, keys: Iterable) -> dict:
-    dictionary = {}
-    for key in keys:
-        if hasattr(obj, key):
-            dictionary[key] = getattr(obj, key)
-
-    return dictionary
-
-
 def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
     for key in keys:
         setattr(obj, key, dictionary[key])
