@@ -15,7 +15,6 @@ from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
-import os.path
 
 from core.action import ScriptType
 from core.concern.types import ConcernCause as _ConcernCause
@@ -23,7 +22,6 @@ from core.concern.types import ConcernType as _ConcernType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.logs import Severity
 from core.types import ADCMCoreType, ExtraActionTargetType
-from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -36,7 +34,6 @@ import core
 
 from cm.errors import AdcmEx
 from cm.logger import logger
-from cm.transition.ansible import ansible_decrypt
 
 
 class ObjectType(models.TextChoices):
@@ -815,65 +812,6 @@ class ConfigHostGroup(ADCMModel):
     class Meta:
         unique_together = ["object_id", "name", "object_type"]
 
-    def get_config_spec(self):
-        """Return spec for config"""
-        spec = {}
-        for field in PrototypeConfig.objects.filter(prototype=self.object.prototype, action__isnull=True).order_by(
-            "id",
-        ):
-            group_customization = field.group_customization
-            if group_customization is None:
-                group_customization = self.object.prototype.config_group_customization
-            field_spec = {
-                "type": field.type,
-                "group_customization": group_customization,
-                "limits": field.limits,
-            }
-            if field.subname == "":
-                if field.type == "group":
-                    field_spec.update({"fields": {}})
-                spec[field.name] = field_spec
-            else:
-                spec[field.name]["fields"][field.subname] = field_spec
-        return spec
-
-    def create_group_keys(
-        self,
-        config_spec: dict,
-        group_keys: dict[str, bool] = None,
-        custom_group_keys: dict[str, bool] = None,
-    ):
-        """
-        Returns a map of fields that are included in a group,
-        as well as a map of fields that cannot be included in a group
-        """
-
-        if group_keys is None:
-            group_keys = {}
-
-        if custom_group_keys is None:
-            custom_group_keys = {}
-
-        for config_key, config_value in config_spec.items():
-            if config_value["type"] == "group":
-                value = None
-
-                if "activatable" in config_value["limits"]:
-                    value = False
-
-                group_keys.setdefault(config_key, {"value": value, "fields": {}})
-                custom_group_keys.setdefault(config_key, {"value": config_value["group_customization"], "fields": {}})
-                self.create_group_keys(
-                    config_value["fields"],
-                    group_keys[config_key]["fields"],
-                    custom_group_keys[config_key]["fields"],
-                )
-            else:
-                group_keys[config_key] = False
-                custom_group_keys[config_key] = config_value["group_customization"]
-
-        return group_keys, custom_group_keys
-
     def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
@@ -894,51 +832,6 @@ class ConfigHostGroup(ADCMModel):
 
         if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
-
-    def prepare_files_for_config(self, config=None):
-        """Creating file for file type field"""
-
-        if self.config is None:
-            return
-
-        if config is None:
-            config = ConfigLog.objects.get(id=self.config.current).config
-
-        fields = PrototypeConfig.objects.filter(
-            prototype=self.object.prototype,
-            action__isnull=True,
-            type__in={"file", "secretfile"},
-        ).order_by("id")
-        for field in fields:
-            filename = ".".join(
-                [
-                    self.object.prototype.type,
-                    str(self.object.id),
-                    "group",
-                    str(self.id),
-                    field.name,
-                    field.subname,
-                ],
-            )
-            filepath = str(settings.FILE_DIR / filename)
-
-            value = config[field.name][field.subname] if field.subname else config[field.name]
-
-            if field.type == "secretfile":
-                value = ansible_decrypt(msg=value)
-
-            if value is not None:
-                # See cm.adcm_config.py:313
-                if field.name == "ansible_ssh_private_key_file" and value != "" and value[-1] == "-":
-                    value += "\n"
-
-                with open(filepath, mode="w", encoding=settings.ENCODING_UTF_8) as f:
-                    f.write(value)
-
-                os.chmod(filepath, 0o0600)  # noqa: PTH101
-            else:
-                if os.path.exists(filename):  # noqa: PTH101, PTH110
-                    os.remove(filename)  # noqa: PTH107
 
 
 class ActionType(models.TextChoices):

@@ -38,9 +38,22 @@ from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run import create_related_configs
-from cm.models import Action, ADCMEntity, Cluster, ConfigLog, Host, Provider, Service
+from cm.models import (
+    Action,
+    ADCMEntity,
+    Cluster,
+    ConcernCause,
+    ConcernType,
+    ConfigHostGroup,
+    ConfigLog,
+    Host,
+    Provider,
+    Service,
+)
+from cm.transition.ansible import ansible_decrypt
 from core.action.job import TaskPayloadDTO
 from core.types import ActionTargetDescriptor
+from django.conf import settings
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 import django.test
 
@@ -71,6 +84,12 @@ class TestAdcmConfigLookup(ParametrizedTestCase, _ADCMTestCase, django.test.Test
 
         cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="Provider For Lookup")
         cls.host = cls.uc.add_host(provider=cls.provider, fqdn="host-1")
+
+        # configs of config host groups are updated alongside owner's one, so groups are a part of environment
+        cls.cluster_group = cls.uc.add_config_host_group(owner=cls.cluster, name="cluster group")
+        cls.second_cluster_group = cls.uc.add_config_host_group(owner=cls.cluster, name="second cluster group")
+        cls.service_group = cls.uc.add_config_host_group(owner=cls.service_1, name="service group")
+        cls.provider_group = cls.uc.add_config_host_group(owner=cls.provider, name="provider group")
 
         # config change is recorded in job's related configs, and those are a snapshot of owner's hierarchy:
         # cluster-owned job covers cluster/services/components, provider-owned one covers provider/hosts
@@ -143,6 +162,29 @@ class TestAdcmConfigLookup(ParametrizedTestCase, _ADCMTestCase, django.test.Test
 
     def get_config_log_amount(self, object_: ADCMEntity) -> int:
         return ConfigLog.objects.filter(obj_ref=object_.config).count()
+
+    def get_group_config(self, group: ConfigHostGroup) -> dict:
+        group.refresh_from_db(fields=["config"])
+
+        return ConfigLog.objects.values_list("config", flat=True).get(id=group.config.current)
+
+    def get_group_attr(self, group: ConfigHostGroup) -> dict:
+        group.refresh_from_db(fields=["config"])
+
+        return ConfigLog.objects.values_list("attr", flat=True).get(id=group.config.current)
+
+    def customize_parameter(self, group: ConfigHostGroup, value: str) -> None:
+        self.uc.change_config(
+            owner=group,
+            values_diff={"g1": {"plain_s": value}},
+            meta_diff={"/g1/plain_s": {"isSynchronized": False}},
+        )
+
+    # Parameter types that require special processing:
+    # files, secrets, complex values, read only and variant parameters
+
+    def get_files(self) -> set[str]:
+        return {path.name for path in Path(settings.FILE_DIR).iterdir()}
 
     # Shortcuts for the most used variable sets
 
@@ -544,3 +586,206 @@ class TestAdcmConfigLookup(ParametrizedTestCase, _ADCMTestCase, django.test.Test
 
         self.assertEqual(result, ["changed"])
         self.assertEqual(self.get_config(self.service_2)["plain_s"], "changed")
+
+    def test_file_parameter_success(self) -> None:
+        result = self.call_lookup("cluster", "file_p", "file content", variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult("file content", True))
+        self.assertEqual(self.get_config(self.cluster)["file_p"], "file content")
+
+        # trailing dot is an empty subkey of a top level parameter
+        file_name = f"cluster.{self.cluster.pk}.file_p."
+        self.assertIn(file_name, self.get_files())
+        self.assertEqual(Path(settings.FILE_DIR, file_name).read_text(encoding="utf-8"), "file content")
+
+    def test_secretfile_parameter_success(self) -> None:
+        result = self.call_lookup("cluster", "secretfile_p", "secret content", variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult("secret content", True))
+
+        stored = self.get_config(self.cluster)["secretfile_p"]
+        self.assertTrue(stored.startswith("$ANSIBLE_VAULT"))
+        self.assertEqual(ansible_decrypt(msg=stored), "secret content")
+
+        file_name = f"cluster.{self.cluster.pk}.secretfile_p."
+        self.assertIn(file_name, self.get_files())
+        self.assertEqual(Path(settings.FILE_DIR, file_name).read_text(encoding="utf-8"), "secret content")
+
+    @parametrize(
+        ("key", "value"),
+        [
+            param("list_p", ["x", "y"], id="list"),
+            param("map_p", {"a": "b"}, id="map"),
+            param("json_p", {"a": [1, 2]}, id="json"),
+        ],
+    )
+    def test_complex_value_is_stored_as_is_success(self, key: str, value: Any) -> None:
+        result = self.call_lookup("cluster", key, value, variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult(value, True))
+        self.assertEqual(self.get_config(self.cluster)[key], value)
+
+    def test_secretmap_parameter_success(self) -> None:
+        # config processing encrypts values in place, and lookup returns the very same object,
+        # so unlike `password` (an immutable string) the returned value is the encrypted one
+        result = self.call_lookup("cluster", "secretmap_p", {"a": "b"}, variables=self.cluster_vars)
+
+        self.assertTrue(result.changed)
+        self.assertEqual(sorted(result.value), ["a"])
+        self.assertTrue(result.value["a"].startswith("$ANSIBLE_VAULT"))
+
+        stored = self.get_config(self.cluster)["secretmap_p"]
+        self.assertEqual(ansible_decrypt(msg=stored["a"]), "b")
+
+    def test_wrong_type_for_complex_parameter_fail(self) -> None:
+        with self.assertRaises(AdcmEx) as err:
+            self.call_lookup("cluster", "list_p", "not a list", variables=self.cluster_vars)
+
+        self.assertEqual(err.exception.code, "CONFIG_VALUE_ERROR")
+        self.assertIn('Value of config key "list_p" should be an array', err.exception.msg)
+
+    def test_read_only_parameter_is_changed_success(self) -> None:
+        # read only rule isn't checked for values by lookup at all, only group activation is guarded by it
+        result = self.call_lookup("cluster", "ro_p", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult("changed", True))
+        self.assertEqual(self.get_config(self.cluster)["ro_p"], "changed")
+
+    def test_not_strict_variant_accepts_value_out_of_source_success(self) -> None:
+        result = self.call_lookup("cluster", "variant_p", "not in list_p", variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult("not in list_p", True))
+        self.assertEqual(self.get_config(self.cluster)["variant_p"], "not in list_p")
+
+    def test_parameter_of_activatable_group_success(self) -> None:
+        result = self.call_lookup("cluster", "ag/plain_s", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(result, PluginResult("changed", True))
+        self.assertEqual(self.get_config(self.cluster)["ag"], {"plain_s": "changed"})
+
+        # activation attribute is taken from the current config and kept as is
+        self.cluster.refresh_from_db(fields=["config"])
+        attr = ConfigLog.objects.values_list("attr", flat=True).get(id=self.cluster.config.current)
+        self.assertEqual(attr, {"ag": {"active": True}})
+
+    # Objects that have config host groups
+
+    @parametrize(
+        ("type_", "target_name", "group_name"),
+        [
+            param("cluster", "cluster", "cluster_group", id="cluster"),
+            param("service", "service_1", "service_group", id="service"),
+            param("provider", "provider", "provider_group", id="provider"),
+        ],
+    )
+    def test_change_is_propagated_to_host_group_success(self, type_: str, target_name: str, group_name: str) -> None:
+        target, group = getattr(self, target_name), getattr(self, group_name)
+        variables = self.provider_vars if type_ == "provider" else self.cluster_vars
+        kwargs = {"service_name": self.service_1.name} if type_ == "service" else {}
+
+        config_logs_before = self.get_config_log_amount(group)
+
+        self.call_lookup(type_, "plain_s", "changed", variables=variables, **kwargs)
+
+        self.assertEqual(self.get_config(target)["plain_s"], "changed")
+        self.assertEqual(self.get_group_config(group)["plain_s"], "changed")
+        self.assertEqual(self.get_config_log_amount(group), config_logs_before + 1)
+
+    def test_change_is_propagated_to_every_group_of_object_success(self) -> None:
+        self.call_lookup("cluster", "plain_s", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(self.get_group_config(self.cluster_group)["plain_s"], "changed")
+        self.assertEqual(self.get_group_config(self.second_cluster_group)["plain_s"], "changed")
+
+    def test_groups_of_other_objects_are_not_touched_success(self) -> None:
+        config_logs_before = self.get_config_log_amount(self.service_group)
+
+        self.call_lookup("cluster", "plain_s", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(self.get_group_config(self.service_group)["plain_s"], "initial")
+        self.assertEqual(self.get_config_log_amount(self.service_group), config_logs_before)
+
+    def test_customized_parameter_of_host_group_is_kept_success(self) -> None:
+        self.customize_parameter(self.cluster_group, "customized")
+
+        self.call_lookup("cluster", "g1/plain_s", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(self.get_config(self.cluster)["g1"]["plain_s"], "changed")
+        self.assertEqual(self.get_group_config(self.cluster_group)["g1"]["plain_s"], "customized")
+
+    def test_not_customized_parameters_are_updated_alongside_customized_one_success(self) -> None:
+        self.customize_parameter(self.cluster_group, "customized")
+
+        self.call_lookup("cluster", "g1/plain_i", 42, variables=self.cluster_vars)
+
+        group_config = self.get_group_config(self.cluster_group)
+        self.assertEqual(group_config["g1"]["plain_i"], 42)
+        self.assertEqual(group_config["g1"]["plain_s"], "customized")
+
+    def test_group_keys_are_kept_success(self) -> None:
+        self.customize_parameter(self.cluster_group, "customized")
+
+        self.call_lookup("cluster", "plain_s", "changed", variables=self.cluster_vars)
+
+        attr = self.get_group_attr(self.cluster_group)
+        self.assertFalse(attr["group_keys"]["plain_s"])
+        self.assertTrue(attr["group_keys"]["g1"]["fields"]["plain_s"])
+
+    def test_activation_attribute_of_group_is_kept_success(self) -> None:
+        self.call_lookup("cluster", "plain_s", "changed", variables=self.cluster_vars)
+
+        self.assertEqual(self.get_group_attr(self.cluster_group)["ag"], {"active": True})
+
+    def test_group_config_description_success(self) -> None:
+        self.call_lookup("cluster", "plain_s", "changed", variables=self.cluster_vars)
+
+        self.cluster_group.refresh_from_db(fields=["config"])
+        description = ConfigLog.objects.values_list("description", flat=True).get(id=self.cluster_group.config.current)
+        self.assertEqual(description, "ansible update")
+
+    def test_unchanged_config_does_not_touch_host_group_success(self) -> None:
+        config_logs_before = self.get_config_log_amount(self.cluster_group)
+
+        self.call_lookup("cluster", "plain_s", "initial", variables=self.cluster_vars)
+
+        self.assertEqual(self.get_config_log_amount(self.cluster_group), config_logs_before)
+
+    def test_files_are_written_for_host_group_success(self) -> None:
+        self.call_lookup("cluster", "file_p", "file content", variables=self.cluster_vars)
+
+        group_file = Path(settings.FILE_DIR, f"cluster.{self.cluster.pk}.group.{self.cluster_group.pk}.file_p.")
+        self.assertTrue(group_file.exists())
+        self.assertEqual(group_file.read_text(encoding="utf-8"), "file content")
+
+        # every file parameter of a group is written, even the ones that were never set
+        untouched_group_file = Path(
+            settings.FILE_DIR, f"cluster.{self.cluster.pk}.group.{self.cluster_group.pk}.secretfile_p."
+        )
+        self.assertTrue(untouched_group_file.exists())
+        self.assertEqual(untouched_group_file.read_text(encoding="utf-8"), "")
+
+    def test_secret_parameter_is_encrypted_in_host_group_success(self) -> None:
+        self.call_lookup("cluster", "secret", "new secret", variables=self.cluster_vars)
+
+        stored = self.get_group_config(self.cluster_group)["secret"]
+        self.assertEqual(ansible_decrypt(msg=stored), "new secret")
+
+    # Config concerns of changed object
+
+    def test_config_concern_is_not_resolved_success(self) -> None:
+        bundle = self.uc.upload_bundle(BUNDLES_DIR / "cluster_lookup_config_required")
+        cluster = self.uc.add_cluster(bundle=bundle, name="Cluster With Required Config")
+
+        self.assertTrue(cluster.concerns.filter(type=ConcernType.ISSUE, cause=ConcernCause.CONFIG).exists())
+
+        job_id = self.prepare_job(owner=cluster)
+        variables = {"job": {"id": job_id, "action": "dummy"}, "cluster": {"id": cluster.pk}}
+
+        result = call_adcm_config_lookup(terms=["cluster", "required_s", "now set"], variables=variables, kwargs={})
+
+        self.assertEqual(result, PluginResult("now set", True))
+        self.assertEqual(self.get_config(cluster)["required_s"], "now set")
+
+        # required parameter is filled, yet the concern stays: lookup doesn't recheck issues
+        cluster.refresh_from_db()
+        self.assertTrue(cluster.concerns.filter(type=ConcernType.ISSUE, cause=ConcernCause.CONFIG).exists())

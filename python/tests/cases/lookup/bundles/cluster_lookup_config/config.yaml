@@ -2,6 +2,7 @@
 - type: cluster
   name: cluster_lookup_config
   version: 1
+  config_group_customization: true
   actions: &id001
     dummy:
       masking: null
@@ -41,11 +42,60 @@
         - name: plain_i
           type: integer
           default: 7
+    - name: file_p
+      type: file
+      required: false
+    - name: secretfile_p
+      type: secretfile
+      required: false
+    - name: list_p
+      type: list
+      required: false
+      default:
+        - a
+        - b
+    - name: map_p
+      type: map
+      required: false
+      default:
+        k: v
+    - name: json_p
+      type: json
+      required: false
+      default:
+        k: v
+    - name: secretmap_p
+      type: secretmap
+      required: false
+      default:
+        k: v
+    - name: ro_p
+      type: string
+      required: false
+      default: read only
+      read_only: any
+    - name: variant_p
+      type: variant
+      required: false
+      source:
+        type: config
+        strict: false
+        name: list_p
+      default: a
+    - name: ag
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: plain_s
+          type: string
+          default: in activatable
   contract_version: '2.1'
   venv: '2.16'
 - type: service
   name: service_1
   version: 1
+  config_group_customization: true
   actions: *id001
   config: *id002
   components:
