@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from cm.models import (
     Action,
     Bundle,
@@ -39,6 +38,8 @@ ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
 
 class TestUpgrade(ADCMDjangoAPISuite):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -133,7 +134,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 7)
+        self.assertEqual(len(response.json()), 8)
 
         for upgrade in response.json():
             self.assertIn("bundle", upgrade)
@@ -478,8 +479,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
     def test_list_upgrades_permission_success(self):
         permission_cases = (
-            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 7),
-            (self.cluster_1, [], "ADCM User", 7),
+            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 8),
+            (self.cluster_1, [], "ADCM User", 8),
             (self.provider, [], "ADCM User", 3),
             (self.provider, self.provider, "Upgrade provider bundle", 3),
         )
@@ -595,6 +596,21 @@ class TestUpgrade(ADCMDjangoAPISuite):
         config = ConfigLog.objects.get(id=service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)
+
+    def test_adcm_8031_template_error_throws_500(self):
+        upgrade = Upgrade.objects.get(name="adcm_8031_upgrade")
+        response = self.client.v2[self.cluster_1, "upgrades", upgrade, "run"].post()
+
+        expected_error = {
+            "code": "BUNDLE_DEFINITION_ERROR",
+            "level": "error",
+            "desc": (
+                "Rendering result is expected to be list of dicts: adcm_8031_scripts_template_irrelevant_condition.j2"
+            ),
+        }
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertDictEqual(response.json(), expected_error)
 
     def test_adcm_8315_revert_upgrade_after_removing_service_and_component(self):
         self.accept_license_of_first_service()
