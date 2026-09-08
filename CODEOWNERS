@@ -18,3 +18,4 @@ Makefile @arenadata/teams/python/adcm
 uv.lock  @arenadata/teams/python/adcm
 pyproject.toml @arenadata/teams/python/adcm
 README.md @v.remizov @d.bardin @k.fedorenko @arenadata/teams/python/adcm
+CONTRIBUTING.md @v.remizov @arenadata/teams/python/adcm
