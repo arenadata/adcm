@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Generator, Iterable, Sequence
 from configparser import ConfigParser
 from dataclasses import asdict
 from functools import partial
@@ -22,12 +22,12 @@ import json
 import traceback
 
 from core.action import (
-    ActionConfigKeyRef,
     AssociatedProcess,
     ConfigApplyChangeEntry,
     HcAclRule,
-    HostGroupOwner,
+    HostGroupReference,
     ServiceManageServiceEntry,
+    TargetCluster,
     Task,
     TaskMappingDelta,
 )
@@ -35,23 +35,22 @@ from core.action.job import TaskUpdateDTO
 from core.action.types import (
     AnsibleScript,
     ConfigApplyScript,
-    ConfigHostGroupApplyScript,
     HcApplyScript,
-    HostDuplicatesApplyScript,
+    HostGroupManageScript,
+    HostManageScript,
     PythonScript,
     RichJob,
     ServiceManageScript,
     SimpleInternalScript,
 )
 from core.cluster import ClusterService
-from core.config import ConfigService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
 from core.logs import LogsService
 from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
-from core.types import ADCMCoreType, ClusterID, ComponentNameKey
+from core.types import ADCMCoreType, ClusterID, ComponentNameKey, HostID, ObjectID
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -60,14 +59,36 @@ from rbac.roles import re_apply_policy_for_jobs
 from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
-from use_cases.transition.config_host_group import (
-    ConfigHostGroupOwner,
-    ensure_config_host_group,
-    remove_config_host_group,
-    retrieve_group_host_names,
+from use_cases.transition.config import (
+    UpdateConfigurationFromJob,
+    UpdateHostGroupConfigurationFromJob,
+    apply_config_changes,
+    apply_config_changes_to_host_group,
 )
-from use_cases.transition.host.share import share_cluster_hosts, unshare_cluster_hosts
+from use_cases.transition.host_group import (
+    GroupAddress,
+    GroupOutcome,
+    add_hosts,
+    create_group,
+    drop_hosts,
+    group_key,
+    remove_groups,
+    resolve_host_names,
+    retrieve_group_hosts,
+    retrieve_groups,
+    set_description,
+)
+from use_cases.transition.host_manage import (
+    SelectionContext,
+    add_duplicates,
+    duplicates_here,
+    forget_hosts_in_delta,
+    merge_mapping_delta,
+    remove_duplicates,
+    resolve_source,
+    write_mapping_delta,
+)
+from use_cases.transition.object_address import ObjectContext, resolve_object_targets
 from use_cases.transition.service_manage import ManageClusterServices
 import core
 
@@ -104,7 +125,7 @@ from cm.models import (
     AnsibleConfig,
     Cluster,
     Component,
-    Host,
+    ConfigHostGroup,
     LogStorage,
     Process,
     Prototype,
@@ -130,8 +151,8 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
         before_upgrade_scenarios: BeforeUpgradeScenarios,
-        config_service: ConfigService,
         status_scenarios: StatusScenarios,
+        update_host_group_configuration: UpdateHostGroupConfigurationFromJob,
     ):
         self._default_ansible_finalizers = (
             lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.runtime.id),
@@ -165,16 +186,18 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                 cluster_uc=reset_cluster_before_upgrade,
                 provider_uc=reset_provider_before_upgrade,
             ),
-            "host_duplicates_apply": partial(
-                internal_script_host_duplicates_apply,
-                config_service=config_service,
+            "host_manage": partial(
+                internal_script_host_manage,
+                config_service=self._config_service,
                 rbac_scenarios=rbac_scenarios,
                 status_scenarios=status_scenarios,
                 cluster_service=cluster_service,
             ),
-            "config_host_group_apply": partial(
-                internal_script_config_host_group_apply,
+            "host_group_manage": partial(
+                internal_script_host_group_manage,
                 rbac_scenarios=rbac_scenarios,
+                config_service=self._config_service,
+                update_host_group_configuration=update_host_group_configuration,
             ),
         }
 
@@ -219,8 +242,8 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                     | HcApplyScript()
                     | ConfigApplyScript()
                     | ServiceManageScript()
-                    | HostDuplicatesApplyScript()
-                    | ConfigHostGroupApplyScript()
+                    | HostManageScript()
+                    | HostGroupManageScript()
                 ):
                     script = partial(self._internal_script(job_info), task=task, job=job_info)
                     executor = InternalExecutor(config=ExecutorConfig(work_dir=work_dir), script=script)
@@ -508,187 +531,395 @@ def internal_script_before_upgrade_clean(
     return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_host_duplicates_apply(
+def internal_script_host_manage(
     task: Task,
     job: RichJob,
-    config_service: ConfigService,
+    config_service: core.config.ConfigService,
     rbac_scenarios: RBACScenarios,
     status_scenarios: StatusScenarios,
     cluster_service: ClusterService,
 ) -> InternalScriptResult:
-    script_name = "host_duplicates_apply"
+    script_name = "host_manage"
     cluster_id = _cluster_id_of_task_owner(task=task, script_name=script_name)
-    source_name = _value_from_action_config(task=task, reference=job.spec.script.params.source, script_name=script_name)
+    params = job.spec.script.params
 
-    if job.spec.script.params.operation == "add":
-        source_cluster_id = Cluster.objects.values_list("id", flat=True).filter(name=source_name).first()
-        if source_cluster_id is None:
-            raise AdcmEx(
-                code="CLUSTER_NOT_FOUND",
-                msg=f'Cluster "{source_name}" is not managed by this ADCM, so its hosts can\'t be duplicated in here',
-            )
+    context = SelectionContext(cluster_id=cluster_id, provider_id=_provider_id_of_task(task=task))
 
-        if source_cluster_id == cluster_id:
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg="A cluster can't hold duplicates of its own hosts")
+    with atomic():
+        selected = resolve_source(source=params.source, context=context)
 
-        outcome = share_cluster_hosts(
-            source_cluster_id=source_cluster_id,
-            target_cluster_id=cluster_id,
-            config_service=config_service,
-            rbac_scenarios=rbac_scenarios,
-            status_scenarios=status_scenarios,
+        match params.operation:
+            case "add_duplicates":
+                return _host_manage_add_duplicates(
+                    task=task,
+                    job=job,
+                    selected=selected,
+                    cluster_id=cluster_id,
+                    config_service=config_service,
+                    rbac_scenarios=rbac_scenarios,
+                    status_scenarios=status_scenarios,
+                )
+
+            case "add_to_groups":
+                added, removed = _apply_group_membership(
+                    task=task,
+                    references=params.groups or (),
+                    host_ids=duplicates_here(host_ids=selected, cluster_id=cluster_id),
+                    cluster_id=cluster_id,
+                    script_name=script_name,
+                )
+
+                return InternalScriptResult(
+                    code=0,
+                    message=_build_result_message(
+                        script_name=script_name,
+                        full_complete_message=f"the hosts are in their groups ({added} membership(s) added)",
+                        without_updates_message="the hosts were added to their groups",
+                        with_updates=bool(added or removed),
+                    ),
+                )
+
+            case _:
+                return _host_manage_remove_duplicates(
+                    task=task,
+                    selected=selected,
+                    cluster_id=cluster_id,
+                    cluster_service=cluster_service,
+                    rbac_scenarios=rbac_scenarios,
+                )
+
+
+def _host_manage_add_duplicates(
+    task: Task,
+    job: RichJob,
+    selected: list[HostID],
+    cluster_id: ClusterID,
+    config_service: core.config.ConfigService,
+    rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
+) -> InternalScriptResult:
+    script_name = "host_manage"
+    params = job.spec.script.params
+
+    target_cluster_ids = _resolve_target_clusters(targets=params.target, here=cluster_id)
+
+    if cluster_id not in target_cluster_ids and (params.mapping_rules or params.groups):
+        raise AdcmEx(
+            code="INTERNAL_SERVER_ERROR",
+            msg="`mapping_rules` and `groups` act on this cluster, but `target` sends every "
+            "duplicate somewhere else - there would be nothing here for them to apply to",
         )
 
-        result_message = _build_result_message(
+    outcome = add_duplicates(
+        source_host_ids=selected,
+        target_cluster_ids=target_cluster_ids,
+        here=cluster_id,
+        config_service=config_service,
+        rbac_scenarios=rbac_scenarios,
+        status_scenarios=status_scenarios,
+    )
+
+    mapped = {}
+    if params.mapping_rules:
+        # into a delta of its own first: a task that turns out to need no mapping change must
+        # not end up carrying an empty delta it did not have before
+        prepared = TaskMappingDelta()
+        mapped = write_mapping_delta(
+            delta=prepared, rules=params.mapping_rules, host_ids=outcome.here, cluster_id=cluster_id
+        )
+        if mapped:
+            delta = _mapping_delta_of_task(task=task)
+            merge_mapping_delta(into=delta, addition=prepared)
+            JobRepo().update_task(id=task.id, data=TaskUpdateDTO(hostcomponentmap=delta))
+
+    added, _ = _apply_group_membership(
+        task=task,
+        references=params.groups or (),
+        host_ids=set(outcome.here),
+        cluster_id=cluster_id,
+        script_name=script_name,
+    )
+
+    details = [f"{outcome.created_count} created", f"{outcome.existing_count} already here"]
+    if mapped:
+        details.append(f"{sum(mapped.values())} mapping change(s) prepared")
+    if added:
+        details.append(f"{added} group membership(s) added")
+
+    return InternalScriptResult(
+        code=0,
+        message=_build_result_message(
             script_name=script_name,
-            full_complete_message=f'the hosts of "{source_name}" are duplicated in here '
-            f"({len(outcome.created)} created, {len(outcome.existing)} were already available)",
+            full_complete_message=f"the selected hosts are duplicated here ({', '.join(details)})",
             without_updates_message="the hosts were duplicated",
-            with_updates=bool(outcome.created),
-        )
-        return InternalScriptResult(code=0, message=result_message)
+            with_updates=bool(outcome.created_count or mapped or added),
+        ),
+    )
 
-    # operation == "remove"
-    names = set(_duplicates_of_source(cluster_id=cluster_id, source_name=source_name))
 
-    # The source cluster may already be deleted, taking `original.cluster` with it; the
-    # configuration host group that tracks the shared hosts (named after the source cluster)
-    # is what outlasts it.
-    if job.spec.script.params.group is not None:
-        group_owner = _resolve_host_group_owner(task=task, rule=job.spec.script.params.group, script_name=script_name)
-        names |= set(retrieve_group_host_names(owner=group_owner, name=source_name))
-
-    outcome = unshare_cluster_hosts(
-        target_cluster_id=cluster_id,
-        fqdns=names,
+def _host_manage_remove_duplicates(
+    task: Task,
+    selected: list[HostID],
+    cluster_id: ClusterID,
+    cluster_service: ClusterService,
+    rbac_scenarios: RBACScenarios,
+) -> InternalScriptResult:
+    outcome = remove_duplicates(
+        source_host_ids=selected,
+        here=cluster_id,
         cluster_service=cluster_service,
         rbac_scenarios=rbac_scenarios,
     )
 
-    result_message = _build_result_message(
-        script_name=script_name,
-        full_complete_message=f'the duplicates of "{source_name}" hosts are removed ({len(outcome.removed)} deleted)',
-        without_updates_message="the duplicates were removed",
-        with_updates=bool(outcome.removed),
+    # The delta is applied once more when the task finishes; a host deleted here must not be
+    # left in it, or that final application fails on a host the cluster no longer has.
+    delta = task.hostcomponent.mapping_delta
+    if delta is not None and outcome.removed_ids and forget_hosts_in_delta(delta=delta, host_ids=outcome.removed_ids):
+        JobRepo().update_task(id=task.id, data=TaskUpdateDTO(hostcomponentmap=delta))
+
+    return InternalScriptResult(
+        code=0,
+        message=_build_result_message(
+            script_name="host_manage",
+            full_complete_message=f"the duplicates of the selected hosts are gone ({len(outcome.removed)} deleted)",
+            without_updates_message="the duplicates were removed",
+            with_updates=bool(outcome.removed),
+        ),
     )
-    return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_config_host_group_apply(
+def internal_script_host_group_manage(
     task: Task,
     job: RichJob,
     rbac_scenarios: RBACScenarios,
+    config_service: core.config.ConfigService,
+    update_host_group_configuration: UpdateHostGroupConfigurationFromJob,
 ) -> InternalScriptResult:
-    script_name = "config_host_group_apply"
-    owner = _resolve_host_group_owner(task=task, rule=job.spec.script.params.owner, script_name=script_name)
-    name = _value_from_action_config(task=task, reference=job.spec.script.params.source, script_name=script_name)
+    script_name = "host_group_manage"
+    cluster_id = _cluster_id_of_task_owner(task=task, script_name=script_name, required=False)
+    params = job.spec.script.params
 
-    if job.spec.script.params.operation == "ensure":
-        cluster_id = _cluster_id_of_task_owner(task=task, script_name=script_name)
-        hosts = _duplicates_of_source(cluster_id=cluster_id, source_name=name)
-
-        outcome = ensure_config_host_group(
-            owner=owner,
-            name=name,
-            hosts=hosts,
-            rbac_scenarios=rbac_scenarios,
-            description=job.spec.script.params.description,
-        )
-
-        result_message = _build_result_message(
-            script_name=script_name,
-            full_complete_message=f'the "{name}" configuration host group is in place '
-            f"({len(outcome.added)} host(s) added)",
-            without_updates_message="the group was set up",
-            with_updates=outcome.created or bool(outcome.added),
-        )
-        return InternalScriptResult(code=0, message=result_message)
-
-    # operation == "remove"
-    outcome = remove_config_host_group(owner=owner, name=name)
-
-    result_message = _build_result_message(
-        script_name=script_name,
-        full_complete_message=f'the "{name}" configuration host group is removed '
-        f"(held {len(outcome.held)} host(s))",
-        without_updates_message="the group was removed",
-        with_updates=outcome.existed,
+    owners = resolve_object_targets(
+        targets={entry.object for entry in params.groups},
+        context=ObjectContext(cluster_id=cluster_id, provider_id=_provider_id_of_task(task=task)),
+        addressed_by=f"`{script_name}`",
     )
-    return InternalScriptResult(code=0, message=result_message)
+    addresses = {
+        id(entry): GroupAddress(kind=entry.type, owner=owners[entry.object], name=entry.name) for entry in params.groups
+    }
+
+    with atomic():
+        if params.operation == "remove":
+            removed = remove_groups(addresses=set(addresses.values()))
+
+            return InternalScriptResult(
+                code=0,
+                message=_build_result_message(
+                    script_name=script_name,
+                    full_complete_message=f"the named host groups are gone ({len(removed)} removed)",
+                    without_updates_message="the groups were removed",
+                    with_updates=bool(removed),
+                ),
+            )
+
+        outcome = GroupOutcome()
+        existing = retrieve_groups(addresses=set(addresses.values()))
+        membership = retrieve_group_hosts(groups=existing.values())
+
+        groups_of_entry = {}
+        owners_of_new_groups = []
+
+        for entry in params.groups:
+            address = addresses[id(entry)]
+            group = existing.get(address)
+
+            if group is None:
+                group = create_group(
+                    address=address, description=entry.description or "", config_service=config_service
+                )
+                owners_of_new_groups.append(address.owner if isinstance(group, ConfigHostGroup) else None)
+                outcome.created.append(str(address))
+            elif set_description(group=group, description=entry.description or ""):
+                outcome.updated.append(str(address))
+
+            groups_of_entry[id(entry)] = group
+
+        # A configuration group carries its own object permissions, so the owner's policies have
+        # to be re-applied once a group exists - once for the whole batch, because doing it per
+        # group repeats work whose cost grows with everything the policy covers.
+        for owner in {owner for owner in owners_of_new_groups if owner is not None}:
+            rbac_scenarios.re_apply_object_policy(apply_object=owner)
+
+        # Removals for every group first, then additions: a host belongs to at most one
+        # configuration group of an owner, so moving one between two groups of the same owner
+        # only works if it has left the first before it is offered to the second.
+        wanted_of_entry = {}
+        for entry in params.groups:
+            if entry.hosts is None:
+                continue
+
+            group = groups_of_entry[id(entry)]
+            wanted = set(resolve_host_names(owner=addresses[id(entry)].owner, names=entry.hosts).values())
+            wanted_of_entry[id(entry)] = wanted
+            outcome.hosts_removed += drop_hosts(
+                group=group, wanted=wanted, held=membership.get(group_key(group), set())
+            )
+
+        for entry in params.groups:
+            if entry.hosts is None:
+                continue
+
+            group = groups_of_entry[id(entry)]
+            outcome.hosts_added += add_hosts(
+                group=group, wanted=wanted_of_entry[id(entry)], held=membership.get(group_key(group), set())
+            )
+
+        for entry in params.groups:
+            if not entry.parameters:
+                continue
+
+            address = addresses[id(entry)]
+            changed = apply_config_changes_to_host_group(
+                db_object=address.owner,
+                group=groups_of_entry[id(entry)],
+                parameters=[asdict(parameter) for parameter in entry.parameters],
+                changes_description=f"{task.display_name} process update",
+                update_configuration=update_host_group_configuration,
+            )
+            if changed and str(address) not in outcome.updated:
+                outcome.updated.append(str(address))
+
+    details = [
+        f"{len(outcome.created)} created",
+        f"{len(outcome.updated)} updated",
+        f"{outcome.hosts_added} host(s) added",
+        f"{outcome.hosts_removed} host(s) removed",
+    ]
+
+    return InternalScriptResult(
+        code=0,
+        message=_build_result_message(
+            script_name=script_name,
+            full_complete_message=f"the named host groups are in place ({', '.join(details)})",
+            without_updates_message="the groups were set up",
+            with_updates=outcome.with_updates,
+        ),
+    )
 
 
-def _cluster_id_of_task_owner(task: Task, script_name: str) -> ClusterID:
-    if not task.owner or task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+def _cluster_id_of_task_owner(task: Task, script_name: str, required: bool = True) -> ClusterID | None:
+    if task.owner is None:
         raise AdcmEx(
             code="WRONG_OWNER",
-            msg=f"Internal script `{script_name}` can only be defined in cluster, service or component context",
+            msg=f"Internal script `{script_name}` can't run in a task without an owner",
         )
 
     if task.owner.type == ADCMCoreType.CLUSTER:
         return task.owner.id
 
-    return task.owner.related_objects.cluster.id
+    if task.owner.type in {ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
+        return task.owner.related_objects.cluster.id
 
-
-def _value_from_action_config(task: Task, reference: ActionConfigKeyRef, script_name: str) -> str:
-    value = task.config or {}
-    for part in reference.config_key.strip("/").split("/"):
-        if not isinstance(value, dict) or part not in value:
-            raise AdcmEx(
-                code="INTERNAL_SERVER_ERROR",
-                msg=f"Internal script `{script_name}` expects the action configuration "
-                f'to have "{reference.config_key}"',
-            )
-        value = value[part]
-
-    if not isinstance(value, str) or not value:
+    if required:
         raise AdcmEx(
-            code="INTERNAL_SERVER_ERROR",
-            msg=f'"{reference.config_key}" of the action configuration must be a non-empty string '
-            f"for internal script `{script_name}`",
+            code="WRONG_OWNER",
+            msg=f"Internal script `{script_name}` can only be defined in cluster, service or component context",
         )
 
-    return value
+    return None
 
 
-def _duplicates_of_source(cluster_id: ClusterID, source_name: str) -> dict[str, int]:
-    """Hosts of the cluster that are duplicates of hosts of the cluster named `source_name`."""
+def _provider_id_of_task(task: Task) -> ObjectID | None:
+    if task.owner is None:
+        return None
 
-    return dict(
-        Host.objects.filter(
-            cluster_id=cluster_id, original__isnull=False, original__cluster__name=source_name
-        ).values_list("fqdn", "id")
+    if task.owner.type == ADCMCoreType.PROVIDER:
+        return task.owner.id
+
+    provider = task.owner.related_objects.provider
+    return provider.id if provider else None
+
+
+def _resolve_target_clusters(targets: Sequence[TargetCluster] | None, here: ClusterID) -> list[ClusterID]:
+    if not targets:
+        return [here]
+
+    names = {target.cluster_name for target in targets}
+    found = dict(Cluster.objects.filter(name__in=names).values_list("name", "id"))
+
+    missing = sorted(names - set(found))
+    if missing:
+        raise AdcmEx(
+            code="CLUSTER_NOT_FOUND",
+            msg=f"`target` names {', '.join(missing)}, which this ADCM does not manage",
+        )
+
+    return sorted(found.values())
+
+
+def _mapping_delta_of_task(task: Task) -> TaskMappingDelta:
+    """The delta this task carries, created on demand.
+
+    Internal scripts of one task all hold the same `Task`, so a delta put here is what a later
+    `hc_apply` in the same task reads. It is written to the database as well, which is where
+    the inventory of every job after this one picks it up.
+    """
+
+    if task.hostcomponent.mapping_delta is None:
+        task.hostcomponent = task.hostcomponent._replace(mapping_delta=TaskMappingDelta())
+
+    return task.hostcomponent.mapping_delta
+
+
+def _apply_group_membership(
+    task: Task,
+    references: Sequence[HostGroupReference],
+    host_ids: set[HostID],
+    cluster_id: ClusterID,
+    script_name: str,
+) -> tuple[int, int]:
+    """Add the given hosts to every named group. The groups must already exist."""
+
+    if not references or not host_ids:
+        return 0, 0
+
+    default_owner = core_type_to_model(core_type=task.owner.type).objects.get(pk=task.owner.id)
+
+    explicit = {reference.object for reference in references if reference.object is not None}
+    owners = resolve_object_targets(
+        targets=explicit,
+        context=ObjectContext(cluster_id=cluster_id, provider_id=_provider_id_of_task(task=task)),
+        addressed_by=f"`{script_name}` `groups`",
     )
 
+    addresses = [
+        GroupAddress(
+            kind=reference.type,
+            owner=owners[reference.object] if reference.object is not None else default_owner,
+            name=reference.name,
+        )
+        for reference in references
+    ]
 
-def _resolve_host_group_owner(task: Task, rule: HostGroupOwner | None, script_name: str) -> ConfigHostGroupOwner:
-    if rule is None:
-        if task.owner is None or task.owner.type in {ADCMCoreType.HOST, ADCMCoreType.ADCM}:
-            raise AdcmEx(
-                code="WRONG_OWNER",
-                msg=f"Internal script `{script_name}` can't default the group owner "
-                "from a task without a cluster, service, component or provider owner",
-            )
-
-        return core_type_to_model(core_type=task.owner.type).objects.get(pk=task.owner.id)
-
-    # same resolution as `_extract_apply_config_target`, to preserve a single mechanism
-    # with the adcm_config plugin's object addressing
-    from ansible_plugin.base import CoreObjectTargetDescription, VarsContextSection, _from_target_description
-    from ansible_plugin.errors import PluginTargetDetectionError
-
-    context = VarsContextSection(**context_m.get_run_context(task=task))
-    target_description = CoreObjectTargetDescription(**asdict(rule))
-
-    try:
-        target = _from_target_description(target_description, context)
-    except PluginTargetDetectionError as e:
+    existing = retrieve_groups(addresses=set(addresses))
+    missing = sorted(str(address) for address in addresses if address not in existing)
+    if missing:
         raise AdcmEx(
-            code="INTERNAL_SERVER_ERROR",
-            msg=f"Internal script `{script_name}` names a non-existing group owner {asdict(rule)}",
-        ) from e
+            code="GROUP_CONFIG_NOT_FOUND",
+            msg=f"`{script_name}` puts hosts into {', '.join(missing)}, which does not exist. "
+            "Create it with `host_group_manage` first - this script only manages membership.",
+        )
 
-    return core_type_to_model(core_type=target.type).objects.get(pk=target.id)
+    membership = retrieve_group_hosts(groups=existing.values())
+
+    added = 0
+    # deduplicated: two references naming the same group would otherwise be handed the same
+    # "already held" set twice and try to insert the same membership rows again
+    for address in sorted(set(addresses), key=str):
+        group = existing[address]
+        added += add_hosts(group=group, wanted=host_ids, held=membership.get(group_key(group), set()))
+
+    return added, 0
 
 
 def _build_result_message(
@@ -846,7 +1077,10 @@ def prepare_ansible_inventory(
 ) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
-    if task.action.hc_acl:
+    # `host_manage` writes a mapping delta of its own, and an action that uses it does not have
+    # to declare `hc_acl`: the `.add` and `.remove` groups the delta puts in this inventory are
+    # how the job after it finds the hosts it has to work on.
+    if task.action.hc_acl or task.hostcomponent.mapping_delta is not None:
         delta = task.hostcomponent.mapping_delta
 
     if task.action_process and topology:

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from copy import copy
 from itertools import chain
 from operator import itemgetter
@@ -446,6 +446,39 @@ def _get_own_concerns_of_objects(
         objects_concerns[model_name_to_core_type(concern.owner_type.model)][concern.owner_id].add(concern.id)
 
     return objects_concerns
+
+
+def distribute_concern_from_provider_to_hosts(host_ids: Collection[int]) -> AffectedObjectConcernMap:
+    """Attach the concerns of each host's provider to that host, for many hosts at once.
+
+    The batched form of `distribute_concern_from_provider_to_host`: two queries plus one bulk
+    insert regardless of how many hosts are given, so a caller that creates hosts in bulk does
+    not pay per host here.
+    """
+
+    provider_of_host = dict(Host.objects.filter(id__in=host_ids).values_list("id", "provider_id"))
+    if not provider_of_host:
+        return {}
+
+    concerns_of_provider = defaultdict(set)
+    for provider_id, concern_id in ConcernItem.objects.filter(
+        owner_id__in=set(filter(None, provider_of_host.values())),
+        owner_type=ContentType.objects.get_for_model(Provider),
+    ).values_list("owner_id", "id"):
+        concerns_of_provider[provider_id].add(concern_id)
+
+    concerns_of_host = {
+        host_id: concerns_of_provider[provider_id]
+        for host_id, provider_id in provider_of_host.items()
+        if concerns_of_provider.get(provider_id)
+    }
+    if not concerns_of_host:
+        return {}
+
+    added = {ADCMCoreType.HOST: concerns_of_host}
+    _update_db_concerns_state(added=added, removed={})
+
+    return added
 
 
 def distribute_concern_from_provider_to_host(host_id: int) -> AffectedObjectConcernMap:

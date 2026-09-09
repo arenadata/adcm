@@ -29,10 +29,12 @@ def get_original_host(host_id: HostID) -> Host:
     return Host.objects.get(original__isnull=True, id=host_id)
 
 
-def duplicate_host_record(
+def build_duplicate_host_record(
     host: Host,
     overrides: DuplicateHostOverrides,
 ) -> Host:
+    """The unsaved duplicate row of a host, for callers that insert several at once."""
+
     duplicate = copy(host)
 
     # erase fields that shouldn't be copied
@@ -45,6 +47,14 @@ def duplicate_host_record(
     duplicate.fqdn = overrides.name
     duplicate.description = overrides.description
 
+    return duplicate
+
+
+def duplicate_host_record(
+    host: Host,
+    overrides: DuplicateHostOverrides,
+) -> Host:
+    duplicate = build_duplicate_host_record(host=host, overrides=overrides)
     duplicate.save()
 
     return duplicate

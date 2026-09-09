@@ -19,11 +19,13 @@ from unittest.mock import Mock, patch
 from pydantic import TypeAdapter, ValidationError
 import yaml
 
-from core.action import ScriptType
+from core.action import ComponentHostSource, HcAclRule, HostGroupParameter, ScriptType
 from core.action.types import (
     AnsibleScript,
     AnsibleScriptParams,
     ExecutionStyle,
+    HostGroupManageScript,
+    HostManageScript,
     JobDetails,
     JobSpecV1,
     PythonScript,
@@ -2016,3 +2018,370 @@ class TestBundleDefinitionConversion(TestCase):
         result = self.parse([raw], path=".")
 
         self.assertEqual(result[("cluster",)].upgrades, upgrades)
+
+
+class TestHostManage(TestCase):
+    """The `host_manage` and `host_group_manage` internal scripts"""
+
+    scripts_yaml = """
+    - name: share hosts
+      script: host_manage
+      script_type: internal
+      params:
+        operation: add_duplicates
+        source:
+          - type: component
+            cluster_name: adb-one
+            service_name: adb
+            component_name: segment
+          - type: cluster
+            cluster_name: adb-two
+        mapping_rules:
+          - {service: adb_clusters, component: adcc_agent, action: add}
+    - name: fill groups
+      script: host_manage
+      script_type: internal
+      params:
+        operation: add_to_groups
+        source:
+          - type: cluster
+            cluster_name: adb-one
+        groups:
+          - name: adb-one
+            type: config_host_group
+            object: {type: service, service_name: adb_clusters}
+    - name: release hosts
+      script: host_manage
+      script_type: internal
+      params:
+        operation: remove_duplicates
+        source:
+          - type: config_host_group
+            name: adb-one
+            object: {type: service, service_name: adb_clusters}
+    - name: prepare groups
+      script: host_group_manage
+      script_type: internal
+      params:
+        operation: add
+        groups:
+          - name: adb-one
+            type: config_host_group
+            object: {type: service, service_name: adb_clusters}
+            description: "per-cluster settings"
+            parameters:
+              - key: adcc_agent/ram
+                value: 4
+          - name: adb-one
+            type: action_host_group
+            object: {type: component, service_name: adb_clusters, component_name: adcc_agent}
+    - name: drop groups
+      script: host_group_manage
+      script_type: internal
+      params:
+        operation: remove
+        groups:
+          - name: adb-one
+            type: config_host_group
+            object: {type: service, service_name: adb_clusters}
+    """
+
+    def parse(self, as_yaml: str, mode: str = "action", version: str = "2.1"):
+        parser = dict(get_parsers())[version]
+        return parser.parse_scripts(
+            yaml.safe_load(as_yaml), template_path=Path(), action_allow_to_terminate=False, mode=mode
+        )
+
+    def test_parse_in_action_mode_success(self):
+        for version, parser in get_parsers():
+            with self.subTest(version):
+                parsed = parser.parse_scripts(
+                    yaml.safe_load(self.scripts_yaml),
+                    template_path=Path(),
+                    action_allow_to_terminate=False,
+                    mode="action",
+                )
+
+                scripts = [spec.script for spec in parsed.scripts.values()]
+                self.assertEqual(
+                    [type(script) for script in scripts],
+                    [HostManageScript] * 3 + [HostGroupManageScript] * 2,
+                )
+                self.assertEqual(scripts[0].params.operation, "add_duplicates")
+                self.assertEqual(
+                    scripts[0].params.source[0],
+                    ComponentHostSource(
+                        type="component", cluster_name="adb-one", service_name="adb", component_name="segment"
+                    ),
+                )
+                self.assertEqual(
+                    scripts[0].params.mapping_rules,
+                    [HcAclRule(service="adb_clusters", component="adcc_agent", action="add")],
+                )
+                self.assertEqual(scripts[1].params.groups[0].name, "adb-one")
+                self.assertEqual(scripts[3].params.groups[0].description, "per-cluster settings")
+                self.assertEqual(
+                    scripts[3].params.groups[0].parameters, [HostGroupParameter(key="adcc_agent/ram", value=4)]
+                )
+
+    def test_rejected_in_upgrade_and_wizard_modes_fail(self):
+        for version, parser in get_parsers():
+            for mode in ("upgrade", "wizard"):
+                with self.subTest(f"{version}-{mode}"):
+                    with self.assertRaises(BundleParsingError, msg="'host_manage'"):
+                        parser.parse_scripts(
+                            yaml.safe_load(self.scripts_yaml),
+                            template_path=Path(),
+                            action_allow_to_terminate=False,
+                            mode=mode,
+                        )
+
+    def test_empty_hosts_survives_the_dump_success(self):
+        """`hosts: []` means "empty the group" and must not collapse into "leave it alone"."""
+
+        parsed = self.parse(
+            """
+            - name: empty group
+              script: host_group_manage
+              script_type: internal
+              params:
+                operation: add
+                groups:
+                  - name: adb-one
+                    type: config_host_group
+                    object: {type: cluster}
+                    hosts: []
+            """
+        )
+
+        self.assertEqual(parsed.scripts["/0"].script.params.groups[0].hosts, [])
+        # the plan is stored as JSON and read back before the job runs
+        stored = JobSpecV1.model_validate(parsed.model_dump(mode="json"))
+        self.assertEqual(stored.scripts["/0"].script.params.groups[0].hosts, [])
+
+    def test_omitted_hosts_is_none_in_the_plan_success(self):
+        parsed = self.parse(
+            """
+            - name: create group
+              script: host_group_manage
+              script_type: internal
+              params:
+                operation: add
+                groups:
+                  - name: adb-one
+                    type: config_host_group
+                    object: {type: cluster}
+            """
+        )
+
+        self.assertIsNone(parsed.scripts["/0"].script.params.groups[0].hosts)
+        stored = JobSpecV1.model_validate(parsed.model_dump(mode="json"))
+        self.assertIsNone(stored.scripts["/0"].script.params.groups[0].hosts)
+
+    def test_unknown_operation_fail(self):
+        with self.assertRaises(BundleParsingError, msg="operation"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add
+                    source: [{type: cluster}]
+                """
+            )
+
+    def test_empty_source_fail(self):
+        with self.assertRaises(BundleParsingError, msg="source"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_duplicates
+                    source: []
+                """
+            )
+
+    def test_source_is_required_fail(self):
+        with self.assertRaises(BundleParsingError, msg="source"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_duplicates
+                """
+            )
+
+    def test_duplicate_source_entries_fail(self):
+        with self.assertRaises(BundleParsingError, msg="Duplicate `source` entry"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_duplicates
+                    source:
+                      - {type: cluster, cluster_name: adb-one}
+                      - {type: cluster, cluster_name: adb-one}
+                """
+            )
+
+    def test_cluster_name_on_host_entry_fail(self):
+        """A host is named by an fqdn, which identifies it without a cluster."""
+
+        with self.assertRaises(BundleParsingError, msg="cluster_name"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_duplicates
+                    source:
+                      - {type: host, host_name: h1, cluster_name: adb-one}
+                """
+            )
+
+    def test_cluster_name_on_group_entry_fail(self):
+        with self.assertRaises(BundleParsingError, msg="cluster_name"):
+            self.parse(
+                """
+                - name: release hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: remove_duplicates
+                    source:
+                      - type: config_host_group
+                        name: adb-one
+                        cluster_name: adb-one
+                        object: {type: cluster}
+                """
+            )
+
+    def test_empty_name_fail(self):
+        """`{{ task.config.typo }}` renders to an empty string rather than failing."""
+
+        with self.assertRaises(BundleParsingError, msg="cluster_name"):
+            self.parse(
+                """
+                - name: share hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_duplicates
+                    source: [{type: cluster, cluster_name: ""}]
+                """
+            )
+
+    def test_target_on_remove_duplicates_fail(self):
+        with self.assertRaises(BundleParsingError, msg="target"):
+            self.parse(
+                """
+                - name: release hosts
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: remove_duplicates
+                    source: [{type: cluster, cluster_name: adb-one}]
+                    target: [{cluster_name: adb-two}]
+                """
+            )
+
+    def test_mapping_rules_on_add_to_groups_fail(self):
+        with self.assertRaises(BundleParsingError, msg="mapping_rules"):
+            self.parse(
+                """
+                - name: fill groups
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_to_groups
+                    source: [{type: cluster}]
+                    groups: [{name: g, type: config_host_group}]
+                    mapping_rules: [{service: s, component: c, action: add}]
+                """
+            )
+
+    def test_add_to_groups_without_groups_fail(self):
+        with self.assertRaises(BundleParsingError, msg="groups"):
+            self.parse(
+                """
+                - name: fill groups
+                  script: host_manage
+                  script_type: internal
+                  params:
+                    operation: add_to_groups
+                    source: [{type: cluster}]
+                """
+            )
+
+    def test_hosts_on_group_removal_fail(self):
+        with self.assertRaises(BundleParsingError, msg="hosts"):
+            self.parse(
+                """
+                - name: drop groups
+                  script: host_group_manage
+                  script_type: internal
+                  params:
+                    operation: remove
+                    groups:
+                      - name: adb-one
+                        type: config_host_group
+                        object: {type: cluster}
+                        hosts: [h1]
+                """
+            )
+
+    def test_parameters_on_action_host_group_fail(self):
+        with self.assertRaises(BundleParsingError, msg="parameters"):
+            self.parse(
+                """
+                - name: prepare groups
+                  script: host_group_manage
+                  script_type: internal
+                  params:
+                    operation: add
+                    groups:
+                      - name: adb-one
+                        type: action_host_group
+                        object: {type: cluster}
+                        parameters: [{key: a, value: 1}]
+                """
+            )
+
+    def test_provider_owned_action_host_group_fail(self):
+        with self.assertRaises(BundleParsingError, msg="provider"):
+            self.parse(
+                """
+                - name: prepare groups
+                  script: host_group_manage
+                  script_type: internal
+                  params:
+                    operation: add
+                    groups:
+                      - name: adb-one
+                        type: action_host_group
+                        object: {type: provider}
+                """
+            )
+
+    def test_duplicate_group_entries_fail(self):
+        with self.assertRaises(BundleParsingError, msg="Duplicate"):
+            self.parse(
+                """
+                - name: prepare groups
+                  script: host_group_manage
+                  script_type: internal
+                  params:
+                    operation: add
+                    groups:
+                      - {name: adb-one, type: config_host_group, object: {type: cluster}}
+                      - {name: adb-one, type: config_host_group, object: {type: cluster}}
+                """
+            )
