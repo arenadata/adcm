@@ -22,9 +22,9 @@ from core.bundle._parsing.shared.validation import (
 )
 from core.bundle._parsing.v_2_0.internal_scripts import (
     ConfigApplyParams,
-    ConfigHostGroupApplyParams,
     HcApplyParams,
-    HostDuplicatesApplyParams,
+    HostGroupManageParams,
+    HostManageParams,
     ServiceManageParams,
 )
 from core.bundle._parsing.v_2_0.schema import (
@@ -128,17 +128,17 @@ class ServiceManageInternalScript(_BaseScript):
 
 
 @dataclass(slots=True)
-class HostDuplicatesApplyInternalScript(_BaseScript):
+class HostManageInternalScript(_BaseScript):
     script_type: Literal["internal"]
-    script: Literal["host_duplicates_apply"]
-    params: HostDuplicatesApplyParams
+    script: Literal["host_manage"]
+    params: HostManageParams
 
 
 @dataclass(slots=True)
-class ConfigHostGroupApplyInternalScript(_BaseScript):
+class HostGroupManageInternalScript(_BaseScript):
     script_type: Literal["internal"]
-    script: Literal["config_host_group_apply"]
-    params: ConfigHostGroupApplyParams
+    script: Literal["host_group_manage"]
+    params: HostGroupManageParams
 
 
 ProviderInternalScript = Annotated[
@@ -149,8 +149,8 @@ ClusterStaticInternalScript = Annotated[
     ProviderInternalScript
     | HcApplyInternalScript
     | ServiceManageInternalScript
-    | HostDuplicatesApplyInternalScript
-    | ConfigHostGroupApplyInternalScript,
+    | HostManageInternalScript
+    | HostGroupManageInternalScript,
     Field(discriminator="script"),
 ]
 

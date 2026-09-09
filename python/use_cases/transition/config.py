@@ -232,6 +232,126 @@ class UpdateConfigurationFromJob:
         return changes, True
 
 
+@dataclass(slots=True)
+class UpdateHostGroupConfigurationFromJob:
+    """Write parameter changes into a configuration host group, from inside a job.
+
+    `UpdateConfigurationFromJob` is the same thing for a main object; a group differs in two
+    ways. Its configuration is stored against the group, and a value written into it only
+    survives if that parameter is also marked as no longer synchronized with the owner -
+    otherwise the merge that keeps a group current with its owner overwrites it again on the
+    way out, and the write silently does nothing.
+    """
+
+    config_service: core.config.ConfigService
+    rbac_scenarios: RBACScenarios
+    status_scenarios: StatusScenarios
+
+    def do(
+        self,
+        *,
+        owner_orm: MainObject,
+        group: ConfigHostGroup,
+        changes_input: T,
+        convert: ChangesConverter[T],
+        description: str,
+    ) -> HasChanged:
+        owner = converters.orm_object_to_core_descriptor(owner_orm)
+        group_owner = HostGroupDescriptor(id=group.pk, type=ADCMHostGroupType.CONFIG)
+
+        with atomic():
+            specification, defaults = self.config_service.retrieve_specification_with_defaults(owner=owner)
+            changes = convert(changes_input, specification)
+
+            configuration = self.config_service.retrieve_current_configuration(owner=group_owner)
+
+            result = self.config_service.prepare_new_configuration_from_changes(
+                changes=changes,
+                configuration=configuration,
+                specification=specification,
+                defaults=defaults,
+                owner=owner,
+            )
+
+            # Setting a parameter to the value the group already shows is not a no-op when the
+            # group is still following the owner: without the flag below, the next change to the
+            # owner's configuration would carry the group along and the value asked for here
+            # would silently go away. So the write is skipped only when the value is already
+            # the group's own.
+            desynchronized = self._desynchronize_changed_parameters(
+                configuration=result.encrypted_config, changes=changes
+            )
+
+            if not (result.has_changed or desynchronized):
+                return False
+
+            main_configuration = self.config_service.retrieve_current_configuration(owner=owner)
+            merged = self.config_service.prepare_updated_configurations_of_host_groups(
+                main=main_configuration, groups={0: result.encrypted_config}, specification=specification
+            )[0]
+
+            config_extra_info = core.config.ConfigurationExtraInfo(
+                description=description, created_by=SYSTEM_CONFIG_CREATOR
+            )
+            config_id = self.config_service.create_new_configuration_by_descriptor(
+                configuration=merged, configuration_extra_info=config_extra_info, owner=group_owner
+            )
+
+            self.rbac_scenarios.apply_policy_for_new_config(
+                config_object=owner_orm, config_log=_get_config_log(id_=config_id)
+            )
+
+            self.config_service.prepare_file_parameter_values_on_fs(
+                configuration=merged,
+                specification=specification,
+                owner_prefix=core.config.files.build_config_host_group_prefix(owner=owner, group_id=group.pk),
+            )
+
+        self.status_scenarios.send_config_creation_event(owner=group_owner, created_by=SYSTEM_CONFIG_CREATOR)
+
+        return True
+
+    @staticmethod
+    def _desynchronize_changed_parameters(
+        configuration: core.config.Configuration, changes: list[core.config.ChangeRequest]
+    ) -> bool:
+        changed = False
+
+        for change in changes:
+            attributes = configuration.attributes.get(change.parameter)
+
+            if attributes is None or not attributes.synchronization:
+                raise AdcmEx(
+                    code="INTERNAL_SERVER_ERROR",
+                    msg=f'"{change.parameter}" can\'t be set in a configuration host group: '
+                    "the bundle does not allow this parameter to differ per group "
+                    "(`group_customization`)",
+                )
+
+            changed = changed or attributes.is_synced
+            attributes.is_synced = False
+
+        return changed
+
+
+def apply_config_changes_to_host_group(
+    db_object: MainObject,
+    group: ConfigHostGroup,
+    parameters: list[dict],
+    changes_description: str,
+    update_configuration: UpdateHostGroupConfigurationFromJob,
+) -> HasChanged:
+    _check_parameters_unique(parameters)
+
+    return update_configuration.do(
+        owner_orm=db_object,
+        group=group,
+        changes_input=parameters,
+        convert=prepare_config_change_requests,
+        description=changes_description,
+    )
+
+
 # bad, but can't skip it for now
 def _get_config_log(id_: ConfigID) -> ConfigLog:
     return ConfigLog.objects.get(id=id_)
