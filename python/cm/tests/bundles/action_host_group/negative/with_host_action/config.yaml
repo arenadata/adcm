@@ -1,12 +1,15 @@
+---
 - type: cluster
   version: 3
-  name: "cl"
-
+  name: cl
   actions:
     host_action_with_host_group:
-      masking:
+      masking: null
       allow_for_action_host_group: true
       host_action: true
-      type: job
-      script: ./some.yaml
-      script_type: ansible
+      scripts:
+        - name: host_action_with_host_group
+          script: ./some.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

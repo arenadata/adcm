@@ -11,31 +11,51 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Collection, Generator, Iterable, cast
+from collections.abc import Collection, Generator, Iterable
+from typing import cast
 
-from core import cluster
+from core.cluster import (
+    ClusterRepoI,
+    ClusterTopology,
+    ComponentTopology,
+    Export,
+    ExportData,
+    ServiceTopology,
+)
 from core.types import (
     ActionHostGroupID,
     ADCMCoreType,
+    BindObjectDescriptor,
+    ClusterBindSchema,
+    ClusterHierarchyBeforeUpgradeBinds,
     ClusterID,
     ClusterObjectDesc,
+    ComponentDesc,
     ComponentID,
     Descriptor,
     HostDesc,
     HostID,
     MaintenanceModeOfObjects,
-    ObjectMaintenanceModeState,
+    MaintenanceModeState,
+    ObjectMM,
+    ServiceDesc,
+    ServiceID,
     ShortObjectInfo,
 )
 
-from cm.converters import model_name_to_core_type
-from cm.models import ActionHostGroup, Component, Host, HostComponent, Service
+from cm.converters import core_type_to_model, model_name_to_core_type
+from cm.models import ActionHostGroup, Cluster, ClusterBind, Component, Host, HostComponent, Service
 
 
-class ClusterRepo(cluster.ClusterRepoI):
-    def get_topology_for_cluster(self, cluster_id: ClusterID) -> cluster.ClusterTopology:
+class ClusterRepo(ClusterRepoI):
+    def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
         topologies = retrieve_multiple_topologies(cluster_ids=(cluster_id,))
         return next(topologies)
+
+    def get_clusters_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
+        topologies = retrieve_multiple_topologies(cluster_ids=cluster_ids)
+
+        return {topology.cluster_id: topology for topology in topologies}
 
     def get_related_cluster_id(self, object_: ClusterObjectDesc | HostDesc) -> ClusterID:
         match object_:
@@ -49,21 +69,19 @@ class ClusterRepo(cluster.ClusterRepoI):
                 return Host.objects.filter(id=object_.id).values_list("cluster_id", flat=True).get()
 
     def get_clusters_objects_own_maintenance_mode(self, cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
-        # COPIED FROM cm.legacy.services.cluster.retrieve_clusters_objects_maintenance_mode
-
         return MaintenanceModeOfObjects(
             hosts={
-                host_id: ObjectMaintenanceModeState(mm)
+                host_id: ObjectMM(MaintenanceModeState(mm))
                 for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
             },
             services={
-                service_id: ObjectMaintenanceModeState(mm)
+                service_id: ObjectMM(MaintenanceModeState(mm))
                 for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
                     cluster_id__in=cluster_ids
                 )
             },
             components={
-                component_id: ObjectMaintenanceModeState(mm)
+                component_id: ObjectMM(MaintenanceModeState(mm))
                 for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
                     cluster_id__in=cluster_ids
                 )
@@ -78,8 +96,61 @@ class ClusterRepo(cluster.ClusterRepoI):
         # only cluster, service or component can have AHG
         return cast(ClusterObjectDesc, Descriptor(id=object_id, type=model_name_to_core_type(model_name)))
 
+    def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
+        field = "_maintenance_mode"
+        if target.type == ADCMCoreType.HOST:
+            field = "maintenance_mode"
 
-def retrieve_multiple_topologies(cluster_ids: Iterable[ClusterID]) -> Generator[cluster.ClusterTopology, None, None]:
+        model = core_type_to_model(target.type)
+        rows_matched = model.objects.filter(id=target.id).update(**{field: value.value})
+
+        return bool(rows_matched)
+
+    def retrieve_export_data(self, clusters: Iterable[ClusterID], services: Iterable[ServiceID]) -> ExportData:
+        clusters = {
+            cluster.pk: Export(name=cluster.prototype.name, version=cluster.prototype.version)
+            for cluster in Cluster.objects.filter(id__in=clusters)
+            .select_related("prototype")
+            .only("prototype__name", "prototype__version")
+        }
+        services = {
+            service.pk: Export(name=service.prototype.name, version=service.prototype.version)
+            for service in Service.objects.filter(id__in=services)
+            .select_related("prototype")
+            .only("prototype__name", "prototype__version")
+        }
+
+        return ExportData(clusters=clusters, services=services)
+
+    def create_binds(self, binds: Iterable[ClusterBindSchema], ignore_conflicts: bool) -> None:
+        ClusterBind.objects.bulk_create(
+            objs=[ClusterBind(**bind.model_dump()) for bind in binds], ignore_conflicts=ignore_conflicts
+        )
+
+    def delete_hierarchy_binds(self, cluster_id: ClusterID) -> None:
+        ClusterBind.objects.filter(cluster_id=cluster_id).delete()
+
+    def retrieve_hierarchy_before_upgrade_binds(self, cluster_id: ClusterID) -> ClusterHierarchyBeforeUpgradeBinds:
+        before_upgrade, prototype_name = Cluster.objects.values_list("before_upgrade", "prototype__name").get(
+            id=cluster_id
+        )
+        cluster_bind_object_desc = BindObjectDescriptor(type=ADCMCoreType.CLUSTER, name=prototype_name)
+
+        hierarchy_bu_binds = {
+            cluster_bind_object_desc: [ClusterBindSchema(**bind) for bind in before_upgrade.get("binds", ())]
+        }
+        for service_prototype_name, service_bu in Service.objects.filter(cluster_id=cluster_id).values_list(
+            "prototype__name", "before_upgrade"
+        ):
+            service_bind_object_desc = BindObjectDescriptor(type=ADCMCoreType.SERVICE, name=service_prototype_name)
+            hierarchy_bu_binds[service_bind_object_desc] = [
+                ClusterBindSchema(**bind) for bind in service_bu.get("binds", ())
+            ]
+
+        return ClusterHierarchyBeforeUpgradeBinds(hierarchy_bu_binds)
+
+
+def retrieve_multiple_topologies(cluster_ids: Iterable[ClusterID]) -> Generator[ClusterTopology, None, None]:
     hosts_in_clusters = {
         cluster_id: {host.id: host for host in hosts}
         for cluster_id, hosts in get_clusters_hosts(cluster_ids=cluster_ids).items()
@@ -95,14 +166,14 @@ def retrieve_multiple_topologies(cluster_ids: Iterable[ClusterID]) -> Generator[
                 hosts_on_components[cluster_id][component_id].add(host_id)
 
     return (
-        cluster.ClusterTopology(
+        ClusterTopology(
             cluster_id=cluster_id,
             hosts=hosts_in_clusters.get(cluster_id, {}),
             services={
-                service.id: cluster.ServiceTopology(
+                service.id: ServiceTopology(
                     info=service,
                     components={
-                        component.id: cluster.ComponentTopology(
+                        component.id: ComponentTopology(
                             info=component,
                             hosts={
                                 host_id: hosts_in_clusters[cluster_id][host_id]

@@ -6,6 +6,7 @@
 
   & > &__trigger, &__wrapper {
     display: flex;
+    align-items: center;
   }
 
   &:not(:last-child) {
@@ -23,11 +24,32 @@
         opacity: 1;
       }
     }
+
+    &:has(:global(.is-inline-string)) {
+      width: 100%;
+
+      .nodeContent__buttonWrapper {
+        display: flex;
+        flex-shrink: 0;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease-out;
+      }
+
+      &:hover .nodeContent__buttonWrapper {
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
   }
 
   @starting-style {
     &__trigger:hover .nodeContent__buttonWrapper {
       opacity: 0;
+    }
+
+    &__trigger:has(:global(.is-inline-string)):hover .nodeContent__buttonWrapper {
+      opacity: 1;
     }
   }
 

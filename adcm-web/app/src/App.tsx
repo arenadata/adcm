@@ -69,7 +69,12 @@ import ComponentActionHostGroups from '@pages/cluster/service/component/Componen
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Provider store={store}>
         <UserSession>
           <Routes>

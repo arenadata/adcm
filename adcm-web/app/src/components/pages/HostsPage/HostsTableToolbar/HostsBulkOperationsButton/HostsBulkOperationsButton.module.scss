@@ -1,0 +1,14 @@
+.bulkOperationsButton {
+  padding: 7px 16px;
+
+  :global(svg:last-child) {
+    width: 12px;
+    height: 12px;
+    transition: transform 250ms;
+    transform: rotate(-90deg);
+  }
+
+  &_open :global(svg:last-child) {
+    transform: rotate(0deg);
+  }
+}

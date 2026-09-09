@@ -1,15 +1,45 @@
 .dynamicActionConfirm {
-  &__message {
-    padding: 24px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__description {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   &__input {
     min-height: 52px;
   }
 
+  &__switches {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__verbose {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  &__verboseText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 500;
+  }
+
+  &__verboseHint {
+    font-size: 14px;
+    font-weight: 400;
+  }
+
   &__footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
   }
 }

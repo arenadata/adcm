@@ -11,9 +11,8 @@
 # limitations under the License.
 
 
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Service
-from core.legacy.job.types import Task
+from core.action import Task
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from tests.ansible import DummyExecutor
 from tests.suites import ADCMPluginExecutorSuite
@@ -201,8 +200,8 @@ class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):
         parent_cluster = self.cluster_1
         component = Component.objects.filter(cluster=parent_cluster).first()
 
-        self.add_host_to_cluster(cluster=parent_cluster, host=host)
-        self.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
+        self.uc.add_host_to_cluster(cluster=parent_cluster, host=host)
+        self.uc.set_hostcomponent(cluster=parent_cluster, entries=[(host, component)])
 
         self.check_target_detection(
             arguments=arguments,
@@ -222,7 +221,7 @@ class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):
         context_service = Service.objects.get(prototype__name="service_2", cluster=parent_cluster)
 
         task = self.prepare_task(owner=context_service, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.targets_from_objects_executor, call_arguments=arguments, call_context=job
@@ -235,7 +234,7 @@ class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):
     def check_target_detection(
         self, task: Task, arguments: dict | str, expected_targets: list[CoreObjectDescriptor]
     ) -> None:
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.targets_from_objects_executor, call_arguments=arguments, call_context=job

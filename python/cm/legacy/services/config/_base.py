@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection, Iterable
 from copy import deepcopy
-from typing import Collection, Iterable, NamedTuple
+from typing import NamedTuple
 import copy
 import json
 

@@ -29,5 +29,5 @@ export const useRequestClusterHostsOverview = () => {
     dispatch(refreshClusterHostsStatuses(clusterId));
   }, defaultDebounceDelay);
 
-  useRequestTimer(debounceGetClusterHosts, debounceRefreshClusterHosts, 0, [filter, paginationParams]);
+  useRequestTimer(debounceGetClusterHosts, debounceRefreshClusterHosts, 0, [clusterId, filter, paginationParams]);
 };

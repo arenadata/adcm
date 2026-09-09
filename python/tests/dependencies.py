@@ -10,19 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from functools import cache, partial
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Iterable
 from unittest.mock import patch
 from uuid import uuid4
 import os
 
 from application.di.containers import get_main_providers
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import ADCMEntity, Bundle, ConfigLog, TaskLog
 from cm.tests.mocks.task_runner import (
     ETFMockWithEnvPreparation,
@@ -34,8 +32,8 @@ from cm.tests.mocks.task_runner import (
 )
 from cm.transition.status import StatusScenarios
 from core import secrets
+from core.action.job import JobRepoI
 from core.files.directories import ADCMBundleDir
-from core.legacy.job.repo import JobRepoInterface
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -51,6 +49,7 @@ from core.legacy.job.runners import (
 )
 from core.result import Success
 from core.settings import Directories
+from core.status import FullStatusMap
 from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
 from dishka.provider import provide
 from django.db.models import Model
@@ -332,7 +331,7 @@ class StatusScenariosOverride(dishka.Provider):
 
     @provide
     def status_scenarios(self) -> StatusScenarios:
-        return SkipStatusScenarios()
+        return SkipStatusScenarios(cluster_service=None)
 
 
 class RBACScenariosDummy(RBACScenarios):
@@ -384,7 +383,7 @@ class TaskRunnerOverride(dishka.Provider):
             consul=consul,
         )
 
-    job_repo = provide(JobImplRunnerMock, provides=JobRepoInterface)
+    job_repo = provide(JobImplRunnerMock, provides=JobRepoI)
     job_factory = provide(ExecutionTargetFactoryDummyMock, provides=ExecutionTargetFactoryI)
 
     @provide

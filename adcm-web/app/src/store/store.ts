@@ -20,6 +20,9 @@ import clusterHostsWizardActionsSlice from '@store/adcm/cluster/hosts/hostsWizar
 import clusterHostsDynamicActionsSlice from '@store/adcm/cluster/hosts/hostsDynamicActionsSlice';
 import hostComponentsDynamicActionsSlice from '@store/adcm/cluster/hosts/host/hostComponentsDynamicActionsSlice';
 import clustersTableSlice from '@store/adcm/clusters/clustersTableSlice';
+import clustersViewSlice from '@store/adcm/clusters/clustersViewSlice';
+import clustersMetricsSlice from '@store/adcm/clusters/clustersMetricsSlice';
+import clusterMaintenanceModeSlice from '@store/adcm/clusters/clusterMaintenanceModeSlice';
 import clusterConfigGroupsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsSlice';
 import clusterConfigGroupsTableSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupsTableSlice';
 import clusterConfigGroupActionsSlice from '@store/adcm/cluster/configGroups/clusterConfigGroupActionsSlice';
@@ -133,6 +136,9 @@ const rootReducer = combineReducers({
     clustersWizardMapping: clustersWizardMappingSlice,
     clusterUpgrades: clusterUpgradesSlice,
     clustersTable: clustersTableSlice,
+    clustersView: clustersViewSlice,
+    clustersMetrics: clustersMetricsSlice,
+    clusterMaintenanceMode: clusterMaintenanceModeSlice,
     clusterHosts: clusterHostsSlice,
     clusterHost: clusterHostSlice,
     clusterHostsActions: clusterHostsActionsSlice,

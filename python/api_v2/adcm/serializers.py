@@ -23,4 +23,4 @@ class AdcmSerializer(ModelSerializer):
 
     class Meta:
         model = ADCM
-        fields = ["id", "name", "state", "multi_state", "prototype", "concerns"]
+        fields = ["id", "uuid", "name", "state", "multi_state", "prototype", "concerns"]

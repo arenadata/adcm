@@ -130,7 +130,6 @@ export type ConfigurationTreeFilter = {
 };
 
 export type ConfigurationTreeState = {
-  selectedNode: ConfigurationNodeView | null;
   dragNode: ConfigurationNodeView | null;
 };
 

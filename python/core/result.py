@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Generic, Literal, ParamSpec, TypeGuard, TypeVar
+from typing import Any, Generic, Literal, ParamSpec, TypeGuard, TypeVar
 
 T = TypeVar("T")
 V = TypeVar("V")

@@ -14,9 +14,9 @@
 
 
 from collections import defaultdict
+from collections.abc import Generator, Iterable
 from functools import reduce
 from pathlib import Path
-from typing import Generator, Iterable
 import os
 
 from ansible.parsing.vault import shutil

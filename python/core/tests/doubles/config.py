@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar, Iterable, Literal, TypeAlias, overload
+from typing import ClassVar, Literal, TypeAlias, overload
 
 from core.config import ConfigRepoI, ConfigService, VariantValidators, spec
 from core.config._secrets import AnsibleSecrets

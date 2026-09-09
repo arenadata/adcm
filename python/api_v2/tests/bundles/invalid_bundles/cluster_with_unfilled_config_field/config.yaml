@@ -1,15 +1,19 @@
+---
 - type: cluster
   name: cluster_with_unfilling_config_field
   version: '1.0'
-  config:
+  config: null
   actions:
     action_with_empty_config:
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
-      config:
+      config: null
+      scripts:
+        - name: action_with_empty_config
+          script: ./playbook.yaml
+          script_type: ansible
     action_with_empty_config_jinja:
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
-      config_jinja:
+      scripts:
+        - name: action_with_empty_config_jinja
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

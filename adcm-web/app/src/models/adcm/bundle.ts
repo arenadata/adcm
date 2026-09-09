@@ -6,9 +6,28 @@ export enum AdcmBundleSignatureStatus {
   Absent = 'absent',
 }
 
+export enum AdcmContractVersionStatus {
+  Supported = 'supported',
+  Deprecated = 'deprecated',
+  Unsupported = 'unsupported',
+}
+
+export interface AdcmContractVersion {
+  status: AdcmContractVersionStatus;
+  value: string;
+}
+
+export interface AdcmBundleRelated {
+  id: number;
+  edition: string;
+  contractVersion: AdcmContractVersion;
+}
+
 export interface AdcmBundlesFilter {
   displayName?: string;
   product?: string;
+  contractVersionStatus?: AdcmContractVersionStatus;
+  contractVersionValue?: string;
 }
 
 export interface AdcmBundleMainPrototype extends AdcmPrototype, Omit<AdcmPrototype, 'bundleId'> {}
@@ -19,6 +38,7 @@ export interface AdcmBundle {
   displayName: string;
   version: string;
   edition?: string;
+  contractVersion: AdcmContractVersion;
   mainPrototype: AdcmBundleMainPrototype;
   uploadTime: string;
   signatureStatus: AdcmBundleSignatureStatus;

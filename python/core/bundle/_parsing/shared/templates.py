@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from abc import ABC
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Annotated, Callable, Literal
+from typing import Annotated, Literal
 
 from pydantic import AfterValidator, ConfigDict, Discriminator, Field, Tag
 

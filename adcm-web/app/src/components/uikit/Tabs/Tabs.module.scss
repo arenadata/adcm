@@ -50,11 +50,16 @@
       font-weight: 500;
       font-size: 18px;
       line-height: 21px;
+      font-family: inherit;
       color: var(--tab-color);
+      cursor: pointer;
+      background: transparent;
       transition: color 250ms, border-bottom-color 250ms;
       padding: 15px 20px;
 
+      border: none;
       border-bottom: 2px solid var(--tab-border, transparent);
+      border-radius: 0;
 
       margin-bottom: -1px;
 
@@ -73,19 +78,22 @@
 
   &_secondary {
     --tab-color: var(--tab-color-secondary);
+    --tab-background: transparent;
+
     .tab {
       font-weight: 500;
       font-size: 15px;
       line-height: 18px;
+      font-family: inherit;
       cursor: pointer;
 
       border: 1px solid var(--tab-border, transparent);
+      border-radius: 5px;
       background: var(--tab-background);
       color: var(--tab-color);
 
       transition: color 250ms, background-color 250ms, border 250ms;
       padding: 7px 11px;
-      border-radius: 5px;
 
       &:hover {
         --tab-color: var(--tab-color-hover-secondary);
@@ -100,6 +108,59 @@
       &:disabled {
         cursor: not-allowed;
         --tab-color: var(--tab-color-disabled-secondary);
+      }
+    }
+  }
+
+  &_alt {
+    display: flex;
+    padding: var(--space-100);
+    border-radius: var(--radius-150);
+    background-color: var(--bg-primary-strong);
+
+    --tab-color: var(--text-primary);
+    --tab-count-color: currentColor;
+    --tab-background: transparent;
+
+    .tab {
+      position: relative;
+      gap: var(--space-150);
+      box-sizing: border-box;
+      padding: var(--space-100) var(--space-300);
+      border: none;
+      border-radius: var(--radius-100);
+      background: var(--tab-background);
+      color: var(--tab-color);
+      font-size: var(--body-2-size);
+      line-height: var(--body-2-lineheight);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color 250ms, background-color 250ms;
+
+      &:not(:first-child)::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: var(--space-500);
+        background-color: var(--bg-secondary-default);
+      }
+
+      &:hover:not(:global(.active)) {
+        --tab-background: var(--bg-secondary-soft);
+      }
+
+      &:global(.active) {
+        --tab-background: var(--bg-brand-subtle);
+        --tab-color: var(--text-primary);
+        --tab-count-color: currentColor;
+
+        &::before,
+        & + .tab::before {
+          content: none;
+        }
       }
     }
   }

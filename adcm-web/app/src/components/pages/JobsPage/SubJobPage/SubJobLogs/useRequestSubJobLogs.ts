@@ -9,6 +9,11 @@ const maxUpdatesAfterFinishCount = 2;
 const finishedStatuses: { [key in AdcmJobStatus]: boolean } = {
   [AdcmJobStatus.Created]: false,
   [AdcmJobStatus.Running]: false,
+  [AdcmJobStatus.Revoking]: false,
+  [AdcmJobStatus.Terminating]: false,
+  [AdcmJobStatus.Queued]: false,
+  [AdcmJobStatus.Scheduled]: false,
+  [AdcmJobStatus.Revoked]: true,
   [AdcmJobStatus.Success]: true,
   [AdcmJobStatus.Failed]: true,
   [AdcmJobStatus.Locked]: true,

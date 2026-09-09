@@ -16,6 +16,7 @@ from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.bundle_switch_revert import SwitchRevertCallbacks
 from cm.models import Cluster, Component, Prototype, Service
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from rbac.scenarios import RBACScenarios
 import core
 
@@ -23,11 +24,12 @@ import core
 def build_switch_revert_callbacks(
     config_service: core.config.ConfigService,
     rbac_scenarios: RBACScenarios,
+    cluster_service: ClusterService,
 ):
     # TODO
     #  Should be passed as dependency, but for now it's too complex.
     #  Fix within ADCM-7974.
-    status_scenarios = StatusScenarios()
+    status_scenarios = StatusScenarios(cluster_service=cluster_service)
 
     return SwitchRevertCallbacks(
         add_component_to_service=partial(_add_component_to_service, config_service=config_service),

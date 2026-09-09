@@ -1,0 +1,29 @@
+.showMore {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-200);
+
+  &__content {
+    width: 100%;
+    min-width: 0;
+
+    &_collapsed {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: var(--show-more-lines, 3);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__toggle {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    color: var(--color-text-link);
+  }
+}

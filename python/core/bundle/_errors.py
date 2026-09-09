@@ -34,6 +34,14 @@ class BundleParsingError(BundleOperationError):
     ...
 
 
+class UnsupportedBundleError(BundleOperationError):
+    ...
+
+
+class LicenseError(BundleOperationError):
+    ...
+
+
 class BundleValidationError(BundleOperationError):
     """
     Use for errors in objects relations and overall "sanity" of bundle definitions

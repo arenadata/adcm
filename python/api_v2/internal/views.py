@@ -11,12 +11,16 @@
 # limitations under the License.
 
 from cm.transition.status import StatusScenarios
+from core import secrets
 from dishka import FromDishka
 from django.conf import settings
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
+from api_v2.internal.permissions import IsSuperUser
+from api_v2.internal.serializers import StatusCheckerTokenSerializer
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
 
@@ -35,3 +39,19 @@ class StatusServerUpdateView(ADCMGenericViewSet):
     def check_is_allowed(self, request) -> None:
         if request.user is None or request.user.username != settings.ADCM_STATUS_USERNAME:
             raise PermissionDenied()
+
+
+class StatusCheckerTokenViewSet(ADCMGenericViewSet):
+    permission_classes = [IsSuperUser]
+    serializer_class = StatusCheckerTokenSerializer
+
+    @inject
+    def list(
+        self,
+        request: Request,  # noqa: ARG002
+        *_,
+        status_checker_token: FromDishka[secrets.StatusCheckerStatusServiceToken],
+        **__,
+    ) -> Response:
+        serializer = self.get_serializer({"token": status_checker_token})
+        return Response(serializer.data)

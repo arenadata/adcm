@@ -1,5 +1,6 @@
 import { type AdcmSubJobLogCheckContentItem, AdcmSubJobLogSeverity, AdcmJobStatus } from '@models/adcm';
 import type { SubJobLogNode } from './SubJobLogCheck.types';
+import { getStatusLabel } from '@utils/humanizationUtils.ts';
 
 const SEVERITY_TO_STATUS: Record<AdcmSubJobLogSeverity, AdcmJobStatus> = {
   [AdcmSubJobLogSeverity.Error]: AdcmJobStatus.Failed,
@@ -12,14 +13,6 @@ const SEVERITY_PRIORITY: AdcmSubJobLogSeverity[] = [
   AdcmSubJobLogSeverity.Warning,
   AdcmSubJobLogSeverity.Info,
 ];
-
-const subJobStatusLabelDict: Record<string, string> = {
-  [AdcmJobStatus.Success]: 'Success',
-  [AdcmJobStatus.Info]: 'Info',
-  [AdcmJobStatus.Failed]: 'Error',
-  [AdcmJobStatus.Running]: 'Processing',
-  [AdcmJobStatus.Warning]: 'Warning',
-};
 
 export const isConcreteSeverityPresent = (
   content: AdcmSubJobLogCheckContentItem[],
@@ -73,7 +66,12 @@ export const checkItemToNode = ({ content, ...data }: AdcmSubJobLogCheckContentI
 };
 
 export const getSubJobStatusLabel = (status: AdcmJobStatus) => {
-  return subJobStatusLabelDict[status];
+  const subJobStatusLabelDict: Partial<Record<AdcmJobStatus, string>> = {
+    [AdcmJobStatus.Failed]: 'Error',
+    [AdcmJobStatus.Running]: 'Processing',
+  };
+
+  return subJobStatusLabelDict[status] ?? getStatusLabel(status);
 };
 
 export const calculateAndSetChildrenBorderHeight = (node: Element | null, parentY = 0) => {

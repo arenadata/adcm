@@ -69,7 +69,7 @@ class RetrieveStartImpossibleReason:
                 cluster_id = self.cluster_service.repo.get_related_cluster_id(object_=target_desc)
 
                 topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
-                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
+                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_id,))
                 objects_mm = self.cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
 
                 result = operations.detect_start_impossible_reason_for_cluster_objects(
@@ -85,7 +85,7 @@ class RetrieveStartImpossibleReason:
                     case operations.ActionStartImpossibleReason.LDAP_OFF:
                         msg = reason.value
                     case operations.ActionStartImpossibleReason.MAINTENANCE_MODE:
-                        msg = reason.value.format(entity_type="Action", violator_type=f"{type_}s")
+                        msg = reason.value.format(entity_type="Action", violator_type=f"{type_.value}s")
 
                 return {id_: None if is_allowed_in_mm else msg for id_, is_allowed_in_mm in allowed_in_mm.items()}
 
@@ -97,7 +97,7 @@ class RetrieveStartImpossibleReason:
 
             case Descriptor(type=ADCMCoreType.CLUSTER):
                 topology = self.cluster_service.retrieve_topology(cluster_id=target.id)
-                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_id=target.id)
+                own_mm = self.cluster_service.retrieve_own_maintenance_mode(cluster_ids=(target.id,))
                 objects_mm = self.cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
                 result = operations.detect_start_impossible_reason_for_cluster_objects(
                     target=target, topology=topology, maintenance_mode=objects_mm
@@ -110,4 +110,4 @@ class RetrieveStartImpossibleReason:
             case Success():
                 return None
             case Fail(value=(reason, type_)):
-                return reason.value.format(entity_type="Upgrade", violator_type=f"{type_}s")
+                return reason.value.format(entity_type="Upgrade", violator_type=f"{type_.value}s")

@@ -10,29 +10,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
+from collections import defaultdict, deque
+from collections.abc import Generator, Iterable
 from functools import partial
 from operator import attrgetter, itemgetter
 from pathlib import Path
-from typing import Generator, Iterable
+from typing import Literal, cast
 import json
 import hashlib
 
 from core import action, bundle
-from core.types import ADCMCoreType, BundleID, PrototypeID
+from core.types import (
+    ADCMCoreType,
+    BindObjectDescriptor,
+    BundleID,
+    ImportName,
+    PrototypeID,
+    PrototypeImportSchema,
+)
 from django.conf import settings
 from django.db import IntegrityError
+from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
 from pydantic import BaseModel
 
 from cm.errors import AdcmEx
 from cm.models import (
+    ADCM,
     Action,
     Bundle,
+    Cluster,
     ProductCategory,
     Prototype,
     PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
+    Provider,
     SubAction,
     Upgrade,
 )
@@ -142,6 +154,9 @@ class BundleRepo(bundle.BundleRepoI):
             bundle_id=bundle_id,
         ).update(license="accepted")
 
+    def update_prototype_license_to_accept(self, license_hash: str) -> None:
+        Prototype.objects.filter(license_hash=license_hash, license="unaccepted").update(license="accepted")
+
     def recollect_categories(self) -> None:
         ProductCategory.re_collect()
 
@@ -152,8 +167,24 @@ class BundleRepo(bundle.BundleRepoI):
 
         return {("component", parent_name, name) for name, parent_name in prototype_qs}
 
-    def retrieve_versions_info(self) -> set[bundle.InstalledBundleVersion]:
-        bundle_info = Bundle.objects.values_list("name", "edition", "version", "contract_version")
+    def retrieve_bundle_installing_info(self) -> set[bundle.InstalledBundleVersion]:
+        bundle_info = (
+            Bundle.objects.annotate(
+                has_cluster=Exists(Cluster.objects.filter(prototype__bundle_id=OuterRef("pk"))),
+                has_provider=Exists(Provider.objects.filter(prototype__bundle_id=OuterRef("pk"))),
+            )
+            .annotate(
+                has_created_objects=Case(
+                    When(has_cluster=True, then=Value(True)),
+                    When(has_provider=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            )
+            .exclude(prototype__type=ADCMCoreType.ADCM.value)
+            .values_list("id", "name", "edition", "version", "contract_version", "has_created_objects")
+        )
+
         return {bundle.InstalledBundleVersion(*row) for row in bundle_info}
 
     def retrieve_bundle_context_from_prototype(self, prototype_id: PrototypeID) -> bundle.BundleContext:
@@ -162,6 +193,45 @@ class BundleRepo(bundle.BundleRepoI):
         ).get(id=prototype_id)
         path = Path(settings.BUNDLE_DIR, hash_)
         return bundle.BundleContext(id=bundle_id, root=path, contract_version=contract_version)
+
+    def retrieve_prototype_imports(
+        self, prototype_ids: Iterable[PrototypeID]
+    ) -> dict[BindObjectDescriptor, dict[ImportName, PrototypeImportSchema]]:
+        imports = defaultdict(dict)
+
+        for import_ in PrototypeImport.objects.filter(prototype_id__in=prototype_ids).values(
+            "prototype__type",
+            "prototype__name",
+            "name",
+            "min_version",
+            "max_version",
+            "min_strict",
+            "max_strict",
+            "required",
+        ):
+            type_ = cast(  # only cluster and service can have imports
+                Literal[ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE], ADCMCoreType(import_["prototype__type"])
+            )
+            bind_object_descriptor = BindObjectDescriptor(type=type_, name=import_["prototype__name"])
+            imports[bind_object_descriptor][import_["name"]] = PrototypeImportSchema(
+                **import_,
+            )
+
+        return imports
+
+    def retrieve_prototype_ids(self, bundle_id: BundleID) -> set[PrototypeID]:
+        return set(Prototype.objects.filter(bundle_id=bundle_id).values_list("id", flat=True))
+
+    def retrieve_contract_version(self, bundle_id: BundleID) -> bundle.ContractVersionTag:
+        return Bundle.objects.values_list("contract_version", flat=True).get(pk=bundle_id)
+
+    def clear_old_versions_adcm_bundles(self) -> None:
+        ids = (
+            Prototype.objects.filter(type=ADCMCoreType.ADCM.value)
+            .exclude(id=ADCM.objects.first().prototype_id)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+            .values_list("bundle_id", flat=True)
+        )
+        Bundle.objects.filter(id__in=ids).delete()
 
 
 def convert_config_definition_to_orm_model(

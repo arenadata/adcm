@@ -14,14 +14,17 @@ from functools import partial
 from pathlib import Path
 import os
 
-from adcm.feature_flags import use_new_job_scheduler
+from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
+from cm.impl.adcm.repo import ADCMRepo
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
+from cm.impl.concern.repo import ConcernRepo
 from cm.impl.config.repo import ConfigRepo
 from cm.impl.config.validators import DefaultsVariantResolver, MainConfigVariantResolver
-from cm.impl.job.repo import JobRepo
+from cm.impl.job.repo import JobClaimer, JobRepo
 from cm.impl.logs.repo import LogsRepo
+from cm.impl.metrics.repo import ClusterMetricsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
@@ -33,17 +36,26 @@ from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
-from core.bundle import VersionSupportStatus
+from core.action.job import (
+    DirectOSTerminationSignaller,
+    ExecutorTerminator,
+    IndirectRepoTerminationSignaller,
+    TaskRunnerTerminator,
+    TerminationSignaller,
+)
+from core.concern.repo import ConcernRepoI
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from rbac.scenarios import RBACScenarios
-from use_cases.bundle import InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
+from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
@@ -55,16 +67,21 @@ from use_cases.transition.config import (
     UpdateConfigurationOfObject,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
+from use_cases.transition.hostprovider.create import CreateHostprovider
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
     ScheduleTask,
     TaskStarter,
 )
+from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
+import core.bundle
+
+from application.types import TaskRunnerMode
 
 
 class PathResolverProvider(Provider):
@@ -98,8 +115,38 @@ class ConfigProvider(Provider):
 class JobProvider(Provider):
     scope = Scope.APP
 
-    repo = provide(JobRepo, provides=core.job.JobRepoI)
-    service = provide(core.job.JobService)
+    repo = provide(JobRepo, provides=core.action.job.JobRepoI)
+    service = provide(core.action.job.JobService)
+    claimer = provide(JobClaimer, provides=core.action.scheduler.Claimer)
+
+    task_runner_terminator = provide(TaskRunnerTerminator)
+    executor_terminator = provide(ExecutorTerminator)
+
+    @provide
+    def termination_signaller(
+        self,
+        task_runner_mode: TaskRunnerMode,
+        repo: core.action.job.JobRepoI,
+        executor_terminator: ExecutorTerminator,
+        task_runner_terminator: TaskRunnerTerminator,
+    ) -> TerminationSignaller:
+        match task_runner_mode:
+            case TaskRunnerMode.SCHEDULLER:
+                return IndirectRepoTerminationSignaller(repo)
+
+            case TaskRunnerMode.INSTANT:
+                return DirectOSTerminationSignaller(
+                    task_runner_terminator=task_runner_terminator, executor_terminator=executor_terminator
+                )
+
+    @provide
+    def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:
+        match task_runner_mode:
+            case TaskRunnerMode.SCHEDULLER:
+                return lambda _: None
+
+            case TaskRunnerMode.INSTANT:
+                return start_task
 
 
 class WizardProvider(Provider):
@@ -113,20 +160,21 @@ class BundleProvider(Provider):
     scope = Scope.APP
 
     @provide
-    def parsers(self) -> list[tuple[core.bundle.parsing.VersionInfo, core.bundle.parsing.BundleParser]]:
-        v_1_0 = (
-            core.bundle.parsing.VersionInfo(tag="1.0", status=VersionSupportStatus.SUPPORTED),
-            core.bundle.parsing.v_1_0.Parser(),
-        )
-        v_2_0 = (
-            core.bundle.parsing.VersionInfo(tag="2.0", status=VersionSupportStatus.SUPPORTED),
-            core.bundle.parsing.v_2_0.Parser(),
-        )
+    def parsers(self) -> core.bundle.parsing.BundleParsers:
+        # imported lazily: parser schemas are pydantic-heavy and only needed when parsing a bundle
+        from core.bundle._parsing import v_2_1 as v_2_1_parsing
+
         v_2_1 = (
-            core.bundle.parsing.VersionInfo(tag="2.1", status=VersionSupportStatus.SUPPORTED),
-            core.bundle.parsing.v_2_1.Parser(),
+            core.bundle.VersionInfo(tag="2.1", status=core.bundle.ContractVersionStatus.SUPPORTED),
+            v_2_1_parsing.Parser(),
         )
-        return [v_1_0, v_2_0, v_2_1]
+        return [v_2_1]
+
+    @provide
+    def available_contract_versions(
+        self, parsers: core.bundle.parsing.BundleParsers
+    ) -> core.bundle.AvailableContractVersions:
+        return [cv_info for cv_info, _ in parsers]
 
     @provide
     def convert(self, secrets: core.config.secrets.AnsibleSecrets) -> core.bundle.ConvertConfigDefinition:
@@ -141,6 +189,12 @@ class ClusterProvider(Provider):
 
     repo = provide(ClusterRepo, provides=core.cluster.ClusterRepoI)
     service = provide(core.cluster.ClusterService)
+
+
+class ConcernProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ConcernRepo, provides=ConcernRepoI)
 
 
 class ProviderProvider(Provider):
@@ -171,17 +225,6 @@ class UtilsProvider(Provider):
     bundle_renderer = provide(BundleRenderer[ActionArgs, TaskArgs], provides=BundleRenderer[ActionArgs, TaskArgs])
 
 
-class TaskStarterProvider(Provider):
-    scope = Scope.APP
-
-    @provide
-    def task_starter(self) -> TaskStarter:
-        if use_new_job_scheduler():
-            return lambda _: None
-
-        return start_task
-
-
 class ScenariosProvider(Provider):
     scope = Scope.APP
 
@@ -203,6 +246,7 @@ class ScenariosProvider(Provider):
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
     config_scenarios = provide(ConfigScenarios)
+    before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
 
 
 class LogsServiceProvider(Provider):
@@ -210,6 +254,13 @@ class LogsServiceProvider(Provider):
 
     repo = provide(LogsRepo, provides=core.logs.LogsRepoI)
     service = provide(core.logs.LogsService)
+
+
+class MetricsProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ClusterMetricsRepo, provides=core.metrics.ClusterMetricsRepoI)
+    retrieve_cluster_metrics = provide(core.metrics.RetrieveClusterMetrics)
 
 
 class UseCaseProvider(Provider):
@@ -223,8 +274,11 @@ class UseCaseProvider(Provider):
     retrieve_configuration_for_action = provide(RetrieveConfigurationForAction)
 
     create_cluster = provide(CreateCluster)
+    create_provider = provide(CreateHostprovider)
 
-    add_services = provide(CreateServicesFromPrototypes)
+    # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
+    add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)
+    manage_cluster_services = provide(ManageClusterServices, scope=Scope.APP)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
 
@@ -244,8 +298,28 @@ class UseCaseProvider(Provider):
 
     add_check_log_record = provide(AddCheckLogRecordForJob)
 
+    set_maintenance_mode = provide(SetMaintenanceMode)
+
     update_configuration_of_object = provide(UpdateConfigurationOfObject)
     update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)
     update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
     set_primary_config_revision = provide(SetPrimaryConfigRevision)
     find_primary_config_diff = provide(FindPrimaryConfigDiff)
+
+    accept_license = provide(AcceptLicense)
+
+
+class AuditProvider(Provider):
+    scope = Scope.APP
+
+    @provide
+    def name_splitter_settings(self) -> NameSplitterSettings:
+        return build_name_splitter_settings_from_django_models()
+
+    name_half_splitter = provide(NameHalfSplitter)
+
+
+class ADCMProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ADCMRepo, provides=core.adcm.ADCMRepoI)

@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from collections.abc import Callable, Collection, Generator, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from typing import Any, Callable, Collection, Generator, Literal, Mapping, Protocol, TypeAlias, TypedDict
+from typing import Any, Literal, Protocol, TypeAlias, TypedDict
 import json
 
 from core.types import ObjectID

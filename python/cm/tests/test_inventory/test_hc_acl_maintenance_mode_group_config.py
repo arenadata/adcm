@@ -18,25 +18,23 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
+        provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
 
-        self.cluster = self.add_cluster(bundle=cluster_bundle, name="cluster")
-        self.provider = self.add_provider(bundle=provider_bundle, name="provider")
+        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="cluster")
+        self.provider = self.uc.add_provider(bundle=provider_bundle, name="provider")
 
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
-        self.host_4 = self.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
+        self.host_4 = self.uc.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
 
-        self.service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster
-        ).get()
+        self.service, *_ = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster)
 
         self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service)
         self.component_2 = Component.objects.get(prototype__name="component_2", service=self.service)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_1, self.component_1), (self.host_2, self.component_2)]
         )
 
@@ -44,15 +42,15 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
         self.service_group = self.add_config_host_group(parent=self.service, hosts=[self.host_1, self.host_2])
         self.component_1_group = self.add_config_host_group(parent=self.component_1, hosts=[self.host_1])
 
-        self.change_configuration(
-            target=self.cluster_group, config_diff={"integer": 101}, meta_diff={"/integer": {"isSynchronized": False}}
+        self.uc.change_config(
+            owner=self.cluster_group, values_diff={"integer": 101}, meta_diff={"/integer": {"isSynchronized": False}}
         )
-        self.change_configuration(
-            target=self.service_group, config_diff={"integer": 102}, meta_diff={"/integer": {"isSynchronized": False}}
+        self.uc.change_config(
+            owner=self.service_group, values_diff={"integer": 102}, meta_diff={"/integer": {"isSynchronized": False}}
         )
-        self.change_configuration(
-            target=self.component_1_group,
-            config_diff={"integer": 103},
+        self.uc.change_config(
+            owner=self.component_1_group,
+            values_diff={"integer": 103},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
@@ -79,9 +77,11 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
         ]
         delta = self.get_mapping_delta_for_hc_acl(cluster=self.cluster, new_mapping=action_hc_map)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(self.host_3, self.component_1), (self.host_4, self.component_2)]
         )
+
+        group_key = f"chg_{self.cluster_group.pk}"
 
         expected_topology = {
             "CLUSTER": [self.host_2.fqdn, self.host_3.fqdn, self.host_4.fqdn],
@@ -93,14 +93,13 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
             f"{self.service.name}.{self.component_2.name}.add": [self.host_4.fqdn],
             f"{self.service.name}.{self.component_1.name}.remove.maintenance_mode": [self.host_1.fqdn],
             f"{self.service.name}.{self.component_2.name}.remove": [self.host_2.fqdn],
+            group_key: [self.host_1.fqdn, self.host_2.fqdn],
         }
 
         expected_data = {
-            ("hosts", f"{self.host_2.fqdn}"): (
+            ("children", group_key, "vars"): (
                 self.templates_dir / "host_with_vars_service_two_components.json.j2",
                 {
-                    "adcm_hostid": self.host_2.pk,
-                    "uuid": self.host_2.uuid,
                     "cluster_id": self.cluster.pk,
                     "cluster_uuid": self.cluster.uuid,
                     "cluster_config_integer": 101,
@@ -112,6 +111,13 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                     "component_2_uuid": self.component_2.uuid,
                 },
             ),
+            ("hosts", f"{self.host_2.fqdn}"): (
+                self.templates_dir / "host.json.j2",
+                {
+                    "adcm_hostid": self.host_2.pk,
+                    "uuid": self.host_2.uuid,
+                },
+            ),
             ("hosts", f"{self.host_3.fqdn}"): (
                 self.templates_dir / "host.json.j2",
                 {"adcm_hostid": self.host_3.pk, "uuid": self.host_3.uuid},
@@ -121,19 +127,10 @@ class TestInventoryHcAclMaintenanceModeCHG(BaseInventoryTestCase):
                 {"adcm_hostid": self.host_4.pk, "uuid": self.host_4.uuid},
             ),
             ("hosts", f"{self.host_1.fqdn}"): (
-                self.templates_dir / "host_with_vars_service_two_components.json.j2",
+                self.templates_dir / "host.json.j2",
                 {
                     "adcm_hostid": self.host_1.pk,
                     "uuid": self.host_1.uuid,
-                    "cluster_id": self.cluster.pk,
-                    "cluster_config_integer": 101,
-                    "cluster_uuid": self.cluster.uuid,
-                    "service_id": self.service.pk,
-                    "service_uuid": self.service.uuid,
-                    "component_1_id": self.component_1.pk,
-                    "component_1_uuid": self.component_1.uuid,
-                    "component_2_id": self.component_2.pk,
-                    "component_2_uuid": self.component_2.uuid,
                 },
             ),
             ("vars", "cluster"): (

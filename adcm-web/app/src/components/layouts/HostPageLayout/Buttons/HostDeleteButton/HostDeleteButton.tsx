@@ -1,5 +1,5 @@
 import { useDispatch } from '@hooks';
-import { deleteHost } from '@store/adcm/hosts/hostsActionsSlice';
+import { deleteHosts } from '@store/adcm/hosts/hostsActionsSlice';
 import { Button, DialogV2 } from '@uikit';
 import type React from 'react';
 import { useState } from 'react';
@@ -22,7 +22,7 @@ const HostDeleteButton: React.FC = () => {
 
   const handleDeleteHost = () => {
     setIsOpen(false);
-    dispatch(deleteHost(hostId))
+    dispatch(deleteHosts([hostId]))
       .unwrap()
       .then(() => navigate('/hosts'));
   };

@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from core.bundle._definitions import ActionDefinition, Definition, DefinitionsMap, UpgradeDefinition
 from core.bundle._errors import BundleValidationError
@@ -61,7 +61,7 @@ class TestCheckDisplayNamesAreUnique(TestCase):
             check_display_names_are_unique(definitions)
 
 
-class TestTemplatesPath(TestCase):
+class TestTemplatesPath(ParametrizedTestCase, TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.bundle_root = Path(__file__).parent / "files" / "scripts"
@@ -85,23 +85,29 @@ class TestTemplatesPath(TestCase):
             file=TemplateFileWithEntrypoint(path=Path("notexist.py"), entrypoint="wrong"),
         )
 
-    @parameterized.expand(
-        (f"{template_var_name}-{template_field}", template_var_name, template_field)
-        for template_var_name in ("existing_jinja", "existing_python")
-        for template_field in ("scripts_template", "wizard_template", "config_template")
+    @parametrize(
+        ("template_var_name", "template_field"),
+        [
+            param(template_var_name, template_field, id=f"{template_var_name}_{template_field}")
+            for template_var_name in ("existing_jinja", "existing_python")
+            for template_field in ("scripts_template", "wizard_template", "config_template")
+        ],
     )
-    def test_check_templates_are_correct(self, _, template_var_name: str, template_field: str):
+    def test_check_templates_are_correct(self, template_var_name: str, template_field: str):
         template = getattr(self, template_var_name)
         action = ActionDefinition(type="job", name="a", **{template_field: template})
 
         check_templates_are_correct(action=action, bundle_root=self.bundle_root)
 
-    @parameterized.expand(
-        (f"{template_var_name}-{template_field}", template_var_name, template_field)
-        for template_var_name in ("absent_jinja", "absent_python", "incorrect_entrypoint_python")
-        for template_field in ("scripts_template", "wizard_template", "config_template")
+    @parametrize(
+        ("template_var_name", "template_field"),
+        [
+            param(template_var_name, template_field, id=f"{template_var_name}_{template_field}")
+            for template_var_name in ("absent_jinja", "absent_python", "incorrect_entrypoint_python")
+            for template_field in ("scripts_template", "wizard_template", "config_template")
+        ],
     )
-    def test_check_templates_are_incorrect(self, _, template_var_name: str, template_field: str):
+    def test_check_templates_are_incorrect(self, template_var_name: str, template_field: str):
         template = getattr(self, template_var_name)
         action = ActionDefinition(type="job", name="a", **{template_field: template})
 

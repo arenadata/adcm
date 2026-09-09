@@ -11,20 +11,38 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Generator, Iterable
 from configparser import ConfigParser
+from dataclasses import asdict
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Generator, Iterable, Literal
+from typing import Any, Literal
 import json
 import traceback
 
+from core.action import (
+    AnsibleJob,
+    AssociatedProcess,
+    ConfigApplyChangeEntry,
+    ConfigApplyJob,
+    HcAclRule,
+    HcApplyJob,
+    Job,
+    ScriptType,
+    ServiceManageJob,
+    ServiceManageServiceEntry,
+    SimpleInternalJob,
+    Task,
+    TaskMappingDelta,
+)
+from core.action.job import TaskUpdateDTO
+from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.dto import TaskUpdateDTO
-from core.legacy.job.executors import BundleExecutorConfig, ExecutorConfig
+from core.legacy.job.executors import ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
-from core.legacy.job.types import AssociatedProcess, HcAclRule, Job, ScriptType, Task, TaskMappingDelta
 from core.logs import LogsService
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, ComponentNameKey
 from django.contrib.contenttypes.models import ContentType
@@ -36,11 +54,12 @@ from rbac.roles import re_apply_policy_for_jobs
 from rbac.scenarios import RBACScenarios
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob
-import core
+from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
+from use_cases.transition.service_manage import ManageClusterServices
 
-from cm.converters import CoreObject, core_type_to_model, orm_object_to_core_descriptor
+from cm.converters import CoreObject, core_type_to_model
 from cm.errors import AdcmEx
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.config import ConfigAttrPair
@@ -49,9 +68,10 @@ from cm.legacy.services.job.run.executors import (
     AnsibleExecutorConfig,
     AnsibleProcessExecutor,
     InternalExecutor,
+    InternalScriptResult,
+    PythonExecutorConfig,
     PythonProcessExecutor,
 )
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.legacy.services.job.types import (
     ADCMJobConfig,
     ClusterActionType,
@@ -87,23 +107,34 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
+        cluster_service: ClusterService,
         rbac_scenarios: RBACScenarios,
         config_scenarios: ConfigScenarios,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
         self._rbac_scenarios = rbac_scenarios
         self._supported_internal_scripts = {
             "bundle_switch": partial(
-                internal_script_bundle_switch, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+                internal_script_bundle_switch,
+                rbac_scenarios=rbac_scenarios,
+                config_scenarios=config_scenarios,
+                cluster_service=cluster_service,
             ),
             "bundle_revert": partial(
-                internal_script_bundle_revert, rbac_scenarios=rbac_scenarios, config_scenarios=config_scenarios
+                internal_script_bundle_revert,
+                rbac_scenarios=rbac_scenarios,
+                config_scenarios=config_scenarios,
+                cluster_service=cluster_service,
+                before_upgrade_scenarios=before_upgrade_scenarios,
             ),
-            "hc_apply": internal_script_hc_apply,
+            "hc_apply": partial(internal_script_hc_apply, cluster_service=cluster_service),
             "config_apply": partial(
                 internal_script_config_apply,
                 update_configuration_from_job=update_configuration_from_job,
             ),
+            "service_manage": partial(internal_script_service_manage, manage_services=manage_services),
             "before_upgrade_clean": partial(
                 internal_script_before_upgrade_clean,
                 cluster_uc=reset_cluster_before_upgrade,
@@ -137,10 +168,11 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                     environment_builders = (prepare_ansible_environment,)
                 case ScriptType.PYTHON:
                     executor = PythonProcessExecutor(
-                        config=BundleExecutorConfig(
+                        config=PythonExecutorConfig(
                             job_script=job_info.script,
                             work_dir=work_dir,
                             bundle=task.bundle,
+                            venv=task.action.venv,
                         )
                     )
                     environment_builders = ()
@@ -167,8 +199,12 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 
 @atomic()
 def internal_script_bundle_switch(
-    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
-) -> int:
+    task: Task,
+    job: SimpleInternalJob,
+    rbac_scenarios: RBACScenarios,
+    config_scenarios: ConfigScenarios,
+    cluster_service: ClusterService,
+) -> InternalScriptResult:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -178,7 +214,11 @@ def internal_script_bundle_switch(
     from cm.legacy.bundle_switch_revert import bundle_switch
 
     config_service = get_config_service()
-    callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
+    callbacks = build_switch_revert_callbacks(
+        config_service=config_service,
+        rbac_scenarios=rbac_scenarios,
+        cluster_service=cluster_service,
+    )
     bundle_switch(
         obj=task_.task_object,
         upgrade=task_.action.upgrade,
@@ -191,13 +231,23 @@ def internal_script_bundle_switch(
 
     re_apply_policy_for_jobs(task=task_)
 
-    return 0
+    result_message = _build_result_message(
+        script_name="bundle_switch",
+        full_complete_message="the prototype is switched",
+        with_updates=True,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 @atomic()
 def internal_script_bundle_revert(
-    task: Task, job: Job, rbac_scenarios: RBACScenarios, config_scenarios: ConfigScenarios
-) -> int:
+    task: Task,
+    job: SimpleInternalJob,
+    rbac_scenarios: RBACScenarios,
+    config_scenarios: ConfigScenarios,
+    cluster_service: ClusterService,
+    before_upgrade_scenarios: BeforeUpgradeScenarios,
+) -> InternalScriptResult:
     _ = job
 
     task_ = TaskLog.objects.get(id=task.id)
@@ -208,13 +258,19 @@ def internal_script_bundle_revert(
         from cm.legacy.bundle_switch_revert import bundle_revert
 
         config_service = get_config_service()
-        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=rbac_scenarios)
+        callbacks = build_switch_revert_callbacks(
+            config_service=config_service,
+            rbac_scenarios=rbac_scenarios,
+            cluster_service=cluster_service,
+        )
 
         bundle_revert(
             obj=task_.task_object,
             callbacks=callbacks,
+            cluster_service=cluster_service,
             config_service=config_service,
             config_scenarios=config_scenarios,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
     except ObjectDoesNotExist as error:
@@ -231,17 +287,22 @@ def internal_script_bundle_revert(
 
     re_apply_policy_for_jobs(task=task_)
 
-    return 0
+    result_message = _build_result_message(
+        script_name="bundle_revert",
+        full_complete_message="prototype reverted",
+        with_updates=True,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_hc_apply(task: Task, job: Job) -> int:
+def internal_script_hc_apply(task: Task, job: HcApplyJob, cluster_service: ClusterService) -> InternalScriptResult:
     if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         raise AdcmEx(
             code="WRONG_OWNER",
             msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
         )
 
-    hc_apply_rules = job.params.rules
+    hc_apply_rules = job.params.rules if job.params else None
 
     if not hc_apply_rules:
         hc_apply_rules = task.action.hc_acl
@@ -255,6 +316,7 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
 
     bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster_prototype_id)
 
+    with_updates = False
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
 
@@ -270,37 +332,95 @@ def internal_script_hc_apply(task: Task, job: Job) -> int:
             delta_part = _extract_mapping_delta_part(
                 cluster_id=cluster_id, mapping_delta=mapping_delta, hc_apply_rules=hc_apply_rules
             )
-        change_host_component_mapping_no_lock(
-            cluster_id=cluster_id,
-            bundle_id=bundle_id,
-            mapping_delta=delta_part,
-            checks_func=check_nothing,
-        )
 
-    return 0
+        with_updates = not delta_part.is_empty
+        if with_updates:
+            change_host_component_mapping_no_lock(
+                cluster_id=cluster_id,
+                bundle_id=bundle_id,
+                mapping_delta=delta_part,
+                cluster_service=cluster_service,
+                checks_func=check_nothing,
+            )
+
+    result_message = _build_result_message(
+        script_name="hc_apply",
+        full_complete_message="the component mapping is complete",
+        without_updates_message="the component mapping was done",
+        with_updates=with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 def internal_script_config_apply(
     task: Task,
-    job: Job,
+    job: ConfigApplyJob,
     update_configuration_from_job: UpdateConfigurationFromJob,
-) -> int:
+) -> InternalScriptResult:
+    with_updates = False
     # are we going to allow to change one component from context of another?
     for change in job.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
-        _apply_config_changes(
-            job.id,
-            changing_object,
-            change["parameters"],
-            f"{task.action.display_name} process update",
-            update_configuration_from_job,
+        has_changed = apply_config_changes(
+            job_id=job.id,
+            db_object=changing_object,
+            parameters=[asdict(parameter) for parameter in change.parameters],
+            changes_description=f"{task.display_name} process update",
+            update_configuration_from_job=update_configuration_from_job,
         )
-    return 0
+        # if at least one change has been applied, the script is marked as completed with updates
+        with_updates = has_changed or with_updates
+
+    result_message = _build_result_message(
+        script_name="config_apply",
+        full_complete_message="the configuration updates are done",
+        without_updates_message="the configuration was updated",
+        with_updates=with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def internal_script_service_manage(
+    task: Task,
+    job: ServiceManageJob,
+    manage_services: ManageClusterServices,
+) -> InternalScriptResult:
+    cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
+
+    outcome = manage_services.add(
+        cluster_id=cluster_id,
+        entries=entries,
+        job_id=job.id,
+        task_owner=task.owner,
+        changes_description=f"{task.display_name} process update",
+    )
+
+    result_message = _build_result_message(
+        script_name="service_manage",
+        full_complete_message=f"services are in place: {', '.join(entry.name for entry in entries)}",
+        without_updates_message="the requested services were already in place",
+        with_updates=outcome.with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def _parse_service_manage_arguments(
+    task: Task, job: ServiceManageJob
+) -> tuple[ClusterID, tuple[ServiceManageServiceEntry, ...]]:
+    if task.owner is None:
+        raise RuntimeError("misconfigured task runner: no owner")
+
+    cluster_id = task.owner.id if task.owner.type == ADCMCoreType.CLUSTER else task.owner.related_objects.cluster.id
+
+    return cluster_id, tuple(job.params.services or ())
 
 
 def internal_script_before_upgrade_clean(
-    task: Task, job: Job, cluster_uc: ResetBeforeUpgradeCluster, provider_uc: ResetBeforeUpgradeProvider
-) -> int:
+    task: Task,
+    job: SimpleInternalJob,
+    cluster_uc: ResetBeforeUpgradeCluster,
+    provider_uc: ResetBeforeUpgradeProvider,
+) -> InternalScriptResult:
     _ = job
 
     if not task.owner:
@@ -326,26 +446,28 @@ def internal_script_before_upgrade_clean(
         case _:
             raise RuntimeError("misconfigured task runner")
 
-    return 0
-
-
-def _apply_config_changes(
-    job_id: int,
-    db_object: ADCM | CoreObject,
-    parameters: list[dict],
-    changes_description: str,
-    update_configuration_from_job: UpdateConfigurationFromJob,
-) -> None:
-    _check_parameters_unique(parameters)
-
-    update_configuration_from_job.do(
-        owner=orm_object_to_core_descriptor(db_object),
-        changes_input=parameters,
-        convert=_prepare_changes_new,
-        job_id=job_id,
-        description=changes_description,
-        owner_orm=db_object,
+    result_message = _build_result_message(
+        script_name="before_upgrade_clean",
+        full_complete_message='"before_upgrade" section has been cleared',
+        with_updates=True,
     )
+    return InternalScriptResult(code=0, message=result_message)
+
+
+def _build_result_message(
+    script_name: str,
+    full_complete_message: str,
+    with_updates: bool,
+    without_updates_message: str | None = None,
+) -> str:
+    base_template = "The script `{script_name}` completed successfully, {completed_info}."
+
+    if with_updates or without_updates_message is None:
+        complete_info = full_complete_message
+    else:
+        complete_info = f"but {without_updates_message} earlier"
+
+    return base_template.format(script_name=script_name, completed_info=complete_info)
 
 
 def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
@@ -372,47 +494,6 @@ def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
     return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
 
 
-def _check_parameters_unique(parameters: list[dict]) -> None:
-    checked = set()
-
-    for entry in parameters:
-        key = entry["key"]
-        if key not in checked:
-            checked.add(key)
-        else:
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{key} is not unique within parameters")
-
-
-def _prepare_changes_new(parameters: list[dict], spec: core.config.spec.FullSpec) -> list[core.config.ChangeRequest]:
-    changes = []
-
-    for parameter_change in parameters:
-        full_name = core.config.names.ensure_full_name(parameter_change["key"])
-        value = parameter_change["value"]
-
-        if full_name not in spec.groups:
-            change = core.config.ChangeRequest.for_value(name=full_name, value=value)
-            changes.append(change)
-            continue
-
-        group_spec = spec.groups[full_name]
-        if group_spec.selection:
-            change = core.config.ChangeRequest.for_group_selection(name=full_name, value=value)
-            changes.append(change)
-            continue
-
-        if not spec.groups[full_name].activation:
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: only activatable groups may be (de)activated")
-
-        if not isinstance(value, bool):
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"{full_name}: value expected to be boolean")
-
-        change = core.config.ChangeRequest.for_activation_attribute(name=full_name, value=value)
-        changes.append(change)
-
-    return changes
-
-
 def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
     changes = ConfigAttrPair(config={}, attr={})
 
@@ -437,14 +518,14 @@ def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
     return changes
 
 
-def _extract_apply_config_target(task: Task, change: dict) -> ADCM | CoreObject:
+def _extract_apply_config_target(task: Task, change: ConfigApplyChangeEntry) -> ADCM | CoreObject:
     # in order to preserve single mechanism with adcm_config plugin.
     # Requires refactoring to move it common location with plugins
     from ansible_plugin.base import CoreObjectTargetDescription, VarsContextSection, _from_target_description
     from ansible_plugin.errors import PluginTargetDetectionError
 
     context = VarsContextSection(**context_m.get_run_context(task=task))
-    target_description = CoreObjectTargetDescription(**change["object"])
+    target_description = CoreObjectTargetDescription(**asdict(change.object))
 
     try:
         target = _from_target_description(target_description, context)
@@ -502,13 +583,15 @@ def _switch_hc_if_required(task: Task) -> None:
             else:
                 delta.add[component_id].add(new_entry["host_id"])
 
-    JobRepoImpl.update_task(id=task.id, data=TaskUpdateDTO(post_upgrade_hc_map=None, hostcomponentmap=delta))
+    JobRepo().update_task(id=task.id, data=TaskUpdateDTO(post_upgrade_hc_map=None, hostcomponentmap=delta))
 
 
 # ENVIRONMENT BUILDERS
 
 
-def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSettings) -> None:
+def prepare_ansible_environment(
+    task: Task, job: AnsibleJob, configuration: ExternalSettings, cluster_service: ClusterService
+) -> None:
     cluster_id, topology = None, None
     if task.owner:
         if task.owner.type == ADCMCoreType.CLUSTER:
@@ -525,7 +608,7 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
 
-    inventory = prepare_ansible_inventory(task=task, topology=topology)
+    inventory = prepare_ansible_inventory(task=task, topology=topology, cluster_service=cluster_service)
     with (job_run_dir / "inventory.json").open(mode="w", encoding="utf-8") as file_descriptor:
         json.dump(obj=inventory, fp=file_descriptor, separators=(",", ":"))
 
@@ -534,7 +617,9 @@ def prepare_ansible_environment(task: Task, job: Job, configuration: ExternalSet
         ansible_cfg_config_parser.write(config_file)
 
 
-def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = None) -> dict[str, Any]:
+def prepare_ansible_inventory(
+    task: Task, cluster_service: ClusterService, topology: ClusterTopology | None = None
+) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
     if task.action.hc_acl:
@@ -551,11 +636,12 @@ def prepare_ansible_inventory(task: Task, topology: ClusterTopology | None = Non
         delta=delta,
         related_objects=task.owner.related_objects,
         process_mapping_delta=process_mapping_delta,
+        cluster_service=cluster_service,
     )
 
 
 def prepare_ansible_job_config(
-    task: Task, job: Job, configuration: ExternalSettings, topology: ClusterTopology | None = None
+    task: Task, job: AnsibleJob, configuration: ExternalSettings, topology: ClusterTopology | None = None
 ) -> dict[str, Any]:
     job_data = JobData(
         id=job.id,

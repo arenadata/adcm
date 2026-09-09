@@ -18,6 +18,16 @@ export interface ClusterImportsSetGroup {
   services: Set<string>;
 }
 
+export interface ClusterImportCardState {
+  isAllServicesSelected: boolean;
+  isAnyServiceSelected: boolean;
+  isAllServicesDisabled: boolean;
+  requiredServiceImport: AdcmClusterImportService[];
+  isClusterImportDisabled: boolean;
+  isClusterRequired: boolean;
+  isClusterSelected: boolean;
+}
+
 export interface ClusterImportCardServiceItemProps {
   selectedImports: SelectedImportsGroup;
   selectedSingleBind: ClusterImportsSetGroup;

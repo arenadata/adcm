@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from itertools import chain
-from typing import Iterable
 
 from core.cluster._types import ClusterTopology
 from core.types import ADCMCoreType, ClusterObjectDesc, ComponentDesc, Descriptor, HostDesc, ServiceDesc

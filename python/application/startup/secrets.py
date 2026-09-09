@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from secrets import token_hex
 from traceback import format_exception
-from typing import Annotated, Iterable, Literal
+from typing import Annotated, Literal
 import os
 
 from core import secrets
@@ -23,7 +25,7 @@ from core.result import Fail, Success
 from integrations.vault import ClientSettings, VaultSecretsBackend
 from pydantic import BaseModel, StringConstraints
 
-from application.types import MigrationMode
+from application.types import ADCMMaintenanceMode
 
 _SECRET_TOKEN_LENGTH = 20
 
@@ -57,10 +59,10 @@ def initialize_secrets(
     new_file: Path,
     target_backend: secrets.SecretsBackend,
     overwrite_if_exist: bool,
-    migration_mode: MigrationMode,
+    adcm_maintenance_mode: ADCMMaintenanceMode,
 ) -> Success[str] | Fail[str]:
-    if migration_mode == MigrationMode.ENABLED:
-        return Fail("Initialization of secrets disallowed: migration mode is enabled.")
+    if adcm_maintenance_mode == ADCMMaintenanceMode.ENABLED:
+        return Fail("Initialization of secrets disallowed: maintenance mode is enabled.")
 
     new_file_is_present = new_file.is_file()
 
@@ -154,6 +156,14 @@ class _ADCMSecretsDeprecated(BaseModel):
 
 
 def migrate_secrets_on_fs_if_required(*, source_file: Path, target_file: Path) -> Success[str]:
+    # Secrets files created by older versions may carry default (umask)
+    # permissions; re-restrict them to the owner even when no content
+    # migration is required. Best-effort: if the file is not owned by the
+    # running user, reading it fails later with a clear error anyway.
+    for secrets_file in (source_file, target_file):
+        with suppress(OSError):
+            secrets_file.chmod(0o600)
+
     if target_file.is_file():
         return Success(f"Secrets migration skipped: target file exists: {target_file}.")
 
@@ -186,10 +196,14 @@ def migrate_secrets_on_fs_if_required(*, source_file: Path, target_file: Path) -
 
 
 def load_secrets(
-    *, source_file: Path, vault_settings: ClientSettings, overwrite_if_exist: bool, migration_mode: MigrationMode
+    *,
+    source_file: Path,
+    vault_settings: ClientSettings,
+    overwrite_if_exist: bool,
+    adcm_maintenance_mode: ADCMMaintenanceMode,
 ) -> Success[str] | Fail[str]:
-    if migration_mode != MigrationMode.ENABLED:
-        return Fail("Secrets load disallowed: migration mode must be enabled.")
+    if adcm_maintenance_mode != ADCMMaintenanceMode.ENABLED:
+        return Fail("Secrets load disallowed: maintenance mode must be enabled.")
 
     source_backend = FSSecretsBackend(path=source_file)
 

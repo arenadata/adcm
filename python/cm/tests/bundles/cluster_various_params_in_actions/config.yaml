@@ -1,74 +1,74 @@
+---
 - type: cluster
   version: 2.3
   name: cluster_with_various_params_in_action
-
   actions:
-    job_no_params: &job
-      type: job
-      script: ./somewhere.yaml
-      script_type: ansible
-
-    job_params:
-      <<: *job
-      params:
-        ansible_tags: hello, there
-        custom: [4, 3]
-
-    task_no_params:
-      type: task
+    job_no_params:
       scripts:
-        - &script
-          name: first
+        - name: job_no_params
           script: ./somewhere.yaml
           script_type: ansible
-        - <<: *script
-          name: second
-
+    job_params:
+      scripts:
+        - name: job_params
+          script: ./somewhere.yaml
+          script_type: ansible
+          params:
+            ansible_tags: hello, there
+            custom:
+              - 4
+              - 3
+    task_no_params:
+      scripts:
+        - name: first
+          script: ./somewhere.yaml
+          script_type: ansible
+        - name: second
+          script: ./somewhere.yaml
+          script_type: ansible
     task_params_in_action:
-      type: task
       scripts:
-        - <<: *script
-        - <<: *script
-          name: second
-      params:
-        jinja2_native: yes
-        custom: {"key": "value"}
-
+        - name: first
+          script: ./somewhere.yaml
+          script_type: ansible
+        - name: second
+          script: ./somewhere.yaml
+          script_type: ansible
     task_params_in_action_and_scripts:
-      type: task
       scripts:
-          - <<: *script
-            params:
-              ansible_tags: one, two
-              jinja2_native: "hello"
-          - <<: *script
-            name: second
-      params:
-        jinja2_native: yes
-        custom: { "key": "value" }
-
+        - name: first
+          script: ./somewhere.yaml
+          script_type: ansible
+          params:
+            ansible_tags: one, two
+            jinja2_native: hello
+        - name: second
+          script: ./somewhere.yaml
+          script_type: ansible
     task_params_in_action_and_all_scripts:
-      type: task
       scripts:
-          - <<: *script
-            params:
-              ansible_tags: one, two
-              jinja2_native: "hello"
-          - <<: *script
-            name: second
-            params:
-              perfect: "thing"
-      params:
-        ansible_tags: some
-        custom: { "key": "value" }
-
+        - name: first
+          script: ./somewhere.yaml
+          script_type: ansible
+          params:
+            ansible_tags: one, two
+            jinja2_native: hello
+        - name: second
+          script: ./somewhere.yaml
+          script_type: ansible
+          params:
+            perfect: thing
     task_params_in_scripts:
-      type: task
       scripts:
-        - <<: *script
+        - name: first
+          script: ./somewhere.yaml
+          script_type: ansible
           params:
             ansible_tags: one
-        - <<: *script
-          name: second
+        - name: second
           params:
-            perfect: "thing"
+            perfect: thing
+          script: ./somewhere.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'

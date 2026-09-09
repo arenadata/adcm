@@ -11,12 +11,13 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Callable, Collection, Iterable
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path
-from typing import Callable, Collection, Final, Iterable, TypeAlias, cast
-
 from graphlib import CycleError, TopologicalSorter
+from pathlib import Path
+from typing import Final, TypeAlias, cast
+
 import jinja2
 
 from core import action, config
@@ -31,18 +32,13 @@ from core.bundle._errors import BundleValidationError
 from core.bundle._predicates import has_requires, is_component, is_component_key, is_service
 from core.bundle._representation import dependency_entry_to_key, repr_from_key
 from core.bundle._types import BundleDefinitionKey
+from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.errors import localize_error
 from core.result import Fail, Success
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
 
-# This section should be in sort of global consts module
-ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
-ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
-ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
-ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
 FILE_TYPES: Final = {"file", "secretfile"}
-# section end
 
 ConvertConfigDefinition: TypeAlias = Callable[[ConfigDefinition, Path], tuple[config.spec.FullSpec, config.Defaults]]
 
@@ -237,7 +233,9 @@ def check_config_defaults(
 ):
     violations = config_service.validate_configuration_definition(specification=specification, defaults=defaults)
     if violations:
-        violations_list_repr = "; ".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)
+        violations_list_repr = "; ".join(
+            f"- {specification.get_full_display_name(v.parameter)} [{v.check}]: {v.reason}" for v in violations
+        )
         raise BundleValidationError(message=f"object's defaults are invalid: {violations_list_repr}")
 
 

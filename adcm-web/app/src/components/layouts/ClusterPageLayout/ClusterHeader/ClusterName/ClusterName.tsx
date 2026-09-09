@@ -8,17 +8,23 @@ import { clusterStatusesMap } from '@pages/ClustersPage/ClustersTable/ClustersTa
 const ClusterName: React.FC = () => {
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
 
+  if (!cluster) {
+    return null;
+  }
+
   return (
     <div className={s.clusterName}>
-      {cluster && <ClusterDynamicActionsIcon cluster={cluster} size={24} />}
-      <div className={s.clusterName__name}>
-        {cluster && (
-          <Statusable status={clusterStatusesMap[cluster.status]} size="medium">
-            {cluster?.name}
-          </Statusable>
-        )}
-      </div>
+      <ClusterDynamicActionsIcon cluster={cluster} size={24} />
+      <Statusable
+        className={s.clusterName__status}
+        status={clusterStatusesMap[cluster.status]}
+        size="medium"
+        iconPosition="right"
+      >
+        <span className={s.clusterName__title}>{cluster.name}</span>
+      </Statusable>
     </div>
   );
 };
+
 export default ClusterName;

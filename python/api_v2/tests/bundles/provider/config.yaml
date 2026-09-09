@@ -1,9 +1,8 @@
 ---
 - type: provider
   name: provider
-  version: &version '1.0'
+  version: '1.0'
   config_group_customization: true
-
   config:
     - name: json
       type: json
@@ -21,8 +20,8 @@
             string_key: string
     - name: activatable_group
       type: group
-      activatable: True
-      active: True
+      activatable: true
+      active: true
       subs:
         - name: secretmap
           type: secretmap
@@ -32,15 +31,17 @@
             string_key: string
   actions:
     provider_action:
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
       states:
         available: any
-
+      scripts:
+        - name: provider_action
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: host
-  version: *version
+  version: '1.0'
   config:
     - name: structure
       type: structure
@@ -69,8 +70,8 @@
             - value3
     - name: activatable_group
       type: group
-      activatable: True
-      active: True
+      activatable: true
+      active: true
       subs:
         - name: option
           type: option
@@ -81,9 +82,10 @@
           default: string1
   actions:
     host_action:
-      display_name: "host_action"
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
+      display_name: host_action
       states:
         available: any
+      scripts:
+        - name: host_action
+          script: ./playbook.yaml
+          script_type: ansible

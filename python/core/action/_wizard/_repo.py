@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Generator, Protocol
+from collections.abc import Generator
+from typing import Any, Protocol
 from uuid import UUID
 
 from core.action._wizard._types import ProcessID, ProcessState, Stage, StepWithData

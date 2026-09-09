@@ -1,10 +1,9 @@
+---
 - type: cluster
   name: cl
   version: 1
-
   actions:
     aa:
-      type: task
       scripts_template:
         file:
           path: wizard_jinja/scripts/template.j2
@@ -12,4 +11,5 @@
           type: jinja2
       states:
         available: any
-
+  contract_version: '2.1'
+  venv: '2.16'

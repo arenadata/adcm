@@ -1,0 +1,122 @@
+@use './mq.scss' as *;
+
+@media (width >= $min-desktop-width) {
+  /* Mode: desktop */
+  :root {
+    --body-2-size: var(--font-size-500);
+    --body-1-size: var(--font-size-700);
+    --body-3-size: var(--font-size-400);
+    --h-1-size: var(--font-size-1100);
+    --h-2-size: var(--font-size-1000);
+    --h-3-size: var(--font-size-900);
+    --caption-1-size: var(--font-size-300);
+    --h-1-lineheight: var(--line-height-800);
+    --h-2-lineheight: var(--line-height-700);
+    --h-3-lineheight: var(--line-height-600);
+    --body-1-lineheight: var(--line-height-500);
+    --body-2-lineheight: var(--line-height-400);
+    --body-3-lineheight: var(--line-height-300);
+    --caption-1-lineheight: var(--line-height-300);
+    --display-1-size: var(--font-size-2000);
+    --display-2-size: var(--font-size-1800);
+    --display-3-size: var(--font-size-1600);
+    --display-1-lineheight: var(--line-height-1500);
+    --display-2-lineheight: var(--line-height-1300);
+    --display-3-lineheight: var(--line-height-1100);
+    --label-1-size: var(--font-size-400);
+    --label-1-lineheight: var(--line-height-300);
+    --label-2-size: var(--font-size-200);
+    --label-2-lineheight: var(--line-height-200);
+    --caption-2-size: var(--font-size-200);
+    --caption-2-lineheight: var(--line-height-200);
+    --mono-size: var(--font-size-400);
+    --mono-lineheight: var(--line-height-300);
+    --display-sub-1-size: var(--font-size-1100);
+    --display-sub-1-lineheight: var(--line-height-800);
+    --display-sub-2-size: var(--font-size-1000);
+    --display-sub-2-lineheight: var(--line-height-700);
+    --display-sub-3-size: var(--font-size-900);
+    --display-sub-3-lineheight: var(--line-height-600);
+  }
+}
+
+
+@media (width < $min-desktop-width) and (width >= $min-tablet-width) {
+  /* Mode: tablet */
+  :root {
+    --body-2-size: var(--font-size-500);
+    --body-1-size: var(--font-size-700);
+    --body-3-size: var(--font-size-400);
+    --h-1-size: var(--font-size-1000);
+    --h-2-size: var(--font-size-900);
+    --h-3-size: var(--font-size-700);
+    --caption-1-size: var(--font-size-300);
+    --h-1-lineheight: var(--line-height-600);
+    --h-2-lineheight: var(--line-height-600);
+    --h-3-lineheight: var(--line-height-400);
+    --body-1-lineheight: var(--line-height-500);
+    --body-2-lineheight: var(--line-height-300);
+    --body-3-lineheight: var(--line-height-300);
+    --caption-1-lineheight: var(--line-height-300);
+    --display-1-size: var(--font-size-1900);
+    --display-2-size: var(--font-size-1700);
+    --display-3-size: var(--font-size-1400);
+    --display-1-lineheight: var(--line-height-1400);
+    --display-2-lineheight: var(--line-height-1200);
+    --display-3-lineheight: var(--line-height-1000);
+    --label-1-size: var(--font-size-400);
+    --label-1-lineheight: var(--line-height-300);
+    --label-2-size: var(--font-size-200);
+    --label-2-lineheight: var(--line-height-200);
+    --caption-2-size: var(--font-size-200);
+    --caption-2-lineheight: var(--line-height-200);
+    --mono-size: var(--font-size-400);
+    --mono-lineheight: var(--line-height-300);
+    --display-sub-1-size: var(--font-size-1000);
+    --display-sub-1-lineheight: var(--line-height-600);
+    --display-sub-2-size: var(--font-size-900);
+    --display-sub-2-lineheight: var(--line-height-600);
+    --display-sub-3-size: var(--font-size-700);
+    --display-sub-3-lineheight: var(--line-height-400);
+  }
+}
+
+
+@media (width < $min-tablet-width) {
+  :root {
+    --body-2-size: var(--font-size-400);
+    --body-1-size: var(--font-size-500);
+    --body-3-size: var(--font-size-300);
+    --h-1-size: var(--font-size-900);
+    --h-2-size: var(--font-size-700);
+    --h-3-size: var(--font-size-500);
+    --caption-1-size: var(--font-size-200);
+    --h-1-lineheight: var(--line-height-600);
+    --h-2-lineheight: var(--line-height-400);
+    --h-3-lineheight: var(--line-height-400);
+    --body-1-lineheight: var(--line-height-400);
+    --body-2-lineheight: var(--line-height-300);
+    --body-3-lineheight: var(--line-height-300);
+    --caption-1-lineheight: var(--line-height-200);
+    --display-1-size: var(--font-size-1700);
+    --display-2-size: var(--font-size-1500);
+    --display-3-size: var(--font-size-1200);
+    --display-1-lineheight: var(--line-height-1200);
+    --display-2-lineheight: var(--line-height-1000);
+    --display-3-lineheight: var(--line-height-900);
+    --label-1-size: var(--font-size-300);
+    --label-1-lineheight: var(--line-height-300);
+    --label-2-size: var(--font-size-100);
+    --label-2-lineheight: var(--line-height-200);
+    --caption-2-size: var(--font-size-100);
+    --caption-2-lineheight: var(--line-height-100);
+    --mono-size: var(--font-size-300);
+    --mono-lineheight: var(--line-height-300);
+    --display-sub-1-size: var(--font-size-900);
+    --display-sub-1-lineheight: var(--line-height-600);
+    --display-sub-2-size: var(--font-size-700);
+    --display-sub-2-lineheight: var(--line-height-400);
+    --display-sub-3-size: var(--font-size-500);
+    --display-sub-3-lineheight: var(--line-height-400);
+  }
+}

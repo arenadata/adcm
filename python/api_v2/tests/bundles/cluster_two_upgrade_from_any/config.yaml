@@ -1,15 +1,14 @@
 ---
 - type: cluster
   name: cluster_two
-  version: &version '99.0'
+  version: '99.0'
   edition: community
   config_group_customization: true
-  config: &config
+  config:
     - name: string
       type: string
       required: false
       default: string
-
   upgrade:
     - name: Upgrade 99.0
       versions:
@@ -20,4 +19,5 @@
         available: any
         on_success: upgradable
       from_edition: any
-
+  contract_version: '2.1'
+  venv: '2.16'

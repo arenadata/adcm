@@ -15,7 +15,7 @@ from typing import cast
 from uuid import UUID
 
 from cm.legacy.services import mapping
-from cm.legacy.services.action_process.errors import ActionProcessPayloadError
+from cm.legacy.services.action_process.errors import ActionProcessOperationError, ActionProcessPayloadError
 from cm.legacy.services.action_process.operations import (
     MappingRules,
     OperationContext,
@@ -32,20 +32,20 @@ from cm.legacy.services.action_process.schema_validation import (
     SubmitOperationStepParams,
     SubmitStepPayload,
 )
-from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
+from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState, ProcessTarget
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
-from cm.models import TaskLog
+from cm.models import Cluster, TaskLog
 from cm.transition.status import StatusScenarios
+from core.action import CallingProcess
+from core.action.job import JobService
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job import JobService
-from core.legacy.job.types import CallingProcess
 from core.scenarios.wizard import FillWizardStepSpec
 from core.types import (
     ActionID,
@@ -59,6 +59,7 @@ from django.db.transaction import atomic
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 from use_cases.dto import InputConfigConverter
 from use_cases.transition.job.schedule import TaskStarter
@@ -160,6 +161,7 @@ class PerformWizardProcessOperation:
     fill_wizard_step_spec: FillWizardStepSpec[ActionArgs, TaskArgs]
     start_task: TaskStarter
     rbac_scenarios: RBACScenarios
+    available_contract_versions: core.bundle.AvailableContractVersions
 
     @convert_db_errors
     @convert_bundle_errors_to_adcm_ex
@@ -209,6 +211,7 @@ class PerformWizardProcessOperation:
                         action_name=context.process_context.action.name,
                         action_display_name=context.process_context.action_orm.display_name,
                     ),
+                    target=context.process_context.target_orm,
                     step=self._to_typed_submit_step(step=step, spec=step_spec),
                     config_processor=context.config_processor,
                 )
@@ -281,6 +284,7 @@ class PerformWizardProcessOperation:
         payload: SubmitStepPayload,
         process: SubmitProcessDTO,
         action: SubmitActionDTO,
+        target: ProcessTarget,
         step: core.action.wizard.Step,
         # typehint is vague, because isolation is a bit broken and API-related stuff is coming in here
         config_processor: InputConfigConverter[object],
@@ -336,13 +340,26 @@ class PerformWizardProcessOperation:
                     message = f"Step spec is unexpectedly missing: {step=}"
                     raise RuntimeError(message)
 
+                if isinstance(target, Cluster) and core.action.operations.has_bundle_revert_script(step_spec):
+                    previous_bundle_cv = self.bundle_renderer.bundle_service.retrieve_before_upgrade_contract_version(
+                        before_upgrade_data=target.before_upgrade
+                    )
+                    if previous_bundle_cv and not core.bundle.is_contract_version_supported(
+                        current_version=previous_bundle_cv,
+                        available_contract_versions=self.available_contract_versions,
+                    ):
+                        raise ActionProcessOperationError(
+                            f"Execution of step {action.action_display_name or action.action_name} is not allowed. "
+                            "The bundle for revert is unsupported"
+                        )
+
                 task_display_name = f"{action.action_display_name} ({step.extra.display_name})"
-                task_extra = core.job.dto.TaskExtraInfo(
+                task_extra = core.action.job.TaskExtraInfo(
                     name=action.action_name,
                     display_name=task_display_name,
                     description="",
                 )
-                task_payload = core.job.dto.TaskCreateDTO(
+                task_payload = core.action.job.TaskCreateDTO(
                     owner=action.owner,
                     target=action.target,
                     action_id=action.action_id,

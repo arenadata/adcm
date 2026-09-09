@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.action import HcAclRule, TaskMappingDelta
 from core.legacy.cluster.types import TopologyHostDiff
-from core.legacy.job.types import HcAclRule, TaskMappingDelta
 from core.types import ComponentID, ComponentNameKey
 
 from cm.errors import AdcmEx

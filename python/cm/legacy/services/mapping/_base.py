@@ -11,9 +11,12 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import chain
-from typing import Iterable, Protocol
+from typing import Protocol
 
+from core.action import TaskMappingDelta
+from core.cluster import ClusterService
 from core.legacy.bundle.types import BundleRestrictions
 from core.legacy.cluster.operations import (
     construct_mapping_from_delta,
@@ -25,7 +28,6 @@ from core.legacy.cluster.types import (
     HostComponentEntry,
     TopologyHostDiff,
 )
-from core.legacy.job.types import TaskMappingDelta
 from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, HostID
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
@@ -102,6 +104,7 @@ def set_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
+    cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
@@ -110,6 +113,7 @@ def set_host_component_mapping(
             cluster_id=cluster_id,
             bundle_id=bundle_id,
             new_mapping=new_mapping,
+            cluster_service=cluster_service,
             checks_func=checks_func,
         )
 
@@ -118,12 +122,17 @@ def set_host_component_mapping_no_lock(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
+    cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     new_mapping = tuple(new_mapping)
     mapping_delta = _retrieve_delta_from_new_mapping(cluster_id=cluster_id, new_mapping=new_mapping)
     _change_host_component_mapping(
-        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+        cluster_id=cluster_id,
+        bundle_id=bundle_id,
+        mapping_delta=mapping_delta,
+        cluster_service=cluster_service,
+        checks_func=checks_func,
     )
 
 
@@ -131,12 +140,17 @@ def change_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
+    cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
         lock_cluster_mapping(cluster_id=cluster_id)
         change_host_component_mapping_no_lock(
-            cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+            cluster_id=cluster_id,
+            bundle_id=bundle_id,
+            mapping_delta=mapping_delta,
+            cluster_service=cluster_service,
+            checks_func=checks_func,
         )
 
 
@@ -144,10 +158,15 @@ def change_host_component_mapping_no_lock(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
+    cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     _change_host_component_mapping(
-        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+        cluster_id=cluster_id,
+        bundle_id=bundle_id,
+        mapping_delta=mapping_delta,
+        cluster_service=cluster_service,
+        checks_func=checks_func,
     )
 
 
@@ -160,6 +179,7 @@ def _change_host_component_mapping(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
+    cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
     # prepare
@@ -190,7 +210,7 @@ def _change_host_component_mapping(
 
     # update info in statistics service
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
     send_host_component_map_update_event(cluster_id=cluster_id)
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 

@@ -13,11 +13,12 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from core.cluster import ClusterService
+from core.status import FullStatusMap
 from core.types import ConcernID, CoreObjectDescriptor, Descriptor, HostID
 from requests import Response
 
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
-from cm.legacy.services.status.client import FullStatusMap
 from cm.legacy.services.status.client import retrieve_status_map as legacy_retrieve_status_map
 from cm.legacy.services.status.notify import (
     register_all_duplicates as legacy_register_all_duplicates,
@@ -63,6 +64,8 @@ from cm.models import ADCMEntity
 
 @dataclass(slots=True)
 class StatusScenarios:
+    cluster_service: ClusterService
+
     def retrieve_status_map(self) -> FullStatusMap:
         return legacy_retrieve_status_map()
 
@@ -73,10 +76,9 @@ class StatusScenarios:
         legacy_send_object_update_event(obj_id=obj_id, obj_type=obj_type, changes=changes)
 
     def send_config_creation_event(self, owner: CoreObjectDescriptor | Descriptor, created_by: str) -> None:
-        object_type = owner.type if isinstance(owner.type, str) else owner.type.value
         legacy_send_config_creation_event(
             object_id=owner.id,
-            object_type=object_type,
+            object_type=owner.type.value,
             changes={"createdBy": created_by},
         )
 
@@ -100,7 +102,7 @@ class StatusScenarios:
         legacy_notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     def update_all(self) -> None:
-        legacy_update_all()
+        legacy_update_all(cluster_service=self.cluster_service)
 
     def reset_hc_map(self) -> None:
         legacy_reset_hc_map()
@@ -118,4 +120,4 @@ class StatusScenarios:
         legacy_register_host_duplicates(original=original, duplicates=duplicates)
 
     def _sync_objects_in_mm(self) -> Response | None:
-        return legacy_reset_objects_in_mm()
+        return legacy_reset_objects_in_mm(cluster_service=self.cluster_service)

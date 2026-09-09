@@ -1,0 +1,52 @@
+.notificationBlock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-300);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-300);
+  border: 2px solid var(--border-info-soft);
+  border-radius: var(--radius-150);
+  background-color: var(--bg-container);
+
+  &__iconWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--bg-info-soft);
+  }
+
+  &__icon {
+    color: var(--icon-info);
+  }
+
+  &__text {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    letter-spacing: var(--letter-spacing-050p);
+  }
+
+  &__label {
+    margin-right: var(--space-100);
+    color: var(--text-primary);
+    font-weight: var(--weight-medium);
+  }
+
+  &__content {
+    color: var(--text-secondary);
+    font-weight: var(--weight-regular);
+
+    :global(.text-link),
+    a {
+      color: var(--text-link-default);
+      font-weight: var(--weight-medium);
+      text-decoration: none;
+    }
+  }
+}

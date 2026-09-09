@@ -1,22 +1,25 @@
+---
 - type: cluster
   name: with_config
   version: 3
-
-  actions: &actions
-    dummy: &action
-      type: job
-      script_type: ansible
-      script: ./playbook.yaml
-      masking:
-
+  actions: &id001
+    dummy:
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
     on_host:
-      <<: *action
       host_action: true
-
-  config: &config
+      masking: null
+      scripts:
+        - name: on_host
+          script: ./playbook.yaml
+          script_type: ansible
+  config: &id002
     - name: plain_s
       type: string
-      default: "4"
+      default: '4'
     - name: plain_i
       type: integer
       default: 3
@@ -25,7 +28,7 @@
       subs:
         - name: plain_s
           type: string
-          default: "inside of group"
+          default: inside of group
         - name: records
           type: list
           required: false
@@ -43,8 +46,8 @@
         - name: records
           type: list
           default:
-            - "first"
-            - "sec:ond"
+            - first
+            - sec:ond
     - name: ag2
       type: group
       activatable: true
@@ -57,25 +60,22 @@
           type: secretmap
           default:
             k1: v1
-
-- &service
-  type: service
+  contract_version: '2.1'
+  venv: '2.16'
+- type: service
   name: service_1
   version: 2
-
-  actions: *actions
-
-  config: *config
-
-  components:
+  actions: *id001
+  config: *id002
+  components: &id003
     component_1:
-      actions: *actions
-
-      config: *config
-
+      actions: *id001
+      config: *id002
     component_2:
-      actions: *actions
-
-- <<: *service
-  name: service_2
-
+      actions: *id001
+- name: service_2
+  type: service
+  version: 2
+  actions: *id001
+  config: *id002
+  components: *id003

@@ -18,11 +18,11 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
+        self.provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
 
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1")
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1")
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2")
 
         self.action_on_provider = Action.objects.get(name="action_on_provider", prototype=self.provider.prototype)
         self.action_on_host_1 = Action.objects.get(name="action_on_host", prototype=self.host_1.prototype)
@@ -93,9 +93,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_provider_with_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
@@ -138,9 +138,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_host_with_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 
@@ -176,9 +176,9 @@ class TestInventoryProviderHost(BaseInventoryTestCase):
 
     def test_action_on_host_without_config_host_group(self):
         provider_host_group = self.add_config_host_group(parent=self.provider, hosts=[self.host_1])
-        self.change_configuration(
-            target=provider_host_group,
-            config_diff={"integer": 101},
+        self.uc.change_config(
+            owner=provider_host_group,
+            values_diff={"integer": 101},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
 

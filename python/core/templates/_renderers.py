@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from operator import attrgetter
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Generator
+from typing import Any
 import sys
 import importlib
 
@@ -114,7 +115,7 @@ class TemplateRendererJinja2(TemplateRenderer):
         # ruff have a problem with this one too, yet it's how it is working for now, can't change it
         return Environment(
             loader=loader,
-            autoescape=autoescape,  # pyright: ignore [reportArgumentType] # noqa: S701
+            autoescape=autoescape,  # noqa: S701
         )
 
 

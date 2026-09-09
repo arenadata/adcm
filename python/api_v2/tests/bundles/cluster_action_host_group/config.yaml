@@ -1,47 +1,52 @@
+---
 - type: cluster
   name: with_action_host_group
   version: 2
-
-  actions: &actions
-    regular: &job
-      type: job
-      script: ./stuff.yaml
-      script_type: ansible
-      masking:
-
-    on_host:
-      <<: *job
+  actions:
+    regular: &id002
+      masking: null
+      scripts:
+        - name: regular
+          script: ./stuff.yaml
+          script_type: ansible
+    on_host: &id003
       host_action: true
-
-    allowed_in_group_1: &allowed
-      <<: *job
+      masking: null
+      scripts:
+        - name: on_host
+          script: ./stuff.yaml
+          script_type: ansible
+    allowed_in_group_1: &id001
       config:
         - name: val
           type: integer
           default: 4
       allow_for_action_host_group: true
-
+      masking: null
+      scripts:
+        - name: allowed_in_group_1
+          script: ./stuff.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: example
   version: 3
-
   actions:
-    <<: *actions
-
-    allowed_from_service: *allowed
-
+    allowed_from_service: *id001
+    regular: *id002
+    on_host: *id003
+    allowed_in_group_1: *id001
   components:
     example:
       actions:
-        <<: *actions
-
-        allowed_from_component: *allowed
-
+        allowed_from_component: *id001
+        regular: *id002
+        on_host: *id003
+        allowed_in_group_1: *id001
 - type: service
   name: second
   version: 4
-
   components:
     c1: {}
     c2: {}
-

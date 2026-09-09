@@ -11,8 +11,13 @@
 # limitations under the License.
 
 # later it will become service, so function imports will go away
+from core.action._context import groups, operations
 from core.action._context._wizard_process import construct_process_info
+from core.action._context.types import ConfigHostGroupInfo
 
 __all__ = [
+    "ConfigHostGroupInfo",
     "construct_process_info",
+    "groups",
+    "operations",
 ]

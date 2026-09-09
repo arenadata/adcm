@@ -199,6 +199,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           $ref: '#/components/schemas/NameEnum'
         state:
@@ -221,6 +225,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - state
       - multiState
@@ -417,6 +422,10 @@ components:
           maxLength: 1000
         edition:
           type: string
+        contractVersion:
+          allOf:
+          - $ref: '#/components/schemas/ContractVersion'
+          readOnly: true
         mainPrototype:
           allOf:
           - $ref: '#/components/schemas/MainPrototype'
@@ -433,6 +442,7 @@ components:
       - displayName
       - version
       - edition
+      - contractVersion
       - mainPrototype
       - uploadTime
       - signatureStatus
@@ -444,9 +454,14 @@ components:
           readOnly: true
         edition:
           type: string
+        contractVersion:
+          allOf:
+          - $ref: '#/components/schemas/ContractVersion'
+          readOnly: true
       required:
       - id
       - edition
+      - contractVersion
     CHG:
       type: object
       properties:
@@ -536,11 +551,25 @@ components:
       - check
       type: string
       description: '* `check` - check'
+    CheckResult:
+      type: object
+      properties:
+        healthy:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - healthy
+      - detail
     Cluster:
       type: object
       properties:
         id:
           type: integer
+          readOnly: true
+        uuid:
+          type: string
+          format: uuid
           readOnly: true
         name:
           type: string
@@ -561,7 +590,7 @@ components:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
         prototype:
-          $ref: '#/components/schemas/PrototypeRelated'
+          $ref: '#/components/schemas/PrototypeWithEditionRelated'
         concerns:
           type: array
           items:
@@ -576,6 +605,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - state
@@ -673,6 +703,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           readOnly: true
@@ -727,6 +761,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - displayName
       - status
@@ -953,6 +988,26 @@ components:
       - creationTime
       - description
       - createdBy
+    ContractVersion:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ContractVersionStatusEnum'
+        value:
+          type: string
+      required:
+      - status
+      - value
+    ContractVersionStatusEnum:
+      enum:
+      - supported
+      - deprecated
+      - unsupported
+      type: string
+      description: |-
+        * `supported` - supported
+        * `deprecated` - deprecated
+        * `unsupported` - unsupported
     CreateDuplicate:
       type: object
       properties:
@@ -999,7 +1054,9 @@ components:
           items:
             $ref: '#/components/schemas/RelatedUser'
         type:
-          $ref: '#/components/schemas/OriginType'
+          allOf:
+          - $ref: '#/components/schemas/OriginType'
+          default: local
       required:
       - id
       - name
@@ -1099,6 +1156,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           description: fully qualified domain name
@@ -1142,6 +1203,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - state
@@ -1459,6 +1521,13 @@ components:
         * `absent` - absent
         * `accepted` - accepted
         * `unaccepted` - unaccepted
+    Liveness:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
     Login:
       type: object
       properties:
@@ -1682,6 +1751,9 @@ components:
         * `ldap` - ldap
     PaginatedActionHostGroupList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1702,6 +1774,9 @@ components:
             $ref: '#/components/schemas/ActionHostGroup'
     PaginatedAuditLogList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1722,6 +1797,9 @@ components:
             $ref: '#/components/schemas/AuditLog'
     PaginatedAuditSessionList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1742,6 +1820,9 @@ components:
             $ref: '#/components/schemas/AuditSession'
     PaginatedBundleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1762,6 +1843,9 @@ components:
             $ref: '#/components/schemas/Bundle'
     PaginatedCHGList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1782,6 +1866,9 @@ components:
             $ref: '#/components/schemas/CHG'
     PaginatedClusterList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1802,6 +1889,9 @@ components:
             $ref: '#/components/schemas/Cluster'
     PaginatedComponentList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1822,6 +1912,9 @@ components:
             $ref: '#/components/schemas/Component'
     PaginatedConfigLogListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1842,6 +1935,9 @@ components:
             $ref: '#/components/schemas/ConfigLogList'
     PaginatedGroupList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1862,6 +1958,9 @@ components:
             $ref: '#/components/schemas/Group'
     PaginatedHostComponentList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1882,6 +1981,9 @@ components:
             $ref: '#/components/schemas/HostComponent'
     PaginatedHostList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1902,6 +2004,9 @@ components:
             $ref: '#/components/schemas/Host'
     PaginatedImportList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1922,6 +2027,9 @@ components:
             $ref: '#/components/schemas/Import'
     PaginatedJobListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1942,6 +2050,9 @@ components:
             $ref: '#/components/schemas/JobList'
     PaginatedPrototypeList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1962,6 +2073,9 @@ components:
             $ref: '#/components/schemas/Prototype'
     PaginatedProviderSchemaList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -1982,6 +2096,9 @@ components:
             $ref: '#/components/schemas/ProviderSchema'
     PaginatedRelatedHostsStatusesList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2002,6 +2119,9 @@ components:
             $ref: '#/components/schemas/RelatedHostsStatuses'
     PaginatedRelatedServicesStatusesList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2022,6 +2142,9 @@ components:
             $ref: '#/components/schemas/RelatedServicesStatuses'
     PaginatedRoleList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2042,6 +2165,9 @@ components:
             $ref: '#/components/schemas/Role'
     PaginatedSchemaPolicyList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2062,6 +2188,9 @@ components:
             $ref: '#/components/schemas/SchemaPolicy'
     PaginatedServiceRetrieveList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2082,6 +2211,9 @@ components:
             $ref: '#/components/schemas/ServiceRetrieve'
     PaginatedTaskListList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2102,6 +2234,9 @@ components:
             $ref: '#/components/schemas/TaskList'
     PaginatedUserList:
       type: object
+      required:
+      - count
+      - results
       properties:
         count:
           type: integer
@@ -2495,6 +2630,29 @@ components:
       - displayName
       - name
       - versions
+    PrototypeWithEditionRelated:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 1000
+        displayName:
+          type: string
+          maxLength: 1000
+        version:
+          type: string
+          maxLength: 1000
+        edition:
+          type: string
+      required:
+      - id
+      - name
+      - displayName
+      - version
+      - edition
     Provider:
       type: object
       properties:
@@ -2625,6 +2783,18 @@ components:
       - concerns
       - isUpgradable
       - mainInfo
+    Readiness:
+      type: object
+      properties:
+        status:
+          type: string
+        checks:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CheckResult'
+      required:
+      - status
+      - checks
     Reason:
       type: object
       properties:
@@ -2739,10 +2909,13 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          $ref: '#/components/schemas/MaintenanceModeEnum'
       required:
       - id
       - name
       - status
+      - maintenanceMode
     RelatedServicesStatuses:
       type: object
       properties:
@@ -2759,6 +2932,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/ObjectStatusEnum'
           readOnly: true
+        maintenanceMode:
+          allOf:
+          - $ref: '#/components/schemas/MaintenanceModeEnum'
+          readOnly: true
         components:
           type: array
           items:
@@ -2768,6 +2945,7 @@ components:
       - name
       - displayName
       - status
+      - maintenanceMode
       - components
     RelatedUser:
       type: object
@@ -2803,6 +2981,7 @@ components:
           readOnly: true
         displayName:
           type: string
+          default: ''
           maxLength: 1000
         isBuiltIn:
           type: boolean
@@ -2851,6 +3030,7 @@ components:
           readOnly: true
         displayName:
           type: string
+          default: ''
           maxLength: 1000
         isBuiltIn:
           type: boolean
@@ -3171,6 +3351,10 @@ components:
         id:
           type: integer
           readOnly: true
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         name:
           type: string
           readOnly: true
@@ -3219,6 +3403,7 @@ components:
           readOnly: true
       required:
       - id
+      - uuid
       - name
       - description
       - displayName
@@ -3770,6 +3955,8 @@ components:
         startImpossibleReason:
           type: string
           readOnly: true
+        description:
+          type: string
       required:
       - bundle
       - id
@@ -3830,6 +4017,8 @@ components:
         startImpossibleReason:
           type: string
           readOnly: true
+        description:
+          type: string
       required:
       - id
       - name
@@ -3840,6 +4029,7 @@ components:
       - disclaimer
       - bundle
       - startImpossibleReason
+      - description
     UpgradeRun:
       type: object
       properties:
@@ -4034,6 +4224,56 @@ components:
       name: Authorization
       description: Token-based authentication with required prefix "Token"
 paths:
+  /api/health/live:
+    get:
+      operationId: getHealthCheck
+      description: Get information about adcm backend health.
+      summary: Liveness probe
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Liveness'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/health/ready:
+    get:
+      operationId: getInitCheck
+      description: Get information about adcm backend initialization status
+      summary: Readiness probe
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v2/adcm/:
     get:
       operationId: getADCMObject
@@ -4793,6 +5033,25 @@ paths:
       description: Get a list of ADCM bundles with information on them.
       parameters:
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -4836,12 +5095,16 @@ paths:
         schema:
           type: string
           enum:
+          - -contractVersionStatus
+          - -contractVersionValue
           - -displayName
           - -edition
           - -mainPrototypeLicenseStatus
           - -signatureStatus
           - -uploadTime
           - -version
+          - contractVersionStatus
+          - contractVersionValue
           - displayName
           - edition
           - mainPrototypeLicenseStatus
@@ -18420,6 +18683,23 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: maintenanceMode
+        schema:
+          type: string
+          enum:
+          - 'off'
+          - 'on'
+        description: |-
+          Host maintenance mode
+
+          * `on` - on
+          * `off` - off
+      - in: query
+        name: name
+        schema:
+          type: string
+        description: Case insensitive and partial filter by host name.
+      - in: query
         name: offset
         schema:
           type: integer
@@ -18427,7 +18707,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
@@ -18472,6 +18752,11 @@ paths:
       description: Get information about cluster service statuses.
       summary: Get information about cluster service statuses.
       parameters:
+      - in: query
+        name: displayName
+        schema:
+          type: string
+        description: Case insensitive and partial filter by service display name.
       - in: path
         name: clusterId
         schema:
@@ -18484,6 +18769,18 @@ paths:
           type: integer
         description: Number of records included in the selection.
       - in: query
+        name: maintenanceMode
+        schema:
+          type: string
+          enum:
+          - 'off'
+          - 'on'
+        description: |-
+          Service maintenance mode
+
+          * `on` - on
+          * `off` - off
+      - in: query
         name: offset
         schema:
           type: integer
@@ -18491,7 +18788,7 @@ paths:
       - in: query
         name: ordering
         schema:
-          type: integer
+          type: string
           enum:
           - -id
           - id
@@ -21444,6 +21741,25 @@ paths:
           type: integer
         description: Filter by bundle ID.
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -21463,6 +21779,26 @@ paths:
         schema:
           type: integer
         description: Record number from which the selection starts.
+      - in: query
+        name: ordering
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -contractVersionStatus
+            - -contractVersionValue
+            - contractVersionStatus
+            - contractVersionValue
+        description: |-
+          ordering
+
+          * `contractVersionStatus` - Contract version status
+          * `-contractVersionStatus` - Contract version status (descending)
+          * `contractVersionValue` - Contract version value
+          * `-contractVersionValue` - Contract version value (descending)
+        explode: false
+        style: form
       - in: query
         name: type
         schema:
@@ -21497,6 +21833,25 @@ paths:
           type: integer
         description: Bundle ID
       - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
         name: displayName
         schema:
           type: string
@@ -21523,6 +21878,26 @@ paths:
         description: The initial index from which to return the results.
         schema:
           type: integer
+      - in: query
+        name: ordering
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -contractVersionStatus
+            - -contractVersionValue
+            - contractVersionStatus
+            - contractVersionValue
+        description: |-
+          ordering
+
+          * `contractVersionStatus` - Contract version status
+          * `-contractVersionStatus` - Contract version status (descending)
+          * `contractVersionValue` - Contract version value
+          * `-contractVersionValue` - Contract version value (descending)
+        explode: false
+        style: form
       - in: query
         name: type
         schema:
@@ -21610,6 +21985,36 @@ paths:
       description: Get a list of ADCM bundles when creating an object (cluster or
         provider).
       parameters:
+      - in: query
+        name: contractVersionStatus
+        schema:
+          type: string
+          enum:
+          - deprecated
+          - supported
+          - unsupported
+        description: |-
+          Filter by prototype bundle contract version status.
+
+          * `supported` - supported
+          * `deprecated` - deprecated
+          * `unsupported` - unsupported
+      - in: query
+        name: contractVersionValue
+        schema:
+          type: string
+        description: Filter by prototype bundle contract version value.
+      - in: query
+        name: ordering
+        schema:
+          type: string
+          enum:
+          - -contractVersionStatus
+          - -contractVersionValue
+          - contractVersionStatus
+          - contractVersionValue
+        description: Field to sort by. To sort in descending order, precede the attribute
+          name with a "-".
       - in: query
         name: type
         schema:

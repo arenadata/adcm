@@ -1,23 +1,22 @@
+---
 - type: service
   name: another_service
   version: 2.1
-  
-  actions: &actions
+  actions: &id001
     job_proto_relative:
-      type: job
-      script: ./in_here.yaml
-      script_type: ansible
-      masking:
-
+      masking: null
+      scripts:
+        - name: job_proto_relative
+          script: ./in_here.yaml
+          script_type: ansible
     job_bundle_relative:
-      type: job
-      script: scripts/over_there.yaml
-      script_type: ansible
-      masking:
-
+      masking: null
+      scripts:
+        - name: job_bundle_relative
+          script: scripts/over_there.yaml
+          script_type: ansible
     task_mixed:
-      type: task
-      masking:
+      masking: null
       scripts:
         - name: proto_relative
           script: ./scripts/over_there.yaml
@@ -25,7 +24,6 @@
         - name: bundle_relative
           script: scripts/over_there.yaml
           script_type: ansible
-
   components:
     another_comp:
-      actions: *actions
+      actions: *id001

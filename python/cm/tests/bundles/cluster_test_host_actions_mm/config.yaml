@@ -1,0 +1,70 @@
+---
+- type: cluster
+  name: test_cluster_host_action_mm
+  display_name: Test cluster host action mm
+  version: '1.0'
+  edition: community
+  allow_maintenance_mode: true
+  config: &id001
+    - name: float
+      type: float
+      required: false
+      default: 1.0
+  contract_version: '2.1'
+  venv: '2.16'
+- name: service_1
+  display_name: Service 1
+  type: service
+  version: '1.0'
+  config: *id001
+  components:
+    component_1:
+      display_name: Component 1 from Service 1
+      constraint:
+        - 1
+        - +
+      actions:
+        s1_c1_action_disallowed_in_mm:
+          allow_in_maintenance_mode: false
+          host_action: true
+          states:
+            available: any
+          scripts:
+            - name: s1_c1_action_disallowed_in_mm
+              script: ./action.yaml
+              script_type: ansible
+        s1_c1_action_allowed_in_mm:
+          allow_in_maintenance_mode: true
+          host_action: true
+          states:
+            available: any
+          scripts:
+            - name: s1_c1_action_allowed_in_mm
+              script: ./action.yaml
+              script_type: ansible
+      config: *id001
+    component_2:
+      display_name: Component 2 from Service 1
+      constraint:
+        - 1
+        - +
+      actions:
+        s1_c2_action_disallowed_in_mm:
+          allow_in_maintenance_mode: false
+          host_action: true
+          states:
+            available: any
+          scripts:
+            - name: s1_c2_action_disallowed_in_mm
+              script: ./action.yaml
+              script_type: ansible
+        s1_c2_action_allowed_in_mm:
+          allow_in_maintenance_mode: true
+          host_action: true
+          states:
+            available: any
+          scripts:
+            - name: s1_c2_action_allowed_in_mm
+              script: ./action.yaml
+              script_type: ansible
+      config: *id001

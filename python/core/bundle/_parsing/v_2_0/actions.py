@@ -20,7 +20,7 @@ from core.bundle._parsing.shared.validation import (
     forbidden_mm_actions,
     script_is_correct_path,
 )
-from core.bundle._parsing.v_2_0.internal_scripts import ConfigApplyParams, HcApplyParams
+from core.bundle._parsing.v_2_0.internal_scripts import ConfigApplyParams, HcApplyParams, ServiceManageParams
 from core.bundle._parsing.v_2_0.schema import (
     ConfigTemplate,
     Masking,
@@ -114,11 +114,20 @@ class BeforeUpgradeCleanScript(_BaseScript):
     script: Literal["before_upgrade_clean"]
 
 
+@dataclass(slots=True)
+class ServiceManageInternalScript(_BaseScript):
+    script_type: Literal["internal"]
+    script: Literal["service_manage"]
+    params: ServiceManageParams
+
+
 ProviderInternalScript = Annotated[
     BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
 ]
 
-ClusterStaticInternalScript = Annotated[ProviderInternalScript | HcApplyInternalScript, Field(discriminator="script")]
+ClusterStaticInternalScript = Annotated[
+    ProviderInternalScript | HcApplyInternalScript | ServiceManageInternalScript, Field(discriminator="script")
+]
 
 ClusterScript = Annotated[
     ClusterStaticInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")
@@ -135,7 +144,7 @@ DynamicActionScript = Annotated[
 ]
 
 _DynamicWizardInternalScript = Annotated[
-    ProviderInternalScript | ConfigApplyInternalScript, Field(discriminator="script")
+    ProviderInternalScript | ConfigApplyInternalScript | ServiceManageInternalScript, Field(discriminator="script")
 ]
 DynamicWizardScript = Annotated[
     _DynamicWizardInternalScript | AnsibleScript | PythonScript, Field(discriminator="script_type")

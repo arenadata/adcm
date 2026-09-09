@@ -12,8 +12,13 @@
 
 from django.urls import path
 
-from api_v2.internal.views import StatusServerUpdateView
+from api_v2.internal.views import StatusCheckerTokenViewSet, StatusServerUpdateView
 
 urlpatterns = [
     path("unstable/status-server/sync/", StatusServerUpdateView.as_view({"post": "create"}), name="status-server-sync"),
+    path(
+        "unstable/status-server/get-token/",
+        StatusCheckerTokenViewSet.as_view({"get": "list"}),
+        name="status-server-get-token",
+    ),
 ]

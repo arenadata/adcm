@@ -14,12 +14,17 @@ import {
 import type {
   MappingFilter,
   HostMapping,
-  ComponentMapping,
   ServiceMapping,
   HostsDictionary,
   ComponentsDictionary,
+  ComponentsMappingObject,
 } from './ClusterMapping.types';
 import type { SortDirection } from '@models/table';
+
+const defaultComponentMappingObject: ComponentsMappingObject = {
+  componentsMapping: [],
+  unmappedHostsId: [],
+};
 
 export const useClusterMapping = (
   mapping: AdcmMapping[],
@@ -48,8 +53,8 @@ export const useClusterMapping = (
     }
   }, [isLoaded, mapping]);
 
-  const componentsMapping: ComponentMapping[] = useMemo(
-    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : []),
+  const { componentsMapping } = useMemo(
+    () => (isLoaded ? getComponentsMapping(localMapping, components, hostsDictionary) : defaultComponentMappingObject),
     [components, hostsDictionary, isLoaded, localMapping],
   );
 

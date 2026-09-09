@@ -18,6 +18,7 @@ from adcm.views import ADCMVersions
 urlpatterns = [
     path("social/", include("social_django.urls", namespace="social")),
     path("auth/", include("rest_framework.urls", namespace="rest_framework")),
+    path("api/health/", include("health.urls")),
     path("api/v2/", include(("api_v2.urls", "api_v2"), namespace="v2")),
     path("versions/", ADCMVersions.as_view(), name="versions"),
 ]

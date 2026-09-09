@@ -1,5 +1,7 @@
 import type { IconsNames } from '@uikit';
 import IconButton from '@uikit/IconButton/IconButton';
+import cn from 'classnames';
+import s from '../../ConfigurationTree.module.scss';
 
 export interface SynchronizedAttributeProps {
   isAllowChange: boolean;
@@ -59,6 +61,7 @@ const SynchronizedAttribute = ({ isAllowChange, isSynchronized, onToggle }: Sync
 
   return (
     <IconButton
+      className={cn(s.nodeContent__syncAttribute)}
       icon={iconName}
       onClick={handleClick}
       disabled={!isAllowChange}

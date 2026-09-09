@@ -25,6 +25,7 @@ from cm.models import (
     Prototype,
     Service,
 )
+from core.types import ObjectMM
 from django.conf import settings
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import DictField
@@ -40,13 +41,13 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_409_CONFLICT
 
 from api_v2.concern.serializers import ConcernSerializer
-from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer
+from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer, PrototypeWithEditionRelatedSerializer
 from api_v2.prototype.utils import get_license_text
 from api_v2.serializers import DependOnDict, WithStatusSerializer
 
 
 class ClusterSerializer(WithStatusSerializer):
-    prototype = PrototypeRelatedSerializer()
+    prototype = PrototypeWithEditionRelatedSerializer()
     concerns = ConcernSerializer(many=True, read_only=True)
     is_upgradable = SerializerMethodField()
     main_info = SerializerMethodField()
@@ -55,6 +56,7 @@ class ClusterSerializer(WithStatusSerializer):
         model = Cluster
         fields = [
             "id",
+            "uuid",
             "name",
             "description",
             "state",
@@ -191,13 +193,13 @@ class RelatedServicesStatusesSerializer(WithStatusSerializer):
 
     class Meta:
         model = Service
-        fields = ["id", "name", "display_name", "status", "components"]
+        fields = ["id", "name", "display_name", "status", "maintenance_mode", "components"]
 
 
 class RelatedHostsStatusesSerializer(WithStatusSerializer):
     class Meta:
         model = Host
-        fields = ["id", "name", "status"]
+        fields = ["id", "name", "status", "maintenance_mode"]
 
 
 class ClusterStatusSerializer(WithStatusSerializer):
@@ -304,8 +306,8 @@ class ComponentMappingSerializer(ModelSerializer):
         return self.context["depend_on"].get(instance.id)
 
     @extend_schema_field(field=ChoiceField(choices=(MaintenanceMode.ON.value, MaintenanceMode.OFF.value)))
-    def get_maintenance_mode(self, instance: Component):
-        return self.context["mm"].components.get(instance.id, MaintenanceMode.OFF).value
+    def get_maintenance_mode(self, instance: Component) -> str:
+        return self.context["mm"].components.get(instance.id, ObjectMM(MaintenanceMode.OFF)).state.value
 
     @extend_schema_field(field=BooleanField())
     def get_is_maintenance_mode_available(self, _instance: Component):

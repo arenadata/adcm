@@ -12,7 +12,13 @@
 
 from core.cluster._repo import ClusterRepoI
 from core.cluster._service import ClusterService
-from core.cluster._types import ClusterTopology, ComponentTopology, ServiceTopology
+from core.cluster._types import (
+    ClusterTopology,
+    ComponentTopology,
+    Export,
+    ExportData,
+    ServiceTopology,
+)
 
 __all__ = [
     "ClusterRepoI",
@@ -20,4 +26,6 @@ __all__ = [
     "ClusterTopology",
     "ComponentTopology",
     "ServiceTopology",
+    "Export",
+    "ExportData",
 ]

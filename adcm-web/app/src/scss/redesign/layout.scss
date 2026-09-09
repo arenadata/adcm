@@ -1,0 +1,74 @@
+@use './mq.scss' as *;
+
+@media (width >= $min-desktop-width) {
+  /* Collection name: Layout */
+
+  /* Mode: desktop */
+  :root {
+    --page-padding-x: var(--space-600);
+    --page-padding-y: var(--space-600);
+    --section-gap-sm: var(--space-400);
+    --section-gap-md: var(--space-600);
+    --section-gap-lg: var(--space-800);
+    --section-gap-xl: var(--space-1000);
+    --section-gap-2xl: var(--space-1500);
+    --inline-gap-tight: var(--space-200);
+    --inline-gap-default: var(--space-300);
+    --inline-gap-loose: var(--space-400);
+    --content-app-max-width: 1800px;
+    --content-app-min-width: 800px;
+    --section-padding-box-landing: var(--space-2500);
+    --section-padding-box-xl: var(--space-1200);
+    --content-landing-min-width: 1200px;
+    --content-landing-max-width: 1400px;
+    --section-gap-3xl: var(--space-2000);
+  }
+}
+
+
+@media (width < $min-desktop-width) and (width >= $min-tablet-width) {
+  /* Mode: tablet */
+  :root {
+    --page-padding-x: var(--space-500);
+    --page-padding-y: var(--space-500);
+    --section-gap-sm: var(--space-300);
+    --section-gap-md: var(--space-500);
+    --section-gap-lg: var(--space-600);
+    --section-gap-xl: var(--space-800);
+    --section-gap-2xl: var(--space-1200);
+    --inline-gap-tight: var(--space-200);
+    --inline-gap-default: var(--space-300);
+    --inline-gap-loose: var(--space-400);
+    --content-app-max-width: 800px;
+    --content-app-min-width: 0px;
+    --section-padding-box-landing: var(--space-2500);
+    --section-padding-box-xl: var(--space-1000);
+    --content-landing-min-width: 799px;
+    --content-landing-max-width: 1199px;
+    --section-gap-3xl: var(--space-1500);
+  }
+}
+
+
+@media (width < $min-tablet-width) {
+  /* Mode: mobile */
+  :root {
+    --page-padding-x: var(--space-400);
+    --page-padding-y: var(--space-400);
+    --section-gap-sm: var(--space-300);
+    --section-gap-md: var(--space-400);
+    --section-gap-lg: var(--space-600);
+    --section-gap-xl: var(--space-800);
+    --section-gap-2xl: var(--space-1000);
+    --inline-gap-tight: var(--space-200);
+    --inline-gap-default: var(--space-200);
+    --inline-gap-loose: var(--space-300);
+    --content-app-max-width: 800px;
+    --content-app-min-width: 0px;
+    --section-padding-box-landing: var(--space-2500);
+    --section-padding-box-xl: var(--space-800);
+    --content-landing-min-width: 320px;
+    --content-landing-max-width: 800px;
+    --section-gap-3xl: var(--space-1200);
+  }
+}

@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, NamedTuple, Protocol, TypeAlias, cast
+from typing import Any, NamedTuple, Protocol, TypeAlias, cast
 
 from cm.converters import (
     orm_object_to_action_target_descriptor,
@@ -51,16 +52,13 @@ from cm.models import (
 )
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
+from core.action import AssociatedProcess, ScriptType, TaskMappingDelta, operations
+from core.bundle import AvailableContractVersions, BundleOperationError, is_contract_version_supported
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.legacy.job.types import (
-    AssociatedProcess,
-    ScriptType,
-    TaskMappingDelta,
-)
 from core.templates import parse_template
 from core.types import (
     ActionID,
@@ -78,6 +76,7 @@ from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import HTTP_409_CONFLICT
 import core
+import core.bundle
 
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 
@@ -123,7 +122,7 @@ class _ActionLaunchObjects:
         self.target = target
         self.object_to_lock = self.target  # pyright: ignore [reportAttributeAccessIssue]
 
-        if isinstance(target, (Cluster, Service, Component)):
+        if isinstance(target, Cluster | Service | Component):
             self.owner = target
             self.cluster = target if isinstance(target, Cluster) else target.cluster
         elif action.host_action and isinstance(target, Host):
@@ -151,7 +150,7 @@ class _ActionLaunchObjects:
 
 @dataclass(slots=True)
 class _ScheduleTask(ABC):
-    job_service: core.job.JobService
+    job_service: core.action.job.JobService
     config_service: core.config.ConfigService
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs]
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
@@ -160,7 +159,9 @@ class _ScheduleTask(ABC):
     status_scenarios: StatusScenarios
     retrieve_sir: RetrieveStartImpossibleReason
     cluster_service: ClusterService
+    available_contract_versions: AvailableContractVersions
 
+    @convert_bundle_errors_to_adcm_ex
     def do(self, *, action_orm: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
         action_objects = _ActionLaunchObjects(target=target, action=action_orm)
 
@@ -181,10 +182,10 @@ class _ScheduleTask(ABC):
                 case _:
                     target_descriptor = orm_object_to_core_descriptor(action_objects.target)
 
-            task_extra = core.job.dto.TaskExtraInfo(
+            task_extra = core.action.job.TaskExtraInfo(
                 name=action_orm.name, display_name=action_orm.display_name, description=payload.description
             )
-            create_dto = core.job.dto.TaskCreateDTO(
+            create_dto = core.action.job.TaskCreateDTO(
                 action_id=action_orm.pk,
                 owner=descriptor,
                 target=target_descriptor,
@@ -262,7 +263,7 @@ class _ScheduleTask(ABC):
                     topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
 
                     # it's actually an incorrect possibility for target, should be resolved earlier
-                    if isinstance(action_objects.target, (ADCM, Provider)):
+                    if isinstance(action_objects.target, ADCM | Provider):
                         message = f"Can't render scripts for target of type {type(action_objects.target)}"
                         raise TypeError(message)
 
@@ -302,10 +303,23 @@ class _ScheduleTask(ABC):
                     message = f"Unexpected owner: {action_objects.owner}"
                     raise RuntimeError(message)
 
+            # check contract version supportance for revert scripts
+            if isinstance(target, Cluster | Provider) and operations.has_bundle_revert_script(scripts):
+                previous_bundle_cv = self.bundle_renderer.bundle_service.retrieve_before_upgrade_contract_version(
+                    before_upgrade_data=target.before_upgrade
+                )
+                if previous_bundle_cv and not is_contract_version_supported(
+                    current_version=previous_bundle_cv,
+                    available_contract_versions=self.available_contract_versions,
+                ):
+                    raise BundleOperationError(
+                        f"Can't run {action_orm.display_name or action_orm.name} to unsupported bundle"
+                    )
+
             self.job_service.create_jobs(task_id=task_id, scripts=scripts)
 
             if config_to_set is not None or delta is not None:
-                update_dto = core.job.dto.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
+                update_dto = core.action.job.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
                 self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
@@ -490,7 +504,7 @@ def _resolve_scripts(
     bundle_context: core.bundle.BundleContext,
     task_args: TaskArgs,
     is_upgrade_action: bool,
-    job_service: core.job.JobService,
+    job_service: core.action.job.JobService,
     context_gatherer: ContextGathererI[ActionArgs, TaskArgs],
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
 ) -> tuple[core.action.JobSpec, ...]:

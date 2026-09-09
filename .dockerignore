@@ -6,3 +6,4 @@ python/**/.*
 data
 dev
 venv
+__pycache__/

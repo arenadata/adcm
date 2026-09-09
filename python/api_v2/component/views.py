@@ -25,10 +25,8 @@ from adcm.permissions import (
 from audit.alt.api import audit_update
 from audit.alt.hooks import adjust_denied_on_404_result, extract_current_from_response, extract_previous_from_object
 from cm.errors import AdcmEx
-from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
 from cm.models import Cluster, Component, Host, Service
-from cm.transition.status import StatusScenarios
-from core.cluster import ClusterService
+from core.types import MaintenanceModeState
 from dishka import FromDishka
 from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -39,13 +37,17 @@ from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
-    HTTP_200_OK,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.job.schedule import ScheduleMMChangingTask
+from use_cases.cluster.maintenance_mode import (
+    MMIsChangingError,
+    MMIsNotAvailableError,
+    MMValueError,
+    SetMaintenanceMode,
+)
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.component.filters import ComponentFilter
@@ -155,8 +157,17 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
     permission_required = [VIEW_COMPONENT_PERM]
     filterset_class = ComponentFilter
     retrieve_status_map_actions = ("statuses", "list")
+    exc_conversion_map = {
+        MMIsNotAvailableError: "MAINTENANCE_MODE_NOT_AVAILABLE",
+        MMIsChangingError: "MAINTENANCE_MODE",
+        MMValueError: "MAINTENANCE_MODE",
+    }
 
-    audit_model_hint = Component
+    def handle_exception(self, exc: Exception) -> Response:
+        if exc_code := self.exc_conversion_map.get(exc.__class__):
+            exc = AdcmEx(code=exc_code, msg=exc.args[0] if exc.args else "")
+
+        return super().handle_exception(exc)
 
     def get_queryset(self, *args, **kwargs):
         cluster = get_object_for_user(
@@ -194,17 +205,12 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         self,
         request: Request,
         *_,
-        schedule_task: FromDishka[ScheduleMMChangingTask],
-        status_scenarios: FromDishka[StatusScenarios],
-        cluster_service: FromDishka[ClusterService],
+        set_mm: FromDishka[SetMaintenanceMode],
         **kwargs,
     ) -> Response:
         component: Component = get_object_for_user(
             user=request.user, perms=VIEW_COMPONENT_PERM, klass=Component, pk=kwargs["pk"]
         )
-
-        if not component.is_maintenance_mode_available:
-            raise AdcmEx(code="MAINTENANCE_MODE_NOT_AVAILABLE", msg="Component does not support maintenance mode")
 
         check_custom_perm(
             user=request.user, action_type=CHANGE_MM_PERM, model=component.__class__.__name__.lower(), obj=component
@@ -213,23 +219,9 @@ class ComponentViewSet(PermissionListMixin, ConfigSchemaMixin, ObjectWithStatusV
         serializer = self.get_serializer_class()(instance=component, data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        cluster_id = component.cluster_id
-        topology = cluster_service.retrieve_topology(cluster_id=cluster_id)
-        own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
-        objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
+        value = set_mm.do(target=component, value=MaintenanceModeState(serializer.validated_data["maintenance_mode"]))
 
-        response: Response = get_maintenance_mode_response(
-            obj=self.get_object(),
-            own_mm=own_mm.components[component.id],
-            calculated_mm=objects_mm.components[component.id],
-            serializer=serializer,
-            schedule_task=schedule_task,
-        )
-        if response.status_code == HTTP_200_OK:
-            response.data = serializer.data
-
-        status_scenarios.update_mm_objects()
-        return response
+        return Response(data={"maintenance_mode": value.value})
 
     @action(methods=["get"], detail=True, url_path="statuses")
     def statuses(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG002

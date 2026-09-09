@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Any
@@ -33,7 +33,6 @@ from rest_framework.status import (
 )
 from tests.suites import ADCMDjangoAPISuite
 from tests.use_cases import prepare_bundle_file
-import pytz
 
 
 class TestBundleDelete(ADCMDjangoAPISuite):
@@ -90,6 +89,19 @@ class TestBundle(ADCMDjangoAPISuite):
         self.assertEqual(Bundle.objects.filter(name="cluster_two").exists(), True)
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
+    def test_upload_unsupported_contract_version_fail(self):
+        unsupported_bundle = prepare_bundle_file(
+            source_dir=self.test_bundles_dir / "unsupported_contract_version",
+            target_dir=self.test_tmp_dir,
+        )
+        expected_err_message = "Unsupported bundle's prototype usage"
+
+        response = self.create_bundle_r(self.test_tmp_dir / unsupported_bundle)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "BUNDLE_ERROR")
+        self.assertIn(expected_err_message, response.json()["desc"])
+
     def test_adcm_6555_upload_parsing_errors_fail(self):
         with self.subTest("Too long path for config"):
             new_bundle_file = prepare_bundle_file(
@@ -125,7 +137,10 @@ class TestBundle(ADCMDjangoAPISuite):
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
             self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
-            self.assertIn('Value error, "scripts" and "scripts_jinja" are mutually exclusive', response.json()["desc"])
+            self.assertIn(
+                'Exactly one of "scripts" or "scripts_template" must be provided, not multiple nor neither.',
+                response.json()["desc"],
+            )
 
         with self.subTest("Empty archive is uploaded"):
             temp_tar = NamedTemporaryFile(suffix=".tar")
@@ -158,8 +173,8 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertIn(
                 (
-                    "'non_existent_internal_script_name' found using 'script' does not match any of the expected tags: "
-                    "'bundle_switch', 'bundle_revert', 'hc_apply'"
+                    "'non_existent_internal_script_name' found using 'script' does not match any of the expected tags:"
+                    " 'bundle_switch', 'bundle_revert', 'before_upgrade_clean', 'hc_apply'"
                 ),
                 response.json()["desc"],
             )
@@ -236,8 +251,8 @@ class TestBundle(ADCMDjangoAPISuite):
             response = self.create_bundle_r(bundle_path)
 
             self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "BUNDLE_DEFINITION_ERROR")
-            self.assertIn("There isn't any cluster or host provider definition in bundle", response.json()["desc"])
+            self.assertEqual(response.json()["code"], "BUNDLE_ERROR")
+            self.assertIn("Unsupported bundle's prototype usage", response.json()["desc"])
 
     def test_upload_cluster_with_ansible_options_success(self):
         new_bundle_file = prepare_bundle_file(
@@ -374,7 +389,7 @@ class TestBundle(ADCMDjangoAPISuite):
         def get_response_results(response, ordering_field):
             if ordering_field == "uploadTime":
                 return [
-                    datetime.fromisoformat(item["uploadTime"][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item["uploadTime"][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]
@@ -487,32 +502,28 @@ class TestBundle(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
-        self.assertIn('"scripts" and "scripts_jinja" are mutually exclusive', response.data["desc"])
-
-    def test_upload_scripts_jinja_in_job_fail(self):
-        bundle_file = prepare_bundle_file(
-            source_dir=self.test_bundles_dir / "invalid_bundles" / "scripts_jinja_in_job", target_dir=self.test_tmp_dir
+        self.assertIn(
+            'Exactly one of "scripts" or "scripts_template" must be provided, not multiple nor neither.',
+            response.data["desc"],
         )
 
-        bundle_path = self.test_tmp_dir / bundle_file
-        response = self.create_bundle_r(bundle_path)
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
-        self.assertIn("scripts_jinja\n     | extra_forbidden: Extra inputs are not permitted", response.data["desc"])
-
-    def test_upload_scripts_jinja_success(self):
+    def test_upload_scripts_template_success(self):
         bundle_file = prepare_bundle_file(
-            source_dir=self.test_bundles_dir / "actions_with_scripts_jinja", target_dir=self.test_tmp_dir
+            source_dir=self.test_bundles_dir / "actions_with_scripts_template", target_dir=self.test_tmp_dir
         )
 
-        self.assertEqual(Action.objects.filter(scripts_jinja="").count(), Action.objects.count())
+        self.assertEqual(Action.objects.filter(scripts_template__isnull=True).count(), Action.objects.count())
 
         bundle_path = self.test_tmp_dir / bundle_file
         response = self.create_bundle_r(bundle_path)
 
         self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertSetEqual(set(Action.objects.values_list("scripts_jinja", flat=True)), {"", "scripts.j2"})
+        self.assertEqual(
+            Action.objects.filter(
+                scripts_template={"engine": {"type": "jinja2"}, "file": {"path": "scripts.j2"}}
+            ).count(),
+            3,
+        )
 
     def test_upload_hc_apply_scripts(self):
         bundle_file_for_right_hc_apply = prepare_bundle_file(
@@ -553,14 +564,14 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertIn(
                 (
-                    "service\n           "
-                    "| missing: Field required\n           "
-                    "component\n           "
-                    "| missing: Field required\n           "
-                    "action\n           "
-                    "| missing: Field required\n           "
-                    "ansible_tags\n           "
-                    "| extra_forbidden: Extra inputs are not permitted"
+                    "          service\n"
+                    "          | missing: Field required\n"
+                    "          component\n"
+                    "          | missing: Field required\n"
+                    "          action\n"
+                    "          | missing: Field required\n"
+                    "          ansible_tags\n"
+                    "          | unexpected_keyword_argument: Unexpected keyword argument"
                 ),
                 response.data["desc"],
             )
@@ -575,7 +586,7 @@ class TestBundle(ADCMDjangoAPISuite):
         response = self.create_bundle_r(bundle_path)
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 3)
+        self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 2)
 
     @unittest.skip("Unskip after ADCM-7491")
     def test_adcm_7398_upload_provider_bundle_with_templates_fail(self) -> None:

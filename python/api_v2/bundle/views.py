@@ -45,7 +45,7 @@ from api_v2.bundle.filters import BundleFilter
 from api_v2.bundle.serializers import BundleSerializer, UploadBundleSerializer
 from api_v2.utils.audit import bundle_from_lookup
 from api_v2.utils.di import inject
-from api_v2.views import ADCMGenericViewSet
+from api_v2.views import ADCMGenericViewSet, annotate_contract_version_status
 
 
 @extend_schema_view(
@@ -67,6 +67,10 @@ from api_v2.views import ADCMGenericViewSet
                     "-version",
                     "edition",
                     "-edition",
+                    "contractVersionStatus",
+                    "-contractVersionStatus",
+                    "contractVersionValue",
+                    "-contractVersionValue",
                     "signatureStatus",
                     "-signatureStatus",
                     "mainPrototypeLicenseStatus",
@@ -83,7 +87,13 @@ from api_v2.views import ADCMGenericViewSet
         responses=responses(success=(HTTP_200_OK, BundleSerializer), errors=HTTP_404_NOT_FOUND),
     ),
 )
-class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, CreateModelMixin, ADCMGenericViewSet):
+class BundleViewSet(
+    ListModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    CreateModelMixin,
+    ADCMGenericViewSet,
+):
     queryset = (
         Bundle.objects.exclude(name="ADCM")
         .annotate(
@@ -102,6 +112,18 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
     permission_classes = [DjangoModelPermissions]
     filterset_class = BundleFilter
     filter_backends = (DjangoFilterBackend,)
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .annotate(
+                **annotate_contract_version_status(
+                    contract_version_field="contract_version",
+                    request=self.request,
+                )
+            )
+        )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -142,7 +164,7 @@ class BundleViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, Creat
         bundle_id = parse_bundle.do(archive_in_downloads)
 
         new_bundle = self.get_queryset().get(id=bundle_id)
-        serializer = BundleSerializer(instance=new_bundle)
+        serializer = BundleSerializer(instance=new_bundle, context=self.get_serializer_context())
 
         return Response(status=HTTP_201_CREATED, data=serializer.data)
 

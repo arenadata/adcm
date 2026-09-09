@@ -1,13 +1,10 @@
 ---
 - type: cluster
   name: cluster_with_wizard_hc_apply
-  version: &version '1.0'
+  version: '1.0'
   edition: community
-  actions: &actions
-    wizard_jinja:
-      type: job
-      script: ./sleep.yaml
-      script_type: ansible
+  actions:
+    wizard_jinja: &id001
       wizard_template:
         file:
           path: stages.j2
@@ -15,24 +12,25 @@
           type: jinja2
       states:
         available: any
-    
-  config: &config
+      scripts:
+        - name: wizard_jinja
+          script: ./sleep.yaml
+          script_type: ansible
+  config: &id002
     - name: float
       type: float
       required: false
       default: 0.1
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: service_1
-  version: "0.1"
-
+  version: '0.1'
   actions:
-    <<: *actions
-
-  config: *config
-
+    wizard_jinja: *id001
+  config: *id002
   components:
     component_1:
       actions:
-        <<: *actions
-      config: *config
+        wizard_jinja: *id001
+      config: *id002

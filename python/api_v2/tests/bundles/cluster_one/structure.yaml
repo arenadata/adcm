@@ -1,0 +1,9 @@
+---
+root:
+  match: dict
+  items:
+    string: string
+  required_items:
+    - string
+string:
+  match: string

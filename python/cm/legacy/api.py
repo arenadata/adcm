@@ -14,8 +14,11 @@ from functools import partial
 from typing import Literal, TypedDict
 import json
 
-from adcm_version import compare_prototype_versions
+from core.action.job import JobService
+from core.action.job.errors import JobOperationError
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
+from core.versions import is_version_suitable
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic, on_commit
 from rbac.roles import apply_policy_for_new_config
@@ -23,7 +26,6 @@ from rbac.scenarios import RBACScenarios
 
 from cm.converters import (
     CoreObject,
-    orm_object_to_action_target_type,
     orm_object_to_core_descriptor,
     orm_object_to_core_type,
 )
@@ -44,7 +46,6 @@ from cm.legacy.services.concern import create_issue, delete_concerns_of_removed_
 from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
     recalculate_own_concerns_on_add_hosts,
-    recalculate_own_concerns_on_add_services,
 )
 from cm.legacy.services.concern.checks import (
     cluster_mapping_has_issue_orm_version,
@@ -78,13 +79,11 @@ from cm.models import (
     ConcernCause,
     ConcernItem,
     ConcernType,
-    ConfigHostGroup,
     ConfigLog,
     Host,
     HostComponent,
     MainObject,
     MaintenanceMode,
-    ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -105,26 +104,6 @@ def check_license(prototype: Prototype) -> None:
             "LICENSE_ERROR",
             f'License for prototype "{prototype.name}" {prototype.type} {prototype.version} is not accepted',
         )
-
-
-def is_version_suitable(version: str, prototype_import: PrototypeImport) -> bool:
-    if (
-        prototype_import.min_strict
-        and compare_prototype_versions(version, prototype_import.min_version) <= 0
-        or prototype_import.min_version
-        and compare_prototype_versions(version, prototype_import.min_version) < 0
-    ):
-        return False
-
-    if (
-        prototype_import.max_strict
-        and compare_prototype_versions(version, prototype_import.max_version) >= 0
-        or prototype_import.max_version
-        and compare_prototype_versions(version, prototype_import.max_version) > 0
-    ):
-        return False
-
-    return True
 
 
 def add_cluster(prototype: Prototype, name: str, description: str = "") -> Cluster:
@@ -232,13 +211,20 @@ def add_host_provider(prototype: Prototype, name: str, description: str = ""):
     return provider
 
 
-def cancel_locking_tasks(obj: ADCMEntity, obj_deletion=False):
+def cancel_locking_tasks(obj: ADCMEntity, job_service: JobService, obj_deletion=False):
     for lock in obj.concerns.filter(type=ConcernType.LOCK, owner_type=obj.content_type, owner_id=obj.id):
         for task in TaskLog.objects.filter(lock=lock):
-            task.cancel(obj_deletion=obj_deletion)
+            _terminate_task(task_id=task.pk, job_service=job_service, obj_deletion=obj_deletion)
 
 
-def delete_host_provider(provider, cancel_tasks=True):
+def _terminate_task(task_id: int, job_service: JobService, obj_deletion: bool) -> None:
+    try:
+        job_service.terminate_task(task_id=task_id, force_allow_termination=obj_deletion)
+    except JobOperationError as e:
+        raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
+
+
+def delete_host_provider(provider, job_service: JobService, cancel_tasks=True):
     hosts = Host.objects.filter(provider=provider)
     if hosts:
         raise_adcm_ex(
@@ -247,13 +233,15 @@ def delete_host_provider(provider, cancel_tasks=True):
         )
 
     if cancel_tasks:
-        cancel_locking_tasks(provider, obj_deletion=True)
+        cancel_locking_tasks(provider, job_service=job_service, obj_deletion=True)
 
     provider.delete()
     logger.info("host provider #%s is deleted", provider.pk)
 
 
-def delete_host(host: Host, cancel_tasks: bool = True) -> None:
+def delete_host(
+    host: Host, cluster_service: ClusterService, job_service: JobService | None = None, cancel_tasks: bool = True
+) -> None:
     cluster = host.cluster
     if cluster:
         raise AdcmEx(code="HOST_CONFLICT", msg="Unable to remove a host associated with a cluster.")
@@ -265,17 +253,23 @@ def delete_host(host: Host, cancel_tasks: bool = True) -> None:
         )
 
     if cancel_tasks:
-        cancel_locking_tasks(obj=host, obj_deletion=True)
+        if job_service is None:
+            # `job_service` is optional so the ansible plugin (which passes `cancel_tasks=False`)
+            # doesn't have to resolve it from the container for now
+            message = "`job_service` is required to cancel locking tasks"
+            raise RuntimeError(message)
+
+        cancel_locking_tasks(obj=host, job_service=job_service, obj_deletion=True)
 
     host_pk = host.pk
     host.delete()
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     logger.info("host #%s is deleted", host_pk)
 
 
-def delete_cluster(cluster: Cluster) -> None:
+def delete_cluster(cluster: Cluster, cluster_service: ClusterService, job_service: JobService) -> None:
     tasks = []
     for lock in cluster.concerns.filter(type=ConcernType.LOCK):
         for task in TaskLog.objects.filter(lock=lock):
@@ -302,13 +296,13 @@ def delete_cluster(cluster: Cluster) -> None:
     cluster.delete()
 
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     for task in tasks:
-        task.cancel(obj_deletion=True)
+        _terminate_task(task_id=task.pk, job_service=job_service, obj_deletion=True)
 
 
-def remove_host_from_cluster(host: Host, rbac_scenarios: RBACScenarios) -> Host:
+def remove_host_from_cluster(host: Host, cluster_service: ClusterService, rbac_scenarios: RBACScenarios) -> Host:
     cluster = host.cluster
 
     if HostComponent.objects.filter(cluster=cluster, host=host).exists():
@@ -338,104 +332,9 @@ def remove_host_from_cluster(host: Host, rbac_scenarios: RBACScenarios) -> Host:
         rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     reset_hc_map()
-    reset_objects_in_mm()
+    reset_objects_in_mm(cluster_service=cluster_service)
 
     return host
-
-
-def add_service_to_cluster(cluster: Cluster, proto: Prototype, rbac_scenarios: RBACScenarios) -> Service:
-    if proto.type != "service":
-        raise_adcm_ex(code="OBJ_TYPE_ERROR", msg=f"Prototype type should be service, not {proto.type}")
-
-    check_license(prototype=proto)
-    if not proto.shared and cluster.prototype.bundle != proto.bundle:
-        raise_adcm_ex(
-            code="SERVICE_CONFLICT",
-            msg=f"{proto_ref(prototype=proto)} does not belong to bundle "
-            f'"{cluster.prototype.bundle.name}" {cluster.prototype.version}',
-        )
-
-    with atomic():
-        service = Service.objects.create(cluster=cluster, prototype=proto)
-        obj_conf = init_object_config(proto=proto, obj=service)
-        service.config = obj_conf
-        service.save(update_fields=["config"])
-        add_components_to_service(cluster=cluster, service=service)
-
-        recalculate_own_concerns_on_add_services(cluster=cluster, services=(service,))
-        added, removed = redistribute_issues_and_flags(retrieve_cluster_topology(cluster.id))
-
-        rbac_scenarios.re_apply_object_policy(apply_object=cluster)
-
-    reset_hc_map()
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
-    logger.info(
-        "service #%s %s is added to cluster #%s %s",
-        service.pk,
-        service.prototype.name,
-        cluster.pk,
-        cluster.name,
-    )
-
-    return service
-
-
-def add_components_to_service(cluster: Cluster, service: Service) -> None:
-    for comp in Prototype.objects.filter(type="component", parent=service.prototype):
-        service_component = Component.objects.create(cluster=cluster, service=service, prototype=comp)
-        obj_conf = init_object_config(proto=comp, obj=service_component)
-        service_component.config = obj_conf
-        service_component.save(update_fields=["config"])
-
-
-def update_obj_config(obj_conf: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
-    if not isinstance(config, dict) or not isinstance(attr, dict):
-        message = f"Both `config` and `attr` should be of `dict` type, not {type(config)} and {type(attr)} respectively"
-        raise TypeError(message)
-
-    obj = obj_conf.object
-    if obj is None:
-        message = "Can't update configuration that have no linked object"
-        raise ValueError(message)
-
-    group = None
-    if isinstance(obj, ConfigHostGroup):
-        group = obj
-        obj: MainObject = group.object
-        proto = obj.prototype
-    else:
-        proto = obj.prototype
-
-    old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    new_conf = process_json_config(
-        prototype=proto,
-        obj=group or obj,
-        new_config=config,
-        new_attr=attr,
-        current_attr=old_conf.attr,
-    )
-
-    concern_id, related_objects = None, {}
-
-    with atomic():
-        config_log = save_object_config(object_config=obj_conf, config=new_conf, attr=attr, description=description)
-
-        delete_issue(
-            owner=CoreObjectDescriptor(id=obj.id, type=orm_object_to_action_target_type(object_=obj)),
-            cause=ConcernCause.CONFIG,
-        )
-        # flag on ADCM can't be raised (only objects of `ADCMCoreType` are supported)
-        if not isinstance(obj, ADCM) and not are_configlogs_equal(old_conf, config_log):
-            concern_id, related_objects = raise_outdated_config_flag_if_required(object_=obj)
-        apply_policy_for_new_config(config_object=obj, config_log=config_log)
-
-    send_config_creation_event(
-        object_id=obj.id, object_type=obj.prototype.type, changes={"createdBy": config_log.created_by}
-    )
-    if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
-
-    return config_log
 
 
 def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[ConcernID | None, ConcernRelatedObjects]:
@@ -509,7 +408,7 @@ def get_export(cluster: Cluster, service: Service | None, proto_import: Prototyp
             continue
 
         export_proto[prototype_export.prototype.pk] = True
-        if not is_version_suitable(version=prototype_export.prototype.version, prototype_import=proto_import):
+        if not is_version_suitable(version=prototype_export.prototype.version, versions_object=proto_import):
             continue
 
         if prototype_export.prototype.type == "cluster":
@@ -677,7 +576,7 @@ def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataFo
                 f'Export {obj_ref(obj=export_obj)} does not match import name "{prototype_import.name}"',
             )
 
-        if not is_version_suitable(version=export_obj.prototype.version, prototype_import=prototype_import):
+        if not is_version_suitable(version=export_obj.prototype.version, versions_object=prototype_import):
             raise_adcm_ex(
                 "BIND_ERROR",
                 f'Import "{export_obj.prototype.name}" of { proto_ref(prototype=prototype_import.prototype)} '

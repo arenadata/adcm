@@ -69,6 +69,7 @@ const ActionWizardMapping: React.FC<ActionWizardMappingProps> = ({
     components,
     notAddedServicesDictionary,
     loadState === LoadState.Loaded,
+    step,
   );
 
   const prevLocalMapping = usePrevious(localMapping);

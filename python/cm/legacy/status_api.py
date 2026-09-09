@@ -46,8 +46,37 @@ class EventTypes:
     UPDATE = "update_{}"
 
 
+class StatusServiceUrl:
+    """Base status service URL
+    - in-process calls go to INTERNAL_STATUS_SERVICE_URL
+    - external components (Celery workers) calls go to the external URL set at worker startup
+    """
+
+    # Deliberate process-wide override, not accidental global state: worker_init
+    # sets the external URL once before the prefork pool forks, covering every
+    # legacy status_api caller that bypasses StatusScenarios (job finalizers,
+    # cm.signals, ansible plugins). Removing it requires routing those callers
+    # through StatusScenarios/DI first — tracked as a follow-up ticket: ADCM-8276
+
+    external: str | None = None
+
+    @property
+    def internal(self) -> str:
+        # read lazily: settings must not be captured at import time
+        return settings.INTERNAL_STATUS_SERVICE_URL
+
+    def set_external(self, url: str) -> None:
+        self.external = url
+
+    def resolve(self) -> str:
+        return self.external or self.internal
+
+
+status_service_url = StatusServiceUrl()
+
+
 def api_request(method: str, url: str, data: dict = None) -> Response | None:
-    url = urljoin(settings.API_URL, url)
+    url = urljoin(status_service_url.resolve(), url)
     kwargs = {
         "headers": {
             "Content-Type": "application/json",

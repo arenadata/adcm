@@ -10,16 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Final, Literal, TypeVar
+from typing import Any, Final, Literal, TypeVar
 import json
 import datetime
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
 )
+from api_v2.tests.helpers import create_bundle_and_prototype_rows
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -31,9 +33,8 @@ from audit.models import (
     AuditUser,
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
-from cm.impl.job.repo import _get_selector_for_core_object
+from cm.impl.job.repo import JobRepo, _get_selector_for_core_object
 from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import (
     ADCM,
     Action,
@@ -44,12 +45,14 @@ from cm.models import (
     ConfigLog,
     Host,
     JobLog,
+    ObjectType,
     ProductCategory,
     Provider,
     Service,
     SignatureStatus,
     TaskLog,
 )
+from core.action import Job
 from core.legacy.job.executors import Executor as JobExecutor
 from core.legacy.job.runners import (
     ADCMSettings,
@@ -58,7 +61,6 @@ from core.legacy.job.runners import (
     ExternalSettings,
     IntegrationsSettings,
 )
-from core.legacy.job.types import Job
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
@@ -68,6 +70,7 @@ from init_db import init
 from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK
+from unittest_parametrize import ParametrizedTestCase
 import yaml
 import dishka
 import django.test
@@ -166,6 +169,10 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
 Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
 
 
+class GenericTestCase(_ADCMTestCase, django.test.TestCase):
+    ...
+
+
 class ADCMPluginExecutorSuite(
     _ADCMTestCase,
     BusinessLogicMixin,
@@ -226,9 +233,11 @@ class ADCMPluginExecutorSuite(
                 job_id = call_context if isinstance(call_context, int) else call_context.id
                 task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
 
+                repo = JobRepo()
+
                 context = prepare_ansible_job_config(
-                    task=JobRepoImpl.get_task(id=task_id),
-                    job=JobRepoImpl.get_job(id=job_id),
+                    task=repo.get_task(id=task_id),
+                    job=repo.get_job(id=job_id),
                     configuration=configuration,
                 )
 
@@ -249,8 +258,11 @@ class ADCMPluginExecutorSuite(
 
         return _executor_func
 
+    def get_task_jobs(self, task_id):
+        return JobRepo().get_task_jobs(task_id)
 
-class ADCMDjangoAPISuite(_ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
+
+class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
     # is required for correct type detection in test cases
     client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
     client_class = ADCMTestClient
@@ -309,6 +321,21 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
         cls.cl_2 = cls.uc.add_cluster(cls.bundle_cl_2, "BettaCl")
         cls.cl_3 = cls.uc.add_cluster(cls.bundle_cl_3, "GammaCl")
         cls.set_state(cls.cl_1, "installed")
+
+        # prepare data for check contract versions
+        cls.unsupported_version = "0.999"
+        cls.supported_bundle_count = 6
+        cls.unsupported_bundle, cls.unsupported_prototype = create_bundle_and_prototype_rows(
+            [
+                {
+                    "contract_version": cls.unsupported_version,
+                    "name": "unsupported_bundle",
+                    "display_name": "Unsupported Cluster",
+                    "version": "1.0.0",
+                    "obj_type": ObjectType.CLUSTER,
+                }
+            ]
+        )[0]
 
         # prepare service with components
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cl_1)
@@ -478,7 +505,8 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
 
     def get_results(self, url: APINode, value_path: str, query: dict) -> list:
         response = self.get_r(url=url, query=query)
-        return extract_from_nested_structure(response["results"], value_path)
+        nested_data = response if isinstance(response, list) else response["results"]
+        return extract_from_nested_structure(nested_data, value_path)
 
     @staticmethod
     def set_state(entity: ADCMEntity, state: str) -> None:

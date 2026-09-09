@@ -1,5 +1,5 @@
-import type { TableColumn, BaseStatus } from '@uikit';
-import { AdcmClusterStatus } from '@models/adcm';
+import type { TableColumn } from '@uikit';
+import { clusterStatusesMap, clusterStatusLabels } from '@pages/ClustersPage/clusterStatusUtils';
 
 export const columns: TableColumn[] = [
   {
@@ -33,15 +33,12 @@ export const columns: TableColumn[] = [
     isSortable: false,
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
     isSortable: false,
     headerAlign: 'center',
     width: '100px',
   },
 ];
 
-export const clusterStatusesMap: { [key in AdcmClusterStatus]: BaseStatus } = {
-  [AdcmClusterStatus.Up]: 'done',
-  [AdcmClusterStatus.Down]: 'unknown',
-};
+export { clusterStatusesMap, clusterStatusLabels };

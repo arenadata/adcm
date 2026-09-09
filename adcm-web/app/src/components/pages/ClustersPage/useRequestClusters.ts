@@ -7,6 +7,9 @@ import {
   loadClustersDynamicActions,
   cleanupClusterDynamicActions,
 } from '@store/adcm/clusters/clustersDynamicActionsSlice';
+import { cleanupClustersView } from '@store/adcm/clusters/clustersViewSlice';
+import { loadClustersMetrics, cleanupClustersMetrics } from '@store/adcm/clusters/clustersMetricsSlice';
+import { cleanupClusterMaintenanceMode } from '@store/adcm/clusters/clusterMaintenanceModeSlice';
 import { usePersistClustersTableSettings } from './usePersistClustersTableSettings';
 
 export const useRequestClusters = () => {
@@ -15,6 +18,7 @@ export const useRequestClusters = () => {
   const sortParams = useStore((s) => s.adcm.clustersTable.sortParams);
   const paginationParams = useStore((s) => s.adcm.clustersTable.paginationParams);
   const clusters = useStore((s) => s.adcm.clusters.clusters);
+  const viewMode = useStore((s) => s.adcm.clustersView.viewMode);
 
   usePersistClustersTableSettings();
 
@@ -25,6 +29,9 @@ export const useRequestClusters = () => {
       dispatch(cleanupClusters());
       dispatch(cleanupList());
       dispatch(cleanupClusterDynamicActions());
+      dispatch(cleanupClustersView());
+      dispatch(cleanupClustersMetrics());
+      dispatch(cleanupClusterMaintenanceMode());
     };
   }, [dispatch]);
 
@@ -34,6 +41,18 @@ export const useRequestClusters = () => {
       dispatch(loadClustersDynamicActions(clustersIds));
     }
   }, [dispatch, clusters]);
+
+  useEffect(() => {
+    if (viewMode !== 'widget') {
+      return;
+    }
+
+    if (!clusters.length) {
+      return;
+    }
+
+    dispatch(loadClustersMetrics(clusters.map(({ id }) => id)));
+  }, [dispatch, clusters, viewMode]);
 
   const debounceGetClusters = useDebounce(() => {
     dispatch(getClusters());

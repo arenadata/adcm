@@ -25,7 +25,7 @@ class UpgradeListSerializer(ModelSerializer):
 
     class Meta:
         model = Upgrade
-        fields = ["id", "name", "display_name", "bundle", "start_impossible_reason"]
+        fields = ["id", "name", "display_name", "bundle", "start_impossible_reason", "description"]
 
     def get_start_impossible_reason(self, instance: Upgrade) -> str:
         _ = instance
@@ -51,6 +51,7 @@ class UpgradeRetrieveSerializer(UpgradeListSerializer):
             "disclaimer",
             "bundle",
             "start_impossible_reason",
+            "description",
         )
 
     @staticmethod

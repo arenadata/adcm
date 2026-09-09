@@ -10,24 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import check_custom_perm
 from cm.legacy.api import check_license
 from cm.legacy.config import init_object_config
 from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
-from cm.legacy.services.maintenance_mode import get_maintenance_mode_response
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
 from cm.transition.status import StatusScenarios
-from core.cluster import ClusterService
 from core.types import ADCMCoreType, BundleID, ProviderID
 from rbac.scenarios import RBACScenarios
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
-from use_cases.transition.job.schedule import ScheduleMMChangingTask
-
-from api_v2.host.serializers import HostChangeMaintenanceModeSerializer
 
 
 def create_host(
@@ -75,42 +66,3 @@ def create_host(
         logger.info("host #%s %s is added", host.pk, host.fqdn)
 
     return host
-
-
-def maintenance_mode(
-    request: Request,
-    host: Host,
-    schedule_task: ScheduleMMChangingTask,
-    cluster_service: ClusterService,
-) -> Response:
-    check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
-
-    serializer = HostChangeMaintenanceModeSerializer(instance=host, data=request.data)
-    serializer.is_valid(raise_exception=True)
-
-    if not host.is_maintenance_mode_available:
-        return Response(
-            data={
-                "code": "MAINTENANCE_MODE_NOT_AVAILABLE",
-                "level": "error",
-                "desc": "Maintenance mode is not available",
-            },
-            status=HTTP_409_CONFLICT,
-        )
-
-    cluster_id = host.cluster_id
-    topology = cluster_service.retrieve_topology(cluster_id=cluster_id)
-    own_mm = cluster_service.retrieve_own_maintenance_mode(cluster_id=cluster_id)
-    objects_mm = cluster_service.calculate_maintenance_mode(topology=topology, objects_own_mm=own_mm)
-
-    response = get_maintenance_mode_response(
-        obj=host,
-        own_mm=own_mm.hosts[host.id],
-        calculated_mm=objects_mm.hosts[host.id],
-        serializer=serializer,
-        schedule_task=schedule_task,
-    )
-    if response.status_code == HTTP_200_OK:
-        response.data = serializer.data
-
-    return response

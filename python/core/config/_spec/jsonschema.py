@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from collections.abc import Callable, Generator
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Generator, Literal, TypeAlias, TypedDict, Union
+from typing import Any, Literal, TypeAlias, TypedDict, Union
 import json
 
 from typing_extensions import NotRequired, Self
@@ -242,7 +243,7 @@ def _simple_parameter_to_schema(parameter: SimpleParameter, context: _Context) -
     _fill_type_specifics_to_schema_node(schema=schema, parameter=parameter, resolve_variant=context.resolve_variant)
 
     # check for type is required, because "enum" based parameters' nullability is different
-    if not parameter.is_required and "type" in schema:
+    if not parameter.is_required:
         one_of_node: OptionalNode = {"oneOf": [schema, {"type": "null"}]}
         if "default" in schema:
             one_of_node["default"] = schema["default"]
@@ -363,16 +364,11 @@ def _fill_type_specifics_to_schema_node(
         case VariantParameter(is_strict=is_strict):
             choices = resolve_variant(parameter)
 
+            schema["type"] = "string"
             if is_strict:
                 schema["adcmMeta"]["stringExtra"] = {"isMultiline": False}
-
-                if not parameter.is_required and None not in choices:
-                    schema["enum"] = [*choices, None]
-                else:
-                    schema["enum"] = list(choices)
-
+                schema["enum"] = list(choices)
             else:
-                schema["type"] = "string"
                 schema["adcmMeta"]["stringExtra"] = {"isMultiline": False, "suggestions": choices}
                 if parameter.is_required:
                     schema["minLength"] = 1

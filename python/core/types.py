@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
+from collections import UserDict, deque
 from dataclasses import dataclass
 from enum import Enum, auto
+from itertools import chain
 from typing import Generic, Literal, NamedTuple, NewType, TypeAlias, TypeVar
+
+from pydantic import BaseModel
 
 CurrentADCMVersion = NewType("CurrentADCMVersion", str)
 
@@ -26,6 +29,7 @@ ProviderID: TypeAlias = ObjectID
 
 BundleID: TypeAlias = int
 PrototypeID: TypeAlias = int
+PrototypeVersion: TypeAlias = str
 
 ActionID: TypeAlias = int
 TaskID: TypeAlias = int
@@ -34,6 +38,7 @@ ActionProcessID: TypeAlias = int
 ActionProcessStepID: TypeAlias = int
 PID: TypeAlias = int
 
+ConfigHostGroupID: TypeAlias = int
 ActionHostGroupID: TypeAlias = int
 
 ObjectConfigID: TypeAlias = int
@@ -45,11 +50,13 @@ IsCreated: TypeAlias = bool
 GroupCheckLogID: TypeAlias = int
 CheckLogID: TypeAlias = int
 
+PrototypeName: TypeAlias = str
 ProviderName: TypeAlias = str
 HostName: TypeAlias = str
 ClusterName: TypeAlias = str
 ServiceName: TypeAlias = str
 ComponentName: TypeAlias = str
+ImportName: TypeAlias = str
 
 
 MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], HostID | ComponentID | ServiceID]
@@ -223,7 +230,7 @@ class Concern(NamedTuple):
     cause: str
 
 
-class ObjectMaintenanceModeState(Enum):
+class MaintenanceModeState(Enum):
     ON = "on"
     OFF = "off"
     CHANGING = "changing"
@@ -236,13 +243,28 @@ class MMReason(Enum):
     SELF = auto()
 
 
-class MaintenanceModeOfObjects(NamedTuple):
-    services: dict[ServiceID, ObjectMaintenanceModeState]
-    components: dict[ComponentID, ObjectMaintenanceModeState]
-    hosts: dict[HostID, ObjectMaintenanceModeState]
+@dataclass(slots=True, frozen=True)
+class ObjectMM:
+    state: MaintenanceModeState
+    reason: MMReason = MMReason.SELF
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ObjectMM):
+            return self.state == other.state
+        elif isinstance(other, MaintenanceModeState):
+            return self.state == other
+        else:
+            return False
+
+
+@dataclass(slots=True)
+class MaintenanceModeOfObjects:
+    services: dict[ServiceID, ObjectMM]
+    components: dict[ComponentID, ObjectMM]
+    hosts: dict[HostID, ObjectMM]
 
     @property
-    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
+    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMM]:
         iterables = set()
         for entities, core_type in (
             (self.services, ADCMCoreType.SERVICE),
@@ -254,25 +276,39 @@ class MaintenanceModeOfObjects(NamedTuple):
         return dict(iterables)
 
 
-ServiceMMReason: TypeAlias = Literal[MMReason.ALL_COMPONENTS_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
-ComponentMMReason: TypeAlias = Literal[MMReason.SERVICE_IN_MM, MMReason.ALL_HOSTS_IN_MM, MMReason.SELF]
-HostMMReason: TypeAlias = Literal[MMReason.SELF]
+class PrototypeImportSchema(BaseModel):
+    name: str
+    min_version: str
+    max_version: str
+    min_strict: bool
+    max_strict: bool
+    required: bool
+
+
+class ClusterBindSchema(BaseModel):
+    cluster_id: ClusterID
+    source_cluster_id: ClusterID
+    service_id: ServiceID | None
+    source_service_id: ServiceID | None
 
 
 @dataclass(slots=True, frozen=True)
-class MaintenanceModeOfObjectsWithReason:
-    services: dict[ServiceID, tuple[ObjectMaintenanceModeState, ServiceMMReason]]
-    components: dict[ComponentID, tuple[ObjectMaintenanceModeState, ComponentMMReason]]
-    hosts: dict[HostID, tuple[ObjectMaintenanceModeState, HostMMReason]]
+class BindObjectDescriptor:
+    type: Literal[ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE]
+    name: PrototypeName
+
+
+class ClusterHierarchyBeforeUpgradeBinds(UserDict):
+    data: dict[BindObjectDescriptor, list[ClusterBindSchema]]
 
     @property
-    def objects_dict(self) -> dict[ServiceDesc | ComponentDesc | HostDesc, ObjectMaintenanceModeState]:
-        iterables = set()
-        for entities, core_type in (
-            (self.services, ADCMCoreType.SERVICE),
-            (self.components, ADCMCoreType.COMPONENT),
-            (self.hosts, ADCMCoreType.HOST),
-        ):
-            iterables.update(((Descriptor(id=id_, type=core_type), mm) for id_, (mm, _) in entities.items()))
+    def source_cluster_ids(self) -> set[ClusterID]:
+        return {bind.source_cluster_id for bind in chain.from_iterable(self.data.values())}
 
-        return dict(iterables)
+    @property
+    def source_service_ids(self) -> set[ServiceID]:
+        return {
+            bind.source_service_id
+            for bind in chain.from_iterable(self.data.values())
+            if bind.source_service_id is not None
+        }

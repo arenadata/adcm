@@ -3,6 +3,10 @@ import { AdcmHostStatus } from '@models/adcm/host';
 
 export const columns: TableColumn[] = [
   {
+    isCheckAll: true,
+    name: 'checkAll',
+  },
+  {
     label: 'Name',
     name: 'name',
     isSortable: true,
@@ -25,8 +29,8 @@ export const columns: TableColumn[] = [
     name: 'concerns',
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
     headerAlign: 'center',
     width: '100px',
   },

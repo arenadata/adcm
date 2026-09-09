@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from functools import partial
-from typing import Any, Callable, Generator, TypeVar
+from typing import Any, TypeVar
 
 from core.config import spec
 from core.config._helpers import recursive_defaultdict, recursive_defaultdict_to_dict

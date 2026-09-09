@@ -13,7 +13,6 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, Host, Prototype
 from tests.dependencies import RBACScenariosDummy
 from tests.suites import ADCMPluginExecutorSuite
@@ -46,7 +45,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_add_host_success(self) -> None:
         task = self.prepare_task(owner=self.target_provider, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         with self.subTest("Both fqdn and description"):
             executor = self.prepare_executor(
@@ -102,7 +101,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_add_host_forbidden_arg_fail(self):
         task = self.prepare_task(owner=self.target_provider, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMAddHostPluginExecutor,
@@ -123,7 +122,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_duplicate_fqdn_fail(self) -> None:
         task = self.prepare_task(owner=self.target_provider, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMAddHostPluginExecutor, call_arguments={"fqdn": self.host_1.fqdn}, call_context=job
@@ -139,7 +138,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMAddHostPluginExecutor,
                     call_arguments={"fqdn": f"cool-{name.lower()}"},

@@ -13,7 +13,8 @@
 from pathlib import Path
 from unittest import TestCase
 
-from core.legacy.bundle_alt.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
+from core.action import JobSpec, ScriptType
+from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.legacy.bundle_alt.convertion import schema_entry_to_definition
 from core.legacy.bundle_alt.errors import BundleValidationError
 from core.legacy.bundle_alt.schema import (
@@ -42,7 +43,6 @@ from core.legacy.bundle_alt.validation import (
     check_mm_host_action_is_allowed,
     check_requires,
 )
-from core.legacy.job.types import JobSpec, ScriptType
 
 CLUSTER = "cluster"
 SERVICE = "service"

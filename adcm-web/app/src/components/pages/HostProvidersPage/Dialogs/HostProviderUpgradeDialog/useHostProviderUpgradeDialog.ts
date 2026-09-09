@@ -22,6 +22,7 @@ export const useHostProviderUpgradeDialog = () => {
 
   const hostProvider = useStore(({ adcm }) => adcm.hostProviderUpgrades.dialog.hostProvider);
   const upgradesDetails = useStore(({ adcm }) => adcm.hostProviderUpgrades.relatedData.upgradesDetails);
+  const upgradesList = useStore(({ adcm }) => adcm.hostProviderUpgrades.relatedData.upgradesList);
 
   const [currentStep, setCurrentStep] = useState(UpgradeStepKey.SelectUpgrade);
 
@@ -43,6 +44,14 @@ export const useHostProviderUpgradeDialog = () => {
   // upgradesDetails load from backend to cache-object (upgradeId => upgradesDetail)
   // upgradesDetail load only one time (while upgrade dialog is open)
   const upgradeDetails = (formData.upgradeId && upgradesDetails[formData.upgradeId]) || null;
+
+  const startImpossibleReason = useMemo(() => {
+    const reasons = upgradesList.map(({ startImpossibleReason }) => startImpossibleReason);
+    const uniqueReasons = new Set(reasons);
+    const [reason] = uniqueReasons;
+
+    return uniqueReasons.size === 1 && reason !== null ? reason : upgradeDetails?.startImpossibleReason;
+  }, [upgradeDetails?.startImpossibleReason, upgradesList]);
 
   // load upgradesDetail after select upgrade
   useEffect(() => {
@@ -116,6 +125,7 @@ export const useHostProviderUpgradeDialog = () => {
     isValid,
     hostProvider,
     formData,
+    startImpossibleReason,
     handleChangeFormData,
     upgradeDetails,
     onClose: handleClose,

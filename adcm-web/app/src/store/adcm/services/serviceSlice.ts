@@ -9,6 +9,7 @@ import { AdcmServicesApi } from '@api';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
 
@@ -124,10 +125,10 @@ const serviceSlice = createSlice({
     });
     builder.addCase(wsActions.create_service_concern, (state, action) => {
       const { id: serviceId, changes: newConcern } = action.payload.object;
-      if (state.service?.id === serviceId && state.service.concerns.every((concern) => concern.id !== newConcern.id)) {
+      if (state.service?.id === serviceId) {
         state.service = {
           ...state.service,
-          concerns: [...state.service.concerns, newConcern],
+          concerns: upsertConcern(state.service.concerns, newConcern),
         };
       }
     });

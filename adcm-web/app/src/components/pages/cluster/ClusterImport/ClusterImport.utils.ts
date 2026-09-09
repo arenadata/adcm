@@ -1,4 +1,5 @@
 import type {
+  ClusterImportCardState,
   ClusterImportsSetGroup,
   PrepServicesList,
   SelectedImportHandlerData,
@@ -8,25 +9,82 @@ import type {
 import type { AdcmClusterImport, AdcmClusterImportPostPayload, AdcmClusterImportService } from '@models/adcm';
 import { AdcmClusterImportPayloadType } from '@models/adcm';
 
+export const isServiceSelected = (service: AdcmClusterImportService, selectedImports: SelectedImportsGroup) =>
+  selectedImports.services.has(service.id);
+
+export const isServiceBlockedBySingleBind = (
+  service: AdcmClusterImportService,
+  selectedImports: SelectedImportsGroup,
+  selectedSingleBind: ClusterImportsSetGroup,
+) =>
+  !service.isMultiBind &&
+  selectedSingleBind.services.has(service.prototype.name) &&
+  !isServiceSelected(service, selectedImports);
+
+export const isAnyServiceBlockedBySingleBind = (
+  services: AdcmClusterImportService[],
+  selectedImports: SelectedImportsGroup,
+  selectedSingleBind: ClusterImportsSetGroup,
+) => services.some((service) => isServiceBlockedBySingleBind(service, selectedImports, selectedSingleBind));
+
+export const hasPrototypeSelected = (items: Map<number, SelectedImportItem>, prototypeName: string) => {
+  for (const item of items.values()) {
+    if (item.prototypeName === prototypeName) return true;
+  }
+
+  return false;
+};
+
+export const getClusterImportCardState = (
+  clusterImport: AdcmClusterImport,
+  selectedImports: SelectedImportsGroup,
+  selectedSingleBind: ClusterImportsSetGroup,
+): ClusterImportCardState => {
+  const importServices = clusterImport.importServices;
+  const importCluster = clusterImport.importCluster;
+
+  return {
+    isAllServicesSelected: !!importServices?.every((service) => isServiceSelected(service, selectedImports)),
+    isAnyServiceSelected: !!importServices?.some((service) => isServiceSelected(service, selectedImports)),
+    isAllServicesDisabled: importServices
+      ? isAnyServiceBlockedBySingleBind(importServices, selectedImports, selectedSingleBind)
+      : false,
+    requiredServiceImport:
+      importServices?.filter(
+        (service) => service.isRequired && !hasPrototypeSelected(selectedImports.services, service.prototype.name),
+      ) ?? [],
+    isClusterImportDisabled:
+      !importCluster ||
+      (!importCluster.isMultiBind &&
+        !selectedImports.clusters.has(clusterImport.cluster.id) &&
+        selectedSingleBind.clusters.has(importCluster.prototype.name)),
+    isClusterRequired:
+      !!importCluster?.isRequired && !hasPrototypeSelected(selectedImports.clusters, importCluster.prototype.name),
+    isClusterSelected: !!(importCluster && selectedImports.clusters.has(clusterImport.cluster.id)),
+  };
+};
+
 export const getCheckServiceList = ({ services, selectedImports, selectedSingleBind }: PrepServicesList) =>
   formatForSelectedToggleHandlerData(
-    services.filter((service) => {
-      if (selectedImports.services.has(service.id)) return false;
-      return service.isMultiBind || !selectedSingleBind.services.has(service.prototype.name);
-    }),
+    services.filter(
+      (service) =>
+        !isServiceSelected(service, selectedImports) &&
+        !isServiceBlockedBySingleBind(service, selectedImports, selectedSingleBind),
+    ),
   );
 
 export const getUncheckServiceList = ({ services, selectedImports }: PrepServicesList) =>
-  formatForSelectedToggleHandlerData(services.filter((service) => selectedImports.services.has(service.id)));
+  formatForSelectedToggleHandlerData(services.filter((service) => isServiceSelected(service, selectedImports)));
+
+export const formatServiceToggleData = (service: AdcmClusterImportService): SelectedImportHandlerData => ({
+  id: service.id,
+  type: AdcmClusterImportPayloadType.Service,
+  isMultiBind: service.isMultiBind,
+  prototypeName: service.prototype.name,
+});
 
 export const formatForSelectedToggleHandlerData = (services: AdcmClusterImportService[]) =>
-  services.map((service) => ({
-    id: service.id,
-    type: AdcmClusterImportPayloadType.Service,
-    name: service.name,
-    isMultiBind: service.isMultiBind,
-    prototypeName: service.prototype.name,
-  }));
+  services.map(formatServiceToggleData);
 
 export const getRequiredImports = (clusterImports: AdcmClusterImport[]): ClusterImportsSetGroup => {
   const importsSet: ClusterImportsSetGroup = {
@@ -190,8 +248,4 @@ export const prepToggleSelectedImportsData = (
   });
 
   return curItems;
-};
-
-export const isItemSelected = (itemsArray: SelectedImportItem[], prototypeName: string): boolean => {
-  return !!itemsArray.find((item) => item.prototypeName === prototypeName);
 };

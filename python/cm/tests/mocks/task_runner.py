@@ -10,14 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Generator, Iterable
 from datetime import datetime
 from functools import partial
-from typing import Any, Callable, Generator, Iterable, NamedTuple
+from typing import Any, NamedTuple
 
+from core.action import Job, ScriptType, Task
+from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
-from core.legacy.job.types import Job, ScriptType, Task
 from core.logs import LogsService
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from django.utils import timezone
 from rbac.scenarios import RBACScenarios
@@ -25,9 +28,11 @@ from typing_extensions import Self
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.config import UpdateConfigurationFromJob
+from use_cases.transition.service_manage import ManageClusterServices
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run import ExecutionTargetFactory
-from cm.legacy.services.job.run.repo import JobRepoImpl
+from cm.legacy.services.job.run.executors import InternalScriptResult
 
 
 def do_nothing(*_, **__):
@@ -61,7 +66,10 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
+        cluster_service: ClusterService,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -69,7 +77,10 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
+            manage_services=manage_services,
             config_scenarios=config_scenarios,
+            cluster_service=cluster_service,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
         self._failed_job = failed_job
@@ -116,7 +127,10 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
         reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
         update_configuration_from_job: UpdateConfigurationFromJob,
+        manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
+        cluster_service: ClusterService,
+        before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
             logs_service=logs_service,
@@ -124,7 +138,10 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
             reset_cluster_before_upgrade=reset_cluster_before_upgrade,
             reset_provider_before_upgrade=reset_provider_before_upgrade,
             update_configuration_from_job=update_configuration_from_job,
+            manage_services=manage_services,
             config_scenarios=config_scenarios,
+            cluster_service=cluster_service,
+            before_upgrade_scenarios=before_upgrade_scenarios,
         )
 
         self.imitators = change_jobs or {}
@@ -185,12 +202,13 @@ class MockExecutor(Executor):
 class InternalExecutorMock(MockExecutor):
     script_type = "internal"
 
-    def __init__(self, config: ExecutorConfig, script: Callable[[], int]):
+    def __init__(self, config: ExecutorConfig, script: Callable[[], InternalScriptResult]):
         super().__init__(config=config)
         self._script = script
 
     def execute(self) -> Self:
-        self._result = ExecutionResult(code=self._script())
+        script_result = self._script()
+        self._result = ExecutionResult(code=script_result.code)
         return self
 
 
@@ -206,7 +224,6 @@ class SubprocessRunnerMockEnvironment:
         return timezone.now()
 
 
-class JobImplRunnerMock(JobRepoImpl):
-    @staticmethod
-    def close_old_connections() -> None:
+class JobImplRunnerMock(JobRepo):
+    def close_old_connections(self) -> None:
         return

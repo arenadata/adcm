@@ -15,7 +15,7 @@ from pathlib import Path
 import io
 import tarfile
 
-from core.legacy.job.dto import TaskPayloadDTO
+from core.action.job import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings

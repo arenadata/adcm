@@ -27,13 +27,13 @@
             unsafe: true
     - name: my_string
       type: string
-      display_name: "My String"
-      default: "something"
+      display_name: My String
+      default: something
       ansible_options:
         unsafe: true
     - name: my_text
       type: text
-      display_name: "My Text"
+      display_name: My Text
       default: "something\text"
       ansible_options:
         unsafe: true
@@ -41,8 +41,10 @@
       type: structure
       yspec: ./structure.yaml
       default:
-        - job: "job name"
-          assert_name: "job name"
-          assert_message: "job mess"
+        - job: job name
+          assert_name: job name
+          assert_message: job mess
           ansible_options:
             unsafe: true
+  contract_version: '2.1'
+  venv: '2.16'

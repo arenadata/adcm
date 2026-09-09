@@ -15,12 +15,10 @@ from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
-import time
-import signal
 import os.path
 
+from core.action import ScriptType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
-from core.legacy.job.types import ScriptType
 from core.logs import Severity
 from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
 from django.conf import settings
@@ -52,14 +50,6 @@ class MaintenanceMode(models.TextChoices):
     ON = "on", "on"
     OFF = "off", "off"
     CHANGING = "changing", "changing"
-
-
-MAINTENANCE_MODE_BOTH_CASES_CHOICES = (
-    ("on", "on"),
-    ("off", "off"),
-    ("ON", "ON"),
-    ("OFF", "OFF"),
-)
 
 
 class SignatureStatus(models.TextChoices):
@@ -140,7 +130,7 @@ class ADCMModel(models.Model):
         instance._state.adding = False
         instance._state.db = db
         # customization to store the original field values on the instance
-        instance._loaded_values = dict(zip(field_names, values))
+        instance._loaded_values = dict(zip(field_names, values, strict=False))
         return instance
 
     def save(self, *args, **kwargs):
@@ -952,7 +942,7 @@ class ConfigHostGroup(ADCMModel):
     def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
-        if isinstance(self.object, (Cluster, Provider)):
+        if isinstance(self.object, Cluster | Provider):
             hosts = self.object.host_set.order_by("id")
         elif isinstance(self.object, Service):
             hosts = Host.objects.filter(cluster=self.object.cluster, hostcomponent__service=self.object).distinct()
@@ -1331,41 +1321,6 @@ class TaskLog(ADCMModel):
 
     __error_code__ = "TASK_NOT_FOUND"
 
-    def cancel(self, obj_deletion=False):
-        """
-        Cancel running task process
-        task status will be updated in separate process of task runner
-        """
-        if self.pid == 0:
-            raise AdcmEx(
-                "NOT_ALLOWED_TERMINATION",
-                "Termination is too early, try to execute later",
-            )
-        errors = {
-            JobStatus.FAILED: ("TASK_IS_FAILED", f"task #{self.pk} is failed"),
-            JobStatus.ABORTED: ("TASK_IS_ABORTED", f"task #{self.pk} is aborted"),
-            JobStatus.SUCCESS: ("TASK_IS_SUCCESS", f"task #{self.pk} is success"),
-        }
-        action = self.action
-        if action and not action.allow_to_terminate and not obj_deletion:
-            raise AdcmEx(
-                "NOT_ALLOWED_TERMINATION",
-                f"not allowed termination task #{self.pk} for action #{action.pk}",
-            )
-        if self.status in [JobStatus.FAILED, JobStatus.ABORTED, JobStatus.SUCCESS]:
-            raise AdcmEx(*errors.get(self.status))
-        i = 0
-        while not JobLog.objects.filter(task=self, status=JobStatus.RUNNING) and i < 10:
-            time.sleep(0.5)
-            i += 1
-        if i == 10:
-            raise AdcmEx("NO_JOBS_RUNNING", "no jobs running")
-
-        try:
-            os.kill(self.pid, signal.SIGTERM)
-        except OSError as e:
-            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
-
     @property
     def duration(self) -> float | None:
         if self.finish_date is None or self.start_date is None:
@@ -1381,6 +1336,7 @@ class JobLog(AbstractSubAction):
     start_date = models.DateTimeField(null=True, default=None)
     finish_date = models.DateTimeField(db_index=True, null=True, default=None)
     objects_related_configs = models.JSONField(null=True, default=None)
+    executor = models.JSONField(default=dict)
 
     __error_code__ = "JOB_NOT_FOUND"
 
@@ -1393,20 +1349,6 @@ class JobLog(AbstractSubAction):
             return self.task.action
         except (ObjectDoesNotExist, AttributeError):
             return None
-
-    def cancel(self):
-        if not self.allow_to_terminate:
-            raise AdcmEx("JOB_TERMINATION_ERROR", f"Job #{self.pk} can not be terminated")
-
-        if self.status != JobStatus.RUNNING or self.pid == 0:
-            raise AdcmEx(
-                "JOB_TERMINATION_ERROR",
-                f"Can't terminate job #{self.pk}, pid: {self.pid} with status {self.status}",
-            )
-        try:
-            os.kill(self.pid, signal.SIGTERM)
-        except OSError as e:
-            raise AdcmEx("NOT_ALLOWED_TERMINATION", f"Failed to terminate process: {e}") from e
 
     @property
     def duration(self) -> float | None:

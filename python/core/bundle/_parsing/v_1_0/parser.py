@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Final, Iterable, Literal, TypeAlias, cast
+from typing import Final, Literal, TypeAlias, cast
 
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._errors import BundleParsingError

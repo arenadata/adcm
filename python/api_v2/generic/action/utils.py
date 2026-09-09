@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable, Iterator
 from hashlib import sha256
 from itertools import compress
-from typing import Iterable, Iterator, List, Literal
+from typing import Literal
 
 from adcm.permissions import RUN_ACTION_PERM_PREFIX
 from cm.legacy.services.action_process.types import ProcessState
@@ -56,8 +57,8 @@ def unique_hc_entries(
 
 
 def insert_service_ids(
-    hc_create_data: List[dict[Literal["host_id", "component_id"], int]],
-) -> List[dict[Literal["host_id", "component_id", "service_id"], int]]:
+    hc_create_data: list[dict[Literal["host_id", "component_id"], int]],
+) -> list[dict[Literal["host_id", "component_id", "service_id"], int]]:
     component_ids = {single_hc["component_id"] for single_hc in hc_create_data}
     component_service_map = {
         component.pk: component.service_id for component in Component.objects.filter(pk__in=component_ids)

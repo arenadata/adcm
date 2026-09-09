@@ -1,0 +1,22 @@
+---
+- name: Change service multi state
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Set service multi state
+      adcm_multi_state_set:
+        type: service
+        service_name: multi_state_service
+        state: service multi state
+      tags:
+        - set_multi_state
+
+    - name: Unset service multi state
+      adcm_multi_state_unset:
+        type: service
+        service_name: multi_state_service
+        state: service multi state
+      tags:
+        - unset_multi_state

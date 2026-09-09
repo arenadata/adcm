@@ -7,6 +7,7 @@ import {
   setRequestFrequency,
   setSortParams,
 } from '@store/adcm/clusters/clustersTableSlice';
+import { setViewMode, type ClustersViewMode } from '@store/adcm/clusters/clustersViewSlice';
 import { mergePaginationParams } from '@hooks/usePersistSettings';
 
 const mergeFilters = (
@@ -34,6 +35,7 @@ export const usePersistClustersTableSettings = () => {
   const sortParams = useStore(({ adcm }) => adcm.clustersTable.sortParams);
   const paginationParams = useStore(({ adcm }) => adcm.clustersTable.paginationParams);
   const requestFrequency = useStore(({ adcm }) => adcm.clustersTable.requestFrequency);
+  const viewMode = useStore(({ adcm }) => adcm.clustersView.viewMode);
 
   const prototypes = useStore(({ adcm }) => adcm.clustersTable.relatedData.prototypes);
   const isAllDataLoaded = useStore(({ adcm }) => adcm.clustersTable.isAllDataLoaded);
@@ -48,6 +50,7 @@ export const usePersistClustersTableSettings = () => {
         sortParams,
         requestFrequency,
         perPage,
+        viewMode,
       },
       isReadyToLoad: isAllDataLoaded,
       onSettingsLoaded: (settings) => {
@@ -56,8 +59,11 @@ export const usePersistClustersTableSettings = () => {
         dispatch(setSortParams(settings.sortParams));
         dispatch(setRequestFrequency(settings.requestFrequency));
         dispatch(setPaginationParams(mergePaginationParams(settings.perPage, paginationParams)));
+        if (settings.viewMode === 'table' || settings.viewMode === 'widget') {
+          dispatch(setViewMode(settings.viewMode as ClustersViewMode));
+        }
       },
     },
-    [filter, sortParams, requestFrequency, perPage],
+    [filter, sortParams, requestFrequency, perPage, viewMode],
   );
 };

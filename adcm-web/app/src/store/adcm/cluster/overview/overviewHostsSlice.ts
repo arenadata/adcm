@@ -4,14 +4,22 @@ import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import type { AdcmClusterOverviewStatusHost } from '@models/adcm/clusterOverview';
-import { AdcmHostStatus } from '@models/adcm';
+import { AdcmHostStatus, AdcmMaintenanceMode } from '@models/adcm';
+import type { PaginationParams } from '@models/table';
 
-type AdcmClusterOverviewServicesState = {
+type AdcmClusterOverviewHostsState = {
   hostsStatuses: AdcmClusterOverviewStatusHost[];
   count: number;
   isLoading: boolean;
+  allCount: number;
   upCount: number;
   downCount: number;
+  mmCount: number;
+};
+
+const countPagination: PaginationParams = {
+  pageNumber: 0,
+  perPage: 1,
 };
 
 const loadClusterHostsStatuses = createAsyncThunk(
@@ -20,21 +28,22 @@ const loadClusterHostsStatuses = createAsyncThunk(
     const {
       adcm: {
         clusterOverviewHostsTable: {
-          filter: { hostsStatus },
+          filter: { hostsStatus, maintenanceMode, name },
           paginationParams,
         },
       },
     } = thunkAPI.getState();
 
     try {
-      const response = await AdcmClusterOverviewApi.getClusterHostsStatuses(clusterId, paginationParams, hostsStatus);
+      const response = await AdcmClusterOverviewApi.getClusterHostsStatuses(
+        clusterId,
+        paginationParams,
+        hostsStatus,
+        maintenanceMode,
+        name,
+      );
 
-      if (hostsStatus !== AdcmHostStatus.Down) {
-        thunkAPI.dispatch(getClusterUpHostsCount(clusterId));
-      }
-      if (hostsStatus !== AdcmHostStatus.Up) {
-        thunkAPI.dispatch(getClusterDownHostsCount(clusterId));
-      }
+      thunkAPI.dispatch(getClusterHostsCounts(clusterId));
 
       return response;
     } catch (error) {
@@ -68,50 +77,57 @@ const refreshClusterHostsStatuses = createAsyncThunk(
   },
 );
 
-const getClusterUpHostsCount = createAsyncThunk(
-  'adcm/cluster/overview/services/getClusterUpHostsCount',
+const getClusterHostsCounts = createAsyncThunk(
+  'adcm/cluster/overview/hosts/getClusterHostsCounts',
   async (clusterId: number, thunkAPI) => {
-    try {
-      const response = await AdcmClusterOverviewApi.getClusterHostsStatuses(
-        clusterId,
-        {
-          pageNumber: 0,
-          perPage: 1,
+    const {
+      adcm: {
+        clusterOverviewHostsTable: {
+          filter: { name },
         },
-        AdcmHostStatus.Up,
-      );
-      return response;
+      },
+    } = thunkAPI.getState();
+
+    try {
+      const [allResponse, upResponse, downResponse, mmResponse] = await Promise.all([
+        AdcmClusterOverviewApi.getClusterHostsStatuses(clusterId, countPagination, undefined, undefined, name),
+        AdcmClusterOverviewApi.getClusterHostsStatuses(clusterId, countPagination, AdcmHostStatus.Up, undefined, name),
+        AdcmClusterOverviewApi.getClusterHostsStatuses(
+          clusterId,
+          countPagination,
+          AdcmHostStatus.Down,
+          undefined,
+          name,
+        ),
+        AdcmClusterOverviewApi.getClusterHostsStatuses(
+          clusterId,
+          countPagination,
+          undefined,
+          AdcmMaintenanceMode.On,
+          name,
+        ),
+      ]);
+
+      return {
+        allCount: allResponse.count,
+        upCount: upResponse.count,
+        downCount: downResponse.count,
+        mmCount: mmResponse.count,
+      };
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
   },
 );
 
-const getClusterDownHostsCount = createAsyncThunk(
-  'adcm/cluster/overview/services/getClusterDownHostsCount',
-  async (clusterId: number, thunkAPI) => {
-    try {
-      const response = await AdcmClusterOverviewApi.getClusterHostsStatuses(
-        clusterId,
-        {
-          pageNumber: 0,
-          perPage: 1,
-        },
-        AdcmHostStatus.Down,
-      );
-      return response;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-const createInitialState = (): AdcmClusterOverviewServicesState => ({
+const createInitialState = (): AdcmClusterOverviewHostsState => ({
   hostsStatuses: [],
   isLoading: true,
   count: 0,
+  allCount: 0,
   upCount: 0,
   downCount: 0,
+  mmCount: 0,
 });
 
 const clusterOverviewHostsSlice = createSlice({
@@ -137,17 +153,17 @@ const clusterOverviewHostsSlice = createSlice({
       state.hostsStatuses = [];
       state.count = 0;
     });
-    builder.addCase(getClusterUpHostsCount.fulfilled, (state, action) => {
-      state.upCount = action.payload.count;
+    builder.addCase(getClusterHostsCounts.fulfilled, (state, action) => {
+      state.allCount = action.payload.allCount;
+      state.upCount = action.payload.upCount;
+      state.downCount = action.payload.downCount;
+      state.mmCount = action.payload.mmCount;
     });
-    builder.addCase(getClusterUpHostsCount.rejected, (state) => {
+    builder.addCase(getClusterHostsCounts.rejected, (state) => {
+      state.allCount = 0;
       state.upCount = 0;
-    });
-    builder.addCase(getClusterDownHostsCount.fulfilled, (state, action) => {
-      state.downCount = action.payload.count;
-    });
-    builder.addCase(getClusterDownHostsCount.rejected, (state) => {
       state.downCount = 0;
+      state.mmCount = 0;
     });
   },
 });

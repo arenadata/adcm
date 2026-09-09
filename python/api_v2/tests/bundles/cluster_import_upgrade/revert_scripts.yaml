@@ -1,0 +1,3 @@
+- name: revert
+  script: bundle_revert
+  script_type: internal

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from functools import reduce
 from operator import or_
-from typing import Iterable
 
 from core.legacy.cluster.types import MovedHosts
 from django.contrib.contenttypes.models import ContentType

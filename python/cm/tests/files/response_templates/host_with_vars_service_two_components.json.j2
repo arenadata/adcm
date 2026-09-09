@@ -1,16 +1,4 @@
 {
-  "integer": {{ config_integer | default(10) }},
-  "password": "password",
-  "string": "string",
-  "list": [
-    "value1",
-    "value2",
-    "value3"
-  ],
-  "adcm_hostid": {{ adcm_hostid }},
-  "uuid": "{{ uuid }}",
-  "state": "created",
-  "multi_state": [],
   "cluster": {
     "config": {
       "integer": {{ cluster_config_integer | default(10) }},

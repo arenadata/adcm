@@ -11,6 +11,7 @@
 # limitations under the License.
 
 
+from core.cluster import ClusterService
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
@@ -54,7 +55,11 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         with self.container() as container:
             config_service = container.get(core.config.ConfigService)
             config_scenarios = container.get(ConfigScenarios)
-            callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+            callbacks = build_switch_revert_callbacks(
+                config_service=config_service,
+                rbac_scenarios=RBACScenarios(),
+                cluster_service=self.uc.container.get(ClusterService),
+            )
             bundle_switch(
                 obj=obj,
                 upgrade=upgrade,
@@ -156,17 +161,17 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                 )
 
     def test_2_components_2_hosts(self):
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = self.add_services_to_cluster(
+        self.service_two_components: Service = self.uc.add_services_to_cluster(
             ["service_two_components"], cluster=self.cluster_1
-        ).get()
+        )[0]
 
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, self.component_1),
@@ -245,16 +250,16 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_config_host_group_effect_on_before_upgrade(self) -> None:
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.service_two_components: Service = self.add_services_to_cluster(
-            cluster=self.cluster_1, service_names=["service_two_components"]
-        ).get()
+        self.service_two_components: Service = self.uc.add_services_to_cluster(
+            cluster=self.cluster_1, names=["service_two_components"]
+        )[0]
         self.component_1 = Component.objects.get(service=self.service_two_components, prototype__name="component_1")
         self.component_2 = Component.objects.get(service=self.service_two_components, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, self.component_1),
@@ -272,18 +277,18 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         changed_string = "woohoo"
         changed_list = ["1", "2"]
 
-        self.change_configuration(
-            target=cluster_group,
-            config_diff={"integer": changed_integer},
+        self.uc.change_config(
+            owner=cluster_group,
+            values_diff={"integer": changed_integer},
             meta_diff={"/integer": {"isSynchronized": False}},
         )
-        self.change_configuration(
-            target=service_group,
-            config_diff={"string": changed_string},
+        self.uc.change_config(
+            owner=service_group,
+            values_diff={"string": changed_string},
             meta_diff={"/string": {"isSynchronized": False}},
         )
-        self.change_configuration(
-            target=component_1_group, config_diff={"list": changed_list}, meta_diff={"/list": {"isSynchronized": False}}
+        self.uc.change_config(
+            owner=component_1_group, values_diff={"list": changed_list}, meta_diff={"/list": {"isSynchronized": False}}
         )
 
         self.cluster_1.before_upgrade["bundle_id"] = self.cluster_1.prototype.bundle.pk
@@ -328,12 +333,16 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             },
         )
         host_names = [self.host_1.fqdn, self.host_2.fqdn]
+        group_1_key = f"chg_{cluster_group.pk}_{service_group.pk}"
+        group_2_key = f"chg_{cluster_group.pk}_{component_1_group.pk}"
 
         expected_topology = {
             "CLUSTER": host_names,
             "service_two_components": host_names,
             "service_two_components.component_1": host_names,
             "service_two_components.component_2": host_names,
+            group_1_key: [self.host_2.fqdn],
+            group_2_key: [self.host_1.fqdn],
         }
 
         expected_data = {
@@ -346,9 +355,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                     "component_2": self.component_2,
                 },
             ),
-            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("hosts", "host_1", "services"): expected_host_1_services,
-            ("hosts", "host_2", "services"): expected_host_2_services,
+            ("children", group_2_key, "vars", "cluster"): expected_hosts_cluster,
+            ("children", group_2_key, "vars", "services"): expected_host_1_services,
+            ("children", group_1_key, "vars", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -360,12 +369,15 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         new_string = "another-string"
         component_1_group.delete()
-        self.change_configuration(
-            target=service_group,
-            config_diff={"string": new_string},
+        self.uc.change_config(
+            owner=service_group,
+            values_diff={"string": new_string},
             meta_diff={"/string": {"isSynchronized": False}},
         )
 
+        expected_topology.pop(group_2_key)
+        group_3_key = f"chg_{cluster_group.pk}"
+        expected_topology[group_3_key] = [self.host_1.fqdn]
         expected_hosts_cluster = (
             cluster_file,
             {"config_integer": changed_integer, "before_upgrade_integer": changed_integer, "cluster": self.cluster_1},
@@ -401,9 +413,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
                     "component_2": self.component_2,
                 },
             ),
-            ("hosts", "host_1", "cluster"): expected_hosts_cluster,
-            ("hosts", "host_1", "services"): expected_host_1_services,
-            ("hosts", "host_2", "services"): expected_host_2_services,
+            ("children", group_3_key, "vars", "cluster"): expected_hosts_cluster,
+            ("children", group_3_key, "vars", "services"): expected_host_1_services,
+            ("children", group_1_key, "vars", "services"): expected_host_2_services,
         }
 
         self.assert_inventory(
@@ -414,21 +426,21 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         )
 
     def test_adcm_5367_bug(self) -> None:
-        another_1 = self.add_services_to_cluster(
-            service_names=["another_service_two_components"], cluster=self.cluster_1
-        ).first()
-        service = self.add_services_to_cluster(
-            service_names=["another_service_two_components_2"], cluster=self.cluster_1
-        ).first()
+        another_1, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components"], cluster=self.cluster_1
+        )
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components_2"], cluster=self.cluster_1
+        )
         problem_component = Component.objects.get(service=service, prototype__name="component_1")
-        another_2 = self.add_services_to_cluster(
-            service_names=["another_service_two_components_3"], cluster=self.cluster_1
-        ).first()
+        another_2, *_ = self.uc.add_services_to_cluster(
+            names=["another_service_two_components_3"], cluster=self.cluster_1
+        )
 
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
-        self.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_2)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, problem_component),
@@ -440,9 +452,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         component_group = self.add_config_host_group(parent=problem_component, hosts=[self.host_1])
 
-        self.change_configuration(
-            target=component_group,
-            config_diff={"plain": "someother\ntext", "bunch": {"secte": "itsasecret"}},
+        self.uc.change_config(
+            owner=component_group,
+            values_diff={"plain": "someother\ntext", "bunch": {"secte": "itsasecret"}},
             meta_diff={
                 "/plain": {"isSynchronized": False},
                 "/secte": {"isSynchronized": False},
@@ -461,6 +473,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
         inventory = get_inventory_data(
             target=CoreObjectDescriptor(id=problem_component.id, type=ADCMCoreType.COMPONENT),
             is_host_action=action.host_action,
+            cluster_service=self.uc.container.get(ClusterService),
         )
         services = inventory["all"]["vars"]["services"]
 
@@ -474,11 +487,12 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
 
         group_prefix = f"{settings.FILE_DIR}/component.{problem_component.id}.group.{component_group.id}"
 
-        hosts_node = inventory["all"]["hosts"]
-        node = hosts_node["host_1"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
+        group_key = f"chg_{component_group.pk}"
+        children = inventory["all"]["children"]
+        group_nodes = {key for key in children if key.startswith("chg_")}
+        self.assertSetEqual({group_key}, group_nodes)
+        node = children[group_key]["vars"]["services"][service.name][problem_component.name]["before_upgrade"]["config"]
         self.assertEqual(node["plain"], f"{group_prefix}.plain.")
         self.assertEqual(node["secte"], f"{group_prefix}.secte.")
         self.assertEqual(node["bunch"]["plain"], f"{group_prefix}.bunch.plain")
         self.assertEqual(node["bunch"]["secte"], f"{group_prefix}.bunch.secte")
-
-        self.assertNotIn("services", hosts_node["host_2"])

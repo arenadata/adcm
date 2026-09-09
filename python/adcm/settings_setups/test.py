@@ -51,7 +51,3 @@ TMP_DIR = DATA_DIR / "tmp"
 CODE_DIR = pathlib.Path(__file__).parent.parent.parent
 
 DEFAULT_DISHKA_PROVIDERS = "tests.dependencies.get_default_overridden_providers"
-
-# Strictly for tests
-
-TEST_RUNNER = "tests.runner.SubTestParallelRunner"

@@ -25,10 +25,10 @@ from core.config import Configuration, spec
 from core.tests.doubles.config import build_config_service_with_fakes
 from core.tests.test_config.utils import name_id
 from core.types import ADCMCoreType, CoreObjectDescriptor, ShortObjectInfo
-from parameterized import parameterized
+from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 
-class TestGBU(unittest.TestCase):
+class TestGBU(ParametrizedTestCase, unittest.TestCase):
     maxDiff = None
 
     @classmethod
@@ -60,39 +60,40 @@ class TestGBU(unittest.TestCase):
         chg_2 = ConfigHostGroupInfo(id=44, name="not", hosts=hosts, current_config_id=11, owner=self.descriptor_service)
         return chg_1, chg_2
 
-    @parameterized.expand(
+    @parametrize(
+        ("input_raw", "expected"),
         [
-            ("default", DEFAULT_BEFORE_UPGRADE, DEFAULT_BEFORE_UPGRADE),
-            ("empty", {}, {"state": None, "config": None}),
-            ("only_state", {"state": "x"}, {"state": "x", "config": None}),
-            ("only_config", {"config_id": 4}, {"state": None, "config": None}),
-            ("only_bundle_id", {"bundle_id": 4}, {"state": None, "config": None}),
+            param(DEFAULT_BEFORE_UPGRADE, DEFAULT_BEFORE_UPGRADE, id="default"),
+            param({}, {"state": None, "config": None}, id="empty"),
+            param({"state": "x"}, {"state": "x", "config": None}, id="only_state"),
+            param({"config_id": 4}, {"state": None, "config": None}, id="only_config"),
+            param({"bundle_id": 4}, {"state": None, "config": None}, id="only_bundle_id"),
             # imports and states are passed AS IS, so content's not important for this test
-            ("only_imports", {"imports": {"config": "!"}}, {"imports": "!", "state": None, "config": None}),
-            ("config_and_state", {"config_id": 4, "state": "created"}, {"state": "created", "config": None}),
-            (
-                "imports_and_state",
+            param({"imports": {"config": "!"}}, {"imports": "!", "state": None, "config": None}, id="only_imports"),
+            param({"config_id": 4, "state": "created"}, {"state": "created", "config": None}, id="config_and_state"),
+            param(
                 {"imports": {"config": [2]}, "state": 12},
                 {"imports": [2], "state": 12, "config": None},
+                id="imports_and_state",
             ),
-            (
-                "config_imports_and_state",
+            param(
                 {"imports": {"config": {"o": "a"}}, "state": 12, "config_id": 1},
                 {"imports": {"o": "a"}, "state": 12, "config": None},
+                id="config_imports_and_state",
             ),
-            (
-                "bundle_id_and_imports",
+            param(
                 {"bundle_id": 100, "imports": {"config": {"a": "b"}}},
                 {"imports": {"a": "b"}, "state": None, "config": None},
+                id="bundle_id_and_imports",
             ),
-            (
-                "bundle_id_imports_and_state",
+            param(
                 {"bundle_id": 100, "imports": {"config": {"a": "b"}}, "state": "created"},
                 {"imports": {"a": "b"}, "state": "created", "config": None},
+                id="bundle_id_imports_and_state",
             ),
-        ]
+        ],
     )
-    def test_no_config(self, _, input_raw, expected):
+    def test_no_config(self, input_raw, expected):
         input_pbu = self.prepare_pbu_from_raw(input_raw)
         cs_mock = Mock()
         cs_mock.retrieve_configurations_by_id = Mock()
@@ -108,13 +109,14 @@ class TestGBU(unittest.TestCase):
         cs_mock.retrieve_configurations_by_id.assert_not_called()
         rep_mock.assert_not_called()
 
-    @parameterized.expand(
+    @parametrize(
+        ("extra_input", "extra_expected"),
         [
-            ("no_extra", {}, {}),
-            ("with_imports", {"imports": {"config": [{"o": "e"}]}}, {"imports": [{"o": "e"}]}),
-        ]
+            param({}, {}, id="no_extra"),
+            param({"imports": {"config": [{"o": "e"}]}}, {"imports": [{"o": "e"}]}, id="with_imports"),
+        ],
     )
-    def test_with_config(self, _, extra_input, extra_expected):
+    def test_with_config(self, extra_input, extra_expected):
         input_pbu = self.prepare_pbu_from_raw({"bundle_id": 1, "config_id": 14} | extra_input)
         expected = {"state": None, "config": {"a": f"cluster.{self.descriptor_default.id}.a."}} | extra_expected
 

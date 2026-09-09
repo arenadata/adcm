@@ -1,10 +1,9 @@
 ---
 - type: cluster
   name: cluster_config_host_group
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   config_group_customization: true
-
   config:
     - name: boolean
       type: boolean
@@ -18,17 +17,18 @@
           default: 0.1
     - name: activatable_group
       type: group
-      activatable: True
-      active: True
+      activatable: true
+      active: true
       subs:
         - name: integer
           type: integer
           required: false
           default: 10
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service
   type: service
-  version: *version
+  version: '1.0'
   config:
     - name: string
       type: string
@@ -42,17 +42,18 @@
           default: password
     - name: activatable_group
       type: group
-      activatable: True
-      active: True
+      activatable: true
+      active: true
       subs:
         - name: text
           type: text
           required: false
           default: text
-
   components:
     component:
-      constraint: [ 0, + ]
+      constraint:
+        - 0
+        - +
       config:
         - name: secrettext
           type: secrettext
@@ -66,8 +67,8 @@
               default: ./file.txt
         - name: activatable_group
           type: group
-          activatable: True
-          active: True
+          activatable: true
+          active: true
           subs:
             - name: secretfile
               type: secretfile

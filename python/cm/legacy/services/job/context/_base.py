@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from itertools import chain
 from operator import itemgetter
-from typing import Iterable
 
-from core.legacy.cluster.operations import calculate_maintenance_mode_for_cluster_objects
-from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.types import RelatedObjects, Task, TaskMappingDelta
+from core.action import RelatedObjects, Task, TaskMappingDelta
+from core.cluster import ClusterService, ClusterTopology
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -25,8 +24,8 @@ from core.types import (
     HostID,
     HostName,
     MaintenanceModeOfObjects,
+    MaintenanceModeState,
     ObjectID,
-    ObjectMaintenanceModeState,
 )
 from django.db.models import F
 from infra.services import get_config_service
@@ -40,9 +39,9 @@ from cm.legacy.services.cluster import (
 from cm.legacy.services.config_host_group import ConfigHostGroupName, retrieve_config_host_groups_for_hosts
 from cm.legacy.services.job.context._before_upgrade import extract_objects_before_upgrade, get_before_upgrades
 from cm.legacy.services.job.context._config import (
-    get_config_host_group_alternatives_for_hosts_in_cluster_groups,
     get_config_host_group_alternatives_for_hosts_in_provider_groups,
     get_objects_configurations,
+    prepare_groups_for_config_host_group,
 )
 from cm.legacy.services.job.context._groups import detect_host_groups_for_cluster_bundle_action
 from cm.legacy.services.job.context._imports import get_imports_for_inventory
@@ -72,6 +71,7 @@ from cm.models import (
 def get_inventory_data(
     target: ActionTargetDescriptor,
     is_host_action: bool,
+    cluster_service: ClusterService,
     delta: TaskMappingDelta | None = None,
     related_objects: RelatedObjects | None = None,
     process_mapping_delta: dict[str, set[tuple[HostID, HostName]]] | None = None,
@@ -91,6 +91,7 @@ def get_inventory_data(
             target_hosts=tuple((host.pk, host.fqdn) for host in group.hosts.order_by("id").all()),
             config_service=config_service,
             process_mapping_delta=process_mapping_delta or {},
+            cluster_service=cluster_service,
         )
 
     if target.type == ADCMCoreType.PROVIDER or (target.type == ADCMCoreType.HOST and not is_host_action):
@@ -141,6 +142,7 @@ def get_inventory_data(
         target_hosts=target_hosts,
         config_service=config_service,
         process_mapping_delta=process_mapping_delta or {},
+        cluster_service=cluster_service,
     )
 
 
@@ -178,6 +180,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     target_hosts: Iterable[tuple[HostID, HostName]],
     config_service: core.config.ConfigService,
     process_mapping_delta: dict[str, set[tuple[HostID, HostName]]],
+    cluster_service: ClusterService,
 ) -> dict:
     host_groups: dict[HostGroupName, set[tuple[HostID, HostName]]] = {}
 
@@ -202,9 +205,9 @@ def _get_inventory_for_action_from_cluster_bundle(
         ADCMCoreType.HOST: set(map(itemgetter(0), chain.from_iterable(host_groups.values()))),
     }
 
-    objects_in_maintenance_mode = calculate_maintenance_mode_for_cluster_objects(
+    objects_in_maintenance_mode = cluster_service.calculate_maintenance_mode(
         topology=cluster_topology,
-        own_maintenance_mode=retrieve_clusters_objects_maintenance_mode(cluster_ids=[cluster_topology.cluster_id]),
+        objects_own_mm=cluster_service.retrieve_own_maintenance_mode(cluster_ids=(cluster_topology.cluster_id,)),
     )
 
     config_host_groups = retrieve_config_host_groups_for_hosts(
@@ -229,7 +232,7 @@ def _get_inventory_for_action_from_cluster_bundle(
     cluster_vars = _prepare_cluster_vars(topology=cluster_topology, objects_information=basic_nodes)
     cluster_vars_dict = cluster_vars_to_dict(cluster_vars)
 
-    alternative_host_nodes = get_config_host_group_alternatives_for_hosts_in_cluster_groups(
+    host_groups_children = prepare_groups_for_config_host_group(
         config_host_groups=config_host_groups.values(),
         cluster_vars=cluster_vars_dict,
         objects_before_upgrade=objects_before_upgrades,
@@ -244,13 +247,13 @@ def _get_inventory_for_action_from_cluster_bundle(
             "children": {
                 group_name: {"hosts": {host_name: {} for _, host_name in host_tuples}}
                 for group_name, host_tuples in sorted_host_groups.items()
-            },
+            }
+            | host_groups_children,
             "vars": cluster_vars_dict,
             "hosts": {
                 host_name: basic_nodes[ADCMCoreType.HOST, host_id].model_dump(
                     mode="json", by_alias=True, exclude_defaults=True
                 )
-                | alternative_host_nodes.get(host_name, {})
                 for host_tuples in sorted_host_groups.values()
                 for host_id, host_name in host_tuples
             },
@@ -404,8 +407,7 @@ def _get_objects_basic_info(
             result |= {
                 (ADCMCoreType.SERVICE, service_info["id"]): ServiceNode(
                     **service_info,
-                    maintenance_mode=objects_maintenance_mode.services[service_info["id"]]
-                    == ObjectMaintenanceModeState.ON,
+                    maintenance_mode=objects_maintenance_mode.services[service_info["id"]] == MaintenanceModeState.ON,
                     config=objects_configuration[ADCMCoreType.SERVICE, service_info["id"]],
                     before_upgrade=objects_before_upgrade[
                         CoreObjectDescriptor(type=ADCMCoreType.SERVICE, id=service_info["id"])
@@ -425,7 +427,7 @@ def _get_objects_basic_info(
                 (ADCMCoreType.COMPONENT, component_info["id"]): ComponentNode(
                     **component_info,
                     maintenance_mode=objects_maintenance_mode.components[component_info["id"]]
-                    == ObjectMaintenanceModeState.ON,
+                    == MaintenanceModeState.ON,
                     config=objects_configuration[ADCMCoreType.COMPONENT, component_info["id"]],
                     before_upgrade=objects_before_upgrade[
                         CoreObjectDescriptor(type=ADCMCoreType.COMPONENT, id=component_info["id"])

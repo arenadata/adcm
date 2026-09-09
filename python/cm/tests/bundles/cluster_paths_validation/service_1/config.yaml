@@ -1,8 +1,8 @@
+---
 - name: service_1
   type: service
   version: 0.3
-
-  config: &config
+  config: &id001
     - name: control
       type: text
       default: stuff
@@ -10,7 +10,6 @@
       type: file
     - name: no_default_s
       type: secretfile
-
     - name: relative_plain
       type: file
       default: ./nicename.txt
@@ -23,14 +22,12 @@
     - name: full_secret
       type: secretfile
       default: nicename.txt
-
     - name: relative_inside_plain
       type: file
       default: ./inside/common.txt
     - name: full_inside_secret
       type: secretfile
       default: inside/common.txt
-
     - name: relative_complex
       type: structure
       yspec: ./schema.yaml
@@ -43,35 +40,48 @@
     - name: full_inside_complex
       type: structure
       yspec: inside/struct.yaml
-
-  actions: &actions
+  actions: &id002
     as_job_relative:
-      type: job
-      script_type: ansible
-      script: ./action.yaml
-      config_jinja: ./conf.j2
-
+      scripts:
+        - name: as_job_relative
+          script: ./action.yaml
+          script_type: ansible
+      config_template:
+        file:
+          path: ./conf.j2
+        engine:
+          type: jinja2
     as_job_full:
-      type: job
-      script_type: python
-      script: action.yaml
-      config_jinja: conf.j2
-
+      scripts:
+        - name: as_job_full
+          script: action.yaml
+          script_type: python
+      config_template:
+        file:
+          path: conf.j2
+        engine:
+          type: jinja2
     as_job_inner_relative:
-      type: job
-      script_type: python
-      script: ./inside/action.yaml
-      config_jinja: ./inside/conf.j2
-
+      scripts:
+        - name: as_job_inner_relative
+          script: ./inside/action.yaml
+          script_type: python
+      config_template:
+        file:
+          path: ./inside/conf.j2
+        engine:
+          type: jinja2
     as_job_inner_full:
-      type: job
-      script_type: ansible
-      script: inside/action.yaml
-      config_jinja: inside/conf.j2
-
+      scripts:
+        - name: as_job_inner_full
+          script: inside/action.yaml
+          script_type: ansible
+      config_template:
+        file:
+          path: inside/conf.j2
+        engine:
+          type: jinja2
     as_task_config_relative:
-      type: task
-      config_jinja: ./conf.j2
       scripts:
         - name: rel_1
           script_type: python
@@ -79,10 +89,12 @@
         - name: rel_2
           script_type: ansible
           script: action.yaml
-
+      config_template:
+        file:
+          path: ./conf.j2
+        engine:
+          type: jinja2
     as_task_config_inside_full:
-      type: task
-      config_jinja: inside/conf.j2
       scripts:
         - name: full_one
           script_type: python
@@ -90,12 +102,15 @@
         - name: full_two
           script_type: ansible
           script: ./inside/action.yaml
-
+      config_template:
+        file:
+          path: inside/conf.j2
+        engine:
+          type: jinja2
   components:
     separate:
       config:
         - name: grouped
           type: group
-          subs: *config
-
-      actions: *actions
+          subs: *id001
+      actions: *id002

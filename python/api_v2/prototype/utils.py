@@ -11,15 +11,7 @@
 # limitations under the License.
 
 from cm.errors import AdcmEx
-from cm.models import Prototype
 from django.conf import settings
-
-
-def accept_license(prototype: Prototype) -> None:
-    if not prototype.license_path or prototype.license == "absent":
-        raise AdcmEx(code="LICENSE_ERROR", msg="This bundle has no license")
-
-    Prototype.objects.filter(license_hash=prototype.license_hash, license="unaccepted").update(license="accepted")
 
 
 def get_license_text(license_path: str | None, bundle_hash: str) -> str | None:

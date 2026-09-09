@@ -28,9 +28,12 @@ from cm.errors import AdcmEx
 from cm.legacy.api import delete_host
 from cm.models import Cluster, ConcernType, Host, MainObject, Provider
 from cm.transition.status import StatusScenarios
+from core.action.job import JobService
 from core.cluster import ClusterService
-from core.types import ADCMCoreType
+from core.concern.repo import ConcernRepoI
+from core.types import ADCMCoreType, Descriptor, MaintenanceModeState
 from dishka import FromDishka
+from django.db.transaction import atomic
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
@@ -50,9 +53,9 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
+from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.transition.host.duplicate import create_duplicate
 from use_cases.transition.hostprovider.create import create_host
-from use_cases.transition.job.schedule import ScheduleMMChangingTask
 import core
 
 from api_v2.api_schema import DefaultParams, responses
@@ -77,7 +80,6 @@ from api_v2.host.serializers import (
     HostUpdateSerializer,
     HostWithDuplicatesSerializer,
 )
-from api_v2.host.utils import maintenance_mode
 from api_v2.utils.audit import host_from_lookup, host_from_response, parent_host_from_lookup, update_host_name
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet, ClusterHostOperationHandleExceptionMixin, ObjectWithStatusViewMixin
@@ -251,10 +253,18 @@ class HostViewSet(
         )
 
     @audit_delete(name="Host deleted", object_=host_from_lookup, removed_on_success=True)
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        cluster_service: FromDishka[ClusterService],
+        job_service: FromDishka[JobService],
+        **kwargs,  # noqa: ARG002
+    ):
         host = self.get_object()
         check_custom_perm(request.user, "remove", "host", host)
-        delete_host(host=host)
+        delete_host(host=host, cluster_service=cluster_service, job_service=job_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
     @(
@@ -266,7 +276,14 @@ class HostViewSet(
         )
     )
     @inject
-    def partial_update(self, request, *args, status_scenarios: FromDishka[StatusScenarios], **kwargs):  # noqa: ARG002
+    def partial_update(
+        self,
+        request,
+        *args,  # noqa: ARG002
+        status_scenarios: FromDishka[StatusScenarios],
+        concern_repo: FromDishka[ConcernRepoI],
+        **kwargs,  # noqa: ARG002
+    ):
         instance = self.get_object()
         self._is_original_host = not instance.original
 
@@ -276,17 +293,35 @@ class HostViewSet(
         serializer.is_valid(raise_exception=True)
         valid = serializer.validated_data
 
-        if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
-            raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
+        added = {}
 
-        if (
-            valid.get("fqdn")
-            and valid.get("fqdn") != instance.fqdn
-            and (instance.cluster or instance.state != "created")
-        ):
-            raise AdcmEx(code="HOST_UPDATE_ERROR")
+        with atomic():
+            if valid.get("fqdn") and instance.concerns.filter(type=ConcernType.LOCK).exists():
+                raise AdcmEx(code="HOST_CONFLICT", msg="Name change is available only if no locking concern exists")
 
-        serializer.save()
+            if (
+                valid.get("fqdn")
+                and valid.get("fqdn") != instance.fqdn
+                and (instance.cluster or instance.state != "created")
+            ):
+                raise AdcmEx(code="HOST_UPDATE_ERROR")
+
+            previous_name = instance.fqdn
+
+            serializer.save()
+
+            if instance.fqdn != previous_name:
+                renamed_in_concerns = concern_repo.update_object_name_in_concerns(
+                    object_=Descriptor(id=instance.pk, type=ADCMCoreType.HOST),
+                    previous_name=previous_name,
+                    new_name=instance.fqdn,
+                )
+                added = concern_repo.get_concerns_distribution(concern_ids=renamed_in_concerns)
+
+        if added:
+            # concerns with updated names are sent to UI as new ones, there's no event for their update
+            status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed={})
+
         status_scenarios.send_object_update_event(
             instance.pk,
             ADCMCoreType.HOST.value,
@@ -312,13 +347,19 @@ class HostViewSet(
         self,
         request: Request,
         *args,  # noqa: ARG002
-        schedule_task: FromDishka[ScheduleMMChangingTask],
-        cluster_service: FromDishka[ClusterService],
+        set_mm: FromDishka[SetMaintenanceMode],
         **kwargs,  # noqa: ARG002
     ) -> Response:
-        return maintenance_mode(
-            request=request, host=self.get_object(), schedule_task=schedule_task, cluster_service=cluster_service
-        )
+        host = self.get_object()
+
+        check_custom_perm(user=request.user, action_type="change_maintenance_mode", model="host", obj=host)
+
+        serializer = self.get_serializer_class()(instance=host, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        value = set_mm.do(target=host, value=MaintenanceModeState(serializer.validated_data["maintenance_mode"]))
+
+        return Response(data={"maintenance_mode": value.value})
 
     @audit_create(name="Duplicate host created", object_=host_from_response)
     @action(

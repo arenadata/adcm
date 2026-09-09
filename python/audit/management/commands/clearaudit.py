@@ -27,7 +27,7 @@ from django.utils import timezone
 from audit.alt.background import audit_background_operation
 from audit.models import AuditLog, AuditLogOperationType, AuditObject, AuditSession
 
-logger = logging.getLogger("background_tasks")
+logger = logging.getLogger("background-tasks")
 
 
 class Command(BaseCommand):

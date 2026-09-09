@@ -1,0 +1,41 @@
+---
+- type: cluster
+  name: cluster_hc_acl
+  version: 2
+  allow_maintenance_mode: true
+  actions:
+    cluster_action_hc_acl:
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+      hc_acl:
+        - service: service_1
+          component: component_1
+          action: remove
+      scripts:
+        - name: cluster_action_hc_acl
+          script: ./actions.yaml
+          script_type: ansible
+  config:
+    - name: float
+      type: float
+      required: false
+      default: 0.1
+  contract_version: '2.1'
+  venv: '2.16'
+- type: service
+  name: service_1
+  version: 3
+  components:
+    component_1:
+      config:
+        - name: float_from_comp_1
+          type: float
+          required: false
+          default: 0.1
+    component_2:
+      config:
+        - name: float_from_comp_2
+          type: float
+          required: false
+          default: 0.1

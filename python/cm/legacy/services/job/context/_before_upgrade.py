@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import reduce
 from operator import or_
-from typing import Final, Iterable
+from typing import Final
 
 from core.types import (
     ADCMCoreType,

@@ -1,0 +1,107 @@
+.embeddedField {
+  border: none;
+  box-shadow: none !important;
+  color: inherit;
+
+  &:hover,
+  &:focus-within,
+  &:global(.is-active) {
+    background: transparent !important;
+  }
+}
+
+.autoSizeField {
+  &_string {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 auto;
+    position: relative;
+    align-items: stretch;
+  }
+
+  &__display {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 5px 12px;
+    line-height: 20px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    cursor: text;
+  }
+
+  &__textarea {
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: none;
+    background: transparent;
+    padding: 5px 12px;
+    color: inherit;
+    font: inherit;
+    line-height: 20px;
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+    field-sizing: content;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+
+    &_hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: 0;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    &:focus {
+      max-height: 160px;
+      overflow-y: auto;
+    }
+  }
+
+  &_number {
+    --field-placeholder: var(--node-content-value-color);
+
+    input {
+      width: var(--inline-number-input-width, 6ch);
+      min-width: var(--inline-number-input-width, 6ch);
+      max-width: var(--inline-number-input-width, 6ch);
+    }
+  }
+
+  &_select {
+    width: fit-content;
+    max-width: 100%;
+
+    input {
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+      field-sizing: content;
+    }
+
+    input:placeholder-shown {
+      min-width: 6ch;
+    }
+
+    // little fix of align styles for select (because Select has div wrapper without class)
+    div:not([class]):has( > &) {
+      display: contents;
+    }
+  }
+}
+
+.checkbox {
+  margin: 0 12px;
+}

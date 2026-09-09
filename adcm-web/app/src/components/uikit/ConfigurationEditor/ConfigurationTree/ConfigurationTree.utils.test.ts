@@ -17,8 +17,12 @@ import {
   readonlyFieldSchema,
   readonlyListSchema,
   readonlyMapSchema,
+  readonlyStructureConfig,
+  readonlyStructureSchema,
   selectableObjectConfig,
   selectableObjectFieldSchemaWithUnionDefault,
+  selectableObjectReadonlyParentConfig,
+  selectableObjectReadonlyParentSchema,
   selectableObjectSchema,
   structureSchema,
   structureSchemaWithTitle,
@@ -30,17 +34,22 @@ import configurationValidationData from './__fixtures__/configurationValidationD
 import {
   buildConfigurationNodes,
   buildConfigurationTree,
-  fillParentPathParts,
-  getConfigurationErrors,
+  determineSelectableFieldSchema,
   getDefaultValue,
   getErrorsForTreeRow,
   getOneOfSchemaDefaults,
+  getOneOfDiscriminatorValue,
+  resolveOneOfSelectionValue,
+  hasFieldDefaultValue,
+  resolveFieldDefaultValue,
   validate,
+  type OneOfBranchStore,
 } from './ConfigurationTree.utils';
 import type { ConfigurationArray, ConfigurationField, ConfigurationObject } from '../ConfigurationEditor.types';
 import type { ConfigurationErrors, FieldErrors, SchemaDefinition } from '@models/adcm';
 import type { JSONObject } from '@models/json';
 import { validate as validateJsonSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { jsonSchemaValidationService } from '@utils/jsonSchema/JsonSchemaValidationService';
 import {
   discriminatorFieldName,
   nestedPropsErrorKeyword,
@@ -105,6 +114,22 @@ describe('structure node tests', () => {
     expect(getDefaultValue('keyName', node3, parentNode3)).toBe('parentValue');
   });
 
+  test('resolveFieldDefaultValue', () => {
+    const fieldSchema: SchemaDefinition = { type: 'string', readOnly: false };
+
+    expect(resolveFieldDefaultValue({ defaultValue: 'from-node', fieldSchema })).toBe('from-node');
+    expect(resolveFieldDefaultValue({ fieldSchema: { ...fieldSchema, default: '' } })).toBe('');
+    expect(resolveFieldDefaultValue({ fieldSchema })).toBeUndefined();
+  });
+
+  test('hasFieldDefaultValue', () => {
+    const fieldSchema: SchemaDefinition = { type: 'string', readOnly: false };
+
+    expect(hasFieldDefaultValue({ defaultValue: '', fieldSchema })).toBe(true);
+    expect(hasFieldDefaultValue({ fieldSchema: { ...fieldSchema, default: '' } })).toBe(true);
+    expect(hasFieldDefaultValue({ fieldSchema })).toBe(false);
+  });
+
   test('structure fields', () => {
     const configuration = {
       structure: {
@@ -118,6 +143,31 @@ describe('structure node tests', () => {
     expect(structureNode.children?.length).toBe(2);
     expect(structureNode.children?.[0].data.title).toBe('someField1');
     expect(structureNode.children?.[1].data.title).toBe('someField2');
+  });
+
+  test('root object with only patternProperties: children come from configuration keys', () => {
+    const schema: SchemaDefinition = {
+      type: 'object',
+      readOnly: false,
+      additionalProperties: false,
+      properties: {},
+      patternProperties: {
+        '^[a-z]+$': { title: 'lowerKey', type: 'string', readOnly: false },
+      },
+    };
+    const data: JSONObject = { ab: 'v1', cd: 'v2' };
+    const tree = buildConfigurationNodes(schema, data, {});
+    expect(tree.children?.length).toBe(2);
+    expect(tree.children?.map((c) => c.key).sort()).toEqual(['/ab', '/cd']);
+  });
+
+  test('readonly structure propagates isReadonly to nested fields', () => {
+    const tree = buildConfigurationNodes(readonlyStructureSchema, readonlyStructureConfig, {});
+    const structureNode = tree.children?.[0]!;
+    const fieldNode = structureNode.children?.[0]!;
+
+    expect(structureNode.data.isReadonly).toBe(true);
+    expect(fieldNode.data.isReadonly).toBe(true);
   });
 });
 
@@ -404,21 +454,28 @@ describe('validate', () => {
     expect((fieldErrors as FieldErrors).messages).not.toStrictEqual({ required: 'must be string' });
   });
 
-  test('fillParentPathParts', () => {
-    const errors: ConfigurationErrors = {
-      '/config/cluster/clusterName': true,
-    };
+  test('fills parent paths (via service mapping)', () => {
+    const rawErrors = [
+      {
+        instancePath: '/config/cluster/clusterName',
+        parentSchema: {} as SchemaDefinition,
+        data: {},
+        keyword: 'type',
+        message: 'x',
+        params: {},
+      },
+    ];
 
-    fillParentPathParts(errors);
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', rawErrors, {});
 
     const expected: ConfigurationErrors = {
       '/': true,
       '/config': true,
       '/config/cluster': true,
-      '/config/cluster/clusterName': true,
+      '/config/cluster/clusterName': expect.anything(),
     };
 
-    expect(errors).toStrictEqual(expected);
+    expect(configurationErrors).toMatchObject(expected);
   });
 
   test('required validation', () => {
@@ -477,7 +534,10 @@ describe('validate', () => {
     expect(isValid).toBe(false);
     expect(Object.keys(configurationErrors).length).toBeGreaterThan(0);
 
-    expect(configurationErrors['/']).toBe(true);
+    expect(
+      configurationErrors['/'] === true ||
+        (typeof configurationErrors['/'] === 'object' && configurationErrors['/'] !== null),
+    ).toBe(true);
     expect(
       configurationErrors['/my_group_with_required_not_default_parameters'] === true ||
         (typeof configurationErrors['/my_group_with_required_not_default_parameters'] === 'object' &&
@@ -636,6 +696,89 @@ describe('selection groups', () => {
     expect(clusterConfigNode.children?.[0].key.endsWith(discriminatorFieldName)).toBeTruthy();
     expect(clusterConfigNode.children?.[0].data.type).toStrictEqual('field');
   });
+
+  test('nested field writable when selection group is read-only', () => {
+    const tree = buildConfigurationNodes(
+      selectableObjectReadonlyParentSchema,
+      selectableObjectReadonlyParentConfig,
+      {},
+    );
+    const selectionGroupNode = tree.children?.[0]!;
+    const groupNode = selectionGroupNode.children?.find((child) => child.key.endsWith('/group_1'))!;
+    const stringNode = groupNode.children?.find((child) => child.key.endsWith('/string'))!;
+
+    expect(selectionGroupNode.data.type).toBe('selectableObject');
+    expect(selectionGroupNode.data.isReadonly).toBe(true);
+    expect(groupNode.data.isReadonly).toBe(false);
+    expect(stringNode.data.isReadonly).toBe(false);
+  });
+
+  test('isReadOnly on root locks nested selectable subs (wizard non-current step)', () => {
+    const tree = buildConfigurationNodes(
+      selectableObjectReadonlyParentSchema,
+      selectableObjectReadonlyParentConfig,
+      {},
+      true,
+    );
+    const selectionGroupNode = tree.children?.[0]!;
+    const groupNode = selectionGroupNode.children?.find((child) => child.key.endsWith('/group_1'))!;
+    const stringNode = groupNode.children?.find((child) => child.key.endsWith('/string'))!;
+
+    expect(groupNode.data.isReadonly).toBe(true);
+    expect(stringNode.data.isReadonly).toBe(true);
+  });
+
+  test('does not throw when selectable object value is undefined', () => {
+    const tree = buildConfigurationNodes(selectableObjectSchema, {}, {});
+    const selectionGroupNode = tree.children?.[0]!;
+
+    expect(selectionGroupNode.data.type).toBe('selectableObject');
+    expect(
+      (
+        selectionGroupNode.data as {
+          selectedFieldSchema: SchemaDefinition | null;
+        }
+      ).selectedFieldSchema,
+    ).toBeNull();
+  });
+
+  test('does not throw when selectable object value is null', () => {
+    const tree = buildConfigurationNodes(selectableObjectSchema, { selectable_no_default_required: null }, {});
+    const selectionGroupNode = tree.children?.[0]!;
+
+    expect(selectionGroupNode.data.type).toBe('selectableObject');
+    expect(
+      (
+        selectionGroupNode.data as {
+          selectedFieldSchema: SchemaDefinition | null;
+        }
+      ).selectedFieldSchema,
+    ).toBeNull();
+  });
+});
+
+describe('determineSelectableFieldSchema', () => {
+  const selectableFieldSchema = selectableObjectSchema.properties!.selectable_no_default_required as SchemaDefinition;
+
+  test('returns null for null, undefined, and non-object values', () => {
+    expect(determineSelectableFieldSchema(selectableFieldSchema, null)).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, undefined)).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, 'string')).toBeNull();
+    expect(determineSelectableFieldSchema(selectableFieldSchema, [])).toBeNull();
+  });
+
+  test('returns matching oneOf branch by discriminator value', () => {
+    const value: JSONObject = { _selection: 'a', a: { plain: 2 } };
+    const result = determineSelectableFieldSchema(selectableFieldSchema, value);
+
+    expect(result?.properties?.a).toBeDefined();
+    expect(result?.properties?.b).toBeUndefined();
+  });
+
+  test('returns null when discriminator value does not match any branch', () => {
+    const value: JSONObject = { _selection: 'unknown' };
+    expect(determineSelectableFieldSchema(selectableFieldSchema, value)).toBeNull();
+  });
 });
 
 describe('getErrorsForTreeRow', () => {
@@ -657,6 +800,48 @@ describe('getErrorsForTreeRow', () => {
   });
 });
 
+describe('getConfigurationErrors root instancePath', () => {
+  test('object-level keywords (minProperties) attach to / so the root row shows FieldErrors', () => {
+    const schema: SchemaDefinition = {
+      type: 'object',
+      readOnly: false,
+      additionalProperties: false,
+      minProperties: 2,
+      maxProperties: 2,
+      properties: {
+        a: { title: 'a', type: 'string', readOnly: false },
+        b: { title: 'b', type: 'string', readOnly: false },
+        c: { title: 'c', type: 'string', readOnly: false },
+      },
+    };
+    const data: JSONObject = { a: 'only' };
+    const raw = validateJsonSchema(schema, data);
+    expect(raw).not.toBe(null);
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', raw, {});
+    expect(typeof configurationErrors['/']).toBe('object');
+    expect(getErrorsForTreeRow(configurationErrors, '/')).toBeDefined();
+  });
+
+  test('required leaf path does not become //x when instancePath is "/"', () => {
+    // AJV normally uses "" for root, but we also generate synthetic root errors with "/" (e.g. schema compilation errors).
+    // When we attach a missing-property marker for UI, we must produce "/<prop>", not "//<prop>".
+    const errors = [
+      {
+        instancePath: '/',
+        parentSchema: { type: 'object', required: ['x'] } as unknown as SchemaDefinition,
+        data: {} as JSONObject,
+        keyword: 'required',
+        message: "must have required property 'x'",
+        params: { missingProperty: 'x' },
+      },
+    ] as unknown as ReturnType<typeof validateJsonSchema>;
+
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', errors, {});
+    expect(configurationErrors['/x']).toBeDefined();
+    expect(configurationErrors['//x']).toBeUndefined();
+  });
+});
+
 describe('getConfigurationErrors + discriminated oneOf', () => {
   test('leaf path exists for missing required inside selected branch', () => {
     const data: JSONObject = {
@@ -664,8 +849,8 @@ describe('getConfigurationErrors + discriminated oneOf', () => {
     };
     const raw = validateJsonSchema(selectableObjectSchema, data);
     expect(raw).not.toBe(null);
-    const map = getConfigurationErrors(raw);
-    expect(map['/selectable_no_default_required/a/plain']).toBeDefined();
+    const { configurationErrors } = jsonSchemaValidationService.mapRawErrorsToConfigurationErrors('ajv', raw, {});
+    expect(configurationErrors['/selectable_no_default_required/a/plain']).toBeDefined();
   });
 });
 
@@ -702,5 +887,46 @@ describe('getOneOfSchemaDefaults', () => {
     expect(b[discriminatorFieldName]).toBe('b');
     expect(b.a).toBeUndefined();
     expect(b.b).toEqual({ plain: 2 });
+  });
+});
+
+describe('resolveOneOfSelectionValue', () => {
+  const schemaDefaults = {
+    a: { _selection: 'a', a: { plain: 2 } },
+    b: { _selection: 'b', b: { plain: 2 } },
+  };
+
+  test('restores previously saved branch value when switching back', () => {
+    const store: OneOfBranchStore = {};
+    const pathKey = '/variant';
+    const groupAValue = { _selection: 'a', a: { plain: 42 } };
+
+    resolveOneOfSelectionValue(groupAValue, 'b', schemaDefaults, store, pathKey);
+    const editedGroupB = { _selection: 'b', b: { plain: 99 } };
+    const restored = resolveOneOfSelectionValue(editedGroupB, 'a', schemaDefaults, store, pathKey);
+
+    expect(restored).toEqual(groupAValue);
+    expect(store[pathKey].b).toEqual(editedGroupB);
+  });
+
+  test('uses schema defaults for branch that was never selected', () => {
+    const store: OneOfBranchStore = {};
+
+    const nextValue = resolveOneOfSelectionValue(null, 'b', schemaDefaults, store, '/variant');
+
+    expect(nextValue).toEqual(schemaDefaults.b);
+  });
+
+  test('does not leak branches across different paths', () => {
+    const store: OneOfBranchStore = {};
+    resolveOneOfSelectionValue({ _selection: 'a', a: { plain: 1 } }, 'b', schemaDefaults, store, '/left');
+
+    const right = resolveOneOfSelectionValue(null, 'a', schemaDefaults, store, '/right');
+    expect(right).toEqual(schemaDefaults.a);
+  });
+
+  test('getOneOfDiscriminatorValue returns discriminator from object value', () => {
+    expect(getOneOfDiscriminatorValue({ _selection: 'a', a: { plain: 1 } })).toBe('a');
+    expect(getOneOfDiscriminatorValue(null)).toBeUndefined();
   });
 });

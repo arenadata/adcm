@@ -1,8 +1,8 @@
+---
 - type: provider
   name: with_all_config_params_provider
   version: 1.0
-
-  config: &config
+  config: &id001
     - type: boolean
       name: boolean
       required: false
@@ -44,7 +44,9 @@
       required: false
     - name: source_list
       type: list
-      default: ["ok", "fail"]
+      default:
+        - ok
+        - fail
     - name: variant_config
       required: false
       type: variant
@@ -80,7 +82,6 @@
         - name: listofstuff
           type: list
           required: false
-    # activatable group
     - name: activatable_group
       type: group
       activatable: true
@@ -92,22 +93,25 @@
         - name: list
           type: list
           required: false
-
-  actions: &actions
-    dummy: &job
-      type: job
-      script: ./playbook.yaml
-      script_type: ansible
-      states:
+  actions: &id003
+    dummy:
+      states: &id002
         available: any
-
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
     with_config:
-      <<: *job
-      config: *config
-
+      config: *id001
+      states: *id002
+      scripts:
+        - name: with_config
+          script: ./playbook.yaml
+          script_type: ansible
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   name: all_params_host
   version: 1.1
-
-  actions: *actions
-  config: *config
+  actions: *id003
+  config: *id001

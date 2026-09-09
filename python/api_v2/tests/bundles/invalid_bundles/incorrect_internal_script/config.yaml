@@ -4,6 +4,9 @@
   version: 1
   actions:
     action:
-      type: job
-      script_type: internal
-      script: non_existent_internal_script_name
+      scripts:
+        - name: action
+          script: non_existent_internal_script_name
+          script_type: internal
+  contract_version: '2.1'
+  venv: '2.16'

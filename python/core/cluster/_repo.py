@@ -10,14 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Protocol
+from collections.abc import Iterable
+from typing import Protocol
 
-from core.cluster._types import ClusterTopology
-from core.types import ActionHostGroupID, ClusterID, ClusterObjectDesc, MaintenanceModeOfObjects
+from core.cluster._types import ClusterTopology, ExportData
+from core.types import (
+    ActionHostGroupID,
+    ClusterBindSchema,
+    ClusterHierarchyBeforeUpgradeBinds,
+    ClusterID,
+    ClusterObjectDesc,
+    ComponentDesc,
+    HostDesc,
+    MaintenanceModeOfObjects,
+    MaintenanceModeState,
+    ServiceDesc,
+    ServiceID,
+)
 
 
 class ClusterRepoI(Protocol):
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
+        ...
+
+    def get_clusters_topologies(self, cluster_ids: Iterable[ClusterID]) -> dict[ClusterID, ClusterTopology]:
         ...
 
     def get_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
@@ -28,4 +44,23 @@ class ClusterRepoI(Protocol):
         ...
 
     def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
+        ...
+
+    def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
+        ...
+
+    def retrieve_export_data(self, clusters: Iterable[ClusterID], services: Iterable[ServiceID]) -> ExportData:
+        """
+        Collects specified Clusters' and Services' data.
+        Returns this data in exports format to import them to some other objects.
+        """
+        ...
+
+    def create_binds(self, binds: Iterable[ClusterBindSchema], ignore_conflicts: bool) -> None:
+        ...
+
+    def delete_hierarchy_binds(self, cluster_id: ClusterID) -> None:
+        ...
+
+    def retrieve_hierarchy_before_upgrade_binds(self, cluster_id: ClusterID) -> ClusterHierarchyBeforeUpgradeBinds:
         ...

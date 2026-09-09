@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Collection, Generator, Iterable, Protocol
+from collections.abc import Collection, Generator, Iterable
+from typing import Protocol
 
 from core.legacy.cluster.operations import (
     HostClusterDBProtocol,
@@ -25,7 +26,7 @@ from core.legacy.cluster.types import (
     HostClusterPair,
     HostComponentEntry,
 )
-from core.types import ClusterID, HostID, MaintenanceModeOfObjects, ObjectMaintenanceModeState, ShortObjectInfo
+from core.types import ClusterID, HostID, MaintenanceModeOfObjects, MaintenanceModeState, ObjectMM, ShortObjectInfo
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
@@ -162,7 +163,7 @@ def retrieve_multiple_clusters_topology(cluster_ids: Iterable[ClusterID]) -> Gen
 def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component | Host) -> ClusterTopology:
     if isinstance(orm_object, Cluster):
         cluster_id = orm_object.id
-    elif isinstance(orm_object, (Service, Component, Host)) and orm_object.cluster_id:
+    elif isinstance(orm_object, Service | Component | Host) and orm_object.cluster_id:
         cluster_id = orm_object.cluster_id
     else:
         message = f"Can't detect cluster variables for {orm_object}"
@@ -174,17 +175,17 @@ def retrieve_related_cluster_topology(orm_object: Cluster | Service | Component 
 def retrieve_clusters_objects_maintenance_mode(cluster_ids: Iterable[ClusterID]) -> MaintenanceModeOfObjects:
     return MaintenanceModeOfObjects(
         hosts={
-            host_id: ObjectMaintenanceModeState(mm)
+            host_id: ObjectMM(MaintenanceModeState(mm))
             for host_id, mm in Host.objects.values_list("id", "maintenance_mode").filter(cluster_id__in=cluster_ids)
         },
         services={
-            service_id: ObjectMaintenanceModeState(mm)
+            service_id: ObjectMM(MaintenanceModeState(mm))
             for service_id, mm in Service.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )
         },
         components={
-            component_id: ObjectMaintenanceModeState(mm)
+            component_id: ObjectMM(MaintenanceModeState(mm))
             for component_id, mm in Component.objects.values_list("id", "_maintenance_mode").filter(
                 cluster_id__in=cluster_ids
             )

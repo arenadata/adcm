@@ -15,7 +15,7 @@ from audit.alt.api import audit_create, audit_delete
 from cm.errors import AdcmEx
 from cm.legacy.api import delete_host_provider
 from cm.models import ObjectType, Prototype, Provider
-from cm.transition.status import StatusScenarios
+from core.action.job import JobService
 from dishka import FromDishka
 from django.db.utils import IntegrityError
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -31,8 +31,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from use_cases.transition.hostprovider.create import create_hostprovider
-import core
+from use_cases.transition.hostprovider.create import CreateHostprovider
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.generic.action.api_schema import document_action_viewset
@@ -135,8 +134,7 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         self,
         request,
         *_,
-        config_service: FromDishka[core.config.ConfigService],
-        status_scenarios: FromDishka[StatusScenarios],
+        create_provider: FromDishka[CreateHostprovider],
         **__,
     ):
         serializer = self.get_serializer(data=request.data)
@@ -148,12 +146,10 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         prototype = Prototype.objects.get(pk=serializer.validated_data["prototype_id"], type=ObjectType.PROVIDER)
 
         try:
-            host_provider_id = create_hostprovider(
+            host_provider_id = create_provider.do(
                 prototype=prototype,
                 name=name,
                 description=description,
-                config_service=config_service,
-                status_scenarios=status_scenarios,
             )
         except IntegrityError as e:
             raise AdcmEx(code="PROVIDER_CONFLICT") from e
@@ -163,9 +159,16 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
         return Response(data=ProviderSerializer(host_provider).data, status=HTTP_201_CREATED)
 
     @audit_delete(name="Provider deleted", object_=provider_from_lookup, removed_on_success=True)
-    def destroy(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def destroy(
+        self,
+        request,  # noqa: ARG002
+        *args,  # noqa: ARG002
+        job_service: FromDishka[JobService],
+        **kwargs,  # noqa: ARG002
+    ):
         host_provider = self.get_object()
-        delete_host_provider(host_provider)
+        delete_host_provider(host_provider, job_service=job_service)
         return Response(status=HTTP_204_NO_CONTENT)
 
 

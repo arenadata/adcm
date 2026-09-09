@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Collection
 from itertools import chain
 from operator import attrgetter, itemgetter
-from typing import Collection, NamedTuple, TypeAlias
+from typing import NamedTuple, TypeAlias
 
 from core.types import ADCMCoreType, CoreObjectDescriptor, PrototypeID
 from django.db.models import Value

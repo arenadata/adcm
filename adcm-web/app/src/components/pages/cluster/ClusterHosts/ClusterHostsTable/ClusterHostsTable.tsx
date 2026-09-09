@@ -1,6 +1,6 @@
 import type React from 'react';
-import { useDispatch, useStore } from '@hooks';
-import { Table, TableCell, TableRow } from '@uikit';
+import { useDispatch, useStore, useClipboardCopy } from '@hooks';
+import { Table, TableCell, TableRow, IconButton, FlexGroup } from '@uikit';
 import { columns, hostStatusesMap } from '@pages/cluster/ClusterHosts/ClusterHostsTable/ClusterHostsTable.constant';
 import StatusableCell from '@commonComponents/Table/Cells/StatusableCell';
 import UnlinkHostToggleButton from '@pages/cluster/ClusterHosts/ClusterHostsTable/Buttons/UnlinkHostToggleButton/UnlinkHostToggleButton';
@@ -17,6 +17,7 @@ import { isShowSpinner } from '@uikit/Table/Table.utils';
 
 const ClusterHostsTable: React.FC = () => {
   const dispatch = useDispatch();
+  const [, handleCopy] = useClipboardCopy();
 
   const cluster = useStore(({ adcm }) => adcm.cluster.cluster);
   const clusterHosts = useStore(({ adcm }) => adcm.clusterHosts.hosts);
@@ -43,7 +44,20 @@ const ClusterHostsTable: React.FC = () => {
       {clusterHosts.map((clusterHost: AdcmClusterHost) => {
         return (
           <TableRow key={clusterHost.id}>
-            <StatusableCell status={hostStatusesMap[clusterHost.status]}>
+            <StatusableCell
+              status={hostStatusesMap[clusterHost.status]}
+              endAdornment={
+                <FlexGroup style={{ marginLeft: 8 }}>
+                  <IconButton
+                    icon="g1-copy"
+                    size={20}
+                    title="Copy hostname"
+                    className="copy-button"
+                    onClick={() => handleCopy(clusterHost.name)}
+                  />
+                </FlexGroup>
+              }
+            >
               <Link
                 className="text-link"
                 to={generatePath('/clusters/:clusterId/hosts/:hostId', {

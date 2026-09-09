@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Iterable, Literal, TypeAlias, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar
 
 from core.types import ConfigID, CoreObjectDescriptor, HostGroupOfObject, ObjectID
 from typing_extensions import Self

@@ -1,23 +1,29 @@
 :global {
   body.theme-dark {
-    --cluster-name-color: var(--color-xwhite-off);
+    --cluster-name-title-color: var(--color-xwhite-off);
   }
 
   body.theme-light {
-    --cluster-name-color: var(--color-xdark);
+    --cluster-name-title-color: var(--color-xblack);
   }
 }
 
 .clusterName {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-300);
   flex: 1;
+  min-width: 0;
 
-  &__name {
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 24px;
-    color: var(--cluster-name-color);
+  &__status {
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: var(--body-1-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-1-lineheight);
+    color: var(--cluster-name-title-color);
+    overflow-wrap: anywhere;
   }
 }

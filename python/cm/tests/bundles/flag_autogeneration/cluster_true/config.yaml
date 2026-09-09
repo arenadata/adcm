@@ -1,39 +1,31 @@
+---
 - type: cluster
   name: cluster_auto_true
   version: 1
-
   flag_autogeneration:
     enable_outdated_config: true
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: not_defined
   version: 2
-
-  components: &components
-    not_defined:
-
+  components: &id001
+    not_defined: null
     defined_true:
       flag_autogeneration:
         enable_outdated_config: true
-
     defined_false:
       flag_autogeneration:
         enable_outdated_config: false
-
 - type: service
   name: defined_true
   version: 3
-
   flag_autogeneration:
     enable_outdated_config: true
-
-  components: *components
-
+  components: *id001
 - type: service
   name: defined_false
   version: 4
-
   flag_autogeneration:
     enable_outdated_config: false
-
-  components: *components
+  components: *id001

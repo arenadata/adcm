@@ -72,3 +72,38 @@ class ConfigApplyObject:
 @dataclass(slots=True)
 class ConfigApplyParams:
     changes: Annotated[list[ConfigApplyObject], Field(min_length=1), AfterValidator(ensure_unique_object)]
+
+
+# Service Manage
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceManageMappingItem:
+    component: str
+    hosts: Annotated[list[str], Field(min_length=1)]
+
+
+@dataclass(slots=True, frozen=True)
+class ServiceManageServiceItem:
+    name: str
+    config_changes: Annotated[list[ConfigApplyParameterItem] | None, Field(default=None)]
+    hc_changes: Annotated[list[ServiceManageMappingItem] | None, Field(default=None)]
+
+
+def ensure_unique_service_names(services: list[ServiceManageServiceItem]) -> list[ServiceManageServiceItem]:
+    seen = set()
+    for service in services:
+        if service.name in seen:
+            message = f'Duplicate service "{service.name}" in `services`'
+            raise ValueError(message)
+        seen.add(service.name)
+
+    return services
+
+
+@dataclass(slots=True)
+class ServiceManageParams:
+    operation: Literal["add"]
+    services: Annotated[
+        list[ServiceManageServiceItem], Field(min_length=1), AfterValidator(ensure_unique_service_names)
+    ]

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Iterable, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 import os
 
 from cm.legacy.adcm_config.ansible import ansible_decrypt
@@ -49,8 +49,7 @@ def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
 
-    if venv != "default":
-        existing_env["PATH"] = f"/venv/{venv}/bin:{existing_env['PATH']}"
+    existing_env["PATH"] = f"/venv/{venv}/bin:{existing_env['PATH']}"
 
     return existing_env
 

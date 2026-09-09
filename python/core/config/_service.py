@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, Literal, Protocol, TypeVar
+from typing import Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
 from core.config._config import detect_active_groups, detect_changes, nested_to_flat
@@ -315,7 +316,7 @@ class ConfigService:
         )
         match validation_result:
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
         encryption_result = operations.encrypt_secrets(
@@ -347,7 +348,7 @@ class ConfigService:
                 return NewConfigurationResult(encrypted_config=configuration, has_changed=False)
 
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
     def prepare_action_configuration(
@@ -374,7 +375,7 @@ class ConfigService:
         )
         match validation_result:
             case Fail(value=violations):
-                err = _format_validation_violations_to_error(violations)
+                err = _format_validation_violations_to_error(violations=violations, specification=specification)
                 raise err
 
         encryption_result = operations.encrypt_secrets(
@@ -511,8 +512,12 @@ def _choose_file_name_builder(owner: FileOwner) -> Callable[[str], str]:
             )
 
 
-def _format_validation_violations_to_error(violations: Violations) -> ConfigOperationError:
-    violations_list_repr = "\n".join(f"- {v.parameter} [{v.check}]: {v.reason}" for v in violations)
+def _format_validation_violations_to_error(
+    violations: Violations, specification: spec.FullSpec
+) -> ConfigOperationError:
+    violations_list_repr = "\n".join(
+        f"- {specification.get_full_display_name(v.parameter)} [{v.check}]: {v.reason}" for v in violations
+    )
     message = f"Configuration doesn't match specification. Following violations detected:\n{violations_list_repr}"
     return ConfigOperationError(message)
 

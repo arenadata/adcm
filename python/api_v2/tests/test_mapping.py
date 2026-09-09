@@ -14,23 +14,19 @@ from pathlib import Path
 
 from cm.models import (
     Action,
-    Bundle,
     Cluster,
     Component,
-    ConcernCause,
-    ConcernItem,
     ConfigHostGroup,
     Host,
     HostComponent,
     MaintenanceMode,
     Service,
-    Upgrade,
 )
+from core.cluster import ClusterService
 from django.db.models import F
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_409_CONFLICT,
@@ -72,8 +68,8 @@ class TestMapping(ADCMDjangoAPISuite):
         )
 
     def test_create_mapping_success(self):
-        host_4 = self.add_host(provider=self.provider, fqdn="test_host_4")
-        self.add_host_to_cluster(cluster=self.cluster_1, host=host_4)
+        host_4 = self.uc.add_host(provider=self.provider, fqdn="test_host_4")
+        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=host_4)
         data = [
             {"hostId": host_4.pk, "componentId": self.component_2.pk},
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
@@ -157,7 +153,7 @@ class TestMapping(ADCMDjangoAPISuite):
                     self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_create_mapping_duplicates_fail(self):
-        host_4 = self.add_host(provider=self.provider, fqdn="test_host_4", cluster=self.cluster_1)
+        host_4 = self.uc.add_host(provider=self.provider, fqdn="test_host_4", cluster=self.cluster_1)
 
         data = [
             {"hostId": self.host_1.pk, "componentId": self.component_1.pk},
@@ -506,85 +502,6 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.assertEqual(HostComponent.objects.count(), 2)
 
-    def test_no_bound_fail(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
-        self.assertEqual(HostComponent.objects.count(), 0)
-
-    def test_bound_on_different_host_fail(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
-        bound_target_component = Component.objects.get(
-            prototype__name="bound_target_component",
-            service=bound_target_service,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-                {"hostId": self.host_2.pk, "componentId": bound_target_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
-        self.assertEqual(HostComponent.objects.count(), 0)
-
-    def test_bound_success(self):
-        service_with_bound_component = self.uc.add_services_to_cluster(
-            names=["service_with_bound_component"], cluster=self.cluster
-        )[0]
-        bound_component = Component.objects.get(
-            prototype__name="bound_component",
-            service=service_with_bound_component,
-            cluster=self.cluster,
-        )
-
-        bound_target_service = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)[0]
-        bound_target_component = Component.objects.get(
-            prototype__name="bound_target_component",
-            service=bound_target_service,
-            cluster=self.cluster,
-        )
-
-        response = self.client.v2[self.cluster, "mapping"].post(
-            data=[
-                {"hostId": self.host_1.pk, "componentId": bound_component.pk},
-                {"hostId": self.host_1.pk, "componentId": bound_target_component.pk},
-            ],
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-        self.assertEqual(HostComponent.objects.count(), 2)
-
     def test_one_constraint_zero_in_hc_fail(self):
         service = self.uc.add_services_to_cluster(
             names=["service_with_one_component_constraint"], cluster=self.cluster
@@ -691,9 +608,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_zero_one_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_zero_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_zero_one_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="zero_one",
             service=service,
@@ -708,9 +625,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_one_two_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_two_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_two_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_two",
             service=service,
@@ -744,9 +661,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_two_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_two_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_two_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_two",
             service=service,
@@ -767,9 +684,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_one_odd_first_variant_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_odd_component_constraint_1"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_odd_component_constraint_1"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_odd_first_variant",
             service=service,
@@ -802,9 +719,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_odd_first_variant_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_odd_component_constraint_1"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_odd_component_constraint_1"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_odd_first_variant",
             service=service,
@@ -826,9 +743,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_one_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one",
             service=service,
@@ -861,9 +778,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_odd_second_variant_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_odd_component_constraint_2"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_odd_component_constraint_2"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_odd_second_variant",
             service=service,
@@ -895,9 +812,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_odd_second_variant_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_odd_component_constraint_2"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_odd_component_constraint_2"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_odd_second_variant",
             service=service,
@@ -919,9 +836,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_zero_odd_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_zero_odd_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_zero_odd_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="zero_odd",
             service=service,
@@ -948,9 +865,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_zero_odd_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_zero_odd_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_zero_odd_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="zero_odd",
             service=service,
@@ -973,7 +890,7 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_zero_plus_constraint_success(self):
-        service = self.add_services_to_cluster(service_names=["bound_target_service"], cluster=self.cluster).get()
+        service, *_ = self.uc.add_services_to_cluster(names=["bound_target_service"], cluster=self.cluster)
         component = Component.objects.get(
             prototype__name="bound_target_component",
             service=service,
@@ -1000,9 +917,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_one_plus_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_plus_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_plus_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_plus",
             service=service,
@@ -1024,9 +941,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_one_plus_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_one_plus_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_one_plus_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="one_plus",
             service=service,
@@ -1052,9 +969,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 self.assertEqual(HostComponent.objects.count(), len(data))
 
     def test_plus_constraint_fail(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_plus_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_plus_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="plus",
             service=service,
@@ -1081,9 +998,9 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_plus_constraint_success(self):
-        service = self.add_services_to_cluster(
-            service_names=["service_with_plus_component_constraint"], cluster=self.cluster
-        ).get()
+        service, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_plus_component_constraint"], cluster=self.cluster
+        )
         component = Component.objects.get(
             prototype__name="plus",
             service=service,
@@ -1099,13 +1016,11 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
     def test_no_required_service_not_in_hc_fail(self):
         """check that cluster has not any unsatisfied service/component requirements not present in hc"""
 
-        service_requires_service = self.add_services_to_cluster(
-            service_names=["service_requires_service"], cluster=self.cluster
-        ).get()
+        service_requires_service, *_ = self.uc.add_services_to_cluster(
+            names=["service_requires_service"], cluster=self.cluster
+        )
 
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires, *_ = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -1128,9 +1043,7 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
         self.assertEqual(HostComponent.objects.count(), 0)
 
     def test_host_in_mm_fail(self):
-        service_no_requires = self.add_services_to_cluster(
-            service_names=["service_no_requires"], cluster=self.cluster
-        ).get()
+        service_no_requires, *_ = self.uc.add_services_to_cluster(names=["service_no_requires"], cluster=self.cluster)
         component_1 = Component.objects.get(
             prototype__name="component_1", service=service_no_requires, cluster=self.cluster
         )
@@ -1155,67 +1068,6 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
             },
         )
         self.assertEqual(HostComponent.objects.count(), 0)
-
-
-class TestBoundTo(ADCMDjangoAPISuite):
-    @classmethod
-    def setUpTestData(cls) -> None:
-        cls._initialize_roles_and_adcm()
-
-        bundles_dir = cls.test_bundles_dir / "adcm_7894"
-        cls.old_bundle = cls.uc.upload_bundle(bundles_dir / "old")
-        cls.new_bundle = cls.uc.upload_bundle(bundles_dir / "new")
-
-        provider_bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "provider")
-        provider = cls.uc.add_provider(bundle=provider_bundle)
-        cls.host_1 = cls.uc.add_host(provider=provider, name="host-1")
-        cls.host_2 = cls.uc.add_host(provider=provider, name="host-2")
-
-    def prepare_cluster_with_two_components(self, bundle: Bundle) -> tuple[Cluster, Component, Component]:
-        cluster = self.uc.add_cluster(bundle=bundle)
-        self.uc.add_services_to_cluster(["service_1", "service_with_bound_to_component"], cluster=cluster)
-        self.uc.add_host_to_cluster(host=self.host_1, cluster=cluster)
-        self.uc.add_host_to_cluster(host=self.host_2, cluster=cluster)
-        component = Component.objects.get(service__prototype__name="service_1", prototype__name="component_1")
-        dependent_component = Component.objects.get(
-            service__prototype__name="service_with_bound_to_component", prototype__name="will_have_bound_to"
-        )
-        return cluster, component, dependent_component
-
-    def test_concern_appear_after_upgrade_success(self) -> None:
-        upgrade = Upgrade.objects.get(name="upgrade")
-        cluster_old, component, dependent_component = self.prepare_cluster_with_two_components(self.old_bundle)
-        self.uc.set_hostcomponent(
-            cluster=cluster_old,
-            entries=((self.host_1, component), (self.host_2, component), (self.host_2, dependent_component)),
-        )
-        self.assertFalse(ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).exists())
-
-        response = self.client.v2[cluster_old, "upgrades", upgrade, "run"].post()
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-        concern = ConcernItem.objects.filter(cause=ConcernCause.HOSTCOMPONENT).first()
-        self.assertIsNotNone(concern)
-        cluster_old.refresh_from_db()
-        self.assertEqual(concern.owner, cluster_old)
-
-    def test_save_mapping_with_unsatisfied_bound_to_fail(self) -> None:
-        cluster_new, component, dependent_component = self.prepare_cluster_with_two_components(self.new_bundle)
-        mapping_to_set = [
-            {"hostId": host.id, "componentId": component.id}
-            for host, component in (
-                (self.host_1, component),
-                (self.host_2, component),
-                (self.host_2, dependent_component),
-            )
-        ]
-
-        response = self.client.v2[cluster_new, "mapping"].post(data=mapping_to_set)
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        data = response.json()
-        self.assertEqual(data["code"], "COMPONENT_CONSTRAINT_ERROR")
-        self.assertIn("Component `bound_to` restriction violated.", data["desc"])
 
 
 class ConfigHostGroupRelatedTests(ADCMDjangoAPISuite):
@@ -1337,7 +1189,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         cls.host_2 = cls.uc.add_host(provider=provider, name="host-2", cluster=cls.cluster_1)
 
     def test_add_remove_simple_success(self):
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(
             cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
         )
@@ -1348,7 +1202,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.assertEqual(self.service_1.state, "created")
         self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
 
-        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
             self.create_mapping(cluster=self.cluster_1, entries=((self.host_1, self.component_1),))
 
@@ -1356,7 +1212,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
 
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_add_host_in_mm_to_service_not_in_created_state_fail(self):
@@ -1364,7 +1222,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
 
-        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         with self.assertRaises(AssertionError, msg="Mapping creation failed: 409"):
             self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
@@ -1374,7 +1234,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         )
         self.set_maintenance_mode(obj=self.host_1, value=MaintenanceMode.ON)
 
-        self.check_mm_is_on_only_for(obj=self.host_1, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_remove_host_not_in_mm_from_service_not_in_created_state_success(self):
@@ -1384,7 +1246,9 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
 
-        self.check_mm_is_on_only_for(obj=None, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_remove_host_in_mm_from_service_not_in_created_state_success(self):
@@ -1395,13 +1259,17 @@ class TestMappingNew(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.service_1.state = "not created"
         self.service_1.save(update_fields=["state"])
 
-        self.check_mm_is_on_only_for(obj=self.host_2, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.host_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(cluster=self.cluster_1, entries=((self.host_2, self.component_1),))
 
     def test_adcm_7530_add_remove_from_component_in_mm_success(self):
         self.set_maintenance_mode(obj=self.component_1, value=MaintenanceMode.ON)
 
-        self.check_mm_is_on_only_for(obj=self.component_1, cluster_id=self.cluster_1.id)
+        self.check_mm_is_on_only_for(
+            obj=self.component_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
+        )
         self.create_mapping(
             cluster=self.cluster_1, entries=((self.host_1, self.component_1), (self.host_2, self.component_1))
         )
@@ -1416,21 +1284,21 @@ class TestHC(ADCMDjangoAPISuite):
         # Sorry if you've got here after deleting it :3
         bundles_dir = Path(__file__).parent.parent.parent / "cm" / "tests" / "bundles"
         bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
-        cluster = self.add_cluster(bundle=bundle, name="Cool")
-        service_1 = self.add_services_to_cluster(["service_one_component"], cluster=cluster).get()
-        service_2 = self.add_services_to_cluster(["service_two_components"], cluster=cluster).get()
-        service_with_action = self.add_services_to_cluster(["with_hc_acl_actions"], cluster=cluster).get()
+        cluster = self.uc.add_cluster(bundle=bundle, name="Cool")
+        service_1, *_ = self.uc.add_services_to_cluster(["service_one_component"], cluster=cluster)
+        service_2, *_ = self.uc.add_services_to_cluster(["service_two_components"], cluster=cluster)
+        service_with_action, *_ = self.uc.add_services_to_cluster(["with_hc_acl_actions"], cluster=cluster)
 
-        host_1 = self.add_host(provider=self.provider, fqdn="host-1")
-        host_2 = self.add_host(provider=self.provider, fqdn="host-2")
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="host-1")
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="host-2")
 
-        self.add_host_to_cluster(cluster, host_1)
-        self.add_host_to_cluster(cluster, host_2)
+        self.uc.add_host_to_cluster(cluster, host_1)
+        self.uc.add_host_to_cluster(cluster, host_2)
 
         component_1_1 = Component.objects.get(service=service_1, prototype__name="component_1")
         component_2_1 = Component.objects.get(service=service_2, prototype__name="component_1")
         component_2_2 = Component.objects.get(service=service_2, prototype__name="component_2")
-        hc = self.set_hostcomponent(
+        hc = self.uc.set_hostcomponent(
             cluster=cluster,
             entries=(
                 (host_1, component_1_1),

@@ -1,0 +1,56 @@
+@use '../../../../../scss/redesign/mq.scss' as *;
+
+.clusterOverviewTopGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 438fr) minmax(0, 220fr) minmax(0, 329fr) minmax(0, 329fr);
+  gap: var(--space-400);
+  min-width: 0;
+
+  @media (width < $min-desktop-width) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      'info info info info resources resources'
+      'services services services hosts hosts hosts';
+
+    > *:nth-child(1) {
+      grid-area: info;
+    }
+
+    > *:nth-child(2) {
+      grid-area: resources;
+    }
+
+    > *:nth-child(3) {
+      grid-area: services;
+    }
+
+    > *:nth-child(4) {
+      grid-area: hosts;
+    }
+  }
+
+  @media (width < $min-tablet-width) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'info'
+      'resources'
+      'services'
+      'hosts';
+  }
+
+  &__card {
+    --metric-card-gap: var(--space-200);
+    --metric-card-padding: var(--space-500);
+    --metric-card-radius: var(--radius-200);
+    --metric-card-background: var(--color-bg-primary-extra);
+    --metric-card-title-size: var(--font-size-800);
+    --metric-card-title-weight: var(--weight-semibold);
+    --metric-card-title-line-height: var(--line-height-500);
+    --metric-card-title-letter-spacing: normal;
+    min-width: 0;
+  }
+
+  &__cardTitle {
+    align-self: stretch;
+  }
+}

@@ -10,10 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
+from core.action import JobSpec
 from core.legacy.bundle_alt.process import (
     ConfigConversionContext,
     ScriptsConversionContext,
@@ -22,7 +24,6 @@ from core.legacy.bundle_alt.process import (
 )
 from core.legacy.bundle_alt.schema import ActionProcessStage, DynamicScriptsSchema, WizardScriptsSchema
 from core.legacy.bundle_alt.validation import check_action_hc_acl_rules
-from core.legacy.job.types import JobSpec
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ClusterID
 import core

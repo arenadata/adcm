@@ -4,6 +4,9 @@
   version: 1
   actions:
     action:
-      type: job
-      script_type: internal
-      script: hc_apply
+      scripts:
+        - name: action
+          script: hc_apply
+          script_type: internal
+  contract_version: '2.1'
+  venv: '2.16'

@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
+from core.action import JobSpec, TaskMappingDelta
 from core.bundle import BundleParsingError
 from core.dynamic_bundle.types import ContextGathererI
-from core.legacy.job.types import JobSpec, TaskMappingDelta
 from core.types import TaskID
 
 from cm.errors import AdcmEx

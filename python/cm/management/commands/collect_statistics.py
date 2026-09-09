@@ -37,7 +37,7 @@ DATE_FORMAT = "%Y-%m-%d"
 STATISTIC_DIR = settings.TMP_DIR / "statistics"
 STATISTIC_DIR.mkdir(exist_ok=True)
 
-logger = getLogger("background_tasks")
+logger = getLogger("background-tasks")
 
 collect_not_enterprise = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[~Q(edition="enterprise")])
 collect_all = BundleCollector(date_format=DATE_TIME_FORMAT, filters=[])

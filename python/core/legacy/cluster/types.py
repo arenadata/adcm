@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import UserDict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import Generic, Iterable, NamedTuple, TypeAlias, TypeVar
+from typing import Generic, NamedTuple, TypeAlias, TypeVar
 
 from core.types import (
     ClusterID,

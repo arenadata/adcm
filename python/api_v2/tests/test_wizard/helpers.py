@@ -11,8 +11,9 @@
 # limitations under the License.
 
 
+from collections.abc import Collection
 from pathlib import Path
-from typing import Any, Collection
+from typing import Any
 
 from cm.converters import orm_object_to_core_descriptor
 from cm.legacy.issue import add_concern_to_object

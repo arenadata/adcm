@@ -25,6 +25,7 @@ from cm.models import (
     ConcernCause,
     ConcernItem,
     ConcernType,
+    ObjectType,
     Process,
     ProcessStep,
 )
@@ -32,8 +33,10 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_dict_contains_subset
 
 from api_v2.tests.base import APIV2Mixin
+from api_v2.tests.helpers import create_bundle_and_prototype_rows
 from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_template
 
 
@@ -78,6 +81,10 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
             prototype=cls.cluster_broken_process.prototype, name="broken_operation_step"
         )
 
+    def set_cluster_before_upgrade(self, bundle_id: int) -> None:
+        self.cluster_1.before_upgrade = {"bundle_id": bundle_id}
+        self.cluster_1.save(update_fields=["before_upgrade"])
+
     def test_create_process_success(self):
         expected_response_template = self.test_files_dir / "responses" / "wizard_process" / "create_process.yml"
 
@@ -106,7 +113,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                     },
                 )
 
-                self.assertDictContainsSubset(expected_response, response_data)
+                assert_dict_contains_subset(expected_response, response_data)
 
                 flags = ConcernItem.objects.filter(
                     owner_id=self.cluster_1.pk,
@@ -342,7 +349,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
 
         # map it, try again
         component = Component.objects.get(service=self.service_1, prototype__name="component_1")
-        self.set_hostcomponent(self.cluster_1, entries=((host, component),))
+        self.uc.set_hostcomponent(self.cluster_1, entries=((host, component),))
 
         self.start_process_r(target=host, action=service_host_action)
 
@@ -435,7 +442,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         cluster, service, component = self.cluster_1, self.service_1, self.component_1
         host = self.create_host(provider=self.provider, name="test-host", cluster=cluster)
 
-        self.set_hostcomponent(cluster=cluster, entries=((host, component),))
+        self.uc.set_hostcomponent(cluster=cluster, entries=((host, component),))
         host_action_from_cluster = Action.objects.get(
             name="wizard_host_action_from_cluster", prototype=cluster.prototype
         )
@@ -633,3 +640,55 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
 
                 # remove job lock
                 self.delete_concern_by_name(object_=host, name="job_lock")
+
+    def test_action_revert_on_unsupported_bundle_fail(self):
+        action = Action.objects.get(name="wizard_revert", prototype=self.cluster_1.prototype)
+        unsupported_bundle, _ = create_bundle_and_prototype_rows(
+            [
+                {
+                    "contract_version": "0.999",
+                    "name": "unsupported_bundle",
+                    "display_name": "Unsupported Cluster",
+                    "version": "1.0.0",
+                    "obj_type": ObjectType.CLUSTER,
+                }
+            ]
+        )[0]
+        self.set_cluster_before_upgrade(bundle_id=unsupported_bundle.pk)
+
+        process = self.start_process(self.cluster_1, action)
+        first_step, revert_step = tuple(ProcessStep.objects.filter(process=process).order_by("id"))
+
+        self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process.pk,
+            data={
+                "method": ProcessOperationType.SKIP,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": first_step.pk,
+                },
+            },
+        )
+
+        process.refresh_from_db()
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process.pk,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": revert_step.pk,
+                },
+            },
+            expected_status=HTTP_409_CONFLICT,
+        )
+
+        self.assertEqual(response.json()["code"], "ACTION_PROCESS_OPERATION_CONFLICT")
+        self.assertEqual(
+            response.json()["desc"],
+            f"Execution of step {action.display_name} is not allowed. The bundle for revert is unsupported",
+        )

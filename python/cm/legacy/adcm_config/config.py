@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from collections import OrderedDict
+from collections.abc import Collection
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Collection
+from typing import Any
 import re
 import copy
 import json
@@ -67,20 +68,7 @@ def reraise_file_errors_as_adcm_ex(filepath: Path | str, reference: str):
         raise AdcmEx(code="CONFIG_TYPE_ERROR", msg=f'"{filepath}" can not be open ({reference})') from err
 
 
-def init_object_config(proto: Prototype, obj: Any) -> ObjectConfig | None:
-    spec, _, conf, attr = get_prototype_config(proto)
-    if not conf:
-        return None
-
-    obj_conf = ObjectConfig(current=0, previous=0)
-    obj_conf.save()
-    save_object_config(obj_conf, conf, attr, "init")
-    process_file_type(obj, spec, conf)
-
-    return obj_conf
-
-
-def get_prototype_config(
+def __get_prototype_config(
     prototype: Prototype, action: Action | None = None, obj: ADCMEntity | None = None
 ) -> tuple[dict, dict, dict, dict]:
     if action is not None and obj is not None and action.config_jinja:
@@ -95,7 +83,7 @@ def get_prototype_config(
     else:
         prototype_configs = PrototypeConfig.objects.filter(prototype=prototype, action=action).order_by("id")
 
-    return get_spec_flat_spec_config_attr_from_prototype_configs(
+    return __get_spec_flat_spec_config_attr_from_prototype_configs(
         prototype=prototype, prototype_configs=prototype_configs
     )
 
@@ -103,7 +91,7 @@ def get_prototype_config(
 def _get_prototype_configs_from_config_template(
     prototype: Prototype, action: Action, target: ADCMEntity, context_gatherer: ContextGatherer
 ) -> list[PrototypeConfig]:
-    if not isinstance(target, (Cluster, Service, Component, Host)):
+    if not isinstance(target, Cluster | Service | Component | Host):
         message = f"Incorrect type for template rendering: {type(target)}"
         raise TypeError(message)
 
@@ -122,7 +110,7 @@ def _get_prototype_configs_from_config_template(
     return prototype_configs  # noqa: RET504
 
 
-def get_spec_flat_spec_config_attr_from_prototype_configs(
+def __get_spec_flat_spec_config_attr_from_prototype_configs(
     prototype: Prototype,
     prototype_configs: Collection[PrototypeConfig],
 ) -> tuple[dict, dict, dict, dict]:
@@ -131,6 +119,7 @@ def get_spec_flat_spec_config_attr_from_prototype_configs(
     config = {}
     attr = {}
     flist = ("default", "required", "type", "limits")
+    prototype_configs = tuple(prototype_configs)
 
     group_prototype_configs = (proto_conf for proto_conf in prototype_configs if proto_conf.type == "group")
     for conf in group_prototype_configs:
@@ -148,12 +137,56 @@ def get_spec_flat_spec_config_attr_from_prototype_configs(
         if conf.subname == "":
             if conf.type != "group":
                 spec[conf.name] = obj_to_dict(conf, flist)
-                config[conf.name] = get_default(conf, path_resolver=path_resolver)
+                config[conf.name] = __get_default(conf, path_resolver=path_resolver)
+                spec[conf.name]["full_display_name"] = _build_full_display_name(flat_spec=flat_spec, key=conf.name)
         else:
             spec[conf.name][conf.subname] = obj_to_dict(conf, flist)
-            config[conf.name][conf.subname] = get_default(conf, path_resolver=path_resolver)
+            config[conf.name][conf.subname] = __get_default(conf, path_resolver=path_resolver)
+            spec[conf.name][conf.subname]["full_display_name"] = _build_full_display_name(
+                flat_spec=flat_spec, key=conf.name, subkey=conf.subname
+            )
 
     return spec, flat_spec, config, attr
+
+
+def get_full_display_name_from_spec(
+    spec: dict, flat_spec: dict[str, PrototypeConfig], key: str, subkey: str = ""
+) -> str:
+    spec_param = spec[key][subkey] if subkey else spec[key]
+    full_display_name = spec_param.get("full_display_name")
+    if full_display_name is not None:
+        return full_display_name
+
+    if not subkey:
+        key_name = f"{key}/"
+        if flat_spec[key_name].type == "group":
+            return _get_display_name_from_config(config=flat_spec.get(key_name), default_name=key)
+
+    return _build_full_display_name(flat_spec=flat_spec, key=key, subkey=subkey)
+
+
+def _get_display_name_from_config(config: PrototypeConfig | None, default_name: str) -> str:
+    if config is None:
+        return default_name
+
+    return config.display_name or default_name
+
+
+def _build_full_display_name(flat_spec: dict[str, PrototypeConfig], key: str, subkey: str = "") -> str:
+    key_spec_name = f"{key}/"
+    if not subkey:
+        config = flat_spec.get(key_spec_name)
+        return _get_display_name_from_config(config=config, default_name=key)
+
+    subkey_spec_name = f"{key}/{subkey}"
+    group_displ_name = _get_display_name_from_config(config=flat_spec.get(key_spec_name), default_name=key)
+    field_displ_name = _get_display_name_from_config(config=flat_spec.get(subkey_spec_name), default_name=subkey)
+    group_display_name_levels = tuple(group_displ_name.split("/"))
+    field_display_name_levels = tuple(field_displ_name.split("/"))
+    if field_display_name_levels[: len(group_display_name_levels)] == group_display_name_levels:
+        return field_displ_name
+
+    return f"{group_displ_name}/{field_displ_name}"
 
 
 def _merge_config_field(origin_config_fields: dict, host_group_fields: dict, group_keys: dict, spec: dict) -> dict:
@@ -196,7 +229,7 @@ def _clear_group_keys(group_keys: dict, spec: dict) -> dict:
     return correct_group_keys
 
 
-def merge_config_of_group_with_primary_config(
+def __merge_config_of_group_with_primary_config(
     group: ConfigHostGroup,
     primary_config: ConfigLog,
     current_config_of_group: ConfigLog,
@@ -228,11 +261,13 @@ def merge_config_of_group_with_primary_config(
     return ConfigLog.objects.create(obj_ref=group.config, config=config, attr=attr, description=description)
 
 
-def update_host_groups_by_primary_object(object_: Cluster | Service | Component | Provider, config: ConfigLog) -> None:
+def __update_host_groups_by_primary_object(
+    object_: Cluster | Service | Component | Provider, config: ConfigLog
+) -> None:
     for host_group in object_.config_host_group.order_by("id"):
         current_config_of_host_group = ConfigLog.objects.get(id=host_group.config.current)
 
-        config_log = merge_config_of_group_with_primary_config(
+        config_log = __merge_config_of_group_with_primary_config(
             group=host_group,
             primary_config=config,
             current_config_of_group=current_config_of_host_group,
@@ -248,28 +283,17 @@ def update_host_groups_by_primary_object(object_: Cluster | Service | Component 
         host_group.prepare_files_for_config(config=config_log.config)
 
 
-def update_host_group(host_group: ConfigHostGroup, config: ConfigLog) -> ConfigLog:
-    primary_config = ConfigLog.objects.get(id=host_group.object.config.current)
-
-    return merge_config_of_group_with_primary_config(
-        group=host_group,
-        primary_config=primary_config,
-        current_config_of_group=config,
-        description=config.description,
-    )
-
-
+# LOOKUP ONLY
 def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, description: str = "") -> ConfigLog:
     config_log = ConfigLog(obj_ref=object_config, config=config, attr=attr, description=description)
     obj = object_config.object
 
     if isinstance(obj, ConfigHostGroup):
-        config_log = update_host_group(host_group=obj, config=config_log)
+        raise TypeError("Unexpected call, this branch is set for removal")
+
+    if isinstance(obj, Cluster | Service | Component | Provider):
         config_log.save()
-        obj.prepare_files_for_config(config=config_log.config)
-    elif isinstance(obj, (Cluster, Service, Component, Provider)):
-        config_log.save()
-        update_host_groups_by_primary_object(object_=obj, config=config_log)
+        __update_host_groups_by_primary_object(object_=obj, config=config_log)
     else:
         config_log.save()
 
@@ -280,7 +304,7 @@ def save_object_config(object_config: ObjectConfig, config: dict, attr: dict, de
     return config_log
 
 
-def save_file_type(obj, key, subkey, value):
+def __save_file_type(obj, key, subkey, value):
     filename = cook_file_type_name(obj, key, subkey)
     if value is None:
         _file = Path(filename)
@@ -306,88 +330,7 @@ def save_file_type(obj, key, subkey, value):
     return filename
 
 
-def process_file_type(obj: Any, spec: dict, conf: dict):
-    for key in conf:
-        if "type" in spec[key]:
-            if spec[key]["type"] == "file":
-                save_file_type(obj, key, "", conf[key])
-            elif spec[key]["type"] == "secretfile":
-                if conf[key] is not None:
-                    value = conf[key]
-                    if conf[key].startswith(settings.ANSIBLE_VAULT_HEADER):
-                        try:
-                            value = ansible_decrypt(msg=value)
-                        except AnsibleError:
-                            raise_adcm_ex(
-                                code="CONFIG_VALUE_ERROR",
-                                msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                            )
-                else:
-                    value = None
-
-                save_file_type(obj, key, "", value)
-        elif conf[key]:
-            for subkey in conf[key]:
-                if spec[key][subkey]["type"] == "file":
-                    save_file_type(obj, key, subkey.replace("/", "."), conf[key][subkey])
-                elif spec[key][subkey]["type"] == "secretfile":
-                    value = conf[key][subkey]
-                    if conf[key][subkey] is not None:
-                        if conf[key][subkey].startswith(settings.ANSIBLE_VAULT_HEADER):
-                            try:
-                                value = ansible_decrypt(msg=value)
-                            except AnsibleError:
-                                raise_adcm_ex(
-                                    code="CONFIG_VALUE_ERROR",
-                                    msg=f"Secret value must not starts with {settings.ANSIBLE_VAULT_HEADER}",
-                                )
-                    else:
-                        value = None
-
-                    save_file_type(obj, key, subkey.replace("/", "."), value)
-
-
-def process_config(
-    obj: ADCMEntity,
-    spec: dict,
-    old_conf: dict,
-) -> dict:
-    if not old_conf:
-        return old_conf
-
-    conf = copy.deepcopy(old_conf)
-    for key in conf:
-        if "type" in spec[key]:
-            if conf[key] is not None:
-                if spec[key]["type"] in {"file", "secretfile"}:
-                    conf[key] = cook_file_type_name(obj, key, "")
-
-                elif spec[key]["type"] in {"password", "secrettext"}:
-                    if settings.ANSIBLE_VAULT_HEADER in conf[key]:
-                        conf[key] = {"__ansible_vault": conf[key]}
-
-                elif spec[key]["type"] == "secretmap":
-                    for map_key, map_value in conf[key].items():
-                        if settings.ANSIBLE_VAULT_HEADER in map_value:
-                            conf[key][map_key] = {"__ansible_vault": map_value}
-        elif conf[key]:
-            for subkey in conf[key]:
-                if conf[key][subkey] is not None:
-                    if spec[key][subkey]["type"] in {"file", "secretfile"}:
-                        conf[key][subkey] = cook_file_type_name(obj, key, subkey)
-
-                    elif spec[key][subkey]["type"] in {"password", "secrettext"}:
-                        if settings.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
-                            conf[key][subkey] = {"__ansible_vault": conf[key][subkey]}
-
-                    elif spec[key][subkey]["type"] == "secretmap":
-                        for map_key, map_value in conf[key][subkey].items():
-                            if settings.ANSIBLE_VAULT_HEADER in map_value:
-                                conf[key][subkey][map_key] = {"__ansible_vault": map_value}
-
-    return conf
-
-
+# LOOKUP ONLY
 def process_json_config(
     prototype: Prototype,
     obj: ADCMEntity | Action,
@@ -395,7 +338,7 @@ def process_json_config(
     new_attr: dict | None = None,
     current_attr: dict | None = None,
 ) -> dict:
-    spec, flat_spec, _, _ = get_prototype_config(prototype=prototype)
+    spec, flat_spec, _, _ = __get_prototype_config(prototype=prototype)
     check_attr(prototype, obj, new_attr, flat_spec, current_attr)
     group = None
 
@@ -404,11 +347,11 @@ def process_json_config(
         obj = group.object
 
     process_variant(obj, spec, new_config)
-    check_config_spec(proto=prototype, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
-    return process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
+    __check_config_spec(proto=prototype, obj=obj, spec=spec, flat_spec=flat_spec, conf=new_config, attr=new_attr)
+    return __process_config_spec(obj=group or obj, spec=spec, new_config=new_config)
 
 
-def check_config_spec(
+def __check_config_spec(
     proto: Prototype,
     obj: ADCMEntity | Action,
     spec: dict,
@@ -434,11 +377,14 @@ def check_config_spec(
     for key in spec:
         # From discussion with colleagues: most likely type is absent for groups,
         # because spec for their children is in their value
+        key_display_name = get_full_display_name_from_spec(spec=spec, flat_spec=flat_spec, key=key)
+
         if spec[key].get("type", "group") != "group":
             if key not in conf:
                 if key_is_required(obj=obj, key=key, subkey="", spec=spec):
                     raise AdcmEx(
-                        code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config ({ref})'
+                        code="CONFIG_KEY_ERROR",
+                        msg=f'There is no required key "{key_display_name}" in input config ({ref})',
                     )
 
                 continue
@@ -447,7 +393,7 @@ def check_config_spec(
             if isinstance(config_value, dict) and spec[key]["type"] not in settings.STACK_COMPLEX_FIELD_TYPES:
                 raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
-                    msg=f'Key "{key}" in input config should not have any subkeys ({ref})',
+                    msg=f'Key "{key_display_name}" in input config should not have any subkeys ({ref})',
                 )
 
             check_config_type(prototype=proto, key=key, subkey="", spec=spec[key], value=config_value)
@@ -457,33 +403,38 @@ def check_config_spec(
         # Processing group
         if key not in conf:
             if sub_key_is_required(key=key, attr=attr, flat_spec=flat_spec, spec=spec, obj=obj):
-                raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key}" in input config')
+                raise AdcmEx(
+                    code="CONFIG_KEY_ERROR", msg=f'There is no required key "{key_display_name}" in input config'
+                )
 
             continue
 
         config_value = conf[key]
         if not isinstance(config_value, dict):
-            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key}" ({ref})')
+            raise AdcmEx(code="CONFIG_KEY_ERROR", msg=f'There are not any subkeys for key "{key_display_name}" ({ref})')
 
         if not config_value:
             raise AdcmEx(
                 code="CONFIG_KEY_ERROR",
-                msg=f'Key "{key}" should contain subkeys ({ref}): {list(spec[key].keys())}',
+                msg=f'Key "{key_display_name}" should contain subkeys ({ref}): {list(spec[key].keys())}',
             )
 
         for subkey in config_value:
             if subkey not in spec[key]:
                 raise AdcmEx(
                     code="CONFIG_KEY_ERROR",
-                    msg=f'There is unknown subkey "{subkey}" for key "{key}" in input config ({ref})',
+                    msg=f'There is unknown subkey "{subkey}" for key "{key_display_name}" in input config ({ref})',
                 )
 
         for subkey in spec[key]:
             if subkey not in config_value:
                 if key_is_required(obj=obj, key=key, subkey=subkey, spec=spec):
+                    subkey_name = _get_display_name_from_config(
+                        config=flat_spec.get(f"{key}/{subkey}"), default_name=subkey
+                    )
                     raise AdcmEx(
                         code="CONFIG_KEY_ERROR",
-                        msg=f'There is no required subkey "{subkey}" for key "{key}" ({ref})',
+                        msg=f'There is no required subkey "{subkey_name}" for key "{key_display_name}" ({ref})',
                     )
 
                 continue
@@ -506,7 +457,7 @@ def _process_secretfile(obj: ADCMEntity | ProcessStep, key: str, subkey: str, va
         except AnsibleError as e:
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Can't decrypt value") from e
 
-    save_file_type(obj=obj, key=key, subkey=subkey, value=value)
+    __save_file_type(obj=obj, key=key, subkey=subkey, value=value)
 
 
 def _process_secret_param(conf: dict, key: str, subkey: str) -> None:
@@ -559,12 +510,12 @@ def _process_secretmap(conf: dict, key: str, subkey: str) -> None:
                 conf[key][secretmap_key] = ansible_encrypt_and_format(msg=secretmap_value)
 
 
-def process_config_spec(obj: ADCMEntity | TaskLog | ProcessStep, spec: dict, new_config: dict) -> dict:
+def __process_config_spec(obj: ADCMEntity | TaskLog | ProcessStep, spec: dict, new_config: dict) -> dict:
     for cfg_key, cfg_value in new_config.items():
         spec_type = spec[cfg_key].get("type")
 
         if spec_type == "file":
-            save_file_type(obj=obj, key=cfg_key, subkey="", value=cfg_value)
+            __save_file_type(obj=obj, key=cfg_key, subkey="", value=cfg_value)
 
         elif spec_type == "secretfile":
             _process_secretfile(obj=obj, key=cfg_key, subkey="", value=cfg_value)
@@ -581,7 +532,7 @@ def process_config_spec(obj: ADCMEntity | TaskLog | ProcessStep, spec: dict, new
                 sub_spec_type = spec[cfg_key][sub_cfg_key]["type"]
 
                 if sub_spec_type == "file":
-                    save_file_type(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
+                    __save_file_type(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
 
                 elif sub_spec_type == "secretfile":
                     _process_secretfile(obj=obj, key=cfg_key, subkey=sub_cfg_key, value=sub_cfg_value)
@@ -605,7 +556,7 @@ def get_adcm_config(section=None):
     return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
 
 
-def get_default(conf: PrototypeConfig, path_resolver: PathResolver | None = None) -> Any:
+def __get_default(conf: PrototypeConfig, path_resolver: PathResolver | None = None) -> Any:
     value = conf.default
     if conf.default == "":
         value = None
@@ -665,9 +616,10 @@ def get_main_info(obj: ADCMEntity | None) -> str | None:
         ADCMBundlePathResolver() if isinstance(obj, ADCM) else BundlePathResolver(bundle_hash=obj.prototype.bundle.hash)
     )
 
-    return get_default(main_info, path_resolver=path_resolver)
+    return __get_default(main_info, path_resolver=path_resolver)
 
 
+# LOOKUP ONLY
 def get_option_value(value: str, limits: dict) -> str | int | float:
     if value in limits["option"].values():
         return value

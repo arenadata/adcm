@@ -3,21 +3,23 @@
   name: cluster_requires_component
   version: '1.0'
   edition: community
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: hbase
   display_name: HBase
-  version: "2.2.7"
+  version: 2.2.7
   components:
     master:
-      display_name: "HBase Master Server"
+      display_name: HBase Master Server
       requires:
         - service: zookeeper
           component: SERVER
         - service: hdfs
           component: namenode
-      constraint: [ 1,+ ]
-
+      constraint:
+        - 1
+        - +
 - type: service
   name: zookeeper
   display_name: Zookeeper
@@ -25,16 +27,18 @@
   components:
     SERVER:
       display_name: Zookeeper Server
-      constraint: [ odd ]
-
+      constraint:
+        - odd
 - type: service
   name: hdfs
   display_name: HDFS
-  version: "3.1.2"
+  version: 3.1.2
   components:
     namenode:
-      display_name: "HDFS NameNode"
+      display_name: HDFS NameNode
       requires:
         - service: zookeeper
           component: SERVER
-      constraint: [ 2,+ ]
+      constraint:
+        - 2
+        - +

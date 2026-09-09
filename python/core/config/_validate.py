@@ -11,9 +11,10 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any, Callable, Iterable, Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 from core.config import _yspec, spec
 from core.config._config import detect_active_groups

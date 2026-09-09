@@ -58,6 +58,7 @@ type statusChangePayload struct {
 	Cause           string                     `json:"cause,omitempty"`
 	Status          string                     `json:"status,omitempty"`
 	State           string                     `json:"state,omitempty"`
+	MultiState      *[]string                  `json:"multiState,omitempty"`
 	Prototype       *statusChangePrototype     `json:"prototype,omitempty"`
 	MaintenanceMode string                     `json:"maintenanceMode,omitempty"`
 	Name            string                     `json:"name,omitempty"`

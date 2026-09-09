@@ -304,7 +304,7 @@ class CustomLDAPBackend(LDAPBackend):
 
             return is_in_admin_group
 
-        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
+        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns, strict=False))
         # ldap-backend managed auth_groups
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             ldap_group_dn = self._get_ldap_group_dn(group.name, ldap_groups)

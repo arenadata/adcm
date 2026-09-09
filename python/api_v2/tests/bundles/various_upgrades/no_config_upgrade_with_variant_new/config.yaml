@@ -1,18 +1,17 @@
+---
 - type: cluster
   name: cluster_with_variant_in_upgrade
   version: 2.1
-
   upgrade:
     - name: upgrade
-      versions: &correct_versions
+      versions: &id001
         min: '1.0'
         max: '2.0'
-      states: &always_available
+      states: &id002
         available: any
-
     - name: upgrade_via_action_complex
-      versions: *correct_versions
-      states: *always_available
+      versions: *id001
+      states: *id002
       scripts:
         - name: pre
           script: ./playbook.yaml
@@ -45,15 +44,16 @@
         - name: after
           type: list
           default:
-            - "1"
-            - "woohoo"
+            - '1'
+            - woohoo
         - name: pick_host
           required: false
           source:
             name: host_in_cluster
             type: builtin
           type: variant
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: dummy
   version: 3

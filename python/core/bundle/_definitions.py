@@ -15,7 +15,7 @@ from functools import partial
 from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action
-from core.bundle._types import BundleDefinitionKey
+from core.bundle._types import BundleDefinitionKey, ContractVersionTag
 from core.templates import Template
 
 
@@ -100,7 +100,7 @@ class ActionDefinition:
 
     # Specifics
     is_host_action: bool = False
-    venv: Literal["default", "2.9"] = "default"
+    venv: Literal["2.16"] = "2.16"
 
     # Allowed operations
     allow_to_terminate: bool = False
@@ -142,8 +142,8 @@ class ActionDefinition:
 
 @dataclass(slots=True)
 class VersionBound:
-    value: str
-    is_strict: bool
+    value: str = ""
+    is_strict: bool = False
 
 
 @dataclass(slots=True)
@@ -151,15 +151,15 @@ class ImportDefinition:
     name: str
     is_required: bool = False
     is_multibind_allowed: bool = False
-    min_version: VersionBound = VersionBound(value="", is_strict=False)
-    max_version: VersionBound = VersionBound(value="", is_strict=False)
+    min_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
+    max_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
     default: list[str] | None = None
 
 
 @dataclass(slots=True)
 class UpgradeRestrictions:
-    min_version: VersionBound = VersionBound(value="", is_strict=False)
-    max_version: VersionBound = VersionBound(value="", is_strict=False)
+    min_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
+    max_version: VersionBound = field(default_factory=lambda: VersionBound(value="", is_strict=False))
     from_editions: list[str] = field(default_factory=partial(list, ("community",)))
 
 
@@ -187,6 +187,14 @@ class License:
     status: Literal["absent", "accepted", "unaccepted"] = "absent"
     # if no license, path expected to be None
     path: str | None = None
+    # if no license, hash expected to be None
+    hash: str | None = None
+
+
+@dataclass(slots=True)
+class PrototypeMetaInfo:
+    contract_version: ContractVersionTag
+    license: License
 
 
 # EXTERNAL SECTION END
@@ -224,7 +232,7 @@ class Definition(GeneralObjectDescription):
     # Misc
     path: str = "."
     adcm_min_version: str | None = None
-    venv: Literal["default", "2.9"] = "default"
+    venv: Literal["2.16"] = "2.16"
     shared: bool = False
 
 

@@ -1,0 +1,43 @@
+:global {
+  body.theme-dark {
+    --cluster-overview-bundle-info-text-primary: var(--color-xgray-lighter);
+  }
+
+  body.theme-light {
+    --cluster-overview-bundle-info-text-primary: var(--color-xgray-new-darker);
+  }
+}
+
+.clusterOverviewBottomBundleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding: var(--space-500);
+  border-radius: var(--radius-200);
+  background-color: var(--color-bg-primary-extra);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-200);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--font-size-800);
+    line-height: var(--line-height-500);
+    font-weight: var(--weight-semibold);
+    color: var(--cluster-overview-bundle-info-text-primary);
+  }
+
+  &__expandBtn {
+    width: 32px;
+    height: 32px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}

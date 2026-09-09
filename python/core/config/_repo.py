@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable, Literal, Protocol, TypeAlias, overload
+from collections.abc import Iterable
+from typing import Literal, Protocol, TypeAlias, overload
 
 from core.config import spec
 from core.config._types import Configuration, ConfigurationExtraInfo, ConfigurationWithInfo, Defaults, EncryptFunc

@@ -3,11 +3,7 @@ import type { ConfigurationNodeView } from '../ConfigurationEditor.types';
 import type { JSONValue } from '@models/json';
 
 export type ChangeConfigurationNodeValueHandler = (node: ConfigurationNodeView, value: JSONValue) => void;
-export type ChangeConfigurationNodeValueWithAttributesHandler = (
-  node: ConfigurationNodeView,
-  value: JSONValue,
-  payload: FieldAttributesSyncPayload,
-) => void;
+export type SelectOneOfBranchHandler = (node: ConfigurationNodeView, selection: string) => void;
 export type ChangeConfigurationNodeHandler = (node: ConfigurationNodeView, ref: React.RefObject<HTMLElement>) => void;
 export type ChangeFieldAttributesHandler = (path: string, fieldAttributes: FieldAttributes) => void;
 export type FieldAttributesSyncPayload = {

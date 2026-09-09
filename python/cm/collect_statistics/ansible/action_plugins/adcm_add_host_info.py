@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime
 from hashlib import md5
 from typing import NamedTuple
 import re
@@ -20,6 +20,7 @@ import json
 import traceback
 
 from ansible.plugins.action import ActionBase
+from core.shortcuts import UTC
 
 sys.path.append("/adcm/python")
 
@@ -72,6 +73,27 @@ def _safe_str_to_bool(s: str) -> bool:
         return False
 
 
+def _to_int(value: str | int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _calculate_disk_size(device_data: dict | None) -> int:
+    if device_data is None:
+        return 0
+
+    sectors = _to_int(device_data.get("sectors"))
+    sector_size = _to_int(device_data.get("sectorsize"))
+
+    return sectors * sector_size
+
+
+def _ram_mib_to_bytes(value_mib: int | str) -> int:
+    return _to_int(value_mib) * 1024**2
+
+
 class DataToStore(NamedTuple):
     facts: HostFacts
     hash_value: str
@@ -106,15 +128,19 @@ class ActionModule(ActionBase):
                 disk_descriptions = _extract_disk_info(disk_command_out) if disk_command_out else {}
 
                 host_id = hostvars[host_name]["adcm_hostid"]
-
+                devices = raw_facts["devices"]
+                vda_device = devices.get("vda")
+                ram_value = raw_facts["memtotal_mb"]
                 structured_facts = HostFacts(
                     cpu_vcores=raw_facts["processor_vcpus"],
+                    disk_size=_calculate_disk_size(vda_device),
                     os=HostOSFacts(
                         family=raw_facts["os_family"],
                         distribution=raw_facts["distribution"],
                         version=raw_facts["distribution_version"],
                     ),
-                    ram=raw_facts["memtotal_mb"],
+                    ram=ram_value,
+                    ram_bytes=_ram_mib_to_bytes(ram_value),
                     devices=[
                         HostDeviceFacts(
                             name=device_name,
@@ -123,7 +149,7 @@ class ActionModule(ActionBase):
                             size=device["size"],
                             description=disk_descriptions.get(device_name, ""),
                         )
-                        for device_name, device in raw_facts["devices"].items()
+                        for device_name, device in devices.items()
                     ],
                 )
 
@@ -150,7 +176,7 @@ class ActionModule(ActionBase):
             hosts_with_up_to_date_facts.append(host_id)
 
         # for each batch to have the same datetime
-        date = datetime.now(tz=timezone.utc)
+        date = datetime.now(tz=UTC)
 
         for_update: set[HostID] = set(facts).difference(hosts_with_up_to_date_facts)
 

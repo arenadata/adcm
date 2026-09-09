@@ -11,6 +11,8 @@
 # limitations under the License.
 
 from pathlib import Path
+import uuid
+import shutil
 import tempfile
 
 from django.db import IntegrityError
@@ -18,7 +20,6 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.base import BaseTestCase, BundleLogicMixin
-from tests.deprecated import BusinessLogicMixin
 import yaml
 
 from cm.errors import AdcmEx
@@ -26,7 +27,9 @@ from cm.models import (
     Action,
     ADCMEntity,
     Bundle,
+    Cluster,
     Component,
+    ConfigLog,
     Prototype,
     PrototypeConfig,
     Service,
@@ -34,12 +37,22 @@ from cm.models import (
 )
 
 
-class TestBundle(BaseTestCase, BusinessLogicMixin):
+class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
         self.bundles_dir = Path(__file__).parent / "bundles"
+
+    @classmethod
+    def upload_bundle_create_cluster_config_log(
+        cls, bundle_path: Path, cluster_name: str = "test-cluster"
+    ) -> tuple[Bundle, Cluster, ConfigLog]:
+        downloaded_archive = Path(bundle_path.parent, str(uuid.uuid4()) + ".temp")
+        shutil.copy2(bundle_path, downloaded_archive)
+        bundle = cls.uc.upload_bundle(downloaded_archive)
+        cluster = cls.uc.add_cluster(bundle=bundle, name=cluster_name)
+
+        return bundle, cluster, ConfigLog.objects.get(obj_ref=cluster.config)
 
     def get_component(self, service: Service, component_name: str) -> Component:
         return Component.objects.get(service=service, prototype__name=component_name)
@@ -58,9 +71,11 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
         for bundle_name, cluster_flag_value in (("cluster_true", True), ("cluster_undefined", False)):
             bundle = self.add_bundle(source_dir=directory / bundle_name)
-            cluster = self.add_cluster(bundle=bundle, name=f"Cluster {cluster_flag_value}")
-            defined_false, defined_true, not_defined = self.add_services_to_cluster(
-                ["defined_false", "defined_true", "not_defined"], cluster=cluster
+            cluster = self.uc.add_cluster(bundle=bundle, name=f"Cluster {cluster_flag_value}")
+            services_names = ["defined_false", "defined_true", "not_defined"]
+            self.uc.add_services_to_cluster(services_names, cluster=cluster)
+            defined_false, defined_true, not_defined = Service.objects.filter(
+                cluster=cluster, prototype__name__in=services_names
             ).order_by("prototype__name")
 
             self.enable_outdated_config_is(cluster, cluster_flag_value)
@@ -74,15 +89,15 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 self.enable_outdated_config_is(self.get_component(service, "defined_false"), False)
 
         bundle = self.add_bundle(source_dir=directory / "provider_false_host_true")
-        provider = self.add_provider(bundle=bundle, name="Provider False")
-        host = self.add_host(provider=provider, fqdn="host-true")
+        provider = self.uc.add_provider(bundle=bundle, name="Provider False")
+        host = self.uc.add_host(provider=provider, fqdn="host-true")
 
         self.enable_outdated_config_is(provider, False)
         self.enable_outdated_config_is(host, True)
 
         bundle = self.add_bundle(source_dir=directory / "provider_true_host_undefined")
-        provider = self.add_provider(bundle=bundle, name="Provider True")
-        host = self.add_host(provider=provider, fqdn="host-undef")
+        provider = self.uc.add_provider(bundle=bundle, name="Provider True")
+        host = self.uc.add_host(provider=provider, fqdn="host-undef")
 
         self.enable_outdated_config_is(provider, True)
         self.enable_outdated_config_is(host, True)
@@ -113,7 +128,13 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
             self.assertEqual(config_prototype.limits, {"pattern": expected_pattern})
 
     def test_upload_incorrect_default_for_pattern_fail(self) -> None:
-        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+        cluster_def = {
+            "type": "cluster",
+            "version": "34",
+            "name": "incorrect_default",
+            "contract_version": "2.1",
+            "venv": "2.16",
+        }
 
         for type_ in ("string", "password", "text", "secrettext"):
             with self.subTest(f"Field Type {type_}"):
@@ -133,12 +154,18 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
                 self.assertEqual(err_context.exception.status_code, HTTP_409_CONFLICT)
                 self.assertIn(
-                    "The value of param/ config parameter does not match pattern: [a-z][A-Z][0-9]*?",
+                    '/param [value]: does not match pattern: "[a-z][A-Z][0-9]*?"',
                     err_context.exception.msg,
                 )
 
     def test_upload_with_pattern_for_incorrect_types_fail(self) -> None:
-        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+        cluster_def = {
+            "type": "cluster",
+            "version": "34",
+            "name": "incorrect_default",
+            "contract_version": "2.1",
+            "venv": "2.16",
+        }
 
         for type_ in ("file", "secretfile"):
             with self.subTest(f"Field Type {type_}"):
@@ -153,7 +180,13 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
                 self.assertIn("extra_forbidden: Extra inputs are not permitted", err_context.exception.msg)
 
     def test_upload_with_incorrect_pattern_fail(self) -> None:
-        cluster_def = {"type": "cluster", "version": "34", "name": "incorrect_default"}
+        cluster_def = {
+            "type": "cluster",
+            "version": "34",
+            "name": "incorrect_default",
+            "contract_version": "2.1",
+            "venv": "2.16",
+        }
 
         bundle_dir = self.prepare_bundle_directory(
             [{**cluster_def, "config": [{"type": "string", "name": "param", "display_name": "BstT", "pattern": "*"}]}]
@@ -170,40 +203,34 @@ class TestBundle(BaseTestCase, BusinessLogicMixin):
 
     def test_bundle_upload_duplicate_upgrade_fail(self):
         with self.assertRaises(IntegrityError):
-            self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_duplicated.tar"))
+            self.uc.upload_bundle(self.bundles_dir / "test_upgrade_duplicated")
 
     def test_bundle_upload_upgrade_different_upgrade_name_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_name.tar"))
+        self.uc.upload_bundle(src=self.bundles_dir / "test_upgrade_different_name")
 
     def test_bundle_upload_upgrade_different_from_edition_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_from_edition.tar"))
+        self.uc.upload_bundle(self.bundles_dir / "test_upgrade_different_from_edition")
 
     def test_bundle_upload_upgrade_different_min_version_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_min_version.tar"))
+        self.uc.upload_bundle(self.bundles_dir / "test_upgrade_different_min_version")
 
     def test_bundle_upload_upgrade_different_max_strict_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_max_strict.tar"))
+        self.uc.upload_bundle(self.bundles_dir / "test_upgrade_different_max_strict")
 
     def test_bundle_upload_upgrade_different_state_available_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_state_available.tar"))
+        self.uc.upload_bundle(self.bundles_dir / "test_upgrade_different_state_available")
 
     def test_bundle_upload_upgrade_different_state_on_success_success(self):
-        self.upload_and_load_bundle(path=Path(self.test_files_dir, "test_upgrade_different_state_on_success.tar"))
+        self.uc.upload_bundle(self.bundles_dir / "test_upgrade_different_state_on_success")
 
     def test_secretmap_no_default(self):
-        self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(
-                self.base_dir,
-                "python/cm/tests/files/test_secret_config_v10_community.tar",
-            ),
+        self.uc.add_cluster(
+            bundle=self.uc.upload_bundle(src=self.bundles_dir / "test_secret_config_v10_community"), name="test-cluster"
         )
 
     def test_secretmap_no_default1(self):
-        self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(
-                self.base_dir,
-                "python/cm/tests/files/test_secret_config_v12_community.tar",
-            ),
+        self.uc.add_cluster(
+            bundle=self.uc.upload_bundle(src=self.bundles_dir / "test_secret_config_v12_community"), name="test-cluster"
         )
 
 
@@ -238,14 +265,13 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
         subs = self.get_ordered_subs(action_name="task_params_in_action", bundle=bundle)
         self.assertEqual(subs.count(), 2)
-        action_params = {"jinja2_native": True, "custom": {"key": "value"}}
-        self.assertEqual(list(subs.values_list(*fields)), [("first", action_params), ("second", action_params)])
+        self.assertEqual(list(subs.values_list(*fields)), [("first", {}), ("second", {})])
 
         subs = self.get_ordered_subs(action_name="task_params_in_action_and_scripts", bundle=bundle)
         self.assertEqual(subs.count(), 2)
         self.assertEqual(
             list(subs.values_list(*fields)),
-            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", action_params)],
+            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", {})],
         )
 
         subs = self.get_ordered_subs(action_name="task_params_in_action_and_all_scripts", bundle=bundle)
@@ -368,7 +394,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
             Prototype.objects.get(type="service", name="alongside_the_cluster", bundle=bundle),
             Prototype.objects.get(type="component", name="alongside_cluster", bundle=bundle),
         ):
-            jinja_paths = {a.name: a.config_jinja for a in Action.objects.filter(prototype=proto)}
+            jinja_paths = {a.name: a.config_template["file"]["path"] for a in Action.objects.filter(prototype=proto)}
             self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
             paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
             self.assertDictEqual(paths, expected_scripts)
@@ -395,7 +421,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
             Prototype.objects.get(type="service", name="service_1", bundle=bundle),
             Prototype.objects.get(type="component", name="separate", bundle=bundle),
         ):
-            jinja_paths = {a.name: a.config_jinja for a in Action.objects.filter(prototype=proto)}
+            jinja_paths = {a.name: a.config_template["file"]["path"] for a in Action.objects.filter(prototype=proto)}
             self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
             paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
             self.assertDictEqual(paths, expected_scripts)

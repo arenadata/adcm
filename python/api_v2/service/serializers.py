@@ -37,6 +37,7 @@ class ServiceRetrieveSerializer(WithStatusSerializer):
         model = Service
         fields = [
             "id",
+            "uuid",
             "name",
             "description",
             "display_name",

@@ -13,9 +13,17 @@
 from datetime import timedelta
 import string
 
+from core.constants import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_TURN_ON_MM_ACTION_NAME,
+)
+
 ENCODING_UTF_8 = "utf-8"
 
-API_URL = "http://localhost:8020/api/v1/"
+# Status service URL used in process (Django backend). External components (Celery workers) resolve their own URL.
+INTERNAL_STATUS_SERVICE_URL = "http://localhost:8020/api/v1/"
 
 LATIN_LETTERS_DIGITS = f"{string.ascii_letters}{string.digits}"
 
@@ -25,10 +33,6 @@ ALLOWED_CLUSTER_NAME_MID_CHARS = f"{ALLOWED_CLUSTER_NAME_START_END_CHARS}-. _"
 ALLOWED_HOST_FQDN_START_CHARS = LATIN_LETTERS_DIGITS
 ALLOWED_HOST_FQDN_MID_END_CHARS = f"{ALLOWED_HOST_FQDN_START_CHARS}-."
 
-ADCM_TURN_ON_MM_ACTION_NAME = "adcm_turn_on_maintenance_mode"
-ADCM_TURN_OFF_MM_ACTION_NAME = "adcm_turn_off_maintenance_mode"
-ADCM_HOST_TURN_ON_MM_ACTION_NAME = "adcm_host_turn_on_maintenance_mode"
-ADCM_HOST_TURN_OFF_MM_ACTION_NAME = "adcm_host_turn_off_maintenance_mode"
 ADCM_DELETE_SERVICE_ACTION_NAME = "adcm_delete_service"
 ADCM_SERVICE_ACTION_NAMES_SET = {
     ADCM_TURN_ON_MM_ACTION_NAME,
@@ -56,6 +60,9 @@ USERNAME_MAX_LENGTH = 150
 STDOUT_STDERR_LOG_CUT_LENGTH = 1500
 STDOUT_STDERR_LOG_LINE_CUT_LENGTH = 1000
 STDOUT_STDERR_LOG_MAX_UNCUT_LENGTH = STDOUT_STDERR_LOG_CUT_LENGTH * STDOUT_STDERR_LOG_LINE_CUT_LENGTH
-STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = "<Truncated. Download full version via link>"
+STDOUT_STDERR_TRUNCATED_LOG_MESSAGE = (
+    "<The log is too large, and you only see the last 1500 lines to optimize the "
+    "display. Download full version via link>"
+)
 
 ACTION_PROCESS_STALE_STATE_TIMEOUT = timedelta(days=2)

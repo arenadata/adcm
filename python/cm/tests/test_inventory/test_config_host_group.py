@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster import ClusterService
 from core.types import CoreObjectDescriptor
 
 from cm.converters import model_name_to_core_type
@@ -18,6 +19,7 @@ from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
+    Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
@@ -26,19 +28,23 @@ class TestCHGsInInventory(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.cluster = self.add_cluster(
+        self.cluster = self.uc.add_cluster(
             bundle=self.add_bundle(source_dir=self.bundles_dir / "cluster_config_host_group"), name="Target Cluster"
         )
 
-        self.provider = self.add_provider(
+        self.provider = self.uc.add_provider(
             bundle=self.add_bundle(source_dir=self.bundles_dir / "provider"), name="provider"
         )
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
-        self.host_3 = self.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster)
+        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host_3", cluster=self.cluster)
 
-        self.service_not_simple, self.service_thesame = self.add_services_to_cluster(
-            cluster=self.cluster, service_names=["not_simple", "thesame"]
+        service_names = ["not_simple", "thesame"]
+        self.service_not_simple, self.service_thesame = self.uc.add_services_to_cluster(
+            cluster=self.cluster, names=service_names
+        )
+        self.service_not_simple, self.service_thesame = Service.objects.filter(
+            cluster=self.cluster, prototype__name__in=service_names
         ).order_by("prototype__name")
         self.component_not_simple = Component.objects.get(
             service=self.service_not_simple, prototype__name="not_simple_component"
@@ -54,7 +60,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
         )
 
     def test_config_host_group_in_inventory(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=(
                 (self.host_1, self.component_not_simple),
@@ -68,17 +74,6 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             ),
         )
 
-        host_names = [self.host_1.name, self.host_2.name, self.host_3.name]
-        expected_topology = {
-            "CLUSTER": host_names,
-            self.service_not_simple.name: host_names,
-            f"{self.service_not_simple.name}.{self.component_another_not_simple.name}": [host_names[0], host_names[1]],
-            f"{self.service_not_simple.name}.{self.component_not_simple.name}": host_names,
-            self.service_thesame.name: host_names,
-            f"{self.service_thesame.name}.{self.component_thesame.name}": [host_names[0], host_names[2]],
-            f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[1]],
-        }
-
         self.cluster_group = self.add_config_host_group(parent=self.cluster, hosts=(self.host_1, self.host_3))
         self.service_thesame_group = self.add_config_host_group(parent=self.service_thesame, hosts=(self.host_1,))
         self.component_another_thesame_group = self.add_config_host_group(
@@ -88,9 +83,27 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             parent=self.component_thesame, hosts=(self.host_1, self.host_3)
         )
 
-        self.change_configuration(
-            target=self.cluster_group,
-            config_diff={
+        group_1_key = f"chg_{self.cluster_group.pk}_{self.service_thesame_group.pk}_{self.component_thesame_group.pk}"
+        group_2_key = f"chg_{self.cluster_group.pk}_{self.component_thesame_group.pk}"
+        group_3_key = f"chg_{self.component_another_thesame_group.pk}"
+
+        host_names = [self.host_1.name, self.host_2.name, self.host_3.name]
+        expected_topology = {
+            "CLUSTER": host_names,
+            self.service_not_simple.name: host_names,
+            f"{self.service_not_simple.name}.{self.component_another_not_simple.name}": [host_names[0], host_names[1]],
+            f"{self.service_not_simple.name}.{self.component_not_simple.name}": host_names,
+            self.service_thesame.name: host_names,
+            f"{self.service_thesame.name}.{self.component_thesame.name}": [host_names[0], host_names[2]],
+            f"{self.service_thesame.name}.{self.component_another_thesame.name}": [host_names[1]],
+            group_1_key: [self.host_1.fqdn],
+            group_2_key: [self.host_3.fqdn],
+            group_3_key: [self.host_2.fqdn],
+        }
+
+        self.uc.change_config(
+            owner=self.cluster_group,
+            values_diff={
                 "plain_group": {"listofstuff": ["hello"]},
                 "just_bool": True,
                 "secrettext": "imsecrett\nextforu\n",
@@ -111,17 +124,17 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             },
         )
 
-        self.change_configuration(
-            target=self.service_thesame,
-            config_diff={
+        self.uc.change_config(
+            owner=self.service_thesame,
+            values_diff={
                 "activatable_group": {"simple": "bestgroupever"},
                 "list_of_dicts": [{"integer": 400, "string": "woo"}],
             },
             meta_diff={"/activatable_group": {"isActive": True}},
         )
-        self.change_configuration(
-            target=self.service_thesame_group,
-            config_diff={"list_of_dicts": [], "just_map": {"key": "val"}},
+        self.uc.change_config(
+            owner=self.service_thesame_group,
+            values_diff={"list_of_dicts": [], "just_map": {"key": "val"}},
             meta_diff={
                 "/activatable_group": {"isActive": False, "isSynchronized": False},
                 "/just_map": {"isSynchronized": False},
@@ -131,18 +144,18 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             preprocess_config=lambda d: {**d, "just_map": {}},
         )
 
-        self.change_configuration(
-            target=self.component_another_thesame_group,
-            config_diff={"plain_group": {"secretmap": {"donot": "know", "m": "e"}}},
+        self.uc.change_config(
+            owner=self.component_another_thesame_group,
+            values_diff={"plain_group": {"secretmap": {"donot": "know", "m": "e"}}},
             meta_diff={
                 "/activatable_group": {"isActive": True, "isSynchronized": False},
                 "/plain_group/secretmap": {"isSynchronized": False},
                 "/just_float": {"isSynchronized": False},
             },
         )
-        self.change_configuration(
-            target=self.component_another_thesame,
-            config_diff={
+        self.uc.change_config(
+            owner=self.component_another_thesame,
+            values_diff={
                 "plain_group": {"secretmap": {}, "listofstuff": ["wind", "vs", "oak"]},
                 "just_float": 1000.304,
             },
@@ -184,11 +197,24 @@ class TestCHGsInInventory(BaseInventoryTestCase):
             with self.subTest(object_.__class__.__name__):
                 action = Action.objects.filter(prototype=object_.prototype).first()
                 target = CoreObjectDescriptor(id=object_.id, type=model_name_to_core_type(object_.__class__.__name__))
-                actual_inventory = decrypt_secrets(get_inventory_data(target=target, is_host_action=action.host_action))
+                actual_inventory = decrypt_secrets(
+                    get_inventory_data(
+                        target=target,
+                        is_host_action=action.host_action,
+                        cluster_service=self.uc.container.get(ClusterService),
+                    )
+                )
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)
                 self.assertDictEqual(actual_inventory["all"]["vars"], expected_parts["vars"])
-                for host_name, actual_data in actual_inventory["all"]["hosts"].items():
+                for group_name, actual_data in actual_inventory["all"]["children"].items():
+                    # quickiest fix possible for this test
+                    if not group_name.startswith("chg_"):
+                        continue
+
+                    # one host per group in inventory, so safe to detect name like that
+                    host_name = next(iter(actual_data["hosts"]))
+
                     self.assertDictEqual(
-                        actual_data["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
+                        actual_data["vars"]["cluster"]["config"], expected_parts[f"{host_name}_cluster_config"]
                     )
-                    self.assertDictEqual(actual_data["services"], expected_parts[f"{host_name}_services"])
+                    self.assertDictEqual(actual_data["vars"]["services"], expected_parts[f"{host_name}_services"])

@@ -8,6 +8,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { updateIfExists } from '@utils/objectUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 import type { RequestError } from '@api';
 import { AdcmPrototypesApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
@@ -131,9 +132,9 @@ const servicesSlice = createSlice({
       const { id: serviceId, changes: newConcern } = action.payload.object;
       state.services = updateIfExists<AdcmService>(
         state.services,
-        (service) => service.id === serviceId && service.concerns.every((concern) => concern.id !== newConcern.id),
+        (service) => service.id === serviceId,
         (service) => ({
-          concerns: [...service.concerns, newConcern],
+          concerns: upsertConcern(service.concerns, newConcern),
         }),
       );
     });

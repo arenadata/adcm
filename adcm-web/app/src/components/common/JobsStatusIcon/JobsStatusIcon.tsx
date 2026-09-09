@@ -14,7 +14,7 @@ interface JobsTableStatusIconProps extends React.HTMLAttributes<HTMLDivElement> 
 
 const JobsStatusIcon: React.FC<JobsTableStatusIconProps> = ({ status, dataTest, size = 10, className }) => {
   const classes = cn(s.status, className, s[`status_${status.toLowerCase()}`], {
-    spin: status === AdcmJobStatus.Running,
+    spin: status === AdcmJobStatus.Running || status === AdcmJobStatus.Revoking || status === AdcmJobStatus.Terminating,
   });
 
   return <Icon data-test={dataTest} name={jobStatusesIconsMap[status]} size={size} className={classes} />;

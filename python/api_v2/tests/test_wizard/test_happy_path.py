@@ -45,7 +45,6 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
         cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="test_cluster")
         cls.service = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster)[0]
         cls.component = Component.objects.get(service=cls.service, prototype__name="component_1")
-
         cls.provider = cls.uc.add_provider(bundle=provider_bundle, name="test_provider")
         cls.host = cls.uc.add_host(provider=cls.provider, name="test-host", cluster=cls.cluster)
 

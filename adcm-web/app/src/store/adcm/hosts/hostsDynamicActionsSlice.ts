@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
 import type { RequestError } from '@api';
 import { AdcmHostsApi } from '@api';
-import { fulfilledFilter } from '@utils/promiseUtils';
+import { arePromisesResolved, fulfilledFilter } from '@utils/promiseUtils';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import type {
   AdcmDynamicAction,
@@ -12,6 +12,7 @@ import type {
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import type { AdcmHost } from '@models/adcm';
 import { ActionStatuses } from '@constants';
+import { setSelectedItemsIds } from '@store/adcm/hosts/hostsActionsSlice';
 
 const loadHostsDynamicActions = createAsyncThunk(
   'adcm/hostsDynamicActions/loadHostsDynamicActions',
@@ -54,6 +55,12 @@ interface OpenHostDynamicActionPayload {
   actionId: number;
 }
 
+interface OpenBulkHostDynamicActionPayload {
+  hosts: AdcmHost[];
+  actionName: string;
+  actionIdsByHostId: Record<number, number>;
+}
+
 const openHostDynamicActionDialog = createAsyncThunk(
   'adcm/hostsDynamicActions/openHostDynamicActionDialog',
   async ({ host, actionId }: OpenHostDynamicActionPayload, thunkAPI) => {
@@ -68,20 +75,40 @@ const openHostDynamicActionDialog = createAsyncThunk(
   },
 );
 
-interface RunHostActionPayload {
-  host: AdcmHost;
-  actionId: number;
+const openBulkHostDynamicActionDialog = createAsyncThunk(
+  'adcm/hostsDynamicActions/openBulkHostDynamicActionDialog',
+  async ({ hosts, actionIdsByHostId, actionName }: OpenBulkHostDynamicActionPayload, thunkAPI) => {
+    try {
+      const firstHost = hosts[0];
+      const actionId = actionIdsByHostId[firstHost.id];
+      const actionDetails = await AdcmHostsApi.getHostActionsDetails(firstHost.id, actionId);
+
+      return { actionDetails, hosts, actionIdsByHostId, actionName };
+    } catch (error) {
+      thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
+      return thunkAPI.rejectWithValue(null);
+    }
+  },
+);
+
+interface RunBulkHostActionPayload {
+  hosts: AdcmHost[];
+  actionIdsByHostId: Record<number, number>;
   actionRunConfig: AdcmDynamicActionRunConfig;
 }
 
-const runHostDynamicAction = createAsyncThunk(
-  'adcm/hostsDynamicActions/runHostDynamicAction',
-  async ({ host, actionId, actionRunConfig }: RunHostActionPayload, thunkAPI) => {
+const runBulkHostDynamicAction = createAsyncThunk(
+  'adcm/hostsDynamicActions/runBulkHostDynamicAction',
+  async ({ hosts, actionIdsByHostId, actionRunConfig }: RunBulkHostActionPayload, thunkAPI) => {
     try {
-      // TODO: run***Action get big response with information about action, but wiki say that this should empty response
-      await AdcmHostsApi.runHostAction(host.id, actionId, actionRunConfig);
+      arePromisesResolved(
+        await Promise.allSettled(
+          hosts.map((host) => AdcmHostsApi.runHostAction(host.id, actionIdsByHostId[host.id], actionRunConfig)),
+        ),
+      );
 
       thunkAPI.dispatch(showSuccess({ message: ActionStatuses.SuccessRun }));
+      thunkAPI.dispatch(setSelectedItemsIds([]));
 
       return null;
     } catch (error) {
@@ -95,6 +122,8 @@ type AdcmHostsDynamicActionsState = {
   dialog: {
     actionDetails: AdcmDynamicActionDetails | null;
     host: AdcmHost | null;
+    hosts: AdcmHost[];
+    actionIdsByHostId: Record<number, number>;
   };
   hostDynamicActions: Record<number, AdcmDynamicAction[]>;
 };
@@ -103,6 +132,8 @@ const createInitialState = (): AdcmHostsDynamicActionsState => ({
   dialog: {
     actionDetails: null,
     host: null,
+    hosts: [],
+    actionIdsByHostId: {},
   },
   hostDynamicActions: {},
 });
@@ -115,6 +146,7 @@ const hostsDynamicActionsSlice = createSlice({
       return createInitialState();
     },
     closeHostDynamicActionDialog(state) {
+      // @ts-ignore
       state.dialog = createInitialState().dialog;
     },
   },
@@ -128,17 +160,33 @@ const hostsDynamicActionsSlice = createSlice({
     builder.addCase(openHostDynamicActionDialog.fulfilled, (state, action) => {
       state.dialog.actionDetails = action.payload;
       state.dialog.host = action.meta.arg.host;
+      state.dialog.hosts = [];
+      state.dialog.actionIdsByHostId = {};
+    });
+    builder.addCase(openBulkHostDynamicActionDialog.fulfilled, (state, action) => {
+      state.dialog.actionDetails = action.payload.actionDetails;
+      state.dialog.host = action.payload.hosts[0];
+      state.dialog.hosts = action.payload.hosts;
+      state.dialog.actionIdsByHostId = action.payload.actionIdsByHostId;
     });
     builder.addCase(openHostDynamicActionDialog.rejected, (state) => {
       hostsDynamicActionsSlice.caseReducers.closeHostDynamicActionDialog(state);
     });
-    builder.addCase(runHostDynamicAction.pending, (state) => {
+    builder.addCase(openBulkHostDynamicActionDialog.rejected, (state) => {
+      hostsDynamicActionsSlice.caseReducers.closeHostDynamicActionDialog(state);
+    });
+    builder.addCase(runBulkHostDynamicAction.pending, (state) => {
       hostsDynamicActionsSlice.caseReducers.closeHostDynamicActionDialog(state);
     });
   },
 });
 
 export const { cleanupHostDynamicActions, closeHostDynamicActionDialog } = hostsDynamicActionsSlice.actions;
-export { loadHostsDynamicActions, openHostDynamicActionDialog, runHostDynamicAction };
+export {
+  loadHostsDynamicActions,
+  openHostDynamicActionDialog,
+  openBulkHostDynamicActionDialog,
+  runBulkHostDynamicAction,
+};
 
 export default hostsDynamicActionsSlice.reducer;

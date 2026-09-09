@@ -11,8 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Generator, Iterable
 from operator import attrgetter, itemgetter
-from typing import Generator, Iterable
 
 from core.converters import named_mapping_from_topology
 from core.legacy.concern.checks import cluster_has_required_services_issue, find_unsatisfied_service_requirements

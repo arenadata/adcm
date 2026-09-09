@@ -12,11 +12,13 @@
 
 # Topology
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterable, TypeAlias
+from typing import TypeAlias
 
 from core.types import (
+    ClusterBindSchema,
     ClusterID,
     ComponentID,
     ComponentName,
@@ -42,7 +44,7 @@ class ServiceTopology:
     components: dict[ComponentID, ComponentTopology]
 
     @property
-    def host_ids(self) -> Iterable[HostID]:
+    def host_ids(self) -> Iterator[HostID]:
         return chain.from_iterable(component.hosts for component in self.components.values())
 
 
@@ -53,7 +55,7 @@ class ClusterTopology:
     hosts: dict[HostID, ShortObjectInfo]
 
     @property
-    def component_ids(self) -> Iterable[ComponentID]:
+    def component_ids(self) -> Iterator[ComponentID]:
         return chain.from_iterable(service.components for service in self.services.values())
 
     @property
@@ -89,3 +91,21 @@ class ClusterTopology:
                 return component
         else:
             raise KeyError(f"No component with id {component_id}")
+
+
+@dataclass(slots=True, frozen=True)
+class Export:
+    name: str
+    version: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExportData:
+    clusters: dict[ClusterID, Export]
+    services: dict[ServiceID, Export]
+
+    def retrieve_export_by_bind(self, bind: ClusterBindSchema) -> Export | None:
+        if bind.source_service_id is not None:
+            return self.services.get(bind.source_service_id)
+
+        return self.clusters.get(bind.source_cluster_id)

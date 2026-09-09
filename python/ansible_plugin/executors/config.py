@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Collection, TypeAlias, TypedDict
+from collections.abc import Collection
+from typing import Any, TypeAlias, TypedDict
 import re
 
 from cm.converters import core_type_to_model
@@ -143,7 +144,8 @@ def to_changes(input_changes: list[dict], spec: core.config.spec.FullSpec) -> li
         full_name = core.config.names.ensure_full_name(parameter_change["key"])
 
         if (group := spec.groups.get(full_name)) and group.selection:
-            message = f'Can\'t change selectable group "{full_name}" from plugin'
+            display_name = spec.get_full_display_name(full_name)
+            message = f'Can\'t change selectable group "{display_name}" from plugin'
             raise ValueError(message)
 
         if (is_active := parameter_change.get("active")) is not None:

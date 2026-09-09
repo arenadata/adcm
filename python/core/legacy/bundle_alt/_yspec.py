@@ -18,7 +18,8 @@ Copy-pasted for ADCM-6355.
 Should be moved to a specific `core` module/package later.
 """
 
-from typing import Any, Callable, cast
+from collections.abc import Callable
+from typing import Any, cast
 import contextlib
 
 import ruyaml

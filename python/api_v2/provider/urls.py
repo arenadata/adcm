@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterable
+from collections.abc import Iterable
 import itertools
 
 from rest_framework.routers import SimpleRouter

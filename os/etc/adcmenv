@@ -10,54 +10,100 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 adcmroot=/adcm
+# Ephemeral runtime state (uwsgi pidfile + wsgi socket, runit supervise dirs).
+# Lives on the rootfs, not the data volume: it must not survive restarts.
+# Ships in the image (Dockerfile); under a read-only rootfs mount a tmpfs here.
+adcmrun="${adcmroot}/run"
 adcmlog="${adcmroot}/data/log"
-adcmrun="${adcmroot}/data/run"
+adcmdatarun="${adcmroot}/data/run"
 adcmbundle="${adcmroot}/data/bundle"
 adcmdownload="${adcmroot}/data/download"
 adcmfile="${adcmroot}/data/file"
 adcmvar="${adcmroot}/data/var"
 adcmtmp="${adcmroot}/data/tmp"
 adcmuserconf="${adcmroot}/data/conf"
-adcmsecretfile="${adcmuserconf}/secret_key.txt"
-initreadyfile="/run/init.done"
-wsgisocketfile="/run/adcm.sock"
-
-waitforinit() {
-  while [ ! -f "${initreadyfile}" ]; do
-        echo "Waiting for init"
-        sleep 1
-  done;
-}
+wsgisocketfile="${adcmrun}/adcm.sock"
+coderoot="${adcmroot}/python"
+scripts="${coderoot}/application/scripts"
+django_manage_script="${coderoot}/manage.py"
+ssl_keys_dir="${adcmuserconf}/ssl"
+# The enabled ssl vhost is written to a writable data dir (included by nginx.conf)
+# so /etc/nginx can stay read-only / root-owned. The template ships read-only.
+ssl_config_dir="${adcmuserconf}/nginx"
+ssl_config_template="/etc/nginx/http.d/ssl.conf.disabled"
+ssl_config_filename="ssl.conf"
+adcmvenv="${adcmroot}/.venv/bin"
 
 waitforwsgi() {
   while [ ! -S "${wsgisocketfile}" ]; do
-        echo "Waiting for wsgi"
-        sleep 1
-  done;
+    echo "Waiting for wsgi"
+    sleep 1
+  done
 }
 
 cleanupwaitstatus() {
-  rm -f "${initreadyfile}"
   rm -f "${wsgisocketfile}"
 }
 
-ensure_directory_structure() {
-  echo "Ensuring required directories exist"
+is_in_maintenance_mode() {
+  mm_lowercase=$(echo "$MAINTENANCE_MODE" | tr '[:upper:]' '[:lower:]')
 
-  mkdir -p "${adcmlog}"
-  mkdir -p "${adcmrun}"
-  mkdir -p "${adcmbundle}"
-  mkdir -p "${adcmdownload}"
-  mkdir -p "${adcmfile}"
+  case "$mm_lowercase" in
+    "1" | "true" | "yes")
+      echo 1;;
+    *)
+      echo 0;;
+  esac
+}
+
+ensure_directory_structure() {
+  echo "Creating directories..."
+
+  for dir in \
+    "${adcmlog}" \
+    "${adcmlog}/nginx" \
+    "${adcmdatarun}" \
+    "${adcmvar}/cron" \
+    "${adcmbundle}" \
+    "${adcmdownload}" \
+    "${adcmfile}" \
+    "${adcmvar}" \
+    "${adcmtmp}" \
+    "${adcmtmp}/nginx" \
+    "${adcmuserconf}" \
+    "${ssl_keys_dir}" \
+    "${ssl_config_dir}"
+  do
+    mkdir -p "${dir}" || {
+      echo "Is the ${adcmroot}/data volume writable by the running user (uid $(id -u))?" >&2
+      echo "Change ${adcmroot}/data volume ownership by command: 'chown $(id -u):$(id -g) -R <bind mount>'" >&2
+      exit 1
+    }
+  done
+
+  # Ephemeral run dir is on the rootfs, not the data volume: a failure here
+  # means a read-only rootfs without a tmpfs mounted over it, not a volume
+  # ownership problem.
+  mkdir -p "${adcmrun}" || {
+    echo "Cannot create ${adcmrun}; with a read-only rootfs mount a tmpfs there (--tmpfs ${adcmrun})" >&2
+    exit 1
+  }
+
+  # Restrict access to dirs that may hold secrets / uploaded bundle contents,
+  # and to the run dir (its runit control FIFOs allow signalling services).
+  # The run dir chmod is best-effort: a tmpfs mounted over it is root-owned, so
+  # a non-root process cannot chmod it — pass mode/uid mount options instead
+  # (e.g. --tmpfs /adcm/run:mode=700,uid=$(id -u)).
+  chmod 700 "${adcmrun}" 2>/dev/null || true
   chmod 700 "${adcmfile}"
-  mkdir -p "${adcmvar}"
-  mkdir -p "${adcmtmp}"
-  chmod 777 "${adcmtmp}"
-  chmod a+t "${adcmtmp}"
-  mkdir -p "${adcmuserconf}"
+  chmod 700 "${adcmtmp}"
+
+  echo "Directories: OK"
 }
 
 ensure_mandatory_db_settings_provided() {
+  echo "Checking DB env variables..."
+
   mandatory_vars="DB_HOST DB_USER DB_PASS DB_NAME"
   missing_vars=""
 
@@ -77,4 +123,89 @@ ensure_mandatory_db_settings_provided() {
     done
     exit 1
   fi
+
+  echo "DB env variables: OK"
+}
+
+ensure_worker_status_service_url_provided() {
+  echo "Checking worker env variables..."
+
+  if [ -z "${CONSUL_URL}" ] && [ -z "${DEFAULT_ADCM_URL}" ]; then
+    echo "ERROR: one of the following environment variables must be specified:" >&2
+    echo "  CONSUL_URL - the worker discovers the status service URL in Consul" >&2
+    echo "  DEFAULT_ADCM_URL - used directly when there is no Consul discovery result" >&2
+    exit 1
+  fi
+
+  echo "Worker env variables: OK"
+}
+
+check_compatibility() {
+  echo "Checking compatibility..."
+
+  "${adcmvenv}"/python "${django_manage_script}" compatibility_check &&
+  echo "Compatibility check: OK" ||
+  exit $?
+}
+
+init_or_migrate_secrets() {
+  echo "Preparing secrets..."
+
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py migrate &&
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py init &&
+  echo "Secrets: OK" ||
+  exit $?
+}
+
+migrate_secrets() {
+  echo "Preparing secrets..."
+
+  "${adcmvenv}"/python "${scripts}"/manage_secrets.py migrate &&
+  echo "Secrets: OK" ||
+  exit $?
+}
+
+migrate_db() {
+  echo "Migrating DB..."
+
+  "${adcmvenv}"/python "${django_manage_script}" migrate &&
+  echo "DB migration: OK" ||
+  exit $?
+}
+
+post_migrate_db() {
+  echo "Initializing DB..."
+
+  "${adcmvenv}"/python "${adcmroot}"/python/init_db.py &&
+  echo "DB initialization: OK" ||
+  exit $?
+}
+
+upgrade_roles() {
+  echo "Upgrading roles..."
+
+  "${adcmvenv}"/python "${django_manage_script}" upgraderole &&
+  echo "Roles upgrade: OK" ||
+  exit $?
+}
+
+make_nginx_default_config() {
+  echo "Configuring nginx..."
+
+  TARGET_CONFIG="${ssl_config_dir}/${ssl_config_filename}"
+
+  [ -f "${TARGET_CONFIG}" ] && rm "${TARGET_CONFIG}"
+
+  if [ -f "${ssl_keys_dir}/cert.pem" ] || [ -f "${ssl_keys_dir}/key.pem" ]; then
+    cp "${ssl_config_template}" "${TARGET_CONFIG}" && chmod 664 "${TARGET_CONFIG}" || exit $?
+  fi
+
+  echo "Nginx configuration: OK"
+}
+
+wait_forever() {
+  while true; do
+    wait
+    sleep 1
+  done
 }

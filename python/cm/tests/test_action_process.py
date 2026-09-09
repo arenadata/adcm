@@ -16,10 +16,11 @@ from uuid import uuid4
 
 from core.types import ActionProcessID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
+from tests.utils import assert_dict_contains_subset
 from use_cases.wizard import InitiateWizardProcess, PerformWizardProcessOperation
 import core
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.operations import (
     OperationContext,
@@ -33,7 +34,6 @@ from cm.legacy.services.action_process.schema_validation import (
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.job.run.repo import ActionRepoImpl
 from cm.models import Action, Bundle, ObjectType, Process, ProcessStep, Prototype
 from cm.tests.dependencies import WithDishkaContainer
 
@@ -156,7 +156,7 @@ class TestActionProcessLogic(BaseTestCase):
             self.assertEqual(last_completed, steps_name_id_map["step_4"])
 
 
-class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(WithDishkaContainer, BaseTestCase):
     maxDiff = None
 
     def get_process_context(self, process_id: ActionProcessID, cluster_id: int):
@@ -167,11 +167,11 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         return get_action_process_context(process=process, topology=topology).to_context()
 
     def test_process_step_sequential_rendering(self):
-        bundle = self.add_bundle(ACTION_PROCESS_BUNDLE)
-        cluster = self.add_cluster(bundle=bundle, name="cc")
+        bundle = self.uc.upload_bundle(ACTION_PROCESS_BUNDLE)
+        cluster = self.uc.add_cluster(bundle=bundle, name="cc")
         object_ = CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER)
         action = Action.objects.get(prototype_id=cluster.prototype_id, name="wizard_jinja")
-        action_info = ActionRepoImpl.get_action(id=action.pk)
+        action_info = JobRepo().get_action(id=action.pk)
         process_context = ProcessContext(
             action=action_info,
             action_orm=action,
@@ -214,7 +214,7 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
             perform_operation.do(process_id=process_id, payload=payload, context=context)
 
         ctx = self.get_process_context(process_id, cluster.id)
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
             {f"{stage_name}_stage": {} for stage_name in ("second", "third", "fourth")}, ctx["stages"]
         )
 
@@ -222,7 +222,7 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         self.assertEqual(set(first_step.keys()), {"config"})
 
         actual_config = first_step["config"]
-        self.assertDictContainsSubset(
+        assert_dict_contains_subset(
             {"integer_field": config["integer_field"], "string_field": config["string_field"]}, actual_config
         )
 

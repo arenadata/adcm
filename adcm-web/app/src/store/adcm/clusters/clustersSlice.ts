@@ -1,12 +1,18 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { AdcmClustersApi } from '@api';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
-import type { AdcmCluster } from '@models/adcm';
+import type { AdcmCluster, AdcmPrototype } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
+import {
+  attachContractVersionsToClusters,
+  getUniqueClusterPrototypeIds,
+  mergeClusterPreservingContractVersion,
+} from '@utils/contractVersionUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 type AdcmClustersState = {
   clusters: AdcmCluster[];
@@ -23,7 +29,21 @@ const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFrom
 
   try {
     const batch = await AdcmClustersApi.getClusters(filter, sortParams, paginationParams);
-    return batch;
+    const prototypeIds = getUniqueClusterPrototypeIds(batch.results);
+    let prototypes: AdcmPrototype[] = [];
+    if (prototypeIds.length) {
+      try {
+        const response = await AdcmPrototypesApi.getPrototypes({ ids: prototypeIds }, undefined, {
+          pageNumber: 0,
+          perPage: prototypeIds.length,
+        });
+        prototypes = response.results;
+      } catch {
+        prototypes = [];
+      }
+    }
+    const results = attachContractVersionsToClusters(batch.results, prototypes);
+    return { ...batch, results };
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -61,6 +81,21 @@ const clustersSlice = createSlice({
     setLoadState(state, action) {
       state.loadState = action.payload;
     },
+    upsertCluster(state, action: PayloadAction<AdcmCluster>) {
+      const { payload: cluster } = action;
+      const index = state.clusters.findIndex((c) => c.id === cluster.id);
+      if (index >= 0) {
+        state.clusters[index] = mergeClusterPreservingContractVersion(state.clusters[index], cluster);
+      }
+    },
+    removeCluster(state, action: PayloadAction<number>) {
+      const clusterId = action.payload;
+      const prevLength = state.clusters.length;
+      state.clusters = state.clusters.filter((cluster) => cluster.id !== clusterId);
+      if (state.clusters.length !== prevLength) {
+        state.totalCount -= 1;
+      }
+    },
     cleanupClusters() {
       return createInitialState();
     },
@@ -78,16 +113,26 @@ const clustersSlice = createSlice({
       state.clusters = updateIfExists<AdcmCluster>(
         state.clusters,
         (cluster) => cluster.id === id,
-        () => changes,
+        (cluster) => {
+          const nextChanges: Partial<AdcmCluster> = { ...changes };
+          if (changes.prototype) {
+            nextChanges.prototype = {
+              ...cluster.prototype,
+              ...changes.prototype,
+              contractVersion: changes.prototype.contractVersion ?? cluster.prototype.contractVersion,
+            };
+          }
+          return nextChanges;
+        },
       );
     });
     builder.addCase(wsActions.create_cluster_concern, (state, action) => {
       const { id: clusterId, changes: newConcern } = action.payload.object;
       state.clusters = updateIfExists<AdcmCluster>(
         state.clusters,
-        (cluster) => cluster.id === clusterId && cluster.concerns.every((concern) => concern.id !== newConcern.id),
+        (cluster) => cluster.id === clusterId,
         (cluster) => ({
-          concerns: [...cluster.concerns, newConcern],
+          concerns: upsertConcern(cluster.concerns, newConcern),
         }),
       );
     });
@@ -104,6 +149,6 @@ const clustersSlice = createSlice({
   },
 });
 
-const { setLoadState, cleanupClusters } = clustersSlice.actions;
-export { getClusters, refreshClusters, cleanupClusters, setLoadState };
+const { setLoadState, cleanupClusters, upsertCluster, removeCluster } = clustersSlice.actions;
+export { getClusters, refreshClusters, cleanupClusters, setLoadState, upsertCluster, removeCluster };
 export default clustersSlice.reducer;

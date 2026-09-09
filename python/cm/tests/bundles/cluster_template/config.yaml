@@ -1,10 +1,9 @@
+---
 - type: cluster
   name: with_templates
   version: 1.0
-
   actions:
     with_templates:
-      type: task
       scripts_template:
         file:
           path: templates/scripts.py
@@ -17,6 +16,5 @@
         engine:
           type: jinja2
       masking: {}
-
-
-
+  contract_version: '2.1'
+  venv: '2.16'

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 from dishka import Container, Scope, make_container
 

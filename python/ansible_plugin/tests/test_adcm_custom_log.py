@@ -12,7 +12,6 @@
 
 from unittest.mock import patch
 
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import LogStorage
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -31,7 +30,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         content = "bestcontent ever !!!"
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,
@@ -58,7 +57,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         path = "/some/path"
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,
@@ -74,7 +73,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_path_and_content_error(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,
@@ -94,7 +93,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_incorrect_format(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,
@@ -117,7 +116,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         content = "bestcontent ever !!!"
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=self.EXECUTOR_CLASS,

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
+from datetime import timezone as tz
 from io import BytesIO
 from operator import itemgetter
 from unittest.mock import patch
@@ -29,14 +30,13 @@ from cm.models import (
     Service,
     TaskLog,
 )
-from core.legacy.job.dto import TaskPayloadDTO
+from core.action.job import TaskPayloadDTO
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from use_cases.transition.cluster.delete import DeleteService
-import pytz
 
 
 class TestTask(ADCMDjangoAPISuite):
@@ -49,7 +49,7 @@ class TestTask(ADCMDjangoAPISuite):
         self.test_user = self.create_user(**self.test_user_credentials)
 
         self.adcm = ADCM.objects.first()
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
         self.component_1 = Component.objects.filter(service=self.service_1, prototype__name="component_1").first()
         self.cluster_action = Action.objects.filter(name="action", prototype=self.cluster_1.prototype).first()
         self.service_1_action = Action.objects.filter(name="action", prototype=self.service_1.prototype).first()
@@ -99,8 +99,8 @@ class TestTask(ADCMDjangoAPISuite):
 
     def test_filtering_success(self):
         task = self.cluster_task
-        task.name = "test_task"
-        task.display_name = "Test Task"
+        task.name = "qtest_task"
+        task.display_name = "QTest Task"
         task.status = "running"
         task.start_date = timezone.now() - timedelta(days=3)
         task.finish_date = timezone.now()
@@ -180,7 +180,7 @@ class TestTask(ADCMDjangoAPISuite):
             if ordering_field in ("startTime", "endTime"):
                 keyword = "startTime" if ordering_field == "startTime" else "endTime"
                 return [
-                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item[keyword][:-1]).replace(tzinfo=tz.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]
@@ -320,14 +320,14 @@ class TestTaskObjects(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        self.service_1 = self.add_services_to_cluster(service_names=["service_1"], cluster=self.cluster_1).get()
-        self.service_2 = self.add_services_to_cluster(service_names=["service_2"], cluster=self.cluster_1).get()
+        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
+        self.service_2 = self.uc.add_services_to_cluster(names=["service_2"], cluster=self.cluster_1)
 
         self.component_1 = Component.objects.get(service=self.service_1, prototype__name="component_1")
 
-        self.host = self.add_host(provider=self.provider, fqdn="just-host")
+        self.host = self.uc.add_host(provider=self.provider, fqdn="just-host")
 
-        self.add_host_to_cluster(self.cluster_1, self.host)
+        self.uc.add_host_to_cluster(self.cluster_1, self.host)
         HostComponent.objects.create(
             cluster=self.cluster_1, host=self.host, service=self.service_1, component=self.component_1
         )

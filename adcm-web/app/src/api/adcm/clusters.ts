@@ -50,8 +50,9 @@ export class AdcmClustersApi {
     return response.data;
   }
 
-  public static async patchCluster(clusterId: number, payload: EditAdcmClusterPayload) {
-    await httpClient.patch(`/api/v2/clusters/${clusterId}/`, payload);
+  public static async patchCluster(clusterId: number, payload: EditAdcmClusterPayload): Promise<AdcmCluster> {
+    const response = await httpClient.patch<AdcmCluster>(`/api/v2/clusters/${clusterId}/`, payload);
+    return response.data;
   }
 
   public static async deleteCluster(clusterId: number) {

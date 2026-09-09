@@ -1,24 +1,33 @@
 :global {
   body.theme-dark {
-    --overview-descriptionl-background-color: var(--color-xdark-new-20);
+    --cluster-overview-description-text: var(--color-xgray-lighter);
   }
 
   body.theme-light {
-    --overview-descriptionl-background-color: var(--color-xgray-alt-30);
+    --cluster-overview-description-text: var(--color-xgray-new-darker);
   }
 }
 
 .clusterOverviewDescription {
-  padding: 20px;
-  border-radius: 15px;
-  background: var(--overview-descriptionl-background-color);
-
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-100);
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: var(--space-200);
 
-  & > span {
-    font-size: 16px;
+  &__text {
+    min-width: 0;
+    font-size: var(--body-2-size);
+    line-height: var(--body-2-lineheight);
+    letter-spacing: var(--letter-spacing-050p);
+    color: var(--cluster-overview-description-text);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  &__edit {
+    flex-shrink: 0;
   }
 }

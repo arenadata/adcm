@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 from core.types import ADCMCoreType, ADCMDescriptor, Concern, CoreObjectDescriptor, ObjectID
 from django.contrib.contenttypes.models import ContentType

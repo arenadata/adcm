@@ -1,0 +1,101 @@
+---
+- type: cluster
+  name: test_cluster_for_cluster_admin_role
+  allow_maintenance_mode: true
+  version: '1.0'
+  edition: community
+  actions: &id004
+    action_1_success: &id002
+      scripts:
+        - name: succeed job
+          script: ./print_hostvars.yaml
+          script_type: ansible
+      states: &id001
+        available: any
+    action_2_fail:
+      scripts:
+        - name: failed job
+          script: ./fail.yaml
+          script_type: ansible
+      states: *id001
+    action_3_success: *id002
+    action_4_success: *id002
+    action_5_success: *id002
+  config: &id003
+    - name: float
+      type: float
+      required: false
+      default: 1.1
+  contract_version: '2.1'
+  venv: '2.16'
+- name: service_1
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_1_1: &id005
+      constraint:
+        - 0
+        - +
+      actions: *id004
+      config: *id003
+    component_1_2: *id005
+    component_1_3: *id005
+    component_1_4: *id005
+    component_1_5: *id005
+- name: service_2
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_2_1: *id005
+    component_2_2: *id005
+    component_2_3: *id005
+    component_2_4: *id005
+    component_2_5: *id005
+- name: service_3
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_3_1: *id005
+    component_3_2: *id005
+    component_3_3: *id005
+    component_3_4: *id005
+    component_3_5: *id005
+- name: service_4
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_4_1: *id005
+    component_4_2: *id005
+    component_4_3: *id005
+    component_4_4: *id005
+    component_4_5: *id005
+- name: service_5
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_5_1: *id005
+    component_5_2: *id005
+    component_5_3: *id005
+    component_5_4: *id005
+    component_5_5: *id005
+- name: service_6_manual_add
+  type: service
+  version: '1.0'
+  config: *id003
+  actions: *id004
+  components:
+    component_5_1: *id005
+    component_5_2: *id005
+    component_5_3: *id005
+    component_5_4: *id005
+    component_5_5: *id005

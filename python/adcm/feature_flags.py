@@ -27,4 +27,5 @@ FLAG_CONFIG_PROCESSING = _Flag("feature-config-processing")
 
 
 def use_new_job_scheduler() -> bool:
-    return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"
+    #    return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"
+    return os.environ.get(FLAG_JOB_SCHEDULER.env) != "old"

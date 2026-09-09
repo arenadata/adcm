@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component, HostComponent, Service
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -40,7 +39,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_service_from_cluster_context_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMDeleteServicePluginExecutor,
             call_arguments="""
@@ -58,7 +57,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_service_forbidden_arg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMDeleteServicePluginExecutor,
             call_arguments="""
@@ -75,7 +74,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_service_from_own_context(self) -> None:
         task = self.prepare_task(owner=self.service_2, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMDeleteServicePluginExecutor,
             call_arguments={},
@@ -94,7 +93,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_service_by_name_from_service_context_fail(self) -> None:
         task = self.prepare_task(owner=self.service_1, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMDeleteServicePluginExecutor,
             call_arguments={"service": self.service_2.name},
@@ -110,7 +109,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def test_delete_non_existing_service_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMDeleteServicePluginExecutor,
@@ -128,7 +127,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMDeleteServicePluginExecutor,
                     call_arguments={"service": f"cool-{name.lower()}"},

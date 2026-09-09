@@ -1,8 +1,10 @@
+---
 - type: cluster
   name: aa
   version: 1
-
   config:
     - name: exists
       type: password
       default: aaa
+  contract_version: '2.1'
+  venv: '2.16'

@@ -1,50 +1,42 @@
+---
 - type: cluster
   name: cluster_with_patterns
   version: 1
-
-  config: &config
+  config: &id001
     - type: string
       name: patterned_string
-      pattern: &pattern "[a-z][A-Z][0-9]*?"
-      default: &default "pP1"
-
+      pattern: '[a-z][A-Z][0-9]*?'
+      default: pP1
     - type: password
       name: patterned_password
-      pattern: *pattern
-      default: *default
-
+      pattern: '[a-z][A-Z][0-9]*?'
+      default: pP1
     - type: text
       name: patterned_text
-      pattern: *pattern
-      default: *default
-
+      pattern: '[a-z][A-Z][0-9]*?'
+      default: pP1
     - type: secrettext
       name: patterned_text
-      pattern: *pattern
-      default: *default
-
+      pattern: '[a-z][A-Z][0-9]*?'
+      default: pP1
     - type: string
       name: plain_string
       default: plain
-
     - type: password
       name: plain_password
       default: plain
-
     - type: text
       name: plain_text
       default: plain
-
     - type: secrettext
       name: plain_secrettext
       default: plain
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: service
   name: with_patterns
   version: 2
-
-  config: *config
-
+  config: *id001
   components:
     cwp:
-      config: *config
+      config: *id001

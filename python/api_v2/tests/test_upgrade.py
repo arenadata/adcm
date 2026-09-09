@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from cm.models import (
+    Action,
+    Bundle,
     Component,
     ConfigLog,
     Host,
@@ -21,16 +24,15 @@ from cm.models import (
     Upgrade,
 )
 from core.types import TaskID
-from parameterized import parameterized
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
 from tests.suites import ADCMDjangoAPISuite
-
-from api_v2.prototype.utils import accept_license
+from unittest_parametrize import parametrize
 
 ANSIBLE_VAULT_HEADER = "$ANSIBLE_VAULT;1.1;AES256"
 
@@ -77,6 +79,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         cls.user = cls.uc.create_user()
 
+        cls.unsupported_contract_version = "0.999"
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -84,18 +88,46 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.unauthorized_client.login(username="test_user_username", password="test_user_password")
 
     def accept_license_of_first_service(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).get()
-        )
+        prototype = Prototype.objects.filter(
+            bundle=self.upgrade_cluster_via_action_simple.bundle,
+            type=ObjectType.SERVICE,
+            name="service_1",
+            version=self.upgrade_cluster_via_action_simple.bundle.version,
+        ).get()
+        self.uc.accept_license(prototype=prototype)
 
     def assert_task_status_is(self, task_id: TaskID, status: str):
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, status)
+
+    @staticmethod
+    def create_upgrade_with_unsupported_bundle_row(
+        name: str,
+        prototype_type: str,
+        prototype_version: str,
+        contract_version: str,
+    ) -> tuple[Bundle, Prototype]:
+        bundle = Bundle.objects.create(
+            name=name,
+            version="99.0",
+            hash="hash",
+            contract_version=contract_version,
+        )
+        _ = Prototype.objects.create(
+            bundle=bundle,
+            type=prototype_type,
+            name=name,
+            display_name=f"Unsupported {name}",
+            version=prototype_version,
+        )
+
+        return Upgrade.objects.create(
+            bundle=bundle,
+            name="unsupported_upgrade",
+            min_version="0.0",
+            max_version=prototype_version,
+            state_available="any",
+        )
 
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
@@ -104,6 +136,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         for upgrade in response.json():
             self.assertIn("bundle", upgrade)
+            self.assertIn("description", upgrade)
 
     def test_upgrade_visibility_from_edition_any_success(self):
         response = self.client.v2[self.cluster_2, "upgrades"].get()
@@ -129,6 +162,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
                     "isAllowToTerminate",
                     "disclaimer",
                     "bundle",
+                    "description",
                 }
             )
         )
@@ -138,6 +172,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertIsNone(upgrade_data["configuration"])
         self.assertEqual(upgrade_data["disclaimer"], "")
         self.assertFalse(upgrade_data["isAllowToTerminate"])
+        self.assertEqual(upgrade_data["description"], "This is upgrade!")
+
         service_prototype = Prototype.objects.get(
             bundle=self.cluster_upgrade.bundle, type=ObjectType.SERVICE, name=self.service_1.prototype.name
         )
@@ -234,6 +270,32 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.provider.refresh_from_db()
         self.assertEqual(self.provider.prototype.version, self.upgrade_host_via_action_simple.action.prototype.version)
 
+    def test_retrieve_upgrades_without_unsupported_bundles(self):
+        for parent, prototype_type in ((self.cluster_1, "cluster"), (self.provider, "provider")):
+            unsupported_upgrade = self.create_upgrade_with_unsupported_bundle_row(
+                name=parent.prototype.bundle.name,
+                prototype_type=prototype_type,
+                prototype_version=parent.prototype.version,
+                contract_version=self.unsupported_contract_version,
+            )
+
+            with self.subTest(retrieve_many=f"{prototype_type}s"):
+                response = self.client.v2[parent, "upgrades"].get()
+                self.assertEqual(response.status_code, HTTP_200_OK)
+
+                result_bundle_ids = {result["bundle"]["id"] for result in response.json()}
+                self.assertNotIn(unsupported_upgrade.bundle_id, result_bundle_ids)
+
+            with self.subTest(retrieve=prototype_type):
+                response = self.client.v2[parent, "upgrades", unsupported_upgrade].get()
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+
+            with self.subTest(action="upgrade/run"):
+                response = self.client.v2[parent, "upgrades", unsupported_upgrade, "run"].post()
+
+                self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["desc"], "Can't upgrade to unsupported bundle")
+
     def test_provider_upgrade_run_violate_constraint_fail(self):
         response = self.client.v2[self.provider, "upgrades", self.cluster_upgrade, "run"].post()
         expected_response = {
@@ -297,31 +359,38 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_adcm_4703_retrieve_upgrade_with_variant_without_cluster_config_500(self) -> None:
-        old_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_old")
-        new_bundle = self.add_bundle(self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_new")
+        old_bundle = self.uc.upload_bundle(
+            self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_old"
+        )
+        new_bundle = self.uc.upload_bundle(
+            self.test_bundles_dir / "various_upgrades" / "no_config_upgrade_with_variant_new"
+        )
 
         upgrade = Upgrade.objects.get(bundle=new_bundle, name="upgrade_via_action_complex")
 
-        cluster = self.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
+        cluster = self.uc.add_cluster(bundle=old_bundle, name="Cluster For Upgrade")
         self.assertIsNone(cluster.config)
 
-        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="first_host"))
-        self.add_host_to_cluster(cluster=cluster, host=self.add_host(provider=self.provider, fqdn="second_host"))
+        self.uc.add_host_to_cluster(cluster=cluster, host=self.uc.add_host(provider=self.provider, fqdn="first_host"))
+        self.uc.add_host_to_cluster(cluster=cluster, host=self.uc.add_host(provider=self.provider, fqdn="second_host"))
 
         response = self.client.v2[cluster, "upgrades", upgrade].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         schema = response.json()["configuration"]["configSchema"]
-        self.assertEqual(schema["properties"]["pick_host"]["enum"], ["first_host", "second_host", None])
+        self.assertEqual(schema["properties"]["pick_host"]["oneOf"][0]["enum"], ["first_host", "second_host"])
+        self.assertEqual(schema["properties"]["pick_host"]["oneOf"][1], {"type": "null"})
         self.assertEqual(
-            schema["properties"]["grouped"]["properties"]["pick_host"]["enum"], ["first_host", "second_host", None]
+            schema["properties"]["grouped"]["properties"]["pick_host"]["oneOf"][0]["enum"],
+            ["first_host", "second_host"],
         )
+        self.assertEqual(schema["properties"]["grouped"]["properties"]["pick_host"]["oneOf"][1], {"type": "null"})
 
     def test_start_impossible_reason(self):
-        host_1 = self.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
-        host_2 = self.add_host(provider=self.provider, fqdn="second_host", cluster=self.cluster_1)
+        host_1 = self.uc.add_host(provider=self.provider, fqdn="first_host", cluster=self.cluster_1)
+        host_2 = self.uc.add_host(provider=self.provider, fqdn="second_host", cluster=self.cluster_1)
         component_2 = Component.objects.get(service=self.service_1, prototype__name="component_2")
-        self.set_hostcomponent(cluster=self.cluster_1, entries=((host_1, component_2), (host_2, component_2)))
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=((host_1, component_2), (host_2, component_2)))
 
         # list
         mm_response = self.client.v2[self.cluster_1, "hosts", host_1, "maintenance-mode"].post(
@@ -422,14 +491,13 @@ class TestUpgrade(ADCMDjangoAPISuite):
                     self.assertEqual(len(response.json()), upgrades_count)
 
     def test_upgrade_adcm_3899_success(self):
-        accept_license(
-            prototype=Prototype.objects.filter(
-                bundle=self.upgrade_cluster_via_action_simple.bundle,
-                type=ObjectType.SERVICE,
-                name="service_1",
-                version=self.upgrade_cluster_via_action_simple.bundle.version,
-            ).first()
-        )
+        prototype = Prototype.objects.filter(
+            bundle=self.upgrade_cluster_via_action_simple.bundle,
+            type=ObjectType.SERVICE,
+            name="service_1",
+            version=self.upgrade_cluster_via_action_simple.bundle.version,
+        ).first()
+        self.uc.accept_license(prototype=prototype)
         self.client.login(username="test_user_username", password="test_user_password")
         with self.grant_permissions(to=self.user, on=self.cluster_1, role_name="Cluster Administrator"):
             response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_simple, "run"].post()
@@ -447,13 +515,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()), 4)
 
-    @parameterized.expand(
-        input=[
-            ("incorrect value", "incorrect value"),
-            ("Empty value", ""),
-        ]
-    )
-    def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, _, config_type_strict):
+    @parametrize("config_type_strict", ["incorrect value", ""], ids=["incorrect_value", "empty_value"])
+    def test_upgrade_retrieve_complex_invalid_config_variant_value_fail(self, config_type_strict):
         checked_configuration = "variant_config_type_strict"
         response = self.client.v2[self.cluster_1, "upgrades", self.upgrade_cluster_via_action_complex, "run"].post(
             data={
@@ -485,9 +548,9 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertIn("not in variant list", data["desc"])
 
     def test_adcm_7535_encrypt_secrets_from_new_defaults(self):
-        old_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_old")
-        new_bundle = self.add_bundle(self.test_bundles_dir / "adcm_7535_new")
-        cluster = self.add_cluster(bundle=old_bundle, name="nice")
+        old_bundle = self.uc.upload_bundle(self.test_bundles_dir / "adcm_7535_old")
+        new_bundle = self.uc.upload_bundle(self.test_bundles_dir / "adcm_7535_new")
+        cluster = self.uc.add_cluster(bundle=old_bundle, name="nice")
         upgrade = Upgrade.objects.get(bundle_id=new_bundle.pk)
 
         response = self.client.v2[cluster, "upgrades", upgrade, "run"].post(data={})
@@ -501,7 +564,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
     def test_adcm_7676_create_config_host_group_without_config_correct_error(self):
         self.accept_license_of_first_service()
 
-        service = self.add_services_to_cluster(["service_with_miss_config_service"], cluster=self.cluster_1).get()
+        service, *_ = self.uc.add_services_to_cluster(["service_with_miss_config_service"], cluster=self.cluster_1)
         response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
         component = Component.objects.get(service=service, prototype__name="will_miss_config")
@@ -531,3 +594,88 @@ class TestUpgrade(ADCMDjangoAPISuite):
         config = ConfigLog.objects.get(id=service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)
+
+    def test_adcm_8315_revert_upgrade_after_removing_service_and_component(self):
+        self.accept_license_of_first_service()
+        # removed_service - a service that exists in the cluster_1 but doesn't exist in cluster_upgrade
+        # and will remove after upgrade, so it should be restored on revert;
+        # service_1 exists in both clusters. It sets in cluster_1 yet and will be removed after upgrade by api,
+        # such removal is a deliberate user's action, so service_1 shouldn't be restored on revert;
+        removed_service, *_ = self.uc.add_services_to_cluster(
+            names=["service_4_save_config_without_required_field"], cluster=self.cluster_1
+        )
+
+        response = self.client.v2[self.cluster_1, "upgrades", self.cluster_upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.cluster_1.refresh_from_db(fields=["prototype"])
+        self.assertEqual(self.cluster_1.prototype.version, self.cluster_upgrade.bundle.version)
+
+        response = self.client.v2[self.service_1].delete()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        revert_action = Action.objects.get(prototype=self.cluster_1.prototype, name="revert_upgrade")
+        response = self.client.v2[self.cluster_1, "actions", revert_action, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        launched_task = self.task_runner.expect_task_launched(task_id=response.json()["id"])
+        self.task_runner.run_task(launched_task.id)
+        self.assert_task_status_is(task_id=launched_task.id, status="success")
+
+        # check revert is success
+        self.cluster_1.refresh_from_db(fields=["prototype"])
+        self.assertEqual(self.cluster_1.prototype.version, self.bundle_1.version)
+        # check service removed by upgrade is restored, service removed by user isn't
+        self.assertFalse(self.cluster_1.services.filter(prototype__name=self.service_1.prototype.name).exists())
+        self.assertTrue(self.cluster_1.services.filter(prototype__name=removed_service.prototype.name).exists())
+
+
+class TestUpgradeActivatableGroupInSelectionGroup(ADCMDjangoAPISuite):
+    """ADCM-8370: activation flag of activatable group inside selection group is lost on upgrade"""
+
+    maxDiff = None
+
+    ACTIVATABLE_GROUP = "/tiered_storage/hdfs_tiered_storage/custom_site"
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        # generic setup isn't used in here, because none of its bundles and objects are required for this case
+        cls._initialize_roles_and_adcm()
+
+        bundles_dir = cls.test_bundles_dir / "bugs" / "ADCM-8370"
+        cls.bundle_v1 = cls.uc.upload_bundle(src=bundles_dir / "v1")
+        cls.bundle_v2 = cls.uc.upload_bundle(src=bundles_dir / "v2")
+
+        cls.upgrade = Upgrade.objects.get(name="v2", bundle=cls.bundle_v2)
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle_v1, name="Dev tools cluster")
+
+    def test_adcm_8370_activation_of_group_in_selection_group_kept_after_upgrade(self):
+        activated_config = {
+            "tiered_storage": {
+                "hdfs_tiered_storage": {
+                    "fetch.chunk.cache.retention.ms": 600000,
+                    "custom_site": {"custom_core_site": "core", "custom_hdfs_site": "hdfs"},
+                },
+                "_selection": "hdfs_tiered_storage",
+            }
+        }
+        activated_meta = {self.ACTIVATABLE_GROUP: {"isActive": True}}
+
+        response = self.client.v2[self.cluster, "configs"].post(
+            data={"config": activated_config, "adcmMeta": activated_meta, "description": "activate custom_site"}
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED, response.json())
+        self.assertDictEqual(response.json()["adcmMeta"], activated_meta)
+
+        response = self.client.v2[self.cluster, "upgrades", self.upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+        self.cluster.refresh_from_db()
+        self.assertEqual(self.cluster.prototype.version, "2")
+
+        response = self.client.v2[self.cluster, "configs", self.cluster.config.current].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        config_after_upgrade = response.json()
+        self.assertDictEqual(config_after_upgrade["adcmMeta"], activated_meta)
+        self.assertDictEqual(config_after_upgrade["config"], activated_config)

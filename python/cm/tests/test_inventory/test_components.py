@@ -19,20 +19,18 @@ class TestInventoryComponents(BaseInventoryTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.provider_bundle = self.add_bundle(source_dir=self.bundles_dir / "provider")
-        cluster_bundle = self.add_bundle(source_dir=self.bundles_dir / "cluster_1")
+        self.provider_bundle = self.uc.upload_bundle(self.bundles_dir / "provider")
+        cluster_bundle = self.uc.upload_bundle(self.bundles_dir / "cluster_1")
 
-        self.cluster_1 = self.add_cluster(bundle=cluster_bundle, name="cluster_1")
-        self.provider = self.add_provider(bundle=self.provider_bundle, name="provider")
-        self.host_1 = self.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
+        self.cluster_1 = self.uc.add_cluster(bundle=cluster_bundle, name="cluster_1")
+        self.provider = self.uc.add_provider(bundle=self.provider_bundle, name="provider")
+        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host_1", cluster=self.cluster_1)
 
     def test_1_component_1_host(self):
-        service: Service = self.add_services_to_cluster(
-            service_names=["service_one_component"], cluster=self.cluster_1
-        ).first()
+        service: Service = self.uc.add_services_to_cluster(names=["service_one_component"], cluster=self.cluster_1)[0]
         component = Component.objects.get(service=service, prototype__name="component_1")
 
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
+        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component)])
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_service = Action.objects.get(name="action_on_service", prototype=service.prototype)
@@ -103,11 +101,9 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_all_to_all(self):
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
-        service: Service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster_1
-        ).first()
+        service: Service = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster_1)[0]
         component_1 = Component.objects.get(service=service, prototype__name="component_1")
         component_2 = Component.objects.get(service=service, prototype__name="component_2")
 
@@ -115,7 +111,7 @@ class TestInventoryComponents(BaseInventoryTestCase):
         self.host_2.set_multi_state("bac")
         self.host_2.set_multi_state("osscc")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, component_1),
@@ -230,15 +226,15 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_components_2_hosts_mapped_in_pairs(self):
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
 
-        service: Service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster_1
-        ).first()
+        service: Service = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster_1)[0]
         component_1 = Component.objects.get(service=service, prototype__name="component_1")
         component_2 = Component.objects.get(service=service, prototype__name="component_2")
 
-        self.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_1, component_1), (self.host_2, component_2)])
+        self.uc.set_hostcomponent(
+            cluster=self.cluster_1, entries=[(self.host_1, component_1), (self.host_2, component_2)]
+        )
 
         action_on_cluster = Action.objects.get(name="action_on_cluster", prototype=self.cluster_1.prototype)
         action_on_service = Action.objects.get(name="action_on_service", prototype=service.prototype)
@@ -344,21 +340,19 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_on_1_host(self):
-        service: Service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster_1
-        ).first()
+        service: Service = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster_1)[0]
 
         component_1_s1 = Component.objects.get(service=service, prototype__name="component_1")
         component_2_s1 = Component.objects.get(service=service, prototype__name="component_2")
 
-        another_service: Service = self.add_services_to_cluster(
-            service_names=["another_service_two_components"], cluster=self.cluster_1
-        ).first()
+        another_service: Service = self.uc.add_services_to_cluster(
+            names=["another_service_two_components"], cluster=self.cluster_1
+        )[0]
 
         component_1_s2 = Component.objects.get(service=another_service, prototype__name="component_1")
         component_2_s2 = Component.objects.get(service=another_service, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, component_1_s1),
@@ -457,21 +451,19 @@ class TestInventoryComponents(BaseInventoryTestCase):
                 self.assert_inventory(obj=obj, action=action, expected_topology=topology, expected_data=data)
 
     def test_2_services_2_components_each_2_hosts_cross_mapping(self):
-        self.host_2 = self.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
-        service: Service = self.add_services_to_cluster(
-            service_names=["service_two_components"], cluster=self.cluster_1
-        ).get()
+        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host_2", cluster=self.cluster_1)
+        service: Service = self.uc.add_services_to_cluster(names=["service_two_components"], cluster=self.cluster_1)[0]
         component_1_s1 = Component.objects.get(service=service, prototype__name="component_1")
         component_2_s1 = Component.objects.get(service=service, prototype__name="component_2")
 
-        another_service: Service = self.add_services_to_cluster(
-            service_names=["another_service_two_components"], cluster=self.cluster_1
-        ).first()
+        another_service: Service = self.uc.add_services_to_cluster(
+            names=["another_service_two_components"], cluster=self.cluster_1
+        )[0]
 
         component_1_s2 = Component.objects.get(service=another_service, prototype__name="component_1")
         component_2_s2 = Component.objects.get(service=another_service, prototype__name="component_2")
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster_1,
             entries=[
                 (self.host_1, component_1_s1),

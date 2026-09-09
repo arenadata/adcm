@@ -21,6 +21,7 @@ import unittest
 from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
 from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.legacy.services.job.context._base import get_inventory_data
 from cm.models import (
     ADCM,
     Action,
@@ -34,9 +35,11 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from core.cluster import ClusterService
 from core.config._types import ChangeRequest
+from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from rbac.scenarios import RBACScenarios
@@ -233,8 +236,8 @@ class TestClusterConfig(ADCMDjangoAPISuite):
 
     def test_adcm_4778_cluster_variant_bug(self):
         # problem is with absent service
-        bundle = self.add_bundle(self.test_bundles_dir / "bugs" / "ADCM-4778")
-        cluster = self.add_cluster(bundle, "cooler")
+        bundle = self.uc.upload_bundle(self.test_bundles_dir / "bugs" / "ADCM-4778")
+        cluster = self.uc.add_cluster(bundle, "cooler")
 
         response = self.client.v2[cluster, CONFIG_SCHEMA].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -292,14 +295,56 @@ class TestClusterConfig(ADCMDjangoAPISuite):
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_schema_cluster_permissions_another_object_role_denied(self):
-        provider_bundle = self.add_bundle(self.test_bundles_dir / "provider_actions")
-        provider = self.add_provider(bundle=provider_bundle, name="Provider with Actions")
-        host_1 = self.add_host(provider=provider, fqdn="host-1")
+        provider_bundle = self.uc.upload_bundle(self.test_bundles_dir / "provider_actions")
+        provider = self.uc.add_provider(bundle=provider_bundle, name="Provider with Actions")
+        host_1 = self.uc.add_host(provider=provider, fqdn="host-1")
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=host_1, role_name="Manage Maintenance mode"):
                 response = self.client.v2[self.cluster_1, CONFIG_SCHEMA].get()
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+
+    def test_adcm_8014_8016_oneof_for_option_and_variant_no_required_configs(self):
+        """
+        Check the "oneOf" section for no-required option/variant fields. Additionally checks:
+        - variant configs have the "string" type;
+        - no changes for structure configs.
+        """
+
+        self.service, *_ = self.uc.add_services_to_cluster(names=["adcm_8014_8016"], cluster=self.cluster_1)
+
+        response = self.client.v2[self.service, CONFIG_SCHEMA].get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        properties = response.json()["properties"]
+        no_required_cases = (
+            "option_no_req_def",
+            "variant_no_req_def",
+            "structure_no_req_def",
+            "structure_list_no_req_def",
+            "structure_dict_no_req_def",
+        )
+        required_cases = (
+            "variant_req_def",
+            "structure_req_def",
+        )
+
+        for field_name in no_required_cases:
+            with self.subTest(field_name=field_name):
+                schema = properties[field_name]
+                self.assertIn("oneOf", schema)
+                self.assertEqual(schema["oneOf"][1], {"type": "null"})
+                self.assertEqual(schema["oneOf"][0]["title"], field_name)
+
+        for field_name in required_cases:
+            with self.subTest(field_name=field_name):
+                schema = properties[field_name]
+                self.assertNotIn("oneOf", schema)
+                self.assertEqual(schema["title"], field_name)
+
+        # check a type of variant configs
+        self.assertEqual(properties["variant_no_req_def"]["oneOf"][0]["type"], "string")
+        self.assertEqual(properties["variant_req_def"]["type"], "string")
 
 
 class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
@@ -309,8 +354,8 @@ class TestSaveConfigWithoutRequiredField(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.service, *_ = cls.add_services_to_cluster(
-            service_names=["service_4_save_config_without_required_field"], cluster=cls.cluster_1
+        cls.service, *_ = cls.uc.add_services_to_cluster(
+            names=["service_4_save_config_without_required_field"], cluster=cls.cluster_1
         )
 
     def test_save_empty_config_success(self):
@@ -780,7 +825,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
         self.assertEqual(self.service_1.config.current, self.service_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(service_names=["service_3_manual_add"], cluster=self.cluster_1).get()
+        service_3, *_ = self.uc.add_services_to_cluster(names=["service_3_manual_add"], cluster=self.cluster_1)
         self.assertIsNone(service_3.config)
 
     def test_schema(self):
@@ -880,8 +925,19 @@ class TestServiceConfig(ADCMDjangoAPISuite):
 
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
+    def test_json_config_error_with_display_name(self):
+        full_name = "/group/Pretty JSON"
+        config_data = self.client.v2[self.service_2, CONFIGS, self.service_2.config.current].get().json()
+        config_with_wrong_json = config_data | {"config": {"group": {"json": "{"}}}
+
+        expected_message = f"Value of '{full_name}' must be correct json string."
+        response = self.client.v2[self.service_2, CONFIGS].post(data=config_with_wrong_json)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json()["desc"], expected_message)
+
     def test_adcm_5756_500_on_non_required_field(self):
-        service: Service = self.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1).get()
+        service: Service = self.uc.add_services_to_cluster(["adcm_5756"], cluster=self.cluster_1)[0]
 
         config = self.client.v2[service, "configs", service.config.current].get().json()
 
@@ -908,14 +964,19 @@ class TestServiceConfig(ADCMDjangoAPISuite):
     def test_adcm_7586_secrets_encryption(self):
         """
         Based on ADCM-7586 bug born from inconsistency of empty values encryption + ansible preparation.
+        Consistency restored in ADCM-8325
         Default and empty values save tested via API (where empty values are allowed), ansible via service.
         """
         config_service = self.container.get(core.config.ConfigService)
 
         is_encrypted_plain = ("is_encrypted_plain", config_service.secrets.is_encrypted)
-        is_encrypted_map_value = (
+        is_encrypted_map_values = (
             "is_encrypted_map_values",
             lambda x: isinstance(x, dict) and all(map(config_service.secrets.is_encrypted, x.values())),
+        )
+        is_empty_map_values = (
+            "is_empty_map_values",
+            lambda x: isinstance(x, dict) and all(map(partial(eq, ""), x.values())),
         )
         is_none = ("is_none", partial(eq, None))
         is_empty = ("is_empty", partial(eq, ""))
@@ -928,10 +989,15 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             "is_encrypted_in_ansible_dict_map_value",
             lambda x: isinstance(x, dict) and all(map(is_encrypted_in_ansible_dict[1], x.values())),
         )
+        is_empty_in_ansible_dict_map_value = (
+            "is_empty_in_ansible_dict_map_value",
+            lambda x: isinstance(x, dict) and all(map(partial(eq, ""), x.values())),
+        )
 
         default_checks = {
-            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default", "sfile_empty_default"),
-            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
+            is_encrypted_map_values: ("smap_default",),
+            is_empty_map_values: ("smap_empty_default",),
             # empty default for plain values are converted to None's
             is_none: (
                 "pass_empty_default",
@@ -941,18 +1007,21 @@ class TestServiceConfig(ADCMDjangoAPISuite):
                 "smap_no_default",
                 "sfile_no_default",
             ),
+            is_empty: ("sfile_empty_default",),
         }
         save_with_empty_checks = {
             is_encrypted_plain: ("pass_default", "stext_default", "sfile_default"),
             is_empty: ("pass_empty_default", "stext_empty_default", "sfile_empty_default"),
-            is_encrypted_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_map_values: ("smap_default",),
+            is_empty_map_values: ("smap_empty_default",),
             is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
         }
         ansible_ready_format_checks = {
             is_encrypted_in_ansible_dict: ("pass_default", "stext_default"),
             is_empty: ("pass_empty_default", "stext_empty_default"),
             is_path: ("sfile_default", "sfile_empty_default"),
-            is_encrypted_in_ansible_dict_map_value: ("smap_default", "smap_empty_default"),
+            is_encrypted_in_ansible_dict_map_value: ("smap_default",),
+            is_empty_in_ansible_dict_map_value: ("smap_empty_default",),
             is_none: ("pass_no_default", "stext_no_default", "smap_no_default", "sfile_no_default"),
         }
 
@@ -993,6 +1062,54 @@ class TestServiceConfig(ADCMDjangoAPISuite):
         )
 
         self.check_values(values=result.values, checks=ansible_ready_format_checks)
+
+    def test_adcm_8325_secret_empty_strings_not_encrypted(self):
+        service_name = "adcm_8325_secrets_config"
+        expected_initial = {
+            "secretfile": None,  # with empty default
+            "secretfile_with_empty_default_file": "",  # with filepath to empty file as default
+            "password": None,
+            "patterned_password": None,
+            "secrettext": None,
+            "patterned_secrettext": None,
+            "secretmap": None,
+        }
+        data_empty = {k: "" for k in expected_initial}
+        data_empty["secretmap"] = {"key1": ""}
+        expected_empty = data_empty
+
+        service, *_ = self.uc.add_services_to_cluster(names=[service_name], cluster=self.cluster_1)
+        config = ConfigLog.objects.get(id=service.config.current)
+        response = self.client.v2[service, CONFIGS, config].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(config.config, expected_initial)
+        self.assertDictEqual(response.json()["config"], expected_initial)
+
+        response = self.client.v2[service, CONFIGS].post(data={"config": data_empty, "adcmMeta": {}})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        service.refresh_from_db()
+        config = ConfigLog.objects.get(id=service.config.current)
+        response = self.client.v2[service, CONFIGS, config].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertDictEqual(config.config, expected_empty)
+        self.assertDictEqual(response.json()["config"], expected_empty)
+
+        # check inventory for service with empty strings config
+        inventory = get_inventory_data(
+            target=ActionTargetDescriptor(type=ADCMCoreType.SERVICE, id=service.id),
+            is_host_action=False,
+            cluster_service=self.uc.container.get(ClusterService),
+        )
+        inv_config = inventory["all"]["vars"]["services"][service_name]["config"]
+
+        self.assertIsNotNone(inv_config.pop("secretfile"))  # here is path to file
+        self.assertIsNotNone(inv_config.pop("secretfile_with_empty_default_file"))  # here is path to file
+        expected_empty.pop("secretfile")
+        expected_empty.pop("secretfile_with_empty_default_file")
+        self.assertDictEqual(inv_config, expected_empty)
 
 
 class TestServiceCHG(ADCMDjangoAPISuite):
@@ -1383,9 +1500,9 @@ class TestComponentConfig(ADCMDjangoAPISuite):
         self.assertEqual(self.component_1.config.current, self.component_1_initial_config.pk)
 
         # has no initial config
-        service_3 = self.add_services_to_cluster(
-            service_names=["service_with_miss_config_service"], cluster=self.cluster_1
-        ).get()
+        service_3, *_ = self.uc.add_services_to_cluster(
+            names=["service_with_miss_config_service"], cluster=self.cluster_1
+        )
         component_3 = Component.objects.get(cluster=self.cluster_1, service=service_3, prototype__name="have_no_config")
         self.assertIsNone(component_3.config)
 
@@ -2803,20 +2920,27 @@ class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
                 "type": "object",
                 "properties": {
                     "variant": {
-                        "title": "variant",
-                        "description": "",
                         "default": None,
-                        "readOnly": False,
-                        "adcmMeta": {
-                            "isAdvanced": False,
-                            "isInvisible": False,
-                            "activation": None,
-                            "synchronization": None,
-                            "isSecret": False,
-                            "stringExtra": {"isMultiline": False},
-                            "enumExtra": None,
-                        },
-                        "enum": [None],
+                        "oneOf": [
+                            {
+                                "title": "variant",
+                                "description": "",
+                                "default": None,
+                                "readOnly": False,
+                                "adcmMeta": {
+                                    "isAdvanced": False,
+                                    "isInvisible": False,
+                                    "activation": None,
+                                    "synchronization": None,
+                                    "isSecret": False,
+                                    "stringExtra": {"isMultiline": False},
+                                    "enumExtra": None,
+                                },
+                                "enum": [None],
+                                "type": "string",
+                            },
+                            {"type": "null"},
+                        ],
                     }
                 },
                 "additionalProperties": False,
@@ -3391,13 +3515,19 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
 
         # revert upgrade
         config_service = self.container.get(core.config.ConfigService)
+        cluster_service = self.container.get(core.cluster.ClusterService)
+        before_upgrade_scensrios = self.container.get(BeforeUpgradeScenarios)
         config_scenarios = ConfigScenarios(config_service=config_service)
-        callbacks = build_switch_revert_callbacks(config_service=config_service, rbac_scenarios=RBACScenarios())
+        callbacks = build_switch_revert_callbacks(
+            config_service=config_service, rbac_scenarios=RBACScenarios(), cluster_service=cluster_service
+        )
         bundle_revert(
             obj=self.cluster,
             callbacks=callbacks,
             config_service=config_service,
+            cluster_service=cluster_service,
             config_scenarios=config_scenarios,
+            before_upgrade_scenarios=before_upgrade_scensrios,
         )
 
         # CHGs must be restored

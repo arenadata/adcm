@@ -2,7 +2,7 @@ import type React from 'react';
 import { IconButton } from '@uikit';
 import { useDispatch } from '@hooks';
 import { firstUpperCase } from '@utils/stringUtils';
-import type { AdcmHostDuplicate } from '@models/adcm';
+import type { AdcmHost, AdcmHostDuplicate } from '@models/adcm';
 import { openLinkDialog, openUnlinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
 
 enum linkIcons {
@@ -20,9 +20,9 @@ const UnlinkHostDuplicateToggleButton: React.FC<LinkHostProps> = ({ host }) => {
 
   const handleLinkClick = () => {
     if (host.cluster?.id) {
-      dispatch(openUnlinkDialog(host));
+      dispatch(openUnlinkDialog([host as AdcmHost]));
     } else {
-      dispatch(openLinkDialog(host));
+      dispatch(openLinkDialog([host as AdcmHost]));
     }
   };
 

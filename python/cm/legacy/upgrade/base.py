@@ -10,15 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import suppress
 from typing import cast
 import functools
 
 from adcm_version import compare_prototype_versions
-from core.types import Descriptor
+from core.types import ClusterBindSchema, Descriptor
+from core.versions import is_version_suitable
 import core
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.api import is_version_suitable
 from cm.legacy.services.job.context import get_imports_for_inventory
 from cm.legacy.upgrade.before_upgrade_schemas import (
     ActionHostGroupBeforeUpgrade,
@@ -53,7 +54,10 @@ class DifferentBundleError(Exception):
 
 
 def check_upgrade(
-    obj: Cluster | Provider, upgrade: Upgrade, retrieve_sir: RetrieveStartImpossibleReason | None
+    obj: Cluster | Provider,
+    upgrade: Upgrade,
+    retrieve_sir: RetrieveStartImpossibleReason | None,
+    available_contract_versions: core.bundle.AvailableContractVersions,
 ) -> tuple[bool, str]:
     _check_same_bundle(obj=obj, upgrade=upgrade)
 
@@ -63,6 +67,12 @@ def check_upgrade(
         )
     ):
         return False, start_impossible_reason
+
+    if not core.bundle.is_contract_version_supported(
+        current_version=upgrade.bundle.contract_version,
+        available_contract_versions=available_contract_versions,
+    ):
+        return False, "Can't upgrade to unsupported bundle"
 
     if obj.locked:
         concerns = [concern.name or "Action lock" for concern in obj.concerns.order_by("id")]
@@ -183,6 +193,20 @@ def _set_before_upgrade(
         before_upgrade.services = list(
             obj.services.select_related("prototype").values_list("prototype__name", flat=True)
         )
+        before_upgrade.binds = [
+            ClusterBindSchema(**bind)
+            for bind in obj.clusterbind_set.filter(service_id__isnull=True).values(
+                "cluster_id", "source_cluster_id", "service_id", "source_service_id"
+            )
+        ]
+
+    if isinstance(obj, Service):
+        before_upgrade.binds = [
+            ClusterBindSchema(**bind)
+            for bind in obj.cluster.clusterbind_set.filter(service_id=obj.pk).values(
+                "cluster_id", "source_cluster_id", "service_id", "source_service_id"
+            )
+        ]
 
     obj.before_upgrade = before_upgrade.model_dump()
     obj.save(update_fields=["before_upgrade"])
@@ -240,20 +264,12 @@ def _check_upgrade_import(obj: Cluster, upgrade: Upgrade) -> tuple[bool, str]:
     for cbind in ClusterBind.objects.filter(cluster=obj):
         export = cbind.source_service if cbind.source_service else cbind.source_cluster
         import_obj = cbind.service if cbind.service else cbind.cluster
-        try:
+        with suppress(Prototype.DoesNotExist, PrototypeImport.DoesNotExist):
             prototype = Prototype.objects.get(
                 bundle=upgrade.bundle,
                 name=import_obj.prototype.name,
                 type=import_obj.prototype.type,
             )
-        except Prototype.DoesNotExist:
-            return (
-                False,
-                f"Upgrade does not have new version of "
-                f'{import_obj.prototype.type} "{import_obj.prototype.name}" {import_obj.prototype.version}',
-            )
-
-        try:
             prototype_import = PrototypeImport.objects.get(prototype=prototype, name=export.prototype.name)
             if not is_version_suitable(export.prototype.version, prototype_import):
                 return (
@@ -262,8 +278,6 @@ def _check_upgrade_import(obj: Cluster, upgrade: Upgrade) -> tuple[bool, str]:
                     f"versions ({prototype_import.min_version}, {prototype_import.max_version}) "
                     f"does not match export version: {export.prototype.version} ({obj_ref(obj=export)})",
                 )
-        except PrototypeImport.DoesNotExist:
-            pass
 
     for cbind in ClusterBind.objects.filter(source_cluster=obj):
         export = cbind.source_service if cbind.source_service else cbind.source_cluster

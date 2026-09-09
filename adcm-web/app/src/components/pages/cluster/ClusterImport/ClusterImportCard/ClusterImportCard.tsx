@@ -12,8 +12,8 @@ import type {
 } from '@pages/cluster/ClusterImport/ClusterImport.types';
 import {
   getCheckServiceList,
+  getClusterImportCardState,
   getUncheckServiceList,
-  isItemSelected,
 } from '@pages/cluster/ClusterImport/ClusterImport.utils';
 
 export interface ClusterImportCardProps {
@@ -22,10 +22,6 @@ export interface ClusterImportCardProps {
   selectedImports: SelectedImportsGroup;
   dataTest: string;
   onCheckHandler: (selectedImport: SelectedImportHandlerData[]) => void;
-}
-
-export interface ClusterImportCardEmptyProps {
-  isLoading: boolean;
 }
 
 export const ClusterImportLoading = () => {
@@ -51,42 +47,16 @@ const ClusterImportCard = ({
   selectedImports,
   dataTest,
 }: ClusterImportCardProps) => {
-  // Some services can be "isMultiBind = false", and already selected in another cluster, such services we count here as selected
-  const isAllServicesSelected = clusterImport.importServices?.every(
-    (service) =>
-      selectedImports.services.has(service.id) ||
-      (!service.isMultiBind && selectedSingleBind.services.has(service.prototype.name)),
-  );
+  const {
+    isAllServicesSelected,
+    isAnyServiceSelected,
+    isAllServicesDisabled,
+    requiredServiceImport,
+    isClusterImportDisabled,
+    isClusterRequired,
+    isClusterSelected,
+  } = getClusterImportCardState(clusterImport, selectedImports, selectedSingleBind);
 
-  const isAnyServiceSelected = clusterImport.importServices?.some((service) =>
-    selectedImports.services.has(service.id),
-  );
-
-  // Disable "Select All" checkbox if all cluster service are "isMultiBind = false" and they already selected in another clusters
-  const isAllServicesDisabled = clusterImport.importServices?.every(
-    (service) => selectedSingleBind.services.has(service.prototype.name) && !selectedImports.services.has(service.id),
-  );
-
-  // Need to show notification if service required for import, and it is not already selected in current or any another clusters
-  const requiredServiceImport =
-    clusterImport.importServices?.filter(
-      (service) =>
-        service.isRequired && !isItemSelected([...selectedImports.services.values()], service.prototype.name),
-    ) || [];
-
-  // Disable if cluster "isMultiBind = false" and such cluster already selected and if selected cluster with same name is not current cluster;
-  const isClusterImportDisabled =
-    !clusterImport.importCluster ||
-    (!clusterImport.importCluster.isMultiBind &&
-      !selectedImports.clusters.has(clusterImport.cluster.id) &&
-      selectedSingleBind.clusters.has(clusterImport.importCluster.prototype.name));
-
-  // If cluster required for import and there is not selected cluster with same name
-  const isClusterRequired =
-    clusterImport.importCluster?.isRequired &&
-    !isItemSelected([...selectedImports.clusters.values()], clusterImport.importCluster.prototype.name);
-
-  const isClusterSelected = !!(clusterImport.importCluster && selectedImports.clusters.has(clusterImport.cluster.id));
   const clusterCheckHandler = () => {
     if (!clusterImport.importCluster) return;
 

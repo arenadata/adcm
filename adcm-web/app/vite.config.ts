@@ -35,6 +35,14 @@ export default defineConfig(() => {
     //   sourcemap: true,
     // },
     envPrefix: 'ADCM_',
+    css: {
+      preprocessorOptions: {
+        scss: {
+          // Vite 5 defaults to Sass legacy JS API; sass@1.79+ warns on every file.
+          api: 'modern',
+        },
+      },
+    },
     plugins: [
       tsconfigPaths(),
       createSvgSpritePlugin({

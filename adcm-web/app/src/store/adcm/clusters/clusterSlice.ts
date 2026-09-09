@@ -1,14 +1,20 @@
 import type { RequestError } from '@api';
-import { AdcmClustersApi } from '@api';
+import { AdcmClustersApi, AdcmPrototypesApi } from '@api';
 import { createAsyncThunk } from '@store/redux';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
-import type { AdcmCluster } from '@models/adcm';
-import { createSlice } from '@reduxjs/toolkit';
+import type { AdcmCluster, AdcmPrototype } from '@models/adcm';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import {
+  attachContractVersionsToClusters,
+  getUniqueClusterPrototypeIds,
+  mergeClusterPreservingContractVersion,
+} from '@utils/contractVersionUtils';
+import { upsertConcern } from '@utils/concernStoreUtils';
 
 interface AdcmClusterState {
   cluster?: AdcmCluster;
@@ -21,7 +27,21 @@ const loadClusterFromBackend = createAsyncThunk(
   async (arg: number, thunkAPI) => {
     try {
       const cluster = await AdcmClustersApi.getCluster(arg);
-      return cluster;
+      const prototypeIds = getUniqueClusterPrototypeIds([cluster]);
+      let prototypes: AdcmPrototype[] = [];
+      if (prototypeIds.length) {
+        try {
+          const response = await AdcmPrototypesApi.getPrototypes({ ids: prototypeIds }, undefined, {
+            pageNumber: 0,
+            perPage: prototypeIds.length,
+          });
+          prototypes = response.results;
+        } catch {
+          prototypes = [];
+        }
+      }
+      const [enriched] = attachContractVersionsToClusters([cluster], prototypes);
+      return enriched;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: 'Cluster not found' }));
       return thunkAPI.rejectWithValue(error);
@@ -58,6 +78,9 @@ const clusterSlice = createSlice({
     setIsLoading(state, action) {
       state.isLoading = action.payload;
     },
+    setCluster(state, action: PayloadAction<AdcmCluster>) {
+      state.cluster = mergeClusterPreservingContractVersion(state.cluster, action.payload);
+    },
     cleanupCluster() {
       return createInitialState();
     },
@@ -77,18 +100,26 @@ const clusterSlice = createSlice({
     builder.addCase(wsActions.update_cluster, (state, action) => {
       const { id, changes } = action.payload.object;
       if (state.cluster?.id === id) {
-        state.cluster = {
+        const next = {
           ...state.cluster,
           ...changes,
         };
+        if (changes.prototype) {
+          next.prototype = {
+            ...state.cluster.prototype,
+            ...changes.prototype,
+            contractVersion: changes.prototype.contractVersion ?? state.cluster.prototype.contractVersion,
+          };
+        }
+        state.cluster = next;
       }
     });
     builder.addCase(wsActions.create_cluster_concern, (state, action) => {
       const { id: clusterId, changes: newConcern } = action.payload.object;
-      if (state.cluster?.id === clusterId && state.cluster.concerns.every((concern) => concern.id !== newConcern.id)) {
+      if (state.cluster?.id === clusterId) {
         state.cluster = {
           ...state.cluster,
-          concerns: [...state.cluster.concerns, newConcern],
+          concerns: upsertConcern(state.cluster.concerns, newConcern),
         };
       }
     });
@@ -104,6 +135,6 @@ const clusterSlice = createSlice({
   },
 });
 
-const { setIsLoading, cleanupCluster } = clusterSlice.actions;
-export { getCluster, cleanupCluster };
+const { setIsLoading, cleanupCluster, setCluster } = clusterSlice.actions;
+export { getCluster, cleanupCluster, setCluster };
 export default clusterSlice.reducer;

@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from itertools import chain
 from pathlib import Path
-from typing import Callable, TypeAlias
+from typing import TypeAlias
 import os
 import sys
 import argparse
@@ -59,8 +60,9 @@ class LicenseChecker:
             if not line:
                 return offset_line, self._license_lines
 
-            if line.startswith("#!"):
-                # then it's a shebang, expect next comment to be license
+            if line.startswith(("#!", "# (c)")):
+                # then it's a shebang or ansible plugin copyright,
+                # expect next comment to be license
                 offset_line += 1
                 line = next(unread_lines, None)
                 if line is None:

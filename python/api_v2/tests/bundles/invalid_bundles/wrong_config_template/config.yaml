@@ -3,18 +3,21 @@
   name: wrong_config_template
   version: 1
   edition: community
-
   config:
     - name: bool_field
-      display_name: "Boolean field"
+      display_name: Boolean field
       type: boolean
       default: false
-
   actions:
     dummy:
-      display_name: "Dummy action"
-      type: task
-      scripts_jinja: scripts.j2
+      display_name: Dummy action
       config_template: config.j2
       states:
         available: any
+      scripts_template:
+        file:
+          path: scripts.j2
+        engine:
+          type: jinja2
+  contract_version: '2.1'
+  venv: '2.16'

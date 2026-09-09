@@ -40,13 +40,13 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
     def test_adcm_hc_should_not_cause_hc_acl_effect(self) -> None:
-        service = self.add_services_to_cluster(["simple"], cluster=self.cluster).first()
+        service, *_ = self.uc.add_services_to_cluster(["simple"], cluster=self.cluster)
         component_1, component_2 = Component.objects.filter(service=service).all()
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_2)
 
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, component_1), (self.host_1, component_2), (self.host_2, component_1)),
         )

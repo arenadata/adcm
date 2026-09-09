@@ -13,6 +13,7 @@ import { AdcmJobStatus, type AdcmSubJobDetails } from '@models/adcm';
 import type { AdcmJob, AdcmSubJob, AdcmSubJobLogItem } from '@models/adcm';
 import { Link } from 'react-router-dom';
 import ActionWizardOperationLog from '@uikit/ActionWizardSteps/ActionWizardOperation/ActionWizardOperationLog/ActionWizardOperationLog';
+import ActionWizardStopSubJobDialog from '@uikit/ActionWizardSteps/ActionWizardOperation/ActionWizardStopSubJobDialog/ActionWizardStopSubJobDialog';
 
 interface ActionWizardOperationProps {
   job: AdcmJob;
@@ -43,39 +44,42 @@ const ActionWizardOperation = ({ job, subJobLog }: ActionWizardOperationProps) =
   );
 
   return (
-    <Table variant="secondary" columns={columns}>
-      {job?.childJobs?.map((subJob: AdcmSubJob) => (
-        <ExpandableRowComponent
-          key={subJob.id}
-          colSpan={columns.length}
-          isExpanded={expandableRows[subJob.id] || false}
-          expandedContent={<ActionWizardOperationLog subJob={subJob} subJobLogs={subJobLog[subJob.id]} />}
-        >
-          <JobsStatusCell status={subJob.status} className={s.subJobRow__subJobName}>
-            <Link to={`/jobs/${job.id}/subjobs/${subJob.id}`} className="text-link">
-              {orElseGet(subJob.displayName || null)}
-            </Link>
-          </JobsStatusCell>
-          <TableCell>{subJob.status}</TableCell>
-          <TableCell>{orElseGet(subJob.duration ?? 0, secondsToDuration)}</TableCell>
-          <DateTimeCell value={subJob.startTime ?? undefined} />
-          <DateTimeCell value={subJob.endTime ?? undefined} />
-          <TableCell hasIconOnly align="center">
-            <IconButton
-              icon="g1-skip"
-              title="Skip the subjob"
-              size={32}
-              onClick={handleStopClick}
-              disabled={!subJob.isTerminatable || subJob.status !== AdcmJobStatus.Running}
-              data-subjobid={subJob.id}
-            />
-          </TableCell>
-          <TableCell hasIconOnly align="center">
-            <Button variant="secondary" iconLeft="dots" onClick={() => handleExpandClick(subJob.id)} />
-          </TableCell>
-        </ExpandableRowComponent>
-      ))}
-    </Table>
+    <>
+      <Table variant="secondary" columns={columns}>
+        {job.childJobs.map((subJob: AdcmSubJob) => (
+          <ExpandableRowComponent
+            key={subJob.id}
+            colSpan={columns.length}
+            isExpanded={expandableRows[subJob.id] || false}
+            expandedContent={<ActionWizardOperationLog subJob={subJob} subJobLogs={subJobLog[subJob.id]} />}
+          >
+            <JobsStatusCell status={subJob.status} className={s.subJobRow__subJobName}>
+              <Link to={`/jobs/${job.id}/subjobs/${subJob.id}`} className="text-link">
+                {orElseGet(subJob.displayName || null)}
+              </Link>
+            </JobsStatusCell>
+            <TableCell>{subJob.status}</TableCell>
+            <TableCell>{orElseGet(subJob.duration ?? 0, secondsToDuration)}</TableCell>
+            <DateTimeCell value={subJob.startTime ?? undefined} />
+            <DateTimeCell value={subJob.endTime ?? undefined} />
+            <TableCell hasIconOnly align="center">
+              <IconButton
+                icon="g1-skip"
+                title="Skip the subjob"
+                size={32}
+                onClick={handleStopClick}
+                disabled={!subJob.isTerminatable || subJob.status !== AdcmJobStatus.Running}
+                data-subjobid={subJob.id}
+              />
+            </TableCell>
+            <TableCell hasIconOnly align="center">
+              <Button variant="secondary" iconLeft="dots" onClick={() => handleExpandClick(subJob.id)} />
+            </TableCell>
+          </ExpandableRowComponent>
+        ))}
+      </Table>
+      <ActionWizardStopSubJobDialog job={job} />
+    </>
   );
 };
 

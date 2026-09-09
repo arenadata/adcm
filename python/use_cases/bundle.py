@@ -27,6 +27,7 @@ from core.types import BundleID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 import core
+import core.bundle
 
 logger = logging.getLogger("adcm")
 
@@ -119,9 +120,29 @@ class InitOrUpgradeADCM:
                 case models.ADCM():
                     self.upgrade_adcm.do(bundle_id=bundle_id)
 
+                    self.bundle_service.clear_old_versions_adcm_bundles()
+
                     logger.info("ADCM upgrade: OK (%s -> %s).", current_adcm_bundle_version, new_adcm_bundle_version)
 
                 case None:
                     self.initialize_adcm.do(bundle_id=bundle_id)
 
                     logger.info("ADCM upgrade: version %s initialized.", new_adcm_bundle_version)
+
+
+@dataclass(slots=True)
+class AcceptLicense:
+    bundle_service: core.bundle.BundleService
+
+    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    def do(self, prototype: models.Prototype) -> None:
+        meta_info = core.bundle.d.PrototypeMetaInfo(
+            contract_version=prototype.bundle.contract_version,
+            license=core.bundle.d.License(
+                status=prototype.license,
+                path=prototype.license_path,
+                hash=prototype.license_hash,
+            ),
+        )
+
+        self.bundle_service.accept_license(prototype_meta_info=meta_info)

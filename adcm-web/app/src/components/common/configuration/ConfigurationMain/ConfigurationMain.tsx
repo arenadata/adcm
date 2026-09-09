@@ -2,7 +2,7 @@ import type React from 'react';
 import { ConfigurationEditor } from '@uikit';
 import type { AdcmConfiguration, ConfigurationData, ConfigurationAttributes } from '@models/adcm';
 import { useConfigurationFormContext } from '../ConfigurationFormContext/ConfigurationFormContext.context';
-import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 
 interface ConfigurationMainProps {
   configuration: AdcmConfiguration | null;
@@ -17,7 +17,7 @@ const getCorrectConfigurationData = (configuration: AdcmConfiguration): Configur
   if (Object.keys(configurationData).length > 0) {
     return configurationData;
   }
-  return generateFromSchema<ConfigurationData>(schema) ?? {};
+  return generateJsonSchemaDefaults<ConfigurationData>(schema) ?? {};
 };
 
 const ConfigurationMain: React.FC<ConfigurationMainProps> = ({

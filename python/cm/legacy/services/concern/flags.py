@@ -11,12 +11,12 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from enum import Enum
 from functools import partial, reduce
 from itertools import chain
 from operator import or_
-from typing import Callable, Collection
 
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType

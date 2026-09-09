@@ -11,10 +11,10 @@
 # limitations under the License.
 
 from collections import deque
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 from time import sleep, time
-from typing import Collection
 
 from requests.exceptions import ConnectionError
 from rest_framework.status import HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED

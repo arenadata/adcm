@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass
 from operator import itemgetter
 from pathlib import Path
-from typing import Any, Callable, Hashable, Iterable, Protocol, TypeAlias, runtime_checkable
+from typing import Any, Protocol, TypeAlias, runtime_checkable
 import warnings
 import collections.abc
 
@@ -21,6 +22,7 @@ from adcm_version import compare_adcm_versions
 from ruyaml.error import ReusedAnchorWarning
 import yaml
 
+from core.action import JobSpec
 from core.errors import localize_error
 from core.legacy.bundle_alt.bundle_load import get_config_files
 from core.legacy.bundle_alt.convertion import extract_scripts, schema_entry_to_definition
@@ -46,7 +48,6 @@ from core.legacy.bundle_alt.schema import (
 )
 from core.legacy.bundle_alt.types import BundleDefinitionKey, ConfigDefinition, Definition
 from core.legacy.bundle_alt.validation import check_definitions_are_valid
-from core.legacy.job.types import JobSpec
 
 _ParsedRootDefinition: TypeAlias = ClusterSchema | ServiceSchema | ProviderSchema | HostSchema | ADCMSchema
 _ParsedDefinition: TypeAlias = _ParsedRootDefinition | ComponentSchema

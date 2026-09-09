@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "application",
+    "health",
 ]
 
 MIDDLEWARE = [
@@ -202,8 +203,10 @@ TEMPLATES = [
     },
 ]
 
-# Removal candidates
+# Remove after ensuring that they are not used during config.json forming
 
 CONSUL_URL = os.getenv("CONSUL_URL")
 CONSUL_DATACENTER = os.getenv("CONSUL_DATACENTER")
 CONSUL_CACERT_FILE = os.getenv("CONSUL_CACERT_FILE")
+
+STATUS_SERVICE_BASE_PATH = os.getenv("STATUS_SERVICE_BASE_PATH", "/status/api/v1/")

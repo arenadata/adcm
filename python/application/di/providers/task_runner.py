@@ -16,10 +16,8 @@ import logging
 
 from cm.legacy import status_api
 from cm.legacy.services.job.run import ExecutionTargetFactory
-from cm.legacy.services.job.run.repo import ActionRepoImpl, JobRepoImpl
 from cm.legacy.services.job.run.runners import EventNotifier, JobSequenceRunner, StatusServerInteractor
 from cm.legacy.services.status import notify
-from core.legacy.job.repo import ActionRepoInterface, JobRepoInterface
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -34,8 +32,9 @@ from core.legacy.job.runners import (
 )
 from core.secrets import Secret, SecretsBackend
 from core.settings import Directories
-from dishka import Provider, Scope, from_context, provide
+from dishka import Provider, Scope, from_context, provide, provide_all
 from django.utils import timezone
+from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning
 
 
 class SubprocessRunnerEnvironment:
@@ -50,11 +49,9 @@ class SubprocessRunnerEnvironment:
 class TaskRunnerProvider(Provider):
     scope = Scope.APP
 
-    # job_processor: JobProcessor
-
     @provide
     def logger(self) -> logging.Logger:
-        return logging.getLogger("task_runner_err")
+        return logging.getLogger("task-runner")
 
     @provide  # must be moved to environment
     def consul_settings(self) -> ConsulSettings:
@@ -85,9 +82,6 @@ class TaskRunnerProvider(Provider):
     def status_server(self) -> StatusServerInteractor:
         return notify
 
-    job_repo = provide(JobRepoImpl, provides=JobRepoInterface)
-    action_repo = provide(ActionRepoImpl, provides=ActionRepoInterface)
-
     job_factory = provide(ExecutionTargetFactory, provides=ExecutionTargetFactoryI)
     job_filter = from_context(JobFilterPredicate)
     job_processor = provide(JobProcessor)
@@ -95,3 +89,9 @@ class TaskRunnerProvider(Provider):
     environment = provide(SubprocessRunnerEnvironment, provides=RunnerEnvironment)
 
     runner = provide(JobSequenceRunner, provides=TaskRunner)
+
+
+class JobUseCaseProvider(Provider):
+    scope = Scope.APP
+
+    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken)

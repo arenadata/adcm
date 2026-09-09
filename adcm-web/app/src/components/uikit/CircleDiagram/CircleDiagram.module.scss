@@ -1,37 +1,53 @@
 :global {
   body.theme-dark {
-    --circle-diagram-empty-color: var(--color-xdark-new-50);
-    --circle-diagram-counter-color: var(--color-xwhite-off);
-
+    --circle-diagram-up-color: var(--color-xgreen-saturated);
+    --circle-diagram-down-color: var(--color-eggshell);
+    --circle-diagram-empty-stroke: var(--color-new-light);
+    --circle-diagram-text-primary: var(--color-xgray-lighter);
   }
+
   body.theme-light {
-    --circle-diagram-empty-color: var(--color-xgray-alt);
-    --circle-diagram-counter-color: var(--color-xdark);
+    --circle-diagram-up-color: var(--color-green-logo);
+    --circle-diagram-down-color: var(--color-orange);
+    --circle-diagram-empty-stroke: var(--color-silver-ish);
+    --circle-diagram-text-primary: var(--color-xgray-new-darker);
   }
 }
 
 .circleDiagram {
   align-items: center;
   display: flex;
+  flex-shrink: 0;
   justify-content: center;
-  font-weight: 500;
-  font-size: 18px;
   position: relative;
-  height: 199px;
-  width: 199px;
-  --circle-diagram-fill-color: currentColor;
+  width: var(--circle-diagram-size);
+  height: var(--circle-diagram-size);
 
   svg {
     position: absolute;
     left: 0;
     top: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  circle {
-    transition: stroke-dashoffset 1s;
+  &__segment {
+    transition: stroke-dasharray 1s, stroke-dashoffset 1s;
   }
 
   &__counter {
-    color: var(--circle-diagram-counter-color);
+    color: var(--circle-diagram-text-primary);
+    font-size: var(--body-2-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-2-lineheight);
+    letter-spacing: var(--letter-spacing-050p);
+  }
+
+  &_size_small {
+    --circle-diagram-size: 92px;
+  }
+
+  &_size_medium {
+    --circle-diagram-size: 120px;
   }
 }

@@ -1,29 +1,24 @@
-
-
+---
 - type: provider
   version: 1.0
   name: provider_nested_groups
-
-  actions: &actions
+  actions: &id001
     scripts_template:
-      type: task
-      config_template: 
+      config_template:
         file:
           path: ./config.j2
         engine:
           type: jinja2
-      scripts_template: 
+      scripts_template:
         file:
           path: ./script.j2
         engine:
           type: jinja2
       states:
         available: any
-      params:
-        ansible_tags: sleep 
-
+  contract_version: '2.1'
+  venv: '2.16'
 - type: host
   version: 1.0
   name: simple_host
-
-  actions: *actions
+  actions: *id001

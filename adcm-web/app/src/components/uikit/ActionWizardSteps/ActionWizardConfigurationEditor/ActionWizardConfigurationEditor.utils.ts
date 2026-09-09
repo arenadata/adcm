@@ -1,4 +1,4 @@
-import { generateFromSchema } from '@utils/jsonSchema/jsonSchemaUtils';
+import { generateJsonSchemaDefaults } from '@utils/jsonSchema/JsonSchemaValidationService';
 import type { AdcmWizardConfiguration } from '@models/adcm/wizard';
 import type { AdcmConfiguration, ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 
@@ -8,7 +8,8 @@ export const prepareConfigurationFromStepData = (configuration: AdcmWizardConfig
   }
 
   return {
-    configurationData: configuration.config ?? generateFromSchema<ConfigurationData>(configuration.configSchema) ?? {},
+    configurationData:
+      configuration.config ?? generateJsonSchemaDefaults<ConfigurationData>(configuration.configSchema) ?? {},
     schema: configuration.configSchema as ConfigurationSchema,
     attributes: (configuration.adcmMeta || {}) as ConfigurationAttributes,
   };

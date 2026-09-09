@@ -16,7 +16,13 @@ from functools import partial
 from typing import Any, TypeAlias
 import json
 
-from audit.alt.core import AuditedCallArguments, IDBasedAuditObjectCreator, OperationAuditContext, Result
+from audit.alt.core import (
+    AuditedCallArguments,
+    IDBasedAuditObjectCreator,
+    OperationAuditContext,
+    OperationNameTemplate,
+    Result,
+)
 from audit.alt.hooks import AuditHook, AuditHookFunc
 from audit.alt.object_retrievers import GeneralAuditObjectRetriever
 from audit.models import AuditObject, AuditObjectType
@@ -476,15 +482,16 @@ class set_add_hosts_name(AuditHook):  # noqa: N801
         request = self.call_arguments.get("request", "")
         data = _retrieve_request_body(request=request)
 
-        host_fqdn = ""
+        names = ()
         if isinstance(data, list):
             # we may want to consider both naming styles here, but just v2-like camelCase for now
-            ids = (entry.get("hostId", entry.get("host_id")) for entry in data if isinstance(entry, dict))
-            host_fqdn = ", ".join(sorted(Host.objects.filter(id__in=ids).values_list("fqdn", flat=True)))
-        elif isinstance(data, dict) and (host_id := data.get("hostId", data.get("host_id"))) is not None:
-            host_fqdn = Host.objects.values_list("fqdn", flat=True).filter(id=host_id).first() or ""
+            ids = [entry.get("hostId", entry.get("host_id")) for entry in data if isinstance(entry, dict)]
+            names = tuple(sorted(Host.objects.filter(id__in=ids).values_list("fqdn", flat=True)))
 
-        self.context.name = f"[{host_fqdn}] host(s) added"
+        elif isinstance(data, dict) and (host_id := data.get("hostId", data.get("host_id"))) is not None:
+            names = (Host.objects.values_list("fqdn", flat=True).filter(id=host_id).first() or "",)
+
+        self.context.name = OperationNameTemplate(names=names, template=self.context.name)
 
 
 class set_removed_host_name(AuditHook):  # noqa: N801
@@ -531,13 +538,11 @@ def update_host_name(
 class set_service_names_from_request(AuditHook):  # noqa: N801
     def __call__(self):
         ids = self._get_ids_from_request(request=self.call_arguments.get("request"))
-        service_display_names = (
+        service_display_names = tuple(
             Prototype.objects.filter(pk__in=ids).order_by("display_name").values_list("display_name", flat=True)
         )
 
-        service_display_names = ", ".join(service_display_names)
-
-        self.context.name = self.context.name.format(service_names=f"[{service_display_names}]").strip()
+        self.context.name = OperationNameTemplate(names=service_display_names, template=self.context.name)
 
     @staticmethod
     def _get_ids_from_request(request: WSGIRequest) -> tuple:

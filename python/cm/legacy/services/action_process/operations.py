@@ -11,10 +11,11 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import wraps
-from typing import Iterable, Literal, Protocol, TypeAlias, TypeVar
+from typing import Literal, Protocol, TypeAlias, TypeVar
 
 from core.action import wizard
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference

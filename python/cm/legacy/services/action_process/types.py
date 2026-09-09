@@ -13,8 +13,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, TypeAlias, Union, overload
 
-from core.action import wizard
-from core.legacy.job.types import ActionInfo
+from core.action import ActionInfo, wizard
 from core.types import (
     ActionProcessID,
     ActionTargetDescriptor,

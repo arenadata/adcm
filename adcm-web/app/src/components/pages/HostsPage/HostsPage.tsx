@@ -5,12 +5,14 @@ import HostsTable from '@pages/HostsPage/HostsTable/HostsTable';
 import HostsTableFooter from '@pages/HostsPage/HostsTableFooter/HostsTableFooter';
 import { useRequestHosts } from '@pages/HostsPage/useRequestHosts';
 import HostsActionsDialogs from '@pages/HostsPage/HostsActionsDialogs/HostsActionsDialogs';
+import HostsBulkOperationsInfoBanner from '@pages/HostsPage/HostsBulkOperationsInfoBanner/HostsBulkOperationsInfoBanner';
 
 const HostsPage: React.FC = () => {
   useRequestHosts();
 
   return (
     <TableContainer variant="easy">
+      <HostsBulkOperationsInfoBanner />
       <HostsTableToolbar />
       <HostsTable />
       <HostsTableFooter />

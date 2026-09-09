@@ -13,6 +13,7 @@ import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/Action
 import { getCurrentStageNotDisabledStepIds, getMaxStepId } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 import {
   getProcess,
+  getStep,
   getSteps,
   resetStep,
 } from '@store/adcm/cluster/services/serviceComponents/serviceComponentsWizardSlice';
@@ -166,6 +167,16 @@ const ServiceComponentsDynamicActionWizardStep: React.FC<ClusterServiceComponent
       );
     }
   }, [dispatch, stepIds, selectedStep]);
+
+  useEffect(() => {
+    if (!clusterId || !serviceId || !componentId || !actionId || !processId || !selectedStep) return;
+
+    const selectedStepData = process?.stages.flatMap((stage) => stage.steps).find((step) => step.id === selectedStep);
+
+    if (selectedStepData?.type === AdcmWizardStepType.Configuration) {
+      dispatch(getStep({ clusterId, serviceId, componentId, actionId, processId, stepId: selectedStep }));
+    }
+  }, [dispatch, clusterId, serviceId, componentId, actionId, processId, selectedStep]);
 
   const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!clusterId || !serviceId || !componentId || !actionId || !process) {

@@ -1,35 +1,36 @@
 import {
   type AdcmComponentConstraint,
+  type AdcmComponentDependency,
+  AdcmEntitySystemState,
   type AdcmHostShortView,
-  type AdcmMappingComponent,
+  AdcmMaintenanceMode,
   type AdcmMapping,
+  type AdcmMappingComponent,
   type AdcmMappingComponentService,
   type ComponentId,
   type HostId,
   type ServiceId,
-  type AdcmComponentDependency,
-  AdcmEntitySystemState,
-  AdcmMaintenanceMode,
 } from '@models/adcm';
 import type {
-  HostMapping,
-  ServiceMapping,
-  ComponentMapping,
-  ComponentsMappingErrors,
-  HostsDictionary,
-  ValidationCache,
-  ValidateRelatedData,
-  RequiredError,
-  ConstraintError,
-  NotAddedError,
-  ComponentDependenciesMappingErrors,
-  ComponentMappingValidationResultCacheItem,
-  ComponentDependencyValidationResultCacheItem,
-  ComponentMappingErrors,
-  ComponentDependencyMappingErrors,
   ComponentAvailabilityErrors,
-  InitiallyMappedHostsDictionary,
+  ComponentDependenciesMappingErrors,
+  ComponentDependencyMappingErrors,
+  ComponentDependencyValidationResultCacheItem,
+  ComponentMapping,
+  ComponentMappingErrors,
+  ComponentMappingValidationResultCacheItem,
+  ComponentsMappingErrors,
+  ComponentsMappingObject,
+  ConstraintError,
+  HostMapping,
+  HostsDictionary,
   InitiallyMappedComponentsDictionary,
+  InitiallyMappedHostsDictionary,
+  NotAddedError,
+  RequiredError,
+  ServiceMapping,
+  ValidateRelatedData,
+  ValidationCache,
 } from './ClusterMapping.types';
 import type { SortParams } from '@models/table.ts';
 
@@ -37,25 +38,31 @@ export const getComponentsMapping = (
   mapping: AdcmMapping[],
   components: AdcmMappingComponent[],
   hostsDictionary: HostsDictionary,
-): ComponentMapping[] => {
-  const result: ComponentMapping[] = [];
+): ComponentsMappingObject => {
+  const componentsMapping: ComponentMapping[] = [];
+  const unmappedHostsId: number[] = [];
   const componentHostsDictionary: Record<ComponentId, AdcmHostShortView[]> = {};
 
   for (const m of mapping) {
     componentHostsDictionary[m.componentId] = componentHostsDictionary[m.componentId] ?? [];
 
     const host = hostsDictionary[m.hostId];
-    componentHostsDictionary[m.componentId].push(host);
+
+    if (host) {
+      componentHostsDictionary[m.componentId].push(host);
+    } else {
+      unmappedHostsId.push(m.hostId);
+    }
   }
 
   for (const component of components) {
-    result.push({
+    componentsMapping.push({
       component,
       hosts: componentHostsDictionary[component.id] ?? [],
     });
   }
 
-  return result;
+  return { componentsMapping, unmappedHostsId };
 };
 
 export const getHostsMapping = (

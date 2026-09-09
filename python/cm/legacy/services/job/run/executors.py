@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from pathlib import Path
 from traceback import format_exception
-from typing import Callable
+from typing import NamedTuple
 
 from core.legacy.job.executors import (
     BundleExecutorConfig,
@@ -29,10 +30,19 @@ from cm.errors import AdcmEx
 from cm.legacy.utils import get_env_with_venv_path
 
 
+class InternalScriptResult(NamedTuple):
+    code: int
+    message: str
+
+
 class AnsibleExecutorConfig(BundleExecutorConfig):
     ansible_secret_script: Path
     tags: str
     verbose: bool
+    venv: str
+
+
+class PythonExecutorConfig(BundleExecutorConfig):
     venv: str
 
 
@@ -66,11 +76,10 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
     def _get_environment_variables(self) -> dict:
         env = super()._get_environment_variables()
-
         env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
-
         # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
         env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
+        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{self._config.venv}/collections"
 
         return env
 
@@ -78,22 +87,34 @@ class AnsibleProcessExecutor(ProcessExecutor):
 class PythonProcessExecutor(ProcessExecutor):
     script_type = "python"
 
+    _config: PythonExecutorConfig
+
+    def __init__(self, config: PythonExecutorConfig):
+        super().__init__(config=config)
+
     def _prepare_command(self) -> list[str]:
         return ["python", str(self._config.bundle.root / self._config.job_script)]
+
+    def _get_environment_variables(self) -> dict:
+        env = super()._get_environment_variables()
+
+        return get_env_with_venv_path(venv=self._config.venv, existing_env=env)
 
 
 class InternalExecutor(Executor, WithErrOutLogsMixin):
     script_type = "internal"
 
-    def __init__(self, config: ExecutorConfig, script: Callable[[], int]):
+    def __init__(self, config: ExecutorConfig, script: Callable[[], InternalScriptResult]):
         super().__init__(config=config)
         self._script = script
 
     def execute(self) -> Self:
-        _, err_log = self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
+        out_log, err_log = self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
 
         try:
-            return_code = self._script()
+            result = self._script()
+            return_code = result.code
+            out_log.write(f"{result.message}\n")
         except Exception as e:  # noqa: BLE001
             if isinstance(e, AdcmEx):
                 message = e.msg

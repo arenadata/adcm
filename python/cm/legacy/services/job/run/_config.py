@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.action import TaskOwner
+from core.action.job import JobUpdateDTO
 from core.config import ConfigCoreObjectWithPrototype, RelatedConfigs
-from core.legacy.job.dto import JobUpdateDTO
-from core.legacy.job.types import TaskOwner
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, PrototypeID
 
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.config import retrieve_primary_configs
 from cm.legacy.services.hierarchy import retrieve_object_hierarchy
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import JobLog
 
 
@@ -39,7 +39,7 @@ def create_related_configs(job_id: int, owner: TaskOwner) -> None:
     hierarchy = retrieve_object_hierarchy(object_=object_)
     related_configs = retrieve_primary_configs(objects=hierarchy)
 
-    JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+    JobRepo().update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
 
 
 def get_new_related_configs(
@@ -80,4 +80,4 @@ def update_related_configs(
         config_id=old_config_id,
     )
     related_configs = get_new_related_configs(job_id=job_id, target=target_config, new_config_id=new_config_id)
-    JobRepoImpl.update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
+    JobRepo().update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))

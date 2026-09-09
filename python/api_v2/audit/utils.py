@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
 
 from audit.models import AuditLog, AuditSession
 from django.db.models import QuerySet
 
 
-def filter_objects_within_time_range(queryset: QuerySet, query_params: Dict) -> QuerySet:
+def filter_objects_within_time_range(queryset: QuerySet, query_params: dict) -> QuerySet:
     time_from = query_params.get("time_from", None)
     time_to = query_params.get("time_to", None)
     time_range_parameters = {

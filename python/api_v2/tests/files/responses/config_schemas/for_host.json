@@ -115,6 +115,7 @@
       "description": "",
       "default": "value1",
       "readOnly": false,
+      "type": "string",
       "adcmMeta": {
         "isAdvanced": false,
         "isInvisible": false,
@@ -224,27 +225,35 @@
       "additionalProperties": false,
       "properties": {
         "option": {
-          "title": "option",
-          "description": "",
           "default": "string1",
-          "readOnly": false,
-          "adcmMeta": {
-            "isAdvanced": false,
-            "isInvisible": false,
-            "activation": null,
-            "synchronization": null,
-            "isSecret": false,
-            "stringExtra": null,
-            "enumExtra": {
-              "labels": [
+          "oneOf": [
+            {
+              "title": "option",
+              "description": "",
+              "default": "string1",
+              "readOnly": false,
+              "adcmMeta": {
+                "isAdvanced": false,
+                "isInvisible": false,
+                "activation": null,
+                "synchronization": null,
+                "isSecret": false,
+                "stringExtra": null,
+                "enumExtra": {
+                  "labels": [
+                    "string1",
+                    "string2"
+                  ]
+                }
+              },
+              "enum": [
                 "string1",
                 "string2"
               ]
+            },
+            {
+              "type": "null"
             }
-          },
-          "enum": [
-            "string1",
-            "string2"
           ]
         }
       },

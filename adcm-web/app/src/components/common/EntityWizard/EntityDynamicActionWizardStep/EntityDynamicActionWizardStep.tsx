@@ -12,7 +12,7 @@ import { useActionWizardConfigurationEditorContext } from '@uikit/ActionWizardSt
 import { useActionWizardLastStageContext } from '@uikit/ActionWizardSteps/ActionWizardLastStage/ActionWizardLastStageContextProvider/ActionWizardLastStageContext.context';
 import { getCurrentStageNotDisabledStepIds, getMaxStepId } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 import EntityDynamicActionWizardOperation from '../EntityDynamicActionWizardOperation/EntityDynamicActionWizardOperation';
-import { getProcess, getSteps, resetStep } from '@store/adcm/entityWizard/wizardSlice';
+import { getProcess, getStep, getSteps, resetStep } from '@store/adcm/entityWizard/wizardSlice';
 import type { AdcmPostOperationPayload } from '@store/adcm/entityWizard/types/wizardSlice.types';
 import {
   postOperation,
@@ -153,6 +153,25 @@ const EntityDynamicActionWizardStep: React.FC<EntityDynamicActionWizardStepProps
       );
     }
   }, [dispatch, stepIds, selectedStep]);
+
+  useEffect(() => {
+    if (!actionId || !processId || !selectedStep || !actionHostGroup) return;
+
+    const selectedStepData = process?.stages.flatMap((stage) => stage.steps).find((step) => step.id === selectedStep);
+
+    if (selectedStepData?.type === AdcmWizardStepType.Configuration) {
+      dispatch(
+        getStep({
+          entityType,
+          entityArgs,
+          actionId,
+          processId,
+          stepId: selectedStep,
+          actionHostGroupId: actionHostGroup.id,
+        }),
+      );
+    }
+  }, [dispatch, entityType, entityArgs, actionId, processId, selectedStep, actionHostGroup]);
 
   const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
     if (!actionId || !process || !actionHostGroup) {

@@ -10,18 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from audit.models import AuditLog, AuditObject, AuditObjectType, AuditSession, AuditSessionLoginResult, AuditUser
 from cm.models import ADCM, ConfigLog
 from core.legacy.rbac.dto import UserUpdateDTO
-from parameterized import parameterized
 from rbac.models import User
 from rbac.services.user import perform_user_update_as_superuser
 from rest_framework.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from tests.dependencies import SkipStatusScenarios
 from tests.suites import ADCMDjangoAPISuite
-import pytz
+from unittest_parametrize import param, parametrize
 
 
 class TestAuthorizationAudit(ADCMDjangoAPISuite):
@@ -70,7 +69,7 @@ class TestAuthorizationAudit(ADCMDjangoAPISuite):
             ),
             new_password="newtestpassword",
             new_user_groups=None,
-            status_scenarios=SkipStatusScenarios(),
+            status_scenarios=SkipStatusScenarios(cluster_service=None),
         )
 
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"
@@ -152,7 +151,7 @@ class TestAuthorizationAudit(ADCMDjangoAPISuite):
                 return [item["user"]["name"] for item in response.json()["results"]]
             elif ordering_field in ("time", "loginTime"):
                 return [
-                    datetime.fromisoformat(item["time"][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item["time"][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             elif ordering_field == "loginResult":
@@ -183,7 +182,7 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
         self.user = User.objects.create_superuser(self.username, "user@example.com", self.password)
         User.objects.create_superuser("second_user", "second_user@example.com", self.password)
         User.objects.create_superuser("third_user", "third_user@example.com", self.password)
-        current_datetime = datetime.now(pytz.utc)
+        current_datetime = datetime.now(timezone.utc)
         self.time_from = (current_datetime - timedelta(minutes=1)).isoformat()
         self.time_to = (current_datetime + timedelta(minutes=1)).isoformat()
 
@@ -292,26 +291,25 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
                     self.assertEqual(response.status_code, HTTP_200_OK)
                     self.assertEqual(response.json()["count"], partial_items_found)
 
-    @parameterized.expand(
+    @parametrize(
+        ("username", "password", "login_result"),
         [
-            ("Find a success login record", "user", "user", AuditSessionLoginResult.SUCCESS),
-            (
-                "Find a record of an attempt to login as a non-existent user",
+            param("user", "user", AuditSessionLoginResult.SUCCESS, id="find_a_success_login_record"),
+            param(
                 "nonexistent_user",
                 "nonexistent",
                 AuditSessionLoginResult.USER_NOT_FOUND,
+                id="find_a_record_of_an_attempt_to_login_as_a_non_existent_user",
             ),
-            (
-                "Find a disabled account record",
+            param(
                 "disabled_user",
                 "disabled_passw",
                 AuditSessionLoginResult.ACCOUNT_DISABLED,
+                id="find_a_disabled_account_record",
             ),
-        ]
+        ],
     )
-    def test_adcm_6048_filtering_login_users(
-        self, _, username: str, password: str, login_result: AuditSessionLoginResult
-    ):
+    def test_adcm_6048_filtering_login_users(self, username: str, password: str, login_result: AuditSessionLoginResult):
         if login_result == AuditSessionLoginResult.ACCOUNT_DISABLED:
             disabled_user = self.create_user(username=username, password=password)
             disabled_user.is_active = False
@@ -377,7 +375,7 @@ class TestOperationsAudit(ADCMDjangoAPISuite):
                 return [item["user"]["name"] for item in response.json()["results"]]
             elif ordering_field == "time":
                 return [
-                    datetime.fromisoformat(item[ordering_field][:-1]).replace(tzinfo=pytz.UTC)
+                    datetime.fromisoformat(item[ordering_field][:-1]).replace(tzinfo=timezone.utc)
                     for item in response.json()["results"]
                 ]
             return [item[ordering_field] for item in response.json()["results"]]

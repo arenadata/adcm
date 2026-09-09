@@ -10,14 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable, Mapping
 from functools import reduce
 from pathlib import Path
-from typing import Any, Iterable, Literal, Mapping, TypeAlias
+from typing import Any, Literal, TypeAlias
 import json
 
+from core.action import TaskMappingDelta
+from core.cluster import ClusterService
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import HostComponentEntry
-from core.legacy.job.types import TaskMappingDelta
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -90,7 +92,12 @@ class BaseInventoryTestCase(ADCMDjangoAPISuite):
     ) -> None:
         target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
         actual_inventory = decrypt_secrets(
-            source=get_inventory_data(target=target, is_host_action=action.host_action, delta=delta)
+            source=get_inventory_data(
+                target=target,
+                is_host_action=action.host_action,
+                delta=delta,
+                cluster_service=self.uc.container.get(ClusterService),
+            )
         )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)

@@ -12,39 +12,53 @@
 # limitations under the License.
 
 # load common functions and variables
-
 . /etc/adcmenv
 
-# convenient aliases
-
-coderoot="${adcmroot}/python"
-scripts="${coderoot}/application/scripts"
-django_command="${coderoot}/manage.py"
-
-#  check & prepare environment
+is_in_mm=$(is_in_maintenance_mode)
 
 cleanupwaitstatus
-ensure_mandatory_db_settings_provided
+echo "ADCM initialization ..."
+
 ensure_directory_structure
 
-"${scripts}"/manage_secrets.py migrate || exit $?
+if [ "$is_in_mm" -ne 1 ]; then
+  make_nginx_default_config &&
+  ensure_mandatory_db_settings_provided &&
+  init_or_migrate_secrets &&
+  check_compatibility &&
+  migrate_db &&
+  post_migrate_db &&
+  upgrade_roles ||
+  exit $?
 
-if [ -z "$MIGRATION_MODE" ] || [ "$MIGRATION_MODE" -ne 1 ]; then
-    "${scripts}"/manage_secrets.py init || exit $?
-fi
-
-"${django_command}" compatibility_check || exit $?
-
-# initialize services
-
-sv_stop() {
+  sv_stop() {
     for s in nginx wsgi status; do
-        /sbin/sv stop $s
+      /usr/sbin/sv stop "/etc/sv/${s}"
     done
-}
+  }
 
-trap "sv_stop; exit" TERM
-trap "" CHLD
+  trap "sv_stop; exit" TERM
+  trap "" CHLD
 
-runsvdir -P /etc/sv &
-while (true); do wait; done;
+  # Each /etc/sv/<svc>/supervise is a symlink into the ephemeral run dir
+  # (/adcm/run/runit/<svc>, see Dockerfile) so /etc/sv stays read-only /
+  # root-owned; create the writable targets first.
+  runit_base="${adcmrun}/runit"
+  for svc_dir in /etc/sv/*/; do
+    mkdir -p "${runit_base}/$(basename "${svc_dir}")"
+  done
+
+  runsvdir -P /etc/sv &
+
+  echo "ADCM launched."
+  wait_forever
+
+else
+  ensure_mandatory_db_settings_provided &&
+  migrate_secrets ||
+  exit $?
+
+  echo "ADCM [MAINTENANCE_MODE] launched."
+  wait_forever
+
+fi

@@ -1,6 +1,10 @@
-@import 'vars.scss';
-@import 'normalize.scss';
-@import 'svg-sprite.scss';
-@import 'common.scss';
-@import 'fonts.scss';
-@import 'theme.scss';
+@use 'vars';
+@use 'redesign/vars.css' as redesign-vars;
+@use 'redesign/theme.css' as redesign-theme;
+@use 'redesign/typography';
+@use 'redesign/layout';
+@use 'normalize';
+@use 'svg-sprite';
+@use 'common';
+@use 'fonts';
+@use 'theme';

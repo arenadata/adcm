@@ -13,9 +13,9 @@
 from unittest.mock import patch
 
 from cm.legacy.issue import add_concern_to_object
-from cm.legacy.services.status.client import FullStatusMap
 from cm.models import Action, Component, ConcernType, MaintenanceMode, TaskLog
 from cm.tests.utils import gen_concern_item
+from core.status import FullStatusMap
 from core.types import TaskID
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 from tests.suites import ADCMDjangoAPISuite

@@ -11,8 +11,8 @@
 # limitations under the License.
 
 
+from core.action import TaskMappingDelta
 from core.legacy.cluster.types import ClusterTopology
-from core.legacy.job.types import TaskMappingDelta
 from core.types import HostID, HostName
 from infra.services import get_config_service
 from pydantic import BaseModel

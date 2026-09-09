@@ -1,7 +1,7 @@
 ---
 - type: cluster
   name: cluster_export
-  version: &version '1.0'
+  version: '1.0'
   config:
     - name: gfe
       type: group
@@ -16,13 +16,13 @@
           type: secretmap
           default:
             a: vs
-
   export:
     - gfe
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service_export
   type: service
-  version: *version
+  version: '1.0'
   config:
     - name: text
       type: text

@@ -11,7 +11,8 @@
 # limitations under the License.
 
 from collections import defaultdict
-from typing import Callable, Generator, Iterable, TypeVar
+from collections.abc import Callable, Generator, Iterable
+from typing import TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")

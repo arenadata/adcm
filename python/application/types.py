@@ -13,7 +13,7 @@
 from enum import Enum, auto
 
 
-class MigrationMode(Enum):
+class ADCMMaintenanceMode(Enum):
     ENABLED = auto()
     DISABLED = auto()
 
@@ -21,3 +21,8 @@ class MigrationMode(Enum):
 class SecretsSource(Enum):
     FILE_SYSTEM = auto()
     VAULT = auto()
+
+
+class TaskRunnerMode(Enum):
+    INSTANT = auto()
+    SCHEDULLER = auto()

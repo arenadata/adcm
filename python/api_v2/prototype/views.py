@@ -10,17 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TypeAlias
+
 from adcm.permissions import VIEW_CLUSTER_PERM
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
-from cm.models import ObjectType, Prototype
-from django.db.models import QuerySet
+from cm.models import Bundle, ObjectType, Prototype
+from dishka import FromDishka
+from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from use_cases.bundle import AcceptLicense
 
 from api_v2.api_schema import DefaultParams, responses
 from api_v2.prototype.filters import PrototypeFilter, PrototypeVersionFilter
@@ -28,9 +31,11 @@ from api_v2.prototype.serializers import (
     PrototypeSerializer,
     PrototypeVersionsSerializer,
 )
-from api_v2.prototype.utils import accept_license
 from api_v2.utils.audit import bundle_from_prototype_lookup
-from api_v2.views import ADCMReadOnlyModelViewSet
+from api_v2.utils.di import inject
+from api_v2.views import ADCMReadOnlyModelViewSet, annotate_contract_version_status
+
+PrototypeAttrs: TypeAlias = tuple[str, str]
 
 
 @extend_schema_view(
@@ -74,10 +79,27 @@ from api_v2.views import ADCMReadOnlyModelViewSet
     ),
 )
 class PrototypeViewSet(ADCMReadOnlyModelViewSet):
-    queryset = Prototype.objects.exclude(type="adcm").select_related("bundle").order_by("name")
+    queryset = Prototype.objects.exclude(type="adcm").order_by("name")
     permission_classes = [DjangoModelPermissions]
     permission_required = [VIEW_CLUSTER_PERM]
     filterset_class = PrototypeFilter
+
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                Prefetch(
+                    "bundle",
+                    queryset=Bundle.objects.annotate(
+                        **annotate_contract_version_status(
+                            contract_version_field="contract_version",
+                            request=self.request,
+                        )
+                    ),
+                )
+            )
+        )
 
     def get_serializer_class(self):
         if self.action == "versions":
@@ -100,13 +122,27 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
                     ObjectType.PROVIDER.value,
                 ),
             ),
+            OpenApiParameter(
+                name="ordering",
+                description='Field to sort by. To sort in descending order, precede the attribute name with a "-".',
+                enum=(
+                    "contractVersionStatus",
+                    "-contractVersionStatus",
+                    "contractVersionValue",
+                    "-contractVersionValue",
+                ),
+            ),
         ],
         responses=responses(success=(HTTP_200_OK, PrototypeVersionsSerializer(many=True))),
     )
     @action(methods=["get"], detail=False, filterset_class=PrototypeVersionFilter, pagination_class=None)
     def versions(self, request):  # noqa: ARG001, ARG002
-        queryset = self.get_filtered_prototypes_unique_by_display_name()
-        return Response(data=self.get_serializer(queryset, many=True).data)
+        filtered_prototypes = self.filter_queryset(self.get_queryset())
+        unique_prototypes, versions_by_type_and_name = group_prototypes_for_versions(tuple(filtered_prototypes))
+
+        context = self.get_serializer_context() | {"versions_by_type_and_name": versions_by_type_and_name}
+
+        return Response(data=self.get_serializer(unique_prototypes, many=True, context=context).data)
 
     @extend_schema(
         operation_id="postLicense",
@@ -115,23 +151,37 @@ class PrototypeViewSet(ADCMReadOnlyModelViewSet):
     )
     @audit_update(name="Bundle license accepted", object_=bundle_from_prototype_lookup)
     @action(methods=["post"], detail=True, url_path="license/accept", url_name="accept-license")
-    def accept(self, request: Request, *args, **kwargs) -> Response:  # noqa: ARG001, ARG002
+    @inject
+    def accept(
+        self,
+        *_,
+        accept_license: FromDishka[AcceptLicense],
+        **__,
+    ) -> Response:
         prototype = self.get_object()
-        accept_license(prototype=prototype)
+        accept_license.do(prototype=prototype)
+
         return Response(status=HTTP_200_OK)
 
-    def get_filtered_prototypes_unique_by_display_name(self) -> QuerySet:
-        filtered_queryset = Prototype.objects.filter(
-            type__in={ObjectType.PROVIDER.value, ObjectType.CLUSTER.value}
-        ).all()
 
-        prototype_pks = set()
-        processed_pairs = set()
-        for pk, type_, display_name in filtered_queryset.values_list("pk", "type", "display_name"):
-            if (type_, display_name) in processed_pairs:
-                continue
+def group_prototypes_for_versions(
+    prototypes: tuple[Prototype],
+) -> tuple[list[Prototype], dict[PrototypeAttrs, list[Prototype]]]:
+    """
+    Collect unique cluster or provider prototypes and their versions.
+    """
+    unique_prototypes = []
+    processed_pairs = set()
+    versions_by_type_and_name = {}
 
-            prototype_pks.add(pk)
-            processed_pairs.add((type_, display_name))
+    for prototype in prototypes:
+        versions_by_type_and_name.setdefault((prototype.type, prototype.name), []).append(prototype)
 
-        return self.filter_queryset(Prototype.objects.filter(pk__in=prototype_pks))
+        if (prototype.type, prototype.display_name) not in processed_pairs:
+            unique_prototypes.append(prototype)
+            processed_pairs.add((prototype.type, prototype.display_name))
+
+    for versions in versions_by_type_and_name.values():
+        versions.sort(key=lambda prototype: (prototype.version, prototype.bundle.edition), reverse=True)
+
+    return unique_prototypes, versions_by_type_and_name

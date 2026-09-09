@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Collection
 from operator import attrgetter
-from typing import Collection
 
 from core.legacy.rbac.errors import ChangeMembershipError, PasswordError, UpdateLDAPUserError
 from core.legacy.rbac.types import GroupBasicInfo, GroupID, PasswordRequirements, SourceType, UserBasicInfo

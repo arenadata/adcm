@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Generator, cast
+from typing import Any, cast
 from uuid import UUID, uuid4
 
 from core import action, config, mapping

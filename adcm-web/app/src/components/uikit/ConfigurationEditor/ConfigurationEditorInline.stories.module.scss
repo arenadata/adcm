@@ -1,0 +1,34 @@
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+  }
+
+  &__content {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  &__editor {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__state {
+    flex: 0 0 360px;
+    min-width: 280px;
+  }
+
+  &__stateTitle {
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}

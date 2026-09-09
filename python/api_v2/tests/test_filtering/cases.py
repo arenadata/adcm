@@ -63,6 +63,20 @@ class BundlesTestCase(BaseTestCase):
             ("displayName", "displayName", "A CLU", ["A Cluster", "A Cluster"], "wrong"),
             ("edition", "edition", "enterprise", ["enterprise"], "ent"),
             ("version", "version", "1.0.1", ["1.0.1"], "1"),
+            (
+                "contractVersionValue",
+                "contractVersion.value",
+                self.suite.unsupported_version,
+                [self.suite.unsupported_version],
+                "2.0",
+            ),
+            (
+                "contractVersionStatus",
+                "contractVersion.status",
+                "unsupported",
+                ["unsupported"],
+                "deprecated",
+            ),
             ("mainPrototypeLicenseStatus", "mainPrototype.license.status", "accepted", ["accepted"], "unaccepted"),
             (
                 "product",
@@ -75,26 +89,59 @@ class BundlesTestCase(BaseTestCase):
         ]
 
     def get_ordering_cases(self) -> list:
+        expected_cv_values = [self.suite.unsupported_version] + ["2.1"] * self.suite.supported_bundle_count
+        expected_cv_status = ["supported"] * self.suite.supported_bundle_count + ["unsupported"]
+
         return [
             (
                 "displayName",
                 "displayName",
-                ["A Cluster", "A Cluster", "A Provider", "A Provider", "B Cluster", "B Provider"],
+                [
+                    "A Cluster",
+                    "A Cluster",
+                    "A Provider",
+                    "A Provider",
+                    "B Cluster",
+                    "B Provider",
+                    "Unsupported Cluster",
+                ],
             ),
             (
                 "uploadTime",
                 # product names are used as stable values to avoid coupling this case to the time format
                 "name",
-                ["a_cluster", "a_cluster", "b_cluster", "a_provider", "a_provider", "b_provider"],
+                [
+                    "a_cluster",
+                    "a_cluster",
+                    "b_cluster",
+                    "a_provider",
+                    "a_provider",
+                    "b_provider",
+                    self.suite.unsupported_bundle.name,
+                ],
             ),
-            ("version", "version", ["1.0.0", "1.0.1", "12.0.0", "12.0.1", "2.0.0", "2.0.1"]),
-            ("edition", "edition", ["community", "community", "community", "community", "community", "enterprise"]),
+            (
+                "version",
+                "version",
+                ["1.0.0", "1.0.0", "1.0.1", "12.0.0", "12.0.1", "2.0.0", "2.0.1"],
+            ),
+            ("contractVersionValue", "contractVersion.value", expected_cv_values),
+            ("contractVersionStatus", "contractVersion.status", expected_cv_status),
+            (
+                "edition",
+                "edition",
+                ["community", "community", "community", "community", "community", "community", "enterprise"],
+            ),
             (
                 "mainPrototypeLicenseStatus",
                 "mainPrototype.license.status",
-                ["absent", "absent", "absent", "absent", "absent", "accepted"],
+                ["absent", "absent", "absent", "absent", "absent", "absent", "accepted"],
             ),
-            ("signatureStatus", "signatureStatus", ["absent", "absent", "absent", "absent", "absent", "valid"]),
+            (
+                "signatureStatus",
+                "signatureStatus",
+                ["absent", "absent", "absent", "absent", "absent", "absent", "valid"],
+            ),
         ]
 
 
@@ -509,4 +556,83 @@ class PoliciesTestCase(BaseTestCase):
             ("name", "name", ["ClusterPolicy", "CustomPolicy", "ServicePolicy"]),
             ("roleName", "name", ["CustomPolicy", "ClusterPolicy", "ServicePolicy"]),
             ("roleDisplayName", "name", ["ClusterPolicy", "CustomPolicy", "ServicePolicy"]),
+        ]
+
+
+class PrototypeTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "prototypes"
+
+    def get_filters_cases(self) -> list:
+        return [
+            (
+                "contractVersionValue",
+                "bundle.contractVersion.value",
+                self.suite.unsupported_version,
+                [self.suite.unsupported_version],
+                "0.01",
+            ),
+            (
+                "contractVersionStatus",
+                "bundle.contractVersion.status",
+                "unsupported",
+                ["unsupported"],
+                "deprecated",
+            ),
+        ]
+
+    def get_ordering_cases(self) -> list:
+        expected_first_cv_value = self.suite.unsupported_version  # "0.999"
+        expected_last_cv_value = "2.1"
+        expected_first_cv_status = "supported"
+        expected_last_cv_status = "unsupported"
+
+        return [
+            ("contractVersionValue", "bundle.contractVersion.value", expected_first_cv_value, expected_last_cv_value),
+            (
+                "contractVersionStatus",
+                "bundle.contractVersion.status",
+                expected_first_cv_status,
+                expected_last_cv_status,
+            ),
+        ]
+
+
+class PrototypeVersionsTestCase(BaseTestCase):
+    def get_url(self) -> APINode:
+        return self.suite.client.v2 / "prototypes" / "versions"
+
+    def get_filters_cases(self) -> list:
+        return [
+            (
+                "contractVersionValue",
+                "versions.bundle.contractVersion.value",
+                self.suite.unsupported_version,
+                [self.suite.unsupported_version],
+                "2.0",
+            ),
+            (
+                "contractVersionStatus",
+                "versions.bundle.contractVersion.status",
+                "unsupported",
+                ["unsupported"],
+                "deprecated",
+            ),
+        ]
+
+    def get_ordering_cases(self) -> list:
+        expected_cv_values = [self.suite.unsupported_version] + ["2.1"] * self.suite.supported_bundle_count
+        expected_cv_status = ["supported"] * self.suite.supported_bundle_count + ["unsupported"]
+
+        return [
+            (
+                "contractVersionValue",
+                "versions.bundle.contractVersion.value",
+                expected_cv_values,
+            ),
+            (
+                "contractVersionStatus",
+                "versions.bundle.contractVersion.status",
+                expected_cv_status,
+            ),
         ]

@@ -18,20 +18,21 @@ import logging.config
 
 from application.constants import SECRETS_FILENAME, SECRETS_FILENAME_DEPRECATED
 from application.di.providers.environment import EnvironmentProvider
+from application.loggers import startup_logging_config_from_env
 from application.startup.secrets import (
     check_all_secrets_are_avialable,
     initialize_secrets,
     load_secrets,
     migrate_secrets_on_fs_if_required,
 )
-from application.types import MigrationMode
+from application.types import ADCMMaintenanceMode
 from core.result import Fail, Success
 from core.secrets import SecretsBackend
 from core.settings import Directories
 from integrations.vault import ClientSettings
 import dishka
 
-logger = logging.getLogger("startup")
+message_logger = logging.getLogger("startup.message")
 
 
 def build_argparser() -> argparse.ArgumentParser:
@@ -50,25 +51,7 @@ def build_argparser() -> argparse.ArgumentParser:
 
 
 def configure_output() -> None:
-    logging_configuration = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "only-message": {
-                "format": "{message}",
-                "style": "{",
-            },
-        },
-        "handlers": {
-            "startup-stdout": {
-                "class": "logging.StreamHandler",
-                "formatter": "only-message",
-                "stream": "ext://sys.stdout",
-                "level": logging.INFO,
-            },
-        },
-        "loggers": {"startup": {"propagate": False, "level": logging.INFO, "handlers": ["startup-stdout"]}},
-    }
+    logging_configuration = startup_logging_config_from_env()
     logging.config.dictConfig(logging_configuration)
 
 
@@ -81,14 +64,14 @@ def main(args: argparse.Namespace):
             result = check_all_secrets_are_avialable(backend=backend)
 
         case "init":
-            migration_mode = container.get(MigrationMode)
+            adcm_maintenance_mode = container.get(ADCMMaintenanceMode)
             directories = container.get(Directories)
             target_backend = container.get(SecretsBackend)
             result = initialize_secrets(
                 old_file=directories.secrets / SECRETS_FILENAME_DEPRECATED,
                 new_file=directories.secrets / SECRETS_FILENAME,
                 target_backend=target_backend,
-                migration_mode=migration_mode,
+                adcm_maintenance_mode=adcm_maintenance_mode,
                 overwrite_if_exist=args.force,
             )
 
@@ -106,14 +89,14 @@ def main(args: argparse.Namespace):
                 directories = container.get(Directories)
                 source_file = directories.secrets / SECRETS_FILENAME
 
-            migration_mode = container.get(MigrationMode)
+            adcm_maintenance_mode = container.get(ADCMMaintenanceMode)
             vault_settings = container.get(ClientSettings)
 
             result = load_secrets(
                 source_file=source_file,
                 vault_settings=vault_settings,
                 overwrite_if_exist=args.force,
-                migration_mode=migration_mode,
+                adcm_maintenance_mode=adcm_maintenance_mode,
             )
 
         case unknown_command:
@@ -122,15 +105,15 @@ def main(args: argparse.Namespace):
 
     match result:
         case Success(message):
-            logger.info(message)
+            message_logger.info(message)
             exit_code = 0
 
         case Fail(value=str(reason)):
-            logger.error(reason)
+            message_logger.error(reason)
             exit_code = 1
 
         case Fail(value=(message, err)):
-            logger.error(message, exc_info=err)
+            message_logger.error(message, exc_info=err)
             exit_code = 1
 
     sys.exit(exit_code)

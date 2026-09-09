@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable, Iterator
 from enum import Enum
-from typing import Iterator, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
+from core.action._types import JobSpec, ScriptType
 from core.cluster import ClusterTopology
 from core.cluster._operations import find_children
 from core.config import Attributes
@@ -23,8 +25,7 @@ from core.types import (
     ComponentDesc,
     HostDesc,
     MaintenanceModeOfObjects,
-    MaintenanceModeOfObjectsWithReason,
-    ObjectMaintenanceModeState,
+    MaintenanceModeState,
     ServiceDesc,
 )
 
@@ -34,6 +35,10 @@ StartImpossibleReason: TypeAlias = str
 class ActionStartImpossibleReason(str, Enum):
     LDAP_OFF = "The Action is not available. You need to fill in the LDAP integration settings."
     MAINTENANCE_MODE = 'The {entity_type} is not available. One or more {violator_type} in "Maintenance mode"'
+
+
+def has_bundle_revert_script(scripts: Iterable[JobSpec]) -> bool:
+    return any(script.script_type == ScriptType.INTERNAL and script.script == "bundle_revert" for script in scripts)
 
 
 def detect_start_impossible_reason_for_adcm(
@@ -48,7 +53,7 @@ def detect_start_impossible_reason_for_adcm(
 def detect_start_impossible_reason_for_cluster_objects(
     target: ClusterDesc | ServiceDesc | ComponentDesc,
     topology: ClusterTopology,
-    maintenance_mode: MaintenanceModeOfObjectsWithReason,
+    maintenance_mode: MaintenanceModeOfObjects,
 ) -> Success[None] | Fail[tuple[Literal[ActionStartImpossibleReason.MAINTENANCE_MODE], ADCMCoreType]]:
     in_mm = _get_objects_with_not_off_mm(mm_objects=maintenance_mode)
     children = set(find_children(target=target, topology=topology))
@@ -76,6 +81,6 @@ def detect_start_impossible_reason_for_provider_objects(
 
 
 def _get_objects_with_not_off_mm(
-    mm_objects: MaintenanceModeOfObjectsWithReason | MaintenanceModeOfObjects,
+    mm_objects: MaintenanceModeOfObjects,
 ) -> Iterator[ServiceDesc | ComponentDesc | HostDesc]:
-    return (desc for desc, mm in mm_objects.objects_dict.items() if mm != ObjectMaintenanceModeState.OFF)
+    return (desc for desc, mm in mm_objects.objects_dict.items() if mm != MaintenanceModeState.OFF)

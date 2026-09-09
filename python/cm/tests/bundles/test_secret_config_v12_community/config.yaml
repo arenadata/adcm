@@ -1,0 +1,29 @@
+---
+- type: cluster
+  version: 12
+  name: secret_config
+  display_name: secret_config
+  upgrade:
+    - name: '12'
+      from_edition:
+        - community
+      versions:
+        min: 0.0.0
+        max_strict: 12.0.0
+      states:
+        available: any
+  config:
+    - name: secret_file
+      type: secretfile
+      group_customization: true
+  actions:
+    action:
+      display_name: adcm_config usage action
+      scripts:
+        - name: some_script
+          script: ./action.yaml
+          script_type: ansible
+      states:
+        available: any
+  contract_version: '2.1'
+  venv: '2.16'

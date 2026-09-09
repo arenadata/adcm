@@ -12,7 +12,6 @@
 
 
 from cm.converters import orm_object_to_core_type
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import Component
 from tests.suites import ADCMPluginExecutorSuite
 
@@ -39,7 +38,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_by_fqdn_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -58,7 +57,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_by_id_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -77,7 +76,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_by_id_and_name_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -98,7 +97,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
     def test_remove_two_different_hosts_by_fqdn_and_id_success(self) -> None:
         self.add_host_to_cluster(self.cluster, self.host_2)
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -120,7 +119,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
     def test_remove_two_different_hosts_by_id_success(self) -> None:
         self.add_host_to_cluster(self.cluster, self.host_2)
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -142,7 +141,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
     def test_remove_two_different_hosts_by_fqdn_success(self) -> None:
         self.add_host_to_cluster(self.cluster, self.host_2)
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -163,7 +162,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_no_arguments_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -177,7 +176,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_forbidden_arg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -196,7 +195,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_wrong_arguments_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -211,7 +210,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_no_host_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -231,7 +230,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_host_from_cluster_constraint_error(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         self.cluster.set_state("upgrading")
 
@@ -248,13 +247,13 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
         self.assertIn("It is forbidden to delete host from cluster in upgrade mode", result.error.message)
 
     def test_remove_host_from_cluster_with_component_on_host_constraint_error(self) -> None:
-        self.set_hostcomponent(
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_1, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
 
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -269,13 +268,13 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
         self.assertIn("There are components on the host.", result.error.message)
 
     def test_remove_host_from_cluster_with_component_on_host_success(self) -> None:
-        self.add_host_to_cluster(self.cluster, self.host_2)
-        self.set_hostcomponent(
+        self.uc.add_host_to_cluster(self.cluster, self.host_2)
+        self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=((self.host_2, Component.objects.get(service=self.service_1, prototype__name="component_1")),),
         )
         task = self.prepare_task(owner=self.component_1, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
@@ -297,7 +296,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
             name = object_.__class__.__name__
             with self.subTest(name):
                 task = self.prepare_task(owner=object_, name="dummy")
-                job, *_ = JobRepoImpl.get_task_jobs(task.id)
+                job, *_ = self.get_task_jobs(task.id)
                 executor = self.prepare_executor(
                     executor_type=ADCMRemoveHostFromClusterPluginExecutor,
                     call_arguments=f"""
@@ -315,9 +314,9 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
                 )
 
     def test_incorrect_cluster_in_context_fail(self) -> None:
-        cluster_2 = self.add_cluster(bundle=self.cluster_bundle, name="Another Cluster")
+        cluster_2 = self.uc.add_cluster(bundle=self.cluster_bundle, name="Another Cluster")
         task = self.prepare_task(owner=cluster_2, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
             call_arguments=f"""
@@ -332,7 +331,7 @@ class TestRemoveHostFromClusterPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_remove_unbound_host_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
         executor = self.prepare_executor(
             executor_type=ADCMRemoveHostFromClusterPluginExecutor,
             call_arguments=f"""

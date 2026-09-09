@@ -111,13 +111,13 @@ docker run ... -e DJANGO_SETTINGS_MODULE=adcm.silk_settings
 Silk can be installed with `profiling` dependencies group (or directly via `pip`)
 
 ```shell
-poetry install --with profiling --no-root
+uv sync --inexact --group profiling
 ```
 
 The most simple way to prepare ADCM for silk profiling is: 
 
 1. Run ADCM with your code
-2. Install profiling group `docker exec adcm poetry install --with profiling --no-root -C /adcm`
+2. Install profiling group `docker exec adcm uv sync --inexact --group profiling --config-file /adcm/pyproject.toml`
    or (if profiling group is not available) `docker exec adcm pip install django-silk`
 3. Then collect static for silk with `docker exec -it adcm-pg-code /adcm/python/manage.py collectstatic`
 4. Commit your container state to new image (e.g. `docker commit adcm-pg-code hub.adsw.io/adcm/adcm:adcm-prof`)

@@ -13,9 +13,15 @@
 from logging import Logger
 from typing import Protocol
 
-from core.legacy.job.types import Task
-from core.types import ADCMCoreType
-from django.conf import settings
+from core.action import Task
+from core.cluster import ClusterService
+from core.constants import (
+    ADCM_HOST_TURN_OFF_MM_ACTION_NAME,
+    ADCM_HOST_TURN_ON_MM_ACTION_NAME,
+    ADCM_TURN_OFF_MM_ACTION_NAME,
+    ADCM_TURN_ON_MM_ACTION_NAME,
+)
+from core.types import ADCMCoreType, Descriptor
 
 from cm.converters import core_type_to_model, orm_object_to_core_type
 from cm.legacy.services.mapping import change_host_component_mapping, check_nothing
@@ -36,7 +42,7 @@ class WithIDAndCoreType(Protocol):
     type: ADCMCoreType
 
 
-def set_hostcomponent(task: Task, logger: Logger):
+def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logger):
     task_object = TaskLog.objects.prefetch_related("task_object").get(id=task.id).task_object
 
     cluster = get_object_cluster(task_object)
@@ -52,18 +58,19 @@ def set_hostcomponent(task: Task, logger: Logger):
         cluster_id=cluster.id,
         bundle_id=cluster.prototype.bundle_id,
         mapping_delta=task.hostcomponent.mapping_delta,
+        cluster_service=cluster_service,
         checks_func=check_nothing,
     )
 
 
-def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType):
+def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCoreType]):
     """
     If maintenance mode wasn't changed during action execution, set "opposite" (to action's name) MM
     """
     obj = core_type_to_model(core_type=object_.type).objects.get(id=object_.id)
 
     if (
-        action_name in {settings.ADCM_TURN_ON_MM_ACTION_NAME, settings.ADCM_HOST_TURN_ON_MM_ACTION_NAME}
+        action_name in {ADCM_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.OFF
@@ -75,7 +82,7 @@ def update_object_maintenance_mode(action_name: str, object_: WithIDAndCoreType)
         )
 
     if (
-        action_name in {settings.ADCM_TURN_OFF_MM_ACTION_NAME, settings.ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
+        action_name in {ADCM_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME}
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.ON

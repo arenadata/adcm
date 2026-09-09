@@ -1,0 +1,29 @@
+:global {
+  body.theme-dark {
+    --cluster-overview-entity-item-bg: var(--color-new-light-30);
+    --cluster-overview-entity-item-border: var(--color-dark-1);
+  }
+
+  body.theme-light {
+    --cluster-overview-entity-item-bg: var(--color-plate-light-50);
+    --cluster-overview-entity-item-border: var(--color-xgray-lighter);
+  }
+}
+
+.clusterOverviewHostItem {
+  box-sizing: border-box;
+  padding: var(--space-200);
+  border: 2px solid var(--cluster-overview-entity-item-border);
+  border-radius: var(--radius-200);
+  background-color: var(--cluster-overview-entity-item-bg);
+
+  &__title {
+    min-width: 0;
+    font-size: var(--body-2-size);
+    font-weight: var(--weight-medium);
+    line-height: var(--body-2-lineheight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

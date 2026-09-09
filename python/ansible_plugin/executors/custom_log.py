@@ -11,9 +11,9 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Collection
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Collection
 
 from cm.models import LogStorage
 from core.types import CoreObjectDescriptor

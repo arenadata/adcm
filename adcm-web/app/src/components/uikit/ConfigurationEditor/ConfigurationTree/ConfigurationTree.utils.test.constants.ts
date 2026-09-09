@@ -148,6 +148,33 @@ export const structureSchemaWithTitle: ConfigurationSchema = {
   },
 };
 
+export const readonlyStructureSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  required: ['structure'],
+  ...defaultProps,
+  properties: {
+    structure: {
+      type: 'object',
+      readOnly: true,
+      required: ['someField1'],
+      additionalProperties: false,
+      properties: {
+        someField1: {
+          type: 'string',
+          readOnly: false,
+        },
+      },
+    },
+  },
+};
+
+export const readonlyStructureConfig = {
+  structure: {
+    someField1: 'value',
+  },
+};
+
 export const nullableStructureSchema: ConfigurationSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
@@ -548,5 +575,58 @@ export const selectableObjectFieldSchemaWithUnionDefault: SchemaDefinition = {
   default: {
     _selection: 'a',
     a: { plain: 2 },
+  },
+};
+
+/** selection_group writable only in `created`; nested field writable only in `installed`. */
+export const selectableObjectReadonlyParentSchema: ConfigurationSchema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  title: 'Configuration',
+  type: 'object',
+  readOnly: false,
+  properties: {
+    selectable_all_types: {
+      title: 'selectable_all_types',
+      readOnly: true,
+      default: null,
+      type: 'object',
+      discriminator: { propertyName: '_selection' },
+      oneOf: [
+        {
+          required: ['_selection', 'group_1'],
+          additionalProperties: false,
+          properties: {
+            _selection: { const: 'group_1', title: 'group_1' },
+            group_1: {
+              title: 'group_1',
+              readOnly: false,
+              default: {},
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                string: {
+                  title: 'string',
+                  readOnly: false,
+                  default: 'test',
+                  type: 'string',
+                },
+              },
+              required: ['string'],
+            },
+          },
+        },
+      ],
+    },
+  },
+  required: ['selectable_all_types'],
+  additionalProperties: false,
+};
+
+export const selectableObjectReadonlyParentConfig = {
+  selectable_all_types: {
+    _selection: 'group_1',
+    group_1: {
+      string: 'test',
+    },
   },
 };

@@ -24,7 +24,7 @@ from use_cases.transition.job.schedule import ScheduleTask
 
 from cm.models import ADCM, Action, ConfigLog, JobStatus, TaskLog
 
-logger = logging.getLogger("background_tasks")
+logger = logging.getLogger("background-tasks")
 
 
 def get_settings(adcm_object):

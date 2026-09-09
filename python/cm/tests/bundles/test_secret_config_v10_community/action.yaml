@@ -1,0 +1,15 @@
+﻿---
+- hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - adcm_config:
+        type: "cluster"
+        key: "{{ item.key }}"
+        value: "{{ item.value }}"
+      loop:
+        - {key: "secret_map", value: "1" }
+  run_once: true
+  tags:
+    - always

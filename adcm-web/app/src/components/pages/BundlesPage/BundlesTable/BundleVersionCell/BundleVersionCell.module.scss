@@ -1,0 +1,23 @@
+:global {
+  body.theme-dark {
+    --bundle-version-cell-icon-color: var(--color-xdark-metal);
+  }
+
+  body.theme-light {
+    --bundle-version-cell-icon-color: var(--color-adcmx);
+  }
+}
+
+.bundleVersionCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+
+  &__icon {
+    flex-shrink: 0;
+    color: var(--bundle-version-cell-icon-color);
+    cursor: pointer;
+  }
+}

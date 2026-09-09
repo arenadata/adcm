@@ -13,32 +13,39 @@
 
 from dishka import Provider
 
+from application.di.providers.celery import CeleryProvider
 from application.di.providers.environment import EnvironmentProvider
 from application.di.providers.main import (
     ActionHostGroupProvider,
+    ADCMProvider,
+    AuditProvider,
     BundleProvider,
     ClusterProvider,
+    ConcernProvider,
     ConfigProvider,
     JobProvider,
     LogsServiceProvider,
+    MetricsProvider,
     PathResolverProvider,
     ProviderProvider,
     ScenariosProvider,
-    TaskStarterProvider,
     UpgradeProvider,
     UseCaseProvider,
     UtilsProvider,
     WizardProvider,
 )
-from application.di.providers.task_runner import TaskRunnerProvider
+from application.di.providers.task_runner import JobUseCaseProvider, TaskRunnerProvider
 
 
 def get_main_providers() -> tuple[Provider, ...]:
     return (
         ActionHostGroupProvider(),
         BundleProvider(),
+        CeleryProvider(),
         LogsServiceProvider(),
+        MetricsProvider(),
         ClusterProvider(),
+        ConcernProvider(),
         ConfigProvider(),
         EnvironmentProvider(),
         JobProvider(),
@@ -46,9 +53,11 @@ def get_main_providers() -> tuple[Provider, ...]:
         ProviderProvider(),
         ScenariosProvider(),
         TaskRunnerProvider(),
-        TaskStarterProvider(),
         UpgradeProvider(),
         UseCaseProvider(),
         UtilsProvider(),
         WizardProvider(),
+        AuditProvider(),
+        JobUseCaseProvider(),
+        ADCMProvider(),
     )

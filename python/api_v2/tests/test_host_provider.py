@@ -82,6 +82,20 @@ class TestProvider(ADCMDjangoAPISuite):
         )
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
+    def test_create_unsupported_contract_version_fail(self):
+        prototype = self.host_provider_bundle.prototype_set.get(name="provider")
+        self.uc.set_unsupported_contract_version(prototype=prototype)
+
+        response = (self.client.v2 / "hostproviders").post(
+            data={
+                "prototypeId": prototype.pk,
+                "name": "unsupported_provider",
+            },
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["desc"], "Unsupported bundle's prototype usage")
+
     def test_delete_success(self):
         response = self.client.v2[self.host_provider].delete()
 
@@ -107,7 +121,7 @@ class TestProvider(ADCMDjangoAPISuite):
         self.assertFalse(ConfigHostGroup.objects.filter(pk=chg_id).exists())
 
     def test_filtering_success(self):
-        self.add_provider(self.host_provider_bundle, "second test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "second test host provider")
         self.host_provider.state = "installed"
         self.host_provider.description = "newly created host provider"
         self.host_provider.save()
@@ -135,8 +149,8 @@ class TestProvider(ADCMDjangoAPISuite):
                     self.assertEqual(response.json()["count"], 2)
 
     def test_ordering_success(self):
-        self.add_provider(self.host_provider_bundle, "second test host provider")
-        self.add_provider(self.host_provider_bundle, "third test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "second test host provider")
+        self.uc.add_provider(self.host_provider_bundle, "third test host provider")
 
         response = (self.client.v2 / "hostproviders").get(query={"ordering": "name"})
 

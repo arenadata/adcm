@@ -1,6 +1,9 @@
 export type BaseStatus =
   | 'done'
   | 'running'
+  | 'revoked'
+  | 'revoking'
+  | 'terminating'
   | 'failed'
   | 'aborted'
   | 'created'

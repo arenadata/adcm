@@ -1,0 +1,38 @@
+.bulkOperationsMenu {
+  min-width: 180px;
+  max-height: 300px;
+  padding: 4px;
+  overflow: auto;
+}
+
+.bulkOperationsMenu_submenu {
+  min-width: 160px;
+}
+
+.bulkOperationsMenuDivider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--color-xdark);
+  list-style: none;
+}
+
+.bulkOperationsMenuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bulkOperationsMenuItem_active {
+  background: var(--single-select-list-item-background-hover);
+  color: var(--single-select-list-item-color-hover);
+}
+
+.bulkOperationsMenuItem__chevron {
+  transform: rotate(-90deg);
+  flex-shrink: 0;
+}
+
+.bulkOperationsMenuItem__tooltip {
+  max-width: 260px;
+}

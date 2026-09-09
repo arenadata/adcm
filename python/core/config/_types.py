@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Literal, NamedTuple, TypeAlias, TypedDict
+from typing import Any, Literal, NamedTuple, TypeAlias, TypedDict
 
 from typing_extensions import Self
 
@@ -27,6 +28,15 @@ ParameterFullName: TypeAlias = str
 "Flat" name for nested fields, each level will start with `/`.
 Elements at "root" of configuration will be named like `"/param"`, `"/group"`,
 and elements inside groups `"/groupname/param"`.
+"""
+
+FullDisplayName: TypeAlias = str
+"""
+"Flat" display name for nested fields.
+Elements at "root" of configuration will be named like `"/Param"`, `"/Group Name"`,
+and elements inside groups `"/Group Name/Param"`.
+If `display_name` is not defined for a parameter or group, its technical name will be used
+to build the full display name, for example: `"/Group Name/nested/Param"`.
 """
 
 ParameterLevelName: TypeAlias = str
@@ -150,7 +160,9 @@ class ConfigurationWithInfo(Configuration):
     # keep that way while it's direct dataclass descendant of `Configuration`
     # for inheritance simplicity
     id: ConfigID = 0
-    extra_info: ConfigurationExtraInfo = ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
+    extra_info: ConfigurationExtraInfo = field(
+        default_factory=lambda: ConfigurationExtraInfo(description="", created_by=SYSTEM_CONFIG_CREATOR)
+    )
 
 
 @dataclass(slots=True)

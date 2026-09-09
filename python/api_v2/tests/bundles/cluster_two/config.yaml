@@ -1,11 +1,11 @@
 ---
 - type: cluster
   name: cluster_two
-  version: &version '1.0'
+  version: '1.0'
   edition: community
   config_group_customization: true
   allow_maintenance_mode: false
-  config: &config
+  config: &id001
     - name: string
       type: string
       required: false
@@ -22,15 +22,17 @@
       versions:
         min: 1.0
         max: 2.0
-
+  contract_version: '2.1'
+  venv: '2.16'
 - name: service
   type: service
-  version: *version
-  config: *config
+  version: '1.0'
+  config: *id001
   components:
     component:
-      constraint: [ 0, + ]
-      config: *config
-
+      constraint:
+        - 0
+        - +
+      config: *id001
   export:
     - string

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.impl.logs.repo import CheckLogContentAdapter
-from cm.legacy.services.job.run.repo import JobRepoImpl
 from cm.models import ADCM, CheckLog, Component, GroupCheckLog, LogStorage
 from core.logs import LogsService
 from tests.suites import ADCMPluginExecutorSuite
@@ -37,7 +36,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -56,7 +55,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_forbidden_arg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -75,7 +74,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_title_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -94,7 +93,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_result_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -113,7 +112,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -132,7 +131,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_msg_but_there_success_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -152,7 +151,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_msg_but_there_fail_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -172,7 +171,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_msg_but_there_success_msg_and_fail_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -192,7 +191,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_no_msg_and_there_success_msg_and_fail_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -212,7 +211,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_title_and_group_success_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -233,7 +232,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_title_and_group_fail_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -254,7 +253,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_title_no_group_msg_but_there_msg_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -274,7 +273,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_title_no_group_msg_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -294,7 +293,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_double_call_val_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -319,7 +318,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_double_call_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -344,7 +343,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_msg_cant_be_null_fail(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -370,7 +369,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_with_severity_success(self):
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -393,7 +392,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_adcm_check_group_with_severity_success(self):
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         executor = self.prepare_executor(
             executor_type=ADCMCheckPluginExecutor,
@@ -420,7 +419,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
     def test_group_with_all_severity_success(self) -> None:
         task = self.prepare_task(owner=self.cluster, name="dummy")
-        job, *_ = JobRepoImpl.get_task_jobs(task.id)
+        job, *_ = self.get_task_jobs(task.id)
 
         check_logs_args = [
             (

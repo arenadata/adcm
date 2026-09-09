@@ -13,16 +13,15 @@
 
 from pathlib import Path
 
+from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from rbac.scenarios import RBACScenarios
-from tests.base import BaseTestCase
-from tests.deprecated import BusinessLogicMixin
+from tests.suites import GenericTestCase
 from use_cases.dto import RunActionDTO
 import core
 
 from cm.converters import model_name_to_core_type
-from cm.legacy.api import add_service_to_cluster, update_obj_config
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import ObjectWithAction
 from cm.legacy.services.job.context import get_inventory_data
@@ -35,11 +34,9 @@ from cm.models import (
     HostComponent,
     JobLog,
     MaintenanceMode,
-    Prototype,
     Service,
     TaskLog,
 )
-from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.utils import (
     gen_bundle,
@@ -52,21 +49,22 @@ from cm.tests.utils import (
 )
 
 
-class TestInventory(BaseTestCase):
-    def setUp(self):
-        super().setUp()
+class TestInventory(GenericTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
 
-        self.cluster_bundle = gen_bundle()
-        self.cluster_pt = gen_prototype(self.cluster_bundle, "cluster", "cluster")
-        self.cluster = gen_cluster(prototype=self.cluster_pt, config=gen_config(), name="cluster")
+        cls.cluster_bundle = gen_bundle()
+        cls.cluster_pt = gen_prototype(cls.cluster_bundle, "cluster", "cluster")
+        cls.cluster = gen_cluster(prototype=cls.cluster_pt, config=gen_config(), name="cluster")
 
-        self.provider_bundle = gen_bundle()
+        cls.provider_bundle = gen_bundle()
 
-        self.provider_pt = gen_prototype(self.provider_bundle, "provider")
-        self.host_pt = gen_prototype(self.provider_bundle, "host")
+        cls.provider_pt = gen_prototype(cls.provider_bundle, "provider")
+        cls.host_pt = gen_prototype(cls.provider_bundle, "host")
 
-        self.provider = gen_provider(prototype=self.provider_pt)
-        self.host = gen_host(self.provider, prototype=self.host_pt)
+        cls.provider = gen_provider(prototype=cls.provider_pt)
+        cls.host = gen_host(cls.provider, prototype=cls.host_pt)
 
     def test_prepare_job_inventory(self):
         host2 = Host.objects.create(prototype=self.host_pt, fqdn="h2", cluster=self.cluster, provider=self.provider)
@@ -167,114 +165,113 @@ class TestInventory(BaseTestCase):
         for obj, inv in data:
             target = CoreObjectDescriptor(id=obj.id, type=model_name_to_core_type(obj.__class__.__name__))
             with self.subTest(obj=obj, inv=inv):
-                actual_data = get_inventory_data(target=target, is_host_action=action.host_action)
+                actual_data = get_inventory_data(
+                    target=target,
+                    is_host_action=action.host_action,
+                    cluster_service=self.uc.container.get(ClusterService),
+                )
                 self.assertDictEqual(actual_data, inv)
 
 
-class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
-    def setUp(self):
-        super().setUp()
+class TestInventoryAndMaintenanceMode(GenericTestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_files_dir = self.base_dir / "python" / "cm" / "tests" / "files"
+        cls._initialize_roles_and_adcm()
 
-        _, self.cluster_hc_acl, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.test_files_dir, "test_inventory_remove_group_mm_hosts.tar"),
-            cluster_name="cluster_hc_acl",
+        cls.bundles_dir = Path(__file__).parent.parent / "bundles"
+        cls.cluster_hc_acl = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(src=cls.bundles_dir / "test_inventory_remove_group_mm_hosts"),
+            name="cluster_hc_acl",
+        )
+        cls.provider = gen_provider(name="test_provider")
+        host_prototype = gen_prototype(bundle=cls.provider.prototype.bundle, proto_type="host")
+        cls.host_hc_acl_1 = gen_host(
+            provider=cls.provider, cluster=cls.cluster_hc_acl, fqdn="hc_acl_host_1", prototype=host_prototype
+        )
+        cls.host_hc_acl_2 = gen_host(
+            provider=cls.provider, cluster=cls.cluster_hc_acl, fqdn="hc_acl_host_2", prototype=host_prototype
+        )
+        cls.host_hc_acl_3 = gen_host(
+            provider=cls.provider, cluster=cls.cluster_hc_acl, fqdn="hc_acl_host_3", prototype=host_prototype
         )
 
-        self.provider = gen_provider(name="test_provider")
-        host_prototype = gen_prototype(bundle=self.provider.prototype.bundle, proto_type="host")
-        self.host_hc_acl_1 = gen_host(
-            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_1", prototype=host_prototype
-        )
-        self.host_hc_acl_2 = gen_host(
-            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_2", prototype=host_prototype
-        )
-        self.host_hc_acl_3 = gen_host(
-            provider=self.provider, cluster=self.cluster_hc_acl, fqdn="hc_acl_host_3", prototype=host_prototype
-        )
+        cls.service_hc_acl, *_ = cls.uc.add_services_to_cluster(cluster=cls.cluster_hc_acl, names=["service_1"])
 
-        self.service_hc_acl = add_service_to_cluster(
-            cluster=self.cluster_hc_acl,
-            proto=Prototype.objects.get(name="service_1", type="service"),
-            rbac_scenarios=RBACScenarios(),
-        )
+        cls.component_hc_acl_1 = Component.objects.get(cluster=cls.cluster_hc_acl, prototype__name="component_1")
+        cls.component_hc_acl_2 = Component.objects.get(cluster=cls.cluster_hc_acl, prototype__name="component_2")
 
-        self.component_hc_acl_1 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_1")
-        self.component_hc_acl_2 = Component.objects.get(cluster=self.cluster_hc_acl, prototype__name="component_2")
-
-        self.hc_c1_h1 = {
-            "host_id": self.host_hc_acl_1.pk,
-            "service_id": self.service_hc_acl.pk,
-            "component_id": self.component_hc_acl_1.pk,
+        cls.hc_c1_h1 = {
+            "host_id": cls.host_hc_acl_1.pk,
+            "service_id": cls.service_hc_acl.pk,
+            "component_id": cls.component_hc_acl_1.pk,
         }
-        self.hc_c1_h2 = {
-            "host_id": self.host_hc_acl_2.pk,
-            "service_id": self.service_hc_acl.pk,
-            "component_id": self.component_hc_acl_1.pk,
+        cls.hc_c1_h2 = {
+            "host_id": cls.host_hc_acl_2.pk,
+            "service_id": cls.service_hc_acl.pk,
+            "component_id": cls.component_hc_acl_1.pk,
         }
-        self.hc_c1_h3 = {
-            "host_id": self.host_hc_acl_3.pk,
-            "service_id": self.service_hc_acl.pk,
-            "component_id": self.component_hc_acl_1.pk,
+        cls.hc_c1_h3 = {
+            "host_id": cls.host_hc_acl_3.pk,
+            "service_id": cls.service_hc_acl.pk,
+            "component_id": cls.component_hc_acl_1.pk,
         }
-        self.hc_c2_h1 = {
-            "host_id": self.host_hc_acl_1.pk,
-            "service_id": self.service_hc_acl.pk,
-            "component_id": self.component_hc_acl_2.pk,
+        cls.hc_c2_h1 = {
+            "host_id": cls.host_hc_acl_1.pk,
+            "service_id": cls.service_hc_acl.pk,
+            "component_id": cls.component_hc_acl_2.pk,
         }
-        self.hc_c2_h2 = {
-            "host_id": self.host_hc_acl_2.pk,
-            "service_id": self.service_hc_acl.pk,
-            "component_id": self.component_hc_acl_2.pk,
+        cls.hc_c2_h2 = {
+            "host_id": cls.host_hc_acl_2.pk,
+            "service_id": cls.service_hc_acl.pk,
+            "component_id": cls.component_hc_acl_2.pk,
         }
 
-        self.set_hostcomponent(
-            cluster=self.cluster_hc_acl,
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_hc_acl,
             entries=(
                 (Host.objects.get(id=entry["host_id"]), Component.objects.get(id=entry["component_id"]))
-                for entry in (self.hc_c1_h1, self.hc_c1_h2, self.hc_c1_h3, self.hc_c2_h1, self.hc_c2_h2)
+                for entry in (cls.hc_c1_h1, cls.hc_c1_h2, cls.hc_c1_h3, cls.hc_c2_h1, cls.hc_c2_h2)
             ),
         )
 
-        self.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
+        cls.action_hc_acl = Action.objects.get(name="cluster_action_hc_acl", allow_in_maintenance_mode=True)
 
-        _, self.cluster_target_group, _ = self.upload_bundle_create_cluster_config_log(
-            bundle_path=Path(self.test_files_dir, "cluster_mm_host_target_group.tar"),
-            cluster_name="cluster_target_group",
+        cls.cluster_target_group = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(src=cls.bundles_dir / "cluster_mm_host_target_group"),
+            name="cluster_target_group",
         )
 
-        self.host_target_group_1 = gen_host(
-            provider=self.provider,
-            cluster=self.cluster_target_group,
+        cls.host_target_group_1 = gen_host(
+            provider=cls.provider,
+            cluster=cls.cluster_target_group,
             fqdn="host_target_group_1",
             prototype=host_prototype,
         )
-        self.host_target_group_2 = gen_host(
-            provider=self.provider,
-            cluster=self.cluster_target_group,
+        cls.host_target_group_2 = gen_host(
+            provider=cls.provider,
+            cluster=cls.cluster_target_group,
             fqdn="host_target_group_2",
             prototype=host_prototype,
         )
 
-        self.service_target_group = add_service_to_cluster(
-            cluster=self.cluster_target_group,
-            proto=Prototype.objects.get(name="service_1_target_group", type="service"),
-            rbac_scenarios=RBACScenarios(),
+        cls.service_target_group, *_ = cls.uc.add_services_to_cluster(
+            cluster=cls.cluster_target_group, names=["service_1_target_group"]
         )
-        self.component_target_group = Component.objects.get(
-            cluster=self.cluster_target_group, prototype__name="component_1_target_group"
+        cls.component_target_group = Component.objects.get(
+            cluster=cls.cluster_target_group, prototype__name="component_1_target_group"
         )
 
-        self.set_hostcomponent(
-            cluster=self.cluster_target_group,
+        cls.uc.set_hostcomponent(
+            cluster=cls.cluster_target_group,
             entries=[
-                (self.host_target_group_1, self.component_target_group),
-                (self.host_target_group_2, self.component_target_group),
+                (cls.host_target_group_1, cls.component_target_group),
+                (cls.host_target_group_2, cls.component_target_group),
             ],
         )
 
-        self.action_target_group = Action.objects.get(name="host_action_target_group", allow_in_maintenance_mode=True)
+        cls.action_target_group = Action.objects.get(name="host_action_target_group", allow_in_maintenance_mode=True)
 
     @staticmethod
     def _get_hc_request_data(*new_hc_items: dict) -> list[dict]:
@@ -283,7 +280,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
 
         for host_component in new_hc_items:
             hc_values = HostComponent.objects.filter(**host_component).values_list(*hc_fields).first()
-            hc_request_data.append(dict(zip(hc_fields, hc_values)))
+            hc_request_data.append(dict(zip(hc_fields, hc_values, strict=False)))
 
         return hc_request_data
 
@@ -291,7 +288,6 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         self, action: Action, object_: ObjectWithAction, payload: RunActionDTO, cluster_id: int
     ) -> dict:
         from cm.legacy.services.job.run._target_factories import prepare_ansible_inventory
-        from cm.legacy.services.job.run.repo import JobRepoImpl
 
         self.assertEqual(TaskLog.objects.count(), 0)
         self.assertEqual(JobLog.objects.count(), 0)
@@ -306,8 +302,9 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         task_id = self.task_runner.expect_task_launched().id
 
         inventory = prepare_ansible_inventory(
-            task=JobRepoImpl.get_task(task_id),
+            task=JobRepo().get_task(task_id),
             topology=retrieve_cluster_topology(cluster_id),
+            cluster_service=self.uc.container.get(ClusterService),
         )
         return inventory["all"]
 
@@ -326,7 +323,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
                     HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
                     for entry in hc_request_data
                 },
-                launch=core.legacy.job.dto.LaunchOptions(
+                launch=core.action.job.LaunchOptions(
                     is_verbose=False,
                 ),
             ),
@@ -377,7 +374,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
                     HostComponentEntry(host_id=entry["host_id"], component_id=entry["component_id"])
                     for entry in hc_request_data
                 },
-                launch=core.legacy.job.dto.LaunchOptions(is_verbose=False),
+                launch=core.action.job.LaunchOptions(is_verbose=False),
             ),
             cluster_id=self.cluster_hc_acl.pk,
         )["children"]
@@ -413,29 +410,36 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
 
         for group in groups:
             group.hosts.add(self.host_target_group_1)
-            update_obj_config(
-                obj_conf=group.config,
-                config={"some_string": group.name, "float": 0.1},
-                attr={"group_keys": {"some_string": True, "float": False}},
+            self.uc.set_config_of_group(
+                group=group,
+                config=core.config.Configuration(
+                    values={"some_string": group.name, "float": 0.1},
+                    attributes={
+                        "/some_string": core.config.Attributes(is_synced=False),
+                        "/float": core.config.Attributes(is_synced=True),
+                    },
+                ),
             )
 
         inventory_data = self.get_all_from_inventory(
             action=Action.objects.get(name="not_host_action"),
             object_=self.cluster_target_group,
-            payload=RunActionDTO(launch=core.legacy.job.dto.LaunchOptions(is_verbose=False)),
+            payload=RunActionDTO(launch=core.action.job.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
-        )["hosts"]
+        )["children"]
+
+        group_key = f"chg_{groups[0].pk}_{groups[1].pk}"
 
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["cluster"]["config"],
+            inventory_data[group_key]["vars"]["cluster"]["config"],
             {"some_string": "cluster", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["config"],
+            inventory_data[group_key]["vars"]["services"]["service_1_target_group"]["config"],
             {"some_string": "service_1", "float": 0.1},
         )
         self.assertDictEqual(
-            inventory_data["host_target_group_1"]["services"]["service_1_target_group"]["component_1_target_group"][
+            inventory_data[group_key]["vars"]["services"]["service_1_target_group"]["component_1_target_group"][
                 "config"
             ],
             {"some_string": "some_string", "float": 0.1},
@@ -448,7 +452,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group,
             object_=self.host_target_group_1,
-            payload=RunActionDTO(launch=core.legacy.job.dto.LaunchOptions(is_verbose=False)),
+            payload=RunActionDTO(launch=core.action.job.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 
@@ -461,7 +465,7 @@ class TestInventoryAndMaintenanceMode(WithDishkaContainer, BusinessLogicMixin, B
         target_hosts_data = self.get_all_from_inventory(
             action=self.action_target_group,
             object_=self.host_target_group_2,
-            payload=RunActionDTO(launch=core.legacy.job.dto.LaunchOptions(is_verbose=False)),
+            payload=RunActionDTO(launch=core.action.job.LaunchOptions(is_verbose=False)),
             cluster_id=self.cluster_target_group.pk,
         )["children"]["target"]["hosts"]
 

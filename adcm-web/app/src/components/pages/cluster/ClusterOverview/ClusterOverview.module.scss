@@ -1,0 +1,30 @@
+.clusterOverview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-400);
+  margin-top: var(--space-600);
+  min-width: 0;
+
+  &__bottomWrap {
+    min-width: 0;
+    container-type: inline-size;
+    container-name: cluster-overview-bottom;
+  }
+
+  &__bottom {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-400);
+    min-width: 0;
+
+    > * {
+      min-width: 0;
+    }
+  }
+
+  @container cluster-overview-bottom (width < 980px) {
+    &__bottom {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

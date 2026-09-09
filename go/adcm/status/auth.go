@@ -21,14 +21,14 @@ import (
 func checkADCMUserToken(hub Hub, token string) bool {
 	checkADCMAuth := func(token string) bool {
 		if hub.AdcmApi.checkAuth(token) {
-			hub.Secrets.adcmTokens[token] = time.Now().Add(hub.Secrets.tokenTimeOut)
+			hub.Secrets.SetADCMToken(token)
 			return true
-		} else {
-			return false
 		}
+
+		return false
 	}
 
-	val, ok := hub.Secrets.adcmTokens[token]
+	val, ok := hub.Secrets.GetADCMToken(token)
 	if !ok {
 		return checkADCMAuth(token)
 	}

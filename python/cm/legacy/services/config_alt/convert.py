@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar
 import json
 
 from ansible.errors import re

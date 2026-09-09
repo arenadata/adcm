@@ -1,5 +1,4 @@
-import { AdcmJobStatus } from '@models/adcm';
-import type { BaseStatus, TableColumn } from '@uikit';
+import type { TableColumn } from '@uikit';
 
 export const columns: TableColumn[] = [
   {
@@ -23,19 +22,7 @@ export const columns: TableColumn[] = [
     name: 'endTime',
   },
   {
-    label: 'Actions',
-    name: 'actions',
+    label: 'Operations',
+    name: 'operations',
   },
 ];
-
-export const jobStatusesMap: { [key in AdcmJobStatus]: BaseStatus } = {
-  [AdcmJobStatus.Created]: 'created',
-  [AdcmJobStatus.Running]: 'running',
-  [AdcmJobStatus.Success]: 'success',
-  [AdcmJobStatus.Failed]: 'failed',
-  [AdcmJobStatus.Aborted]: 'aborted',
-  [AdcmJobStatus.Locked]: 'locked',
-  [AdcmJobStatus.Broken]: 'broken',
-  [AdcmJobStatus.Info]: 'info',
-  [AdcmJobStatus.Warning]: 'warning',
-};
