@@ -16,11 +16,11 @@ from typing import Literal
 
 from audit.models import AuditLogOperationType
 from cm.converters import orm_object_to_action_target_type, orm_object_to_core_descriptor
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.models import Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
 from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionTargetDescriptor

@@ -254,7 +254,7 @@ class TestTask(ADCMDjangoAPISuite):
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
-            task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+            task_id = response.json()["id"]
             self.assertEqual(TaskLog.objects.get(id=task_id).status, "created")
 
             service_task_pk = response.json()["id"]

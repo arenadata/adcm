@@ -13,14 +13,13 @@
 from collections.abc import Collection
 from typing import TypedDict
 
-from cm.legacy.api import add_host
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import Prototype, Provider
 from core.action import RelatedObjects, TaskOwner
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rbac.scenarios import RBACScenarios
+from use_cases.transition.hostprovider.create import CreateHost
 
 from ansible_plugin.base import (
     ADCMAnsiblePluginExecutor,
@@ -58,14 +57,12 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
         with atomic():
             try:
                 provider = Provider.objects.select_related("prototype__bundle").get(id=runtime.context_owner.id)
-                host_prototype = Prototype.objects.get(type="host", bundle=provider.prototype.bundle)
-                rbac_scenarios = self._container.get(RBACScenarios)
-                host = add_host(
-                    provider=provider,
-                    prototype=host_prototype,
-                    fqdn=arguments.fqdn,
+                create_host_use_case = self._container.get(CreateHost)
+                host_id = create_host_use_case.do(
+                    hostprovider=provider,
+                    name=arguments.fqdn,
+                    cluster=None,
                     description=arguments.description,
-                    rbac_scenarios=rbac_scenarios,
                 )
                 task_owner = TaskOwner(
                     id=runtime.context_owner.id,
@@ -99,4 +96,4 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
                     error=PluginRuntimeError(message=f"Failed to create host due to IntegrityError: {err}"),
                 )
 
-        return CallResult(value=AddHostReturnValue(host_id=int(host.pk)), changed=True, error=None)
+        return CallResult(value=AddHostReturnValue(host_id=int(host_id)), changed=True, error=None)

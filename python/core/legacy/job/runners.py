@@ -88,10 +88,6 @@ class JobFilterPredicate(Protocol):
         ...
 
 
-def non_success(job: "Job") -> bool:
-    return job.status != ExecutionStatus.SUCCESS
-
-
 @dataclass(slots=True)
 class JobProcessor:
     convert: ExecutionTargetFactoryI

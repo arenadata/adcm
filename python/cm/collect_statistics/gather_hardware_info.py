@@ -15,13 +15,13 @@ from collections import defaultdict
 from core.types import HostID, HostName
 from django.db.models import Value
 from django.db.models.functions import Coalesce
-from infra.services import get_config_service
+import core
 
 from cm.legacy.services.job.context import get_basic_info_for_hosts
 from cm.models import Host
 
 
-def get_inventory() -> dict:
+def get_inventory(config_service: core.config.ConfigService) -> dict:
     """
     Collects inventory data for all existing hosts.
     Host groups are split by cluster edition (`ADCM` for unlinked hosts)
@@ -36,7 +36,7 @@ def get_inventory() -> dict:
 
     host_groups = defaultdict(lambda: defaultdict(dict))
     for host_id, info in get_basic_info_for_hosts(
-        hosts=set(host_fqdn_edition.keys()), config_service=get_config_service()
+        hosts=set(host_fqdn_edition.keys()), config_service=config_service
     ).items():
         fqdn, edition = host_fqdn_edition[host_id]
         host_groups[edition]["hosts"][fqdn] = info.model_dump(mode="json", by_alias=True, exclude_defaults=True)

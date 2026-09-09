@@ -14,7 +14,7 @@ from pathlib import Path
 import json
 
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
-from tests.dependencies import MockWithEnvProvider
+from tests.dependencies import MockWithEnvProvider, make_overridden_container
 from tests.suites import ADCMPluginExecutorSuite
 from use_cases.dto import RunActionDTO
 
@@ -70,14 +70,16 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         action = Action.objects.get(prototype=self.cluster.prototype, name="two_ansible_steps")
         with self.container() as container:
-            container.get(ScheduleTask).do(action_orm=action, target=self.cluster, payload=RunActionDTO())
+            launched_task = container.get(ScheduleTask).do(
+                action_orm=action, target=self.cluster, payload=RunActionDTO()
+            )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
 
-        self.task_runner.run_task(
-            task_id=task_id,
-            overrides=(MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)}),),
+        container = make_overridden_container(
+            MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
         )
+        self.task_runner(container).launch_task(task_id=task_id)
 
         task_status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(task_status, "success")

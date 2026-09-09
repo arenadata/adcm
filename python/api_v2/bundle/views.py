@@ -14,8 +14,8 @@
 from audit.alt.api import audit_create, audit_delete
 from audit.alt.object_retrievers import ignore_object_search
 from cm.legacy.bundle import delete_bundle
-from cm.legacy.services.bundle_alt.load import save_bundle_file_from_request_to_downloads
 from cm.models import Bundle, ObjectType
+from core.bundle import save_bundle_file_from_request_to_downloads
 from core.settings import Directories
 from dishka import FromDishka
 from django.db.models import F
@@ -39,6 +39,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from use_cases.bundle import ParseBundleFromRequest
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 from api_v2.api_schema import DefaultParams, ErrorSerializer, responses
 from api_v2.bundle.filters import BundleFilter
@@ -144,6 +145,7 @@ class BundleViewSet(
     )
     @audit_create(name="Bundle uploaded", object_=ignore_object_search)
     @inject
+    @convert_bundle_errors_to_adcm_ex
     def create(
         self, request, directories: FromDishka[Directories], parse_bundle: FromDishka[ParseBundleFromRequest], **_
     ) -> Response:
@@ -152,7 +154,7 @@ class BundleViewSet(
 
         # Moved out of use case based on:
         # 1. Testability
-        # 2. Layers separation (django's File format shouldn't be leaked to use cases)
+        # 2. Layers separation (django's File format shouldn't be leaked to use cases/core)
         #
         # Yet there are some opened questions:
         # 1. Now use case (on fail) removes passed argument - bit strange and leaky

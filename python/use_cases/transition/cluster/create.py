@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from cm import errors, models
 from cm.converters import orm_object_to_core_descriptor
-from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
@@ -30,6 +29,8 @@ from django.db.models import Count, QuerySet
 from rbac.scenarios import RBACScenarios
 import core
 import core.bundle
+
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 
 @dataclass(slots=True)
@@ -60,7 +61,7 @@ class CreateCluster:
             _create_ansible_config(cluster_id=cluster.pk)
 
             added, removed = {}, {}
-            if recalculate_own_concerns_on_add_clusters(cluster):
+            if recalculate_own_concerns_on_add_clusters(cluster, config_service=self.config_service):
                 added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 
         self.status_scenarios.reset_hc_map()
@@ -93,6 +94,7 @@ class CreateServicesFromPrototypes:
                 services=services.prefetch_related(
                     "components"
                 ).all(),  # refresh values from db to update `config` field
+                config_service=self.config_service,
             )
             added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
 

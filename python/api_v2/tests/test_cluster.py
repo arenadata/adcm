@@ -44,6 +44,7 @@ from rest_framework.status import (
 )
 from tests.dependencies import get_status_scenarios_manager
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched
 
 
 class TestCluster(ADCMDjangoAPISuite):
@@ -275,6 +276,12 @@ class TestCluster(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
 
         response = cluster_ep.patch(data={"name": "new_name"})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -630,10 +637,10 @@ class TestClusterActions(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         self.assert_task_status_is(task_id, "created")
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         self.assert_task_status_is(task_id, "success")
 
     def test_run_action_with_config_success(self):
@@ -650,15 +657,16 @@ class TestClusterActions(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK, response.json())
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.config, config)
         self.assertEqual(task.attr, {})
 
     def test_run_action_with_config_wrong_configuration_fail(self):
-        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-            data={"configuration": []}
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+                data={"configuration": []}
+            )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
@@ -669,31 +677,30 @@ class TestClusterActions(ADCMDjangoAPISuite):
                 "level": "error",
             },
         )
-        self.task_runner.expect_task_not_launched()
 
     def test_run_action_with_config_required_adcm_meta_fail(self):
         config = {"simple": "kuku", "grouped": {"simple": 5, "second": 4.3}, "after": ["something"]}
 
-        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-            data={"configuration": {"config": config}},
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+                data={"configuration": {"config": config}},
+            )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.;", "level": "error"}
         )
-        self.task_runner.expect_task_not_launched()
 
     def test_run_action_with_config_required_config_fail(self):
-        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
-            data={"configuration": {"adcmMeta": {}}},
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_config / "run").post(
+                data={"configuration": {"adcmMeta": {}}},
+            )
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
             response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.;", "level": "error"}
         )
-        self.task_runner.expect_task_not_launched()
 
     def test_retrieve_action_with_hc_success(self):
         response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action_with_hc).get()
@@ -717,6 +724,12 @@ class TestClusterActions(ADCMDjangoAPISuite):
         action = Action.objects.get(name="flag_up_cluster", prototype=cluster_1.prototype)
         response = self.client.v2[cluster_1, "actions", action, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
 
         concerns = cluster_1.concerns.all()
         self.assertEqual(len(cluster_1.concerns.all()), 1)

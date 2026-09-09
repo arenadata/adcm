@@ -31,8 +31,8 @@ from use_cases.transition.config import UpdateConfigurationFromJob
 from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.impl.job.repo import JobRepo
-from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.executors import InternalScriptResult
+from cm.legacy.services.job.run.target_factories import ExecutionTargetFactory
 
 
 def do_nothing(*_, **__):

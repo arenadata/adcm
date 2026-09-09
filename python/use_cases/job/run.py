@@ -33,10 +33,13 @@ from cm.legacy.services.job.run.runners import (
 from cm.transition.status import StatusScenarios
 from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner, is_operation_step_task
 from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action.scheduler import ProcessStarter
 from core.cluster import ClusterService
 from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
 from core.result import Fail, Success
-from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
+from core.scenarios.concern import ConcernScenarios
+from core.settings import Directories
+from core.types import PID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
 from django.db.transaction import atomic
 from use_cases.wizard import CompleteWizardOperationStep
 import core
@@ -52,6 +55,26 @@ PlannedJobs: TypeAlias = tuple[Job, ...]
 @dataclass(slots=True)
 class TaskDescription:
     jobs: PlannedJobs
+
+
+@dataclass(slots=True)
+class StartTask:
+    job_repo: JobRepoI
+    concern_scenarios: ConcernScenarios
+    process_starter: ProcessStarter
+    directories: Directories
+
+    # `__call__` instead of `.do()`: this needs to be a plain callable to satisfy the `TaskStarter` protocol
+    # used by `_ScheduleTask`/wizard, which just invoke it as `starter(id)`
+    def __call__(self, task_id: TaskID) -> PID:
+        task = self.job_repo.get_task(id=task_id)
+        first_job = self.job_repo.find_jobs_of_task(task_id=task_id)[0]
+
+        self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
+
+        return self.process_starter.start(
+            task_id=task_id, venv=task.action.venv, code_dir=self.directories.code, log_dir=self.directories.logs
+        )
 
 
 @dataclass(slots=True)

@@ -28,14 +28,14 @@ import core
 
 from cm.converters import model_name_to_core_type
 from cm.impl.job.repo import JobRepo
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.action import prepare_task_for_action
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
 from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component, ConcernItem, TaskLog
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.transition.ansible import ansible_decrypt
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -160,13 +160,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     ),
                 )
             with self.container() as container:
-                container.get(ScheduleTask).do(
+                launched_task = container.get(ScheduleTask).do(
                     action_orm=action,
                     target=object_,
                     payload=RunActionDTO(configuration=configuration),
                 )
 
-            task_id = self.task_runner.expect_task_launched().id
+            task_id = launched_task.pk
 
             task = JobRepo().get_task(id=task_id)
             job, *_ = JobRepo().get_task_jobs(task.id)
@@ -181,6 +181,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     task=task,
                     job=job,
                     configuration=self.configuration,
+                    config_service=self.uc.container.get(core.config.ConfigService),
                     topology=topology,
                 )
 
@@ -213,13 +214,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     ),
                 )
             with self.container() as container:
-                container.get(ScheduleTask).do(
+                launched_task = container.get(ScheduleTask).do(
                     action_orm=action,
                     target=self.host_1,
                     payload=RunActionDTO(configuration=configuration, launch=LaunchOptions(is_verbose=True)),
                 )
 
-            task_id = self.task_runner.expect_task_launched().id
+            task_id = launched_task.pk
 
             task = JobRepo().get_task(id=task_id)
             job, *_ = JobRepo().get_task_jobs(task.id)
@@ -233,6 +234,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     task=task,
                     job=job,
                     configuration=self.configuration,
+                    config_service=self.uc.container.get(core.config.ConfigService),
                     topology=retrieve_cluster_topology(self.cluster.pk),
                 )
 
@@ -253,13 +255,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
 
         task = TaskLog.objects.get(id=task_id)
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -267,7 +269,12 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
 
         task = JobRepo().get_task(id=task.id)
         job, *_ = JobRepo().get_task_jobs(task.id)
-        job_config = prepare_ansible_job_config(task=task, job=job, configuration=self.configuration)
+        job_config = prepare_ansible_job_config(
+            task=task,
+            job=job,
+            configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
+        )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
         self.assertEqual(ansible_decrypt(job_config["job"]["config"]["rolepass"]["__ansible_vault"]), raw_value)
 
@@ -283,13 +290,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"rolename": "test_user", "rolepass": raw_value}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["rolepass"])
@@ -300,6 +307,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
             topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["rolepass"])
@@ -318,13 +326,13 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             input_config=core.config.Configuration(values={"reqsec": deepcopy(raw_value), "secretval": None}),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action,
                 target=self.service,
                 payload=RunActionDTO(configuration=configuration),
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
         task = TaskLog.objects.get(id=task_id)
 
         self.assertIn("__ansible_vault", task.config["reqsec"]["key"])
@@ -338,6 +346,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             task=JobRepo().get_task(task.id),
             job=job,
             configuration=self.configuration,
+            config_service=self.uc.container.get(core.config.ConfigService),
             topology=retrieve_cluster_topology(self.cluster.pk),
         )
         self.assertIn("__ansible_vault", job_config["job"]["config"]["reqsec"]["key"])
@@ -408,6 +417,7 @@ class TestScriptPathsInActionConfig(BaseInventoryTestCase):
                             task=JobRepo().get_task(task.id),
                             job=job,
                             configuration=self.configuration,
+                            config_service=self.uc.container.get(core.config.ConfigService),
                             topology=retrieve_cluster_topology(self.cluster.pk),
                         )
 

@@ -12,7 +12,7 @@
 
 from typing import Final
 
-from core.bundle._parsing.v_2_0.parser import Parser as ParserV2
+from core.bundle._parsing.v_2_0.base_parser import BaseParser as ParserV2
 from core.bundle._parsing.v_2_1.targets import (
     ADCMSchema,
     Cluster,

@@ -21,7 +21,7 @@ from core.result import Fail, Success
 from core.templates import Template
 
 if TYPE_CHECKING:
-    from core.bundle._parsing.v_1_0.schema import VersionsSchema
+    from core.bundle._parsing.v_2_0.schema import VersionsSchema
 
 
 ActionName: TypeAlias = str
@@ -56,6 +56,13 @@ def script_is_correct_path(script: str):
         raise ValueError(f"Action's script has unsupported path format: {script}")
 
     return script
+
+
+def license_is_correct_path(license_: str | None) -> str | None:
+    if license_ is not None and not is_path_correct(license_):
+        raise ValueError(f"Unsupported path format for license: {license_}")
+
+    return license_
 
 
 def validate_name(name: str) -> str:
@@ -94,13 +101,6 @@ def convert_config(config: Any) -> list:
         new_config.append(new_value)
 
     return new_config
-
-
-def license_allowed_for_type(type_: str) -> None:
-    allowed_types = {"cluster", "service", "provider"}
-
-    if type_ not in allowed_types:
-        raise ValueError("License can be placed in cluster, service or provider")
 
 
 def min_and_max_present(versions: "VersionsSchema"):

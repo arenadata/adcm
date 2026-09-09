@@ -474,6 +474,7 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             target=CoreObjectDescriptor(id=problem_component.id, type=ADCMCoreType.COMPONENT),
             is_host_action=action.host_action,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(core.config.ConfigService),
         )
         services = inventory["all"]["vars"]["services"]
 

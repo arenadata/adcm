@@ -225,6 +225,14 @@ class BundleRepo(bundle.BundleRepoI):
     def retrieve_contract_version(self, bundle_id: BundleID) -> bundle.ContractVersionTag:
         return Bundle.objects.values_list("contract_version", flat=True).get(pk=bundle_id)
 
+    def find_existing_bundle(self, hash_: str) -> bundle.ExistingBundleInfo | None:
+        row = Bundle.objects.filter(hash=hash_).values_list("name", "version", "edition").first()
+        return bundle.ExistingBundleInfo(*row) if row else None
+
+    def retrieve_adcm_verification_public_key_path(self, files_dir: Path) -> Path:
+        adcm_id = ADCM.objects.values_list("id", flat=True).get()
+        return files_dir / f"adcm.{adcm_id}.global.verification_public_key"
+
     def clear_old_versions_adcm_bundles(self) -> None:
         ids = (
             Prototype.objects.filter(type=ADCMCoreType.ADCM.value)
@@ -359,9 +367,7 @@ def _action_definition_to_model(definition: bundle.d.ActionDefinition, prototype
         partial_execution=definition.partial_execution,
         allow_for_action_host_group=definition.allow_for_action_host_group,
         allow_in_maintenance_mode=definition.allow_in_maintenance_mode,
-        config_jinja=definition.config_jinja,
         config_template=_dump_or_none(definition.config_template),
-        scripts_jinja=definition.scripts_jinja if definition.scripts_jinja else "",
         scripts_template=_dump_or_none(definition.scripts_template),
         wizard_template=_dump_or_none(definition.wizard_template),
     )

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.legacy.adcm_config.config import get_main_info
 from cm.models import Component, MaintenanceMode, Service
 from rest_framework.serializers import (
     ChoiceField,
@@ -24,7 +23,7 @@ from rest_framework.serializers import (
 from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.serializers import WithStatusSerializer
+from api_v2.serializers import WithStatusSerializer, get_main_info
 
 
 class ServiceRetrieveSerializer(WithStatusSerializer):

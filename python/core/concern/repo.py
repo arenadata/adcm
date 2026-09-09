@@ -13,6 +13,7 @@
 from collections.abc import Collection
 from typing import Protocol, TypeAlias
 
+from core.concern.types import ConcernDraft, ConcernRelatedObjects
 from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc, ObjectID
 
 # concerns of an owner grouped by objects those concerns are shown on
@@ -20,6 +21,19 @@ ConcernDistribution: TypeAlias = dict[ADCMCoreType, dict[ObjectID, set[ConcernID
 
 
 class ConcernRepoI(Protocol):
+    def create(self, draft: ConcernDraft) -> ConcernID:
+        ...
+
+    def link(self, *, concern_id: ConcernID, targets: ConcernRelatedObjects) -> None:
+        """
+        Link an existing concern to `targets`.
+
+        NOTE: computing which objects a concern should be distributed to (cluster/provider
+        hierarchy, MM, etc.) is not part of this method and is not yet reworked to be
+        core-safe — callers must supply `targets` themselves for now.
+        """
+        ...
+
     def update_object_name_in_concerns(
         self, object_: ClusterDesc | HostDesc, previous_name: str, new_name: str
     ) -> tuple[ConcernID, ...]:

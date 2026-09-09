@@ -26,7 +26,14 @@ class SchedulerProvider(Provider):
     scope = Scope.APP
 
     various = provide_all(
-        LocalTerminator, CeleryTerminator, Monitor, Launcher, Killer, LocalTaskMonitor, CeleryTaskMonitor
+        LocalTerminator,
+        CeleryTerminator,
+        Monitor,
+        Launcher,
+        Killer,
+        LocalTaskMonitor,
+        CeleryTaskMonitor,
+        LocalTaskQueuer,
     )
 
     @provide
@@ -42,10 +49,10 @@ class SchedulerProvider(Provider):
         return {TaskRunnerEnvironment.LOCAL: local, TaskRunnerEnvironment.CELERY: celery}
 
     @provide
-    def queuer(self, settings: SchedulerSettings) -> TaskQueuer:
+    def queuer(self, settings: SchedulerSettings, local: LocalTaskQueuer) -> TaskQueuer:
         match settings.job_execution_environment:
             case TaskRunnerEnvironment.LOCAL:
-                return LocalTaskQueuer()
+                return local
             case TaskRunnerEnvironment.CELERY:
                 return CeleryTaskQueuer()
 

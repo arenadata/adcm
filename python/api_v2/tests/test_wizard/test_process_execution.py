@@ -15,6 +15,7 @@ from copy import deepcopy
 from uuid import uuid4
 
 from cm.converters import orm_object_to_core_type
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessState, ProcessStepState
 from cm.models import (
@@ -29,11 +30,12 @@ from cm.models import (
     Process,
     ProcessStep,
 )
+from core.dynamic_bundle.types import ContextGathererI
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from tests.deprecated import BusinessLogicMixin
 from tests.suites import ADCMDjangoAPISuite
-from tests.utils import assert_dict_contains_subset
+from tests.utils import assert_dict_contains_subset, expect_task_launched
 
 from api_v2.tests.base import APIV2Mixin
 from api_v2.tests.helpers import create_bundle_and_prototype_rows
@@ -270,22 +272,23 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         action = Action.objects.get(name="wizard_operation_as_first", prototype=self.cluster_1.prototype)
         process = self.start_process(self.cluster_1, action)
         expected_display_name = f"{action.display_name} (find me In here)"
-        self.submit_step(
-            owner=self.cluster_1,
-            action=action,
-            process_id=process.pk,
-            data={
-                "method": ProcessOperationType.SUBMIT,
-                "params": {
-                    "processSyncKey": process.sync_key,
-                    "stepId": process.current_step.pk,
+        with expect_task_launched() as launched:
+            self.submit_step(
+                owner=self.cluster_1,
+                action=action,
+                process_id=process.pk,
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {
+                        "processSyncKey": process.sync_key,
+                        "stepId": process.current_step.pk,
+                    },
                 },
-            },
-        )
+            )
 
-        launched_task = self.task_runner.expect_task_launched()
+        launched_task = launched.task_id()
 
-        response = (self.client.v2 / "tasks" / launched_task.id).get()
+        response = (self.client.v2 / "tasks" / launched_task).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.json()["displayName"], expected_display_name)
 
@@ -294,7 +297,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
         self.assertEqual(response.status_code, HTTP_200_OK)
         response = response.json()["results"]
 
-        task_with_step_response = [task for task in response if task["id"] == launched_task.id][0]
+        task_with_step_response = [task for task in response if task["id"] == launched_task][0]
         self.assertEqual(task_with_step_response["displayName"], expected_display_name)
 
     def test_adcm_process_action_errors(self):
@@ -587,18 +590,19 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-                self.submit_step_r(
-                    target=host,
-                    action=action,
-                    process_id=process.pk,
-                    data={
-                        "method": ProcessOperationType.SUBMIT,
-                        "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
-                    },
-                )
+                with expect_task_launched() as launched:
+                    self.submit_step_r(
+                        target=host,
+                        action=action,
+                        process_id=process.pk,
+                        data={
+                            "method": ProcessOperationType.SUBMIT,
+                            "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.pk},
+                        },
+                    )
 
-                launched_task = self.task_runner.expect_task_launched()
-                self.task_runner.run_task(launched_task.id)
+                launched_task = launched.task_id()
+                self.task_runner().launch_task(launched_task)
 
                 step_3_operation.refresh_from_db()
                 self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
@@ -636,7 +640,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
                 self.assertEqual(response.status_code, HTTP_200_OK)
 
-                launched_task = self.task_runner.expect_task_launched(response.json()["id"])
+                launched_task = response.json()["id"]
 
                 # remove job lock
                 self.delete_concern_by_name(object_=host, name="job_lock")
@@ -692,3 +696,91 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
             response.json()["desc"],
             f"Execution of step {action.display_name} is not allowed. The bundle for revert is unsupported",
         )
+
+    def test_env_for_action_process(self):
+        host = self.create_host(provider=self.provider, name="test-host", cluster=self.cluster_1)
+        self.create_mapping(cluster=self.cluster_1, entries=[(host, self.component_1)])
+
+        action = Action.objects.get(name="wizard_cluster_action", prototype=self.cluster_1.prototype)
+        process_id = self.start_process_r(target=self.cluster_1, action=action).json()["id"]
+        process = Process.objects.get(pk=process_id)
+
+        step_1_config = ProcessStep.objects.get(process_id=process_id, name="step_1_config")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": step_1_config.id,
+                    "configuration": {
+                        "config": {"float": 0.2, "step_variant_from_config": "entry1"},
+                        "adcmMeta": {},
+                    },
+                },
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        process.refresh_from_db(fields=["sync_key"])
+        step_2_mapping = ProcessStep.objects.get(process=process, name="step_2_mapping")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {
+                    "processSyncKey": process.sync_key,
+                    "stepId": step_2_mapping.id,
+                    "hostComponentMapDelta": {"remove": [{"hostId": host.id, "componentId": self.component_1.id}]},
+                },
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        process.refresh_from_db(fields=["sync_key"])
+        step_3_operation = ProcessStep.objects.get(process=process, name="step_3_operation")
+        response = self.submit_step_r(
+            target=self.cluster_1,
+            action=action,
+            process_id=process_id,
+            data={
+                "method": ProcessOperationType.SUBMIT,
+                "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
+            },
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        expected_action_context = {
+            "name": "wizard_cluster_action",
+            "owner_group": "CLUSTER",
+            "process": {
+                "current": {"stage": "first_stage", "step": "step_3_operation"},
+                "stages": {
+                    "first_stage": {
+                        "step_1_config": {"config": {"float": 0.2, "step_variant_from_config": "entry1"}},
+                        "step_2_mapping": {
+                            "groups": {
+                                f"{self.service_1.prototype.name}.{self.component_1.prototype.name}.remove": [
+                                    "test-host"
+                                ]
+                            }
+                        },
+                    }
+                },
+            },
+        }
+        args = TaskArgs(
+            target_object=self.cluster_1,
+            owner_object=self.cluster_1,
+            action=action,
+            wizard_process_id=process_id,
+        )
+        with self.container() as container:
+            context_gatherer = container.get(ContextGathererI[ActionArgs, TaskArgs])
+
+        env = context_gatherer.prepare_context_for_task(args=args)
+        self.assertDictEqual(env["action"], expected_action_context)

@@ -12,10 +12,12 @@
 
 from adcm.mixins import GetParentObjectMixin, ParentObject
 from adcm.permissions import VIEW_CONFIG_HOST_GROUP_PERM, VIEW_HOST_PERM, check_config_perm
+from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
 from cm.transition.status import StatusScenarios
-from core.types import ADCMHostGroupType
+from core.config import ConfigService
+from core.types import ADCMHostGroupType, Descriptor
 from dishka import FromDishka
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -75,7 +77,14 @@ class CHGViewSet(
         )
 
     @inject
-    def create(self, request: Request, *_, rbac_scenarios: FromDishka[RBACScenarios], **__):
+    def create(
+        self,
+        request: Request,
+        *_,
+        config_service: FromDishka[ConfigService],
+        rbac_scenarios: FromDishka[RBACScenarios],
+        **__,
+    ):
         parent_object = self.get_parent_object(raise_=NotFound())
 
         self._check_parent_permissions(parent_object=parent_object)
@@ -97,6 +106,10 @@ class CHGViewSet(
                 object_type=ContentType.objects.get_for_model(model=parent_object),
                 object_id=parent_object.pk,
                 **serializer.validated_data,
+            )
+            config_service.create_initial_configuration_of_host_group(
+                group=Descriptor(id=host_group.pk, type=ADCMHostGroupType.CONFIG),
+                owner=orm_object_to_core_descriptor(parent_object),
             )
         except core.config.ObjectWithoutConfigError as e:
             raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR") from e

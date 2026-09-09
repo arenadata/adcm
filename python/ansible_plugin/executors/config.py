@@ -15,10 +15,9 @@ from typing import Any, TypeAlias, TypedDict
 import re
 
 from cm.converters import core_type_to_model
-from core.legacy.bundle_alt.schema import ConfigApplyParameterItem
 from core.types import CoreObjectDescriptor
 from django.db.transaction import atomic
-from pydantic import model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 from use_cases.transition.config import UpdateConfigurationFromJob
 import core
@@ -41,6 +40,13 @@ ParamValue: TypeAlias = Any
 
 INTEGER_LIKE_STRING = re.compile(r"^\d+$")
 FLOAT_LIKE_STRING = re.compile(r"^\d+\.\d+$")
+
+
+class ConfigApplyParameterItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    key: str
+    value: Any
 
 
 class AdcmConfigParameterPluginItem(ConfigApplyParameterItem):

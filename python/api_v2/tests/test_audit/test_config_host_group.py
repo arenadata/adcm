@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from cm.models import Cluster, Component, ConfigHostGroup, Host, Provider, Service
-from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -31,21 +30,15 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.create_user(**self.test_user_credentials)
 
-        self.cluster_1_host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.cluster_1),
-            object_id=self.cluster_1.pk,
-        )
+        self.cluster_1_host_group = self.uc.add_config_host_group(owner=self.cluster_1, name="config_host_group")
         self.host = self.uc.add_host(provider=self.provider, fqdn="host")
         self.cluster_1_host_group.hosts.add(self.host)
         self.new_host = self.uc.add_host(provider=self.provider, fqdn="new_host")
         self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
 
         self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_1_host_group = ConfigHostGroup.objects.create(
-            name="service_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.service_1),
-            object_id=self.service_1.pk,
+        self.service_1_host_group = self.uc.add_config_host_group(
+            owner=self.service_1, name="service_1_config_host_group"
         )
         self.service_1_host_group.hosts.add(self.host)
         self.host_for_service = self.uc.add_host(provider=self.provider, fqdn="host_for_service")
@@ -54,16 +47,10 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.component_1 = Component.objects.get(
             cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
         )
-        self.component_1_host_group = ConfigHostGroup.objects.create(
-            name="component_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.component_1),
-            object_id=self.component_1.pk,
+        self.component_1_host_group = self.uc.add_config_host_group(
+            owner=self.component_1, name="component_1_config_host_group"
         )
-        self.provider_host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.provider),
-            object_id=self.provider.pk,
-        )
+        self.provider_host_group = self.uc.add_config_host_group(owner=self.provider, name="config_host_group")
         self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
         self.cluster_config_data = {
             "config": {

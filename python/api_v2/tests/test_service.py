@@ -42,6 +42,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import expect_task_launched
 
 
 class FakePopenResponse(NamedTuple):
@@ -417,10 +418,10 @@ class TestServiceAPI(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         self.assert_task_status_is(task_id, "created")
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         self.assert_task_status_is(task_id, "success")
 
 
@@ -459,11 +460,18 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
         self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
 
         with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
-            response = self.client.v2[self.service_to_delete].delete()
+            with expect_task_launched() as launched:
+                response = self.client.v2[self.service_to_delete].delete()
 
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
             service_concerns_qs = self.service_to_delete.concerns.filter(type=ConcernType.LOCK)
+
+            # delete action's task is only created by deletion, its concern appears on scheduling
+            self.assertEqual(service_concerns_qs.count(), 1)
+
+            self.task_runner().schedule_task(launched.task_id())
+
             # one for old job, one for delete job
             self.assertEqual(service_concerns_qs.count(), 2)
             self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
@@ -472,7 +480,14 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
         response = self.client.v2[object_, "actions", action.pk, "run"].post()
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = response.json()["id"]
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(object_.concerns.exists())
+
+        self.task_runner().schedule_task(task_id)
+
         task = TaskLog.objects.get(id=task_id)
 
         job = JobLog.objects.filter(task_id=task_id).first()

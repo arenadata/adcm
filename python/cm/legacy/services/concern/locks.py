@@ -10,8 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.types import ConcernID, CoreObjectDescriptor, ObjectID, TaskID
-from django.conf import settings
+from core.types import CoreObjectDescriptor, ObjectID
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 
@@ -46,48 +45,6 @@ def retrieve_lock_on_object(object_: CoreObjectDescriptor) -> ConcernItem | None
     ).values_list("concernitem_id", flat=True)
 
     return ConcernItem.objects.filter(id__in=related_locks_qs).first()
-
-
-def create_task_lock_concern(task: TaskLog) -> ConcernID:
-    name = _detect_name_for_lock(task.action.name)
-    first_job = _retrieve_first_job(task_id=task.pk)
-    owner = _get_task_owner(task)
-    if not owner:
-        raise RuntimeError(f"Can't detect owner for {task.pk}")
-
-    reason = _build_lock_reason(job=first_job, owner=owner)
-
-    concern = ConcernItem.objects.create(
-        type=ConcernType.LOCK,
-        cause=ConcernCause.JOB,
-        name=name,
-        reason=reason,
-        blocking=True,
-        owner=owner,
-    )
-
-    return concern.pk
-
-
-def create_task_flag_concern(task: TaskLog) -> ConcernID:
-    name = _detect_name_for_flag(task.action.name)
-    first_job = _retrieve_first_job(task_id=task.pk)
-    owner = _get_task_owner(task)
-    if not owner:
-        raise RuntimeError(f"Can't detect owner for {task.pk}")
-
-    reason = _build_flag_reason(job=first_job, owner=owner)
-
-    concern = ConcernItem.objects.create(
-        type=ConcernType.FLAG,
-        cause=ConcernCause.JOB,
-        name=name,
-        reason=reason,
-        blocking=False,
-        owner=owner,
-    )
-
-    return concern.pk
 
 
 def update_task_lock_concern(job_id: ObjectID) -> None:
@@ -144,28 +101,8 @@ def delete_task_flag_concern(task_id: ObjectID) -> None:
     concern.delete()
 
 
-def _detect_name_for_lock(action_name: str) -> str:
-    # there shouldn't be dependency on settings,
-    # it's just a constant, but it's too much to rework it now
-    special_name = settings.ADCM_DELETE_SERVICE_ACTION_NAME
-    if action_name == special_name:
-        return special_name
-
-    return f"{ConcernCause.JOB}_{ConcernType.LOCK}"
-
-
 def _detect_name_for_flag(action_name: str) -> str:
     return f"adcm_running_job_{action_name}"
-
-
-def _retrieve_first_job(task_id: TaskID) -> JobLog:
-    first_job = JobLog.objects.filter(task_id=task_id).order_by("id").first()
-
-    if first_job is None:
-        message = f"No jobs for {task_id}, can't create concern"
-        raise RuntimeError(message)
-
-    return first_job
 
 
 def _build_lock_reason(job: JobLog, owner: CoreObject | ADCM) -> dict:

@@ -13,14 +13,10 @@
 from types import ModuleType
 from typing import NewType
 
-from cm.models import Action, TaskLog
-from core.types import ActionID, TaskID
+from cm.models import Action
+from core.types import ActionID
 
 SchedulerRepo = NewType("SchedulerRepo", ModuleType)
-
-
-def retrieve_task_orm(task_id: TaskID) -> TaskLog:
-    return TaskLog.objects.get(id=task_id)
 
 
 def retrieve_action_orm(action_id: ActionID) -> Action:

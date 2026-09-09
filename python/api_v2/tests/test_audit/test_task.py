@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch
 
 from cm.models import (
     Action,
@@ -29,9 +28,10 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from tests.dependencies import TaskRunnerOverride
+from tests.dependencies import TaskRunnerOverride, make_overridden_container
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched
 
 
 class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
@@ -67,8 +67,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
             user__username="admin",
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
 
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action completed",
@@ -92,8 +92,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
             user__username="admin",
         )
 
-        overrides = (TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)),)
-        self.task_runner.run_launched_task(overrides=overrides)
+        container = make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)))
+        self.task_runner(container).launch_task(response.json()["id"])
 
         self.check_last_audit_record(
             operation_name=f"{self.service_action.display_name} action completed",
@@ -104,12 +104,12 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         )
 
     def test_run_not_exists_action_fail(self):
-        response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.component] / "actions" / self.get_non_existent_pk(Action) / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name="action launched",
             operation_type="update",
@@ -120,12 +120,12 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
 
     def test_run_action_denied(self):
         self.client.login(**self.test_user_credentials)
-        response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
-            data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
-        )
+        with assert_no_task_launched():
+            response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
+                data={"configuration": None, "isVerbose": True, "hostComponentMap": []}
+            )
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.task_runner.expect_task_not_launched()
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} action launched",
             operation_type="update",
@@ -137,9 +137,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
     def test_terminate_job_success(self):
         task, job = self.simulate_running_task(object_=self.cluster_1, action=self.cluster_action)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[job, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        response = self.client.v2[job, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} terminated",
@@ -152,86 +151,80 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
     def test_terminate_job_not_found_fail(self):
         self.simulate_running_task(object_=self.service, action=self.service_action)
 
-        with patch("cm.models.os.kill"):
-            response = (self.client.v2 / "jobs" / self.get_non_existent_pk(JobLog) / "terminate").post(data={})
-            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        response = (self.client.v2 / "jobs" / self.get_non_existent_pk(JobLog) / "terminate").post(data={})
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_record(
-                operation_name="Job terminated",
-                operation_type="update",
-                operation_result="fail",
-                **self.prepare_audit_object_arguments(expected_object=None),
-                user__username="admin",
-            )
+        self.check_last_audit_record(
+            operation_name="Job terminated",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
+        )
 
     def test_terminate_job_denied(self):
         _, job = self.simulate_running_task(object_=self.component, action=self.component_action)
         self.client.login(**self.test_user_credentials)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[job, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        response = self.client.v2[job, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_record(
-                operation_name=f"{self.component_action.display_name} terminated",
-                operation_type="update",
-                operation_result="denied",
-                **self.prepare_audit_object_arguments(expected_object=self.component),
-                user__username="test_user_username",
-            )
+        self.check_last_audit_record(
+            operation_name=f"{self.component_action.display_name} terminated",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component),
+            user__username="test_user_username",
+        )
 
     def test_terminate_task_success(self):
         task, _ = self.simulate_running_task(object_=self.cluster_1, action=self.cluster_action)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[task, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_200_OK)
+        response = self.client.v2[task, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-            self.check_last_audit_record(
-                operation_name=f"{self.cluster_action.display_name} cancelled",
-                operation_type="update",
-                operation_result="success",
-                **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
-                user__username="admin",
-            )
+        self.check_last_audit_record(
+            operation_name=f"{self.cluster_action.display_name} cancelled",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
 
     def test_terminate_task_not_found_fail(self):
         self.simulate_running_task(object_=self.service, action=self.service_action)
 
-        with patch("cm.models.os.kill"):
-            response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog) / "terminate").post(data={})
-            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog) / "terminate").post(data={})
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_record(
-                operation_name="Task cancelled",
-                operation_type="update",
-                operation_result="fail",
-                **self.prepare_audit_object_arguments(expected_object=None),
-                user__username="admin",
-            )
+        self.check_last_audit_record(
+            operation_name="Task cancelled",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
+        )
 
     def test_terminate_task_denied(self):
         task, _ = self.simulate_running_task(object_=self.component, action=self.component_action)
         self.client.login(**self.test_user_credentials)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[task, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        response = self.client.v2[task, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-            self.check_last_audit_record(
-                operation_name=f"{self.component_action.display_name} cancelled",
-                operation_type="update",
-                operation_result="denied",
-                **self.prepare_audit_object_arguments(expected_object=self.component),
-                user__username="test_user_username",
-            )
+        self.check_last_audit_record(
+            operation_name=f"{self.component_action.display_name} cancelled",
+            operation_type="update",
+            operation_result="denied",
+            **self.prepare_audit_object_arguments(expected_object=self.component),
+            user__username="test_user_username",
+        )
 
     def test_terminate_finished_job_fail(self):
         task, job = self.simulate_finished_task(object_=self.cluster_1, action=self.cluster_action)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[job, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        response = self.client.v2[job, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
             operation_name=f"{self.cluster_action.display_name} terminated",
@@ -244,17 +237,16 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
     def test_terminate_finished_task_fail(self):
         task, _ = self.simulate_finished_task(object_=self.service, action=self.service_action)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[task, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        response = self.client.v2[task, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-            self.check_last_audit_record(
-                operation_name=f"{self.service_action.display_name} cancelled",
-                operation_type="update",
-                operation_result="fail",
-                **self.prepare_audit_object_arguments(expected_object=self.service),
-                user__username="admin",
-            )
+        self.check_last_audit_record(
+            operation_name=f"{self.service_action.display_name} cancelled",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=self.service),
+            user__username="admin",
+        )
 
     def test_terminate_finished_job_after_delete_object_fail(self):
         _, job = self.simulate_finished_task(object_=self.component, action=self.component_action)
@@ -262,9 +254,8 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         response = self.client.v2[self.cluster_1].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[job, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        response = self.client.v2[job, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
             operation_name=f"{self.component_action.display_name} terminated",
@@ -280,17 +271,16 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         response = self.client.v2[self.cluster_1].delete()
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[task, "terminate"].post(data={})
-            self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        response = self.client.v2[task, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
-            self.check_last_audit_record(
-                operation_name=f"{self.component_action.display_name} cancelled",
-                operation_type="update",
-                operation_result="fail",
-                **self.prepare_audit_object_arguments(expected_object=None),
-                user__username="admin",
-            )
+        self.check_last_audit_record(
+            operation_name=f"{self.component_action.display_name} cancelled",
+            operation_type="update",
+            operation_result="fail",
+            **self.prepare_audit_object_arguments(expected_object=None),
+            user__username="admin",
+        )
 
     def test_adcm_6270_terminate_task_of_action_host_group(self):
         response = self.client.v2[self.cluster_1, "action-host-groups"].post(data={"name": "Test AHG"})
@@ -299,8 +289,7 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         ahg = ActionHostGroup.objects.get(pk=response.json()["id"])
         task, _ = self.simulate_running_task(object_=ahg, action=self.cluster_action)
 
-        with patch("cm.models.os.kill"):
-            response = self.client.v2[task, "terminate"].post(data={})
+        response = self.client.v2[task, "terminate"].post(data={})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_last_audit_record(

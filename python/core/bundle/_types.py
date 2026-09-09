@@ -69,33 +69,6 @@ class BundleInfo:
         return cls(hash=info.hash, root=info.root, signature=info.signature, contract_version=contract_version)
 
 
-# This is target implementation of definition keys,
-# but for simplicity of transition old implementation is used
-#
-# CT = TypeVar("CT", bound=Literal[ADCMCoreType.CLUSTER, ADCMCoreType.PROVIDER, ADCMCoreType.HOST, ADCMCoreType.ADCM])
-# @dataclass(slots=True, frozen=True)
-# class UniqueKey(Generic[CT]):
-#    type: CT
-#
-#
-# @dataclass(slots=True, frozen=True)
-# class ServiceKey:
-#    type: Literal[ADCMCoreType.SERVICE]
-#    name: str
-#
-#
-# @dataclass(slots=True, frozen=True)
-# class ComponentKey:
-#    type: Literal[ADCMCoreType.COMPONENT]
-#    name: str
-#    service: str
-#
-#
-# ClusterBundleDefinitionKey: TypeAlias = UniqueKey[Literal[ADCMCoreType.CLUSTER]] | ServiceKey | ComponentKey
-# ProviderBundleDefinitionKey: TypeAlias = UniqueKey[Literal[ADCMCoreType.PROVIDER, ADCMCoreType.HOST]]
-# ADCMBundleDefinitionKey: TypeAlias = UniqueKey[Literal[ADCMCoreType.ADCM]]
-#
-# BundleDefinitionKey: TypeAlias = ClusterBundleDefinitionKey | ProviderBundleDefinitionKey | ADCMBundleDefinitionKey
 ComponentKey: TypeAlias = tuple[Literal["component"], str, str]
 BundleDefinitionKey: TypeAlias = tuple[str] | tuple[Literal["service"], str] | ComponentKey
 BeforeUpgradeData: TypeAlias = dict
@@ -106,6 +79,13 @@ class BundleContext:
     id: BundleID
     root: Path
     contract_version: ContractVersionTag
+
+
+@dataclass(slots=True, frozen=True)
+class ExistingBundleInfo:
+    name: str
+    version: BundleVersionTag
+    edition: str
 
 
 @dataclass(slots=True, frozen=True)

@@ -25,6 +25,7 @@ from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.config import ConfigScenarios
 from core.types import (
     ADCMCoreType,
+    ADCMHostGroupType,
     ClusterID,
     CoreObjectDescriptor,
     Descriptor,
@@ -36,7 +37,6 @@ import core
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
 from cm.impl.config.repo import convert_attr_to_adcm_meta
-from cm.legacy.adcm_config.utils import proto_ref
 from cm.legacy.api import check_license
 from cm.legacy.services.cluster import retrieve_cluster_topology, retrieve_multiple_clusters_topology
 from cm.legacy.services.concern import create_issue, retrieve_issue
@@ -98,6 +98,10 @@ MT = TypeVar("MT")
 class SwitchRevertCallbacks:
     add_component_to_service: Callable[[Service, Prototype], Component]
     add_service_to_cluster: Callable[[Cluster, Prototype], Service]
+
+
+def proto_ref(prototype: Prototype) -> str:
+    return f'{prototype.type} "{prototype.name}" {prototype.version}'
 
 
 def bundle_switch(
@@ -442,7 +446,7 @@ class _ClusterBundleSwitch(_BundleSwitch[Cluster, Cluster | Service | Component]
         _clean_imports_bind(target=self._target, upgrade=self._upgrade)
 
     def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
-        recalculate_concerns_on_cluster_upgrade(cluster=self._target)
+        recalculate_concerns_on_cluster_upgrade(cluster=self._target, config_service=self._config_service)
         return redistribute_issues_and_flags(topology=retrieve_cluster_topology(self._target.pk))
 
     def _get_objects_map_for_policy_update(self) -> dict[Cluster | Service | Component, ContentType]:
@@ -476,7 +480,9 @@ class _ProviderBundleSwitch(_BundleSwitch):
         added, removed = defaultdict(lambda: defaultdict(set)), {}
         target_cod = CoreObjectDescriptor(id=self._target.id, type=orm_object_to_core_type(self._target))
         target_own_config_issue = retrieve_issue(owner=target_cod, cause=ConcernCause.CONFIG)
-        if target_own_config_issue is None and object_configuration_has_issue(self._target):
+        if target_own_config_issue is None and object_configuration_has_issue(
+            self._target, config_service=self._config_service
+        ):
             concern = create_issue(owner=target_cod, cause=ConcernCause.CONFIG)
             related_objects = distribute_concern_on_related_objects(owner=target_cod, concern_id=concern.pk)
             for core_type, object_ids in related_objects.items():
@@ -498,7 +504,7 @@ class _ProviderBundleSwitch(_BundleSwitch):
                 )
             )
         ):
-            if object_configuration_has_issue(host):
+            if object_configuration_has_issue(host, config_service=self._config_service):
                 concern = create_issue(
                     owner=CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST), cause=ConcernCause.CONFIG
                 )
@@ -642,7 +648,7 @@ def _revert_object(
         except KeyError:
             previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
-        _restore_config_host_groups(obj=obj)
+        _restore_config_host_groups(obj=obj, config_service=config_service)
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner,
             config=config,
@@ -686,6 +692,11 @@ def _restore_deleted_objects(
             _restore_config_of_host_group(
                 owner=owner, config_service=config_service, config=config, group_id=config_host_group.pk
             )
+        else:
+            config_service.create_initial_configuration_of_host_group(
+                group=Descriptor(id=config_host_group.pk, type=ADCMHostGroupType.CONFIG),
+                owner=owner,
+            )
 
     for group_name, group in before_upgrade.action_host_groups.items():
         # Here you need to use the service layer.
@@ -709,7 +720,9 @@ def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Con
     return core.config.Configuration(values=raw_values, attributes=attributes)
 
 
-def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -> None:
+def _restore_config_host_groups(
+    obj: Cluster | Service | Component | Provider, config_service: core.config.ConfigService
+) -> None:
     """Creates absent CHGs, listed in `before_upgrade`"""
     chgs_before_upgrade: set[str] = set(obj.before_upgrade.get("config_host_groups", ()))
     if not chgs_before_upgrade:
@@ -721,6 +734,8 @@ def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -
     )
     to_create = chgs_before_upgrade.difference(existing_chgs)
 
+    owner = orm_object_to_core_descriptor(obj)
+
     for chg_name in to_create:
         config_host_group = ConfigHostGroup.objects.create(
             name=chg_name,
@@ -730,6 +745,10 @@ def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -
         )
         config_host_group.hosts.set(
             Host.objects.filter(fqdn__in=obj.before_upgrade["config_host_groups"][chg_name].get("hosts", ()))
+        )
+        config_service.create_initial_configuration_of_host_group(
+            group=Descriptor(id=config_host_group.pk, type=ADCMHostGroupType.CONFIG),
+            owner=owner,
         )
 
 
@@ -821,7 +840,7 @@ def _restore_config_of_host_group(
         configuration_extra_info=core.config.ConfigurationExtraInfo(
             description=description, created_by=SYSTEM_CONFIG_CREATOR
         ),
-        owner=owner,
+        owner=Descriptor(id=group_id, type=ADCMHostGroupType.CONFIG),
     )
 
     config_service.prepare_file_parameter_values_on_fs(

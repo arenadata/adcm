@@ -28,6 +28,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from tests.client import APINode
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import expect_task_launched
 
 from api_v2.tests.base import APIV2Mixin
 
@@ -218,16 +219,18 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
         self.assertListEqual(step_3_operation.step_spec, self.expected_step_spec[step_3_operation.name])
         self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
-        response = operation_endpoint.post(
-            data={
-                "method": ProcessOperationType.SUBMIT,
-                "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
-            }
-        )
+        with expect_task_launched() as launched:
+            response = operation_endpoint.post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {"processSyncKey": process.sync_key, "stepId": step_3_operation.id},
+                }
+            )
+
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        launched_task = self.task_runner.expect_task_launched()
-        self.task_runner.run_task(launched_task.id)
+        launched_task = launched.task_id()
+        self.task_runner().launch_task(launched_task)
 
         step_3_operation.refresh_from_db()
         self.assertEqual(step_3_operation.state, ProcessStepState.COMPLETED)
@@ -257,11 +260,10 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
         self.assertEqual(process.state, ProcessState.COMPLETED.value)
 
     def check_run_wizard_final_action(self, process: Process, action_endpoint: APINode) -> None:
-        response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
+        with expect_task_launched():
+            response = (action_endpoint / "run").post(data={"process": {"id": process.id}})
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-
-        self.task_runner.expect_task_launched()
 
     def _test_adcm_7584_wizard_happy_path_on_ahg(self, object_: Cluster | Service | Component, action: Action):
         host = self.create_host(provider=self.provider, name="test-host-cluster", cluster=self.cluster)

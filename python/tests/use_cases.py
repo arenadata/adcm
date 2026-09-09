@@ -17,8 +17,8 @@ from pathlib import Path
 import tarfile
 
 from cm.converters import orm_object_to_core_descriptor
-from cm.legacy.api import add_host_to_cluster
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
+from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.config import convert_attr_to_adcm_meta
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.legacy.utils import deep_merge
@@ -44,6 +44,8 @@ from core.config._types import Attributes
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.settings import Directories
+from core.types import ADCMHostGroupType, Descriptor
+from django.contrib.contenttypes.models import ContentType
 from faker import Faker
 from rbac.models import Group, User
 from rbac.scenarios import RBACScenarios
@@ -52,7 +54,7 @@ from rbac.services.user import perform_user_creation
 from use_cases.bundle import AcceptLicense, ParseBundleFromRequest
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.config import UpdateConfigurationOfHostGroup, UpdateConfigurationOfObject
-from use_cases.transition.hostprovider.create import CreateHostprovider, create_host
+from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
 import dishka
 
 
@@ -113,20 +115,26 @@ class UseCases:
         name_ = name or fqdn
         if not name_:
             raise RuntimeError("Provide either fqdn or name")
-        host_id = create_host(
-            hostprovider=provider,
-            name=name_,
-            cluster=cluster,
-            config_service=self.container.get(ConfigService),
-            rbac_scenarios=self.container.get(RBACScenarios),
-            status_scenarios=self.container.get(StatusScenarios),
-        )
+
+        with self.container() as container:
+            uc = container.get(CreateHost)
+            host_id = uc.do(hostprovider=provider, name=name_, cluster=cluster)
 
         return Host.objects.get(id=host_id)
 
     def add_host_to_cluster(self, cluster: Cluster, host: Host) -> Host:
-        # todo use use case
-        return add_host_to_cluster(cluster=cluster, host=host, rbac_scenarios=self.container.get(RBACScenarios))
+        perform_host_to_cluster_map(
+            cluster_id=cluster.pk,
+            hosts=[host.pk],
+            status_service=self.container.get(StatusScenarios),
+            rbac_scenarios=self.container.get(RBACScenarios),
+        )
+        # `perform_host_to_cluster_map` updates the DB without touching the passed-in ORM instance,
+        # unlike the old `add_host_to_cluster` it replaces — refresh it in place so callers that don't
+        # capture the return value (many don't) still see `host.cluster` populated.
+        host.refresh_from_db(fields=["cluster"])
+
+        return host
 
     def add_services_to_cluster(self, names: list[str], cluster: Cluster) -> tuple[Service, ...]:
         service_prototypes = Prototype.objects.filter(
@@ -147,6 +155,23 @@ class UseCases:
             cluster_service=self.container.get(ClusterService),
         )
         return list(HostComponent.objects.filter(cluster_id=cluster.pk))
+
+    def add_config_host_group(
+        self, owner: Cluster | Service | Component | Provider, name: str, description: str = ""
+    ) -> ConfigHostGroup:
+        host_group = ConfigHostGroup.objects.create(
+            object_type=ContentType.objects.get_for_model(model=owner),
+            object_id=owner.pk,
+            name=name,
+            description=description,
+        )
+        self.container.get(ConfigService).create_initial_configuration_of_host_group(
+            group=Descriptor(id=host_group.pk, type=ADCMHostGroupType.CONFIG),
+            owner=orm_object_to_core_descriptor(owner),
+        )
+        host_group.refresh_from_db(fields=("config",))
+
+        return host_group
 
     # todo add ahg_service to dependencies
     def create_action_host_group(

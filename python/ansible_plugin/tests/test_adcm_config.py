@@ -12,10 +12,10 @@
 
 from unittest import TestCase
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog, Service
+from cm.transition.ansible import ansible_decrypt
 from core import config
 from core.action import Task
 from core.tests.test_config.utils import name_id

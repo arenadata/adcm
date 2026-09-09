@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.adcm_config.config import get_main_info
 from cm.models import Component, Host, HostComponent, MaintenanceMode
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import (
@@ -25,7 +24,7 @@ from api_v2.cluster.serializers import ClusterRelatedSerializer
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.host.serializers import HostShortSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
-from api_v2.serializers import WithStatusSerializer
+from api_v2.serializers import WithStatusSerializer, get_main_info
 from api_v2.service.serializers import ServiceRelatedSerializer
 
 

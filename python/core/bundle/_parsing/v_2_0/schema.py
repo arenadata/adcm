@@ -26,6 +26,7 @@ from pydantic import (
 
 from core.bundle._parsing.shared.templates import Template
 from core.bundle._parsing.shared.validation import (
+    license_is_correct_path,
     min_less_than_max,
     patch_masking,
     template_script_is_correct_path,
@@ -136,7 +137,7 @@ class ImportSchema:
         return self
 
 
-License = Annotated[str | None, Field(default=None)]
+License = Annotated[str | None, Field(default=None), AfterValidator(license_is_correct_path)]
 
 Export = Annotated[str | list[str] | None, Field(default=None)]
 Imports = Annotated[dict[str, ImportSchema] | None, Field(alias="import", default=None)]

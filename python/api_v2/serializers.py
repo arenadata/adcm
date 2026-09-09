@@ -14,9 +14,11 @@ from collections.abc import Callable
 from typing import Literal, TypedDict, TypeVar
 
 from cm.models import (
+    ADCMEntity,
     ADCMModel,
     Cluster,
     Component,
+    ConfigLog,
     Host,
     HostComponent,
     Service,
@@ -114,3 +116,14 @@ class DependsServicePrototypeDict(TypedDict):
 
 class DependOnDict(TypedDict):
     service_prototype: DependsServicePrototypeDict
+
+
+def get_main_info(obj: ADCMEntity | None) -> str | None:
+    if obj is None or obj.config is None:
+        return None
+
+    config_log = ConfigLog.objects.filter(id=obj.config.current).first()
+    if not config_log:
+        return None
+
+    return config_log.config.get("__main_info")

@@ -16,7 +16,6 @@ from typing import NamedTuple, TypeAlias
 
 from cm.converters import orm_object_to_core_type
 from cm.models import Cluster, Component, ConfigHostGroup, ConfigLog, Host, Provider, Service
-from django.contrib.contenttypes.models import ContentType
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -40,11 +39,8 @@ class BaseClusterCHGTestCase(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.cluster_1_host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.cluster_1),
-            object_id=cls.cluster_1.pk,
-            description="test description",
+        cls.cluster_1_host_group = cls.uc.add_config_host_group(
+            owner=cls.cluster_1, name="config_host_group", description="test description"
         )
         cls.host_fqdn = "host"
         cls.host = cls.uc.add_host(provider=cls.provider, fqdn=cls.host_fqdn, cluster=cls.cluster_1)
@@ -63,16 +59,8 @@ class BaseServiceCHGTestCase(BaseClusterCHGTestCase):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.service_1_host_group = ConfigHostGroup.objects.create(
-            name="service_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.service_1),
-            object_id=cls.service_1.pk,
-        )
-        cls.service_2_host_group = ConfigHostGroup.objects.create(
-            name="service_2_config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.service_2),
-            object_id=cls.service_2.pk,
-        )
+        cls.service_1_host_group = cls.uc.add_config_host_group(owner=cls.service_1, name="service_1_config_host_group")
+        cls.service_2_host_group = cls.uc.add_config_host_group(owner=cls.service_2, name="service_2_config_host_group")
         cls.service_1_host_group.hosts.add(cls.host)
         cls.host_for_service = cls.uc.add_host(provider=cls.provider, fqdn="host_for_service", cluster=cls.cluster_1)
         cls.host_in_cluster = cls.uc.add_host(provider=cls.provider, fqdn="host_in_cluster", cluster=cls.cluster_1)
@@ -191,11 +179,7 @@ class TestClusterCHG(BaseClusterCHGTestCase):
         self.assertDictEqual(response.json(), {"id": self.new_host.id, "name": "new_host"})
 
     def test_add_host_from_another_config_host_group_fail(self):
-        new_host_group = ConfigHostGroup.objects.create(
-            name="new_config_host_group",
-            object_type=ContentType.objects.get_for_model(self.cluster_1),
-            object_id=self.cluster_1.pk,
-        )
+        new_host_group = self.uc.add_config_host_group(owner=self.cluster_1, name="new_config_host_group")
 
         response = self.client.v2[new_host_group, "hosts"].post(data={"hostId": self.host.pk})
 
@@ -547,15 +531,11 @@ class TestComponentCHG(BaseServiceCHGTestCase):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.component_1_host_group = ConfigHostGroup.objects.create(
-            name="component_1_config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.component_1),
-            object_id=cls.component_1.pk,
+        cls.component_1_host_group = cls.uc.add_config_host_group(
+            owner=cls.component_1, name="component_1_config_host_group"
         )
-        cls.component_2_host_group = ConfigHostGroup.objects.create(
-            name="component_2_config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.component_2),
-            object_id=cls.component_2.pk,
+        cls.component_2_host_group = cls.uc.add_config_host_group(
+            owner=cls.component_2, name="component_2_config_host_group"
         )
 
         cls.host_for_component = cls.uc.add_host(
@@ -809,11 +789,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
 
         cls.host = cls.uc.add_host(provider=cls.provider, fqdn="host")
         cls.new_host = cls.uc.add_host(provider=cls.provider, fqdn="new-host")
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.provider),
-            object_id=cls.provider.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.provider, name="config_host_group")
         cls.host_group.hosts.add(cls.host)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -1020,11 +996,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
                 self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_permissions_cluster_another_object_role_retrieve_denied(self):
-        group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.cluster_1),
-            object_id=self.cluster_1.pk,
-        )
+        group = self.uc.add_config_host_group(owner=self.cluster_1, name="config_host_group")
         self.client.login(**self.test_user_credentials)
         with self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="Map hosts"):
             with self.grant_permissions(to=self.test_user, on=self.host, role_name="Manage Maintenance mode"):

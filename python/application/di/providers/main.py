@@ -16,6 +16,7 @@ import os
 
 from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
 from cm.impl.adcm.repo import ADCMRepo
+from cm.impl.bundle.context import ActionArgs, ContextGatherer, TaskArgs
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
@@ -31,17 +32,12 @@ from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
-from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
-from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
 from core.action.job import (
-    DirectOSTerminationSignaller,
     ExecutorTerminator,
-    IndirectRepoTerminationSignaller,
     TaskRunnerTerminator,
-    TerminationSignaller,
 )
 from core.concern.repo import ConcernRepoI
 from core.dynamic_bundle.render import BundleRenderer
@@ -49,10 +45,12 @@ from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.scenarios.cluster import BeforeUpgradeScenarios
+from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
 from core.scenarios.config import ConfigScenarios
+from core.scenarios.status import StatusScenariosI
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
-from dishka import Provider, Scope, provide, provide_all
+from dishka import Provider, Scope, alias, provide, provide_all
 from rbac.scenarios import RBACScenarios
 from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
@@ -67,12 +65,11 @@ from use_cases.transition.config import (
     UpdateConfigurationOfObject,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
-from use_cases.transition.hostprovider.create import CreateHostprovider
+from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
     ScheduleTask,
-    TaskStarter,
 )
 from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
@@ -80,8 +77,6 @@ from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess,
 import core
 import yaml
 import core.bundle
-
-from application.types import TaskRunnerMode
 
 
 class PathResolverProvider(Provider):
@@ -121,32 +116,6 @@ class JobProvider(Provider):
 
     task_runner_terminator = provide(TaskRunnerTerminator)
     executor_terminator = provide(ExecutorTerminator)
-
-    @provide
-    def termination_signaller(
-        self,
-        task_runner_mode: TaskRunnerMode,
-        repo: core.action.job.JobRepoI,
-        executor_terminator: ExecutorTerminator,
-        task_runner_terminator: TaskRunnerTerminator,
-    ) -> TerminationSignaller:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return IndirectRepoTerminationSignaller(repo)
-
-            case TaskRunnerMode.INSTANT:
-                return DirectOSTerminationSignaller(
-                    task_runner_terminator=task_runner_terminator, executor_terminator=executor_terminator
-                )
-
-    @provide
-    def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return lambda _: None
-
-            case TaskRunnerMode.INSTANT:
-                return start_task
 
 
 class WizardProvider(Provider):
@@ -195,6 +164,7 @@ class ConcernProvider(Provider):
     scope = Scope.APP
 
     repo = provide(ConcernRepo, provides=ConcernRepoI)
+    distribution_scenarios = provide(ConcernDistributionScenarios)
 
 
 class ProviderProvider(Provider):
@@ -239,6 +209,7 @@ class ScenariosProvider(Provider):
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
     status_scenarios = provide(StatusScenarios)
+    status_scenarios_interface = alias(source=StatusScenarios, provides=StatusScenariosI)
     rbac_scenarios = provide(RBACScenarios)
     fill_wizard_step_spec = provide(
         FillWizardStepSpecLegacy,
@@ -246,6 +217,7 @@ class ScenariosProvider(Provider):
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
     config_scenarios = provide(ConfigScenarios)
+    concern_scenarios = provide(ConcernScenarios)
     before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
 
 
@@ -275,6 +247,7 @@ class UseCaseProvider(Provider):
 
     create_cluster = provide(CreateCluster)
     create_provider = provide(CreateHostprovider)
+    create_host = provide(CreateHost)
 
     # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
     add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)

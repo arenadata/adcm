@@ -18,11 +18,15 @@ import os
 import csv
 import logging
 
-from cm.legacy.adcm_config.config import get_adcm_config
+from application.di.containers import get_main_providers
+from cm.models import ADCM
+from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Count, Q
 from django.utils import timezone
+import core
+import dishka
 
 from audit.alt.background import audit_background_operation
 from audit.models import AuditLog, AuditLogOperationType, AuditObject, AuditSession
@@ -57,12 +61,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):  # noqa: ARG002
         try:
-            self.__handle()
+            container = dishka.make_container(*get_main_providers())
+            with container() as request_container:
+                self.__handle(config_service=request_container.get(core.config.ConfigService))
         except Exception as e:  # noqa: BLE001
             self.__log(e, "exception")
 
-    def __handle(self):
-        _, config = get_adcm_config(self.config_key)
+    def __handle(self, config_service: core.config.ConfigService):
+        adcm_id = ADCM.objects.values_list("id", flat=True).get()
+        adcm_configuration = config_service.retrieve_current_configuration(
+            owner=CoreObjectDescriptor(id=adcm_id, type=ADCMCoreType.ADCM)
+        )
+
+        config = adcm_configuration.values[self.config_key]
         if config["retention_period"] <= 0:
             self.__log("Disabled")
             return

@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-
-from cm.legacy.adcm_config.config import get_option_value
 from cm.models import Cluster, Prototype, Service
 
 # Helper functions for ansible plugins
@@ -22,15 +19,3 @@ def get_service_by_name(cluster_id, service_name):
     cluster = Cluster.obj.get(id=cluster_id)
     proto = Prototype.obj.get(type="service", name=service_name, bundle=cluster.prototype.bundle)
     return Service.obj.get(cluster=cluster, prototype=proto)
-
-
-def cast_to_type(field_type: str, value: Any, limits: dict) -> Any:
-    match field_type:
-        case "float":
-            return float(value)
-        case "integer":
-            return int(value)
-        case "option":
-            return get_option_value(value=value, limits=limits)
-        case _:
-            return value

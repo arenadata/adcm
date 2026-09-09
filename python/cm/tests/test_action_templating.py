@@ -20,7 +20,7 @@ from tests.deprecated import BusinessLogicMixin
 from use_cases.dto import ConfigurationDTO, RunActionDTO
 import core
 
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.models import Action, JobLog, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_action_host_group import ScheduleTask
@@ -47,11 +47,11 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
             input_config=core.config.Configuration(values=input_config["config"], attributes=input_config["attr"]),
         )
         with self.container() as container:
-            container.get(ScheduleTask).do(
+            launched_task = container.get(ScheduleTask).do(
                 action_orm=action, target=self.cluster, payload=RunActionDTO(configuration=configuration)
             )
 
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = launched_task.pk
 
         jobs = JobLog.objects.filter(task_id=task_id)
         self.assertEqual(len(jobs), 1)

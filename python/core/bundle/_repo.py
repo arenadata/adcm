@@ -11,15 +11,29 @@
 # limitations under the License.
 
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Protocol
 
 from core.bundle._definitions import DefinitionsMap
-from core.bundle._types import BundleContext, BundleInfo, ComponentKey, ContractVersionTag, InstalledBundleVersion
+from core.bundle._types import (
+    BundleContext,
+    BundleInfo,
+    ComponentKey,
+    ContractVersionTag,
+    ExistingBundleInfo,
+    InstalledBundleVersion,
+)
 from core.types import BindObjectDescriptor, BundleID, ImportName, PrototypeID, PrototypeImportSchema
 
 
 class BundleRepoI(Protocol):
     def save_definitions(self, definitions: DefinitionsMap, bundle_info: BundleInfo) -> BundleID:
+        ...
+
+    def find_existing_bundle(self, hash_: str) -> ExistingBundleInfo | None:
+        ...
+
+    def retrieve_adcm_verification_public_key_path(self, files_dir: Path) -> Path:
         ...
 
     def update_prototype_licenses(self, bundle_id: BundleID) -> None:
