@@ -10,19 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
+
 from cm.models import (
     Action,
     Bundle,
+    Cluster,
     Component,
+    ConfigHostGroup,
     ConfigLog,
     Host,
     MaintenanceMode,
     ObjectType,
     Prototype,
+    Provider,
+    Service,
     TaskLog,
     Upgrade,
 )
 from core.types import TaskID
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -30,7 +37,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
 )
-from tests.suites import ADCMDjangoAPISuite
+from tests.suites import TEST_API_V2_BUNDLES_DIR, ADCMDjangoAPISuite, ADCMDjangoAPISuiteNoBundles
 from tests.utils import assert_no_task_launched
 from unittest_parametrize import parametrize
 
@@ -647,8 +654,11 @@ class TestUpgrade(ADCMDjangoAPISuite):
         self.assertTrue(self.cluster_1.services.filter(prototype__name=removed_service.prototype.name).exists())
 
 
-class TestUpgradeActivatableGroupInSelectionGroup(ADCMDjangoAPISuite):
-    """ADCM-8370: activation flag of activatable group inside selection group is lost on upgrade"""
+class TestUpgradeActivatableGroup(ADCMDjangoAPISuiteNoBundles):
+    """
+    ADCM-8370: activation flag of activatable group inside selection group is lost on upgrade
+    ADCM-8421: CHG's configs is lost on bundle_revert
+    """
 
     maxDiff = None
 
@@ -656,15 +666,90 @@ class TestUpgradeActivatableGroupInSelectionGroup(ADCMDjangoAPISuite):
 
     @classmethod
     def setUpTestData(cls) -> None:
-        # generic setup isn't used in here, because none of its bundles and objects are required for this case
-        cls._initialize_roles_and_adcm()
+        super().setUpTestData()
 
-        bundles_dir = cls.test_bundles_dir / "bugs" / "ADCM-8370"
-        cls.bundle_v1 = cls.uc.upload_bundle(src=bundles_dir / "v1")
-        cls.bundle_v2 = cls.uc.upload_bundle(src=bundles_dir / "v2")
+        bundles_dir = TEST_API_V2_BUNDLES_DIR / "bugs"
+        cls.bundle_v1 = cls.uc.upload_bundle(src=bundles_dir / "ADCM-8370" / "v1")
+        cls.bundle_v2 = cls.uc.upload_bundle(src=bundles_dir / "ADCM-8370" / "v2")
 
         cls.upgrade = Upgrade.objects.get(name="v2", bundle=cls.bundle_v2)
         cls.cluster = cls.uc.add_cluster(bundle=cls.bundle_v1, name="Dev tools cluster")
+
+        bundles_8421 = bundles_dir / "ADCM-8421"
+        cls.cluster_bundle_8421 = cls.uc.upload_bundle(src=bundles_8421 / "cluster")
+        cls.cluster_upgrade_bundle_8421 = cls.uc.upload_bundle(src=bundles_8421 / "cluster_upgrade")
+        cls.provider_bundle_8421 = cls.uc.upload_bundle(src=bundles_8421 / "provider")
+        cls.provider_upgrade_bundle_8421 = cls.uc.upload_bundle(src=bundles_8421 / "provider_upgrade")
+
+        cls.cluster_8421 = cls.uc.add_cluster(bundle=cls.cluster_bundle_8421, name="Test cluster")
+        cls.provider_8421 = cls.uc.add_provider(bundle=cls.provider_bundle_8421, name="Test provider")
+        cls.cluster_upgrade_8421 = Upgrade.objects.get(name="Upgrade", bundle=cls.cluster_upgrade_bundle_8421)
+        cls.provider_upgrade_8421 = Upgrade.objects.get(name="Upgrade", bundle=cls.provider_upgrade_bundle_8421)
+
+    def _adcm_8421_get_chg_owner_upgrade_target_upgrade(
+        self, chg_owner_type: str
+    ) -> tuple[Cluster | Service | Component | Provider, Cluster | Provider, Upgrade]:
+        if chg_owner_type == "provider":
+            return self.provider_8421, self.provider_8421, self.provider_upgrade_8421
+
+        if chg_owner_type == "cluster":
+            return self.cluster_8421, self.cluster_8421, self.cluster_upgrade_8421
+
+        service, *_ = self.uc.add_services_to_cluster(names=["test_service"], cluster=self.cluster_8421)
+        if chg_owner_type == "service":
+            return service, self.cluster_8421, self.cluster_upgrade_8421
+
+        if chg_owner_type == "component":
+            component = Component.objects.get(
+                cluster=self.cluster_8421, service=service, prototype__name="test_component"
+            )
+            return component, self.cluster_8421, self.cluster_upgrade_8421
+
+        raise ValueError(f"Unknown CHG owner type: {chg_owner_type}")
+
+    def _adcm_8421_break_before_upgrade_chg_state(
+        self,
+        chg_owner: Cluster | Service | Component | Provider,
+        chg_id: int,
+        before_upgrade_config_state: str,
+    ) -> None:
+        """
+        Simulates partial loss of CHG data between the upgrade and the revert, as described by
+        `before_upgrade_config_state`: the CHG config captured in `before_upgrade` and/or the CHG
+        itself get removed.
+        """
+        delete_configlog = before_upgrade_config_state in ("configlog_deleted", "configlog_deleted_and_chg_deleted")
+        delete_chg = before_upgrade_config_state in ("chg_deleted", "configlog_deleted_and_chg_deleted")
+
+        if delete_configlog:
+            chg_owner.refresh_from_db(fields=["before_upgrade"])
+            before_upgrade_config_id = chg_owner.before_upgrade["config_host_groups"]["chg"]["config_id"]
+            self.assertIsNotNone(before_upgrade_config_id)
+            ConfigLog.objects.filter(id=before_upgrade_config_id).delete()
+
+        if delete_chg:
+            response = self.client.v2[chg_owner, "config-groups", str(chg_id)].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
+
+    def _get_current_chg_config(self, obj: Cluster | Service | Component | Provider, chg_id: int) -> dict:
+        target_response_fields = {"config", "adcmMeta"}
+        endpoint = self.client.v2[obj, "config-groups", str(chg_id), "configs"]
+
+        response = endpoint.get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        current_id = None
+        for cfg in response.json()["results"]:
+            if cfg["isCurrent"]:
+                current_id = cfg["id"]
+                break
+        else:
+            raise RuntimeError(f"Can't find current CHG's config in\n{response.json()}")
+
+        response = (endpoint / str(current_id)).get()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        return {k: v for k, v in response.json().items() if k in target_response_fields}
 
     def test_adcm_8370_activation_of_group_in_selection_group_kept_after_upgrade(self):
         activated_config = {
@@ -696,3 +781,116 @@ class TestUpgradeActivatableGroupInSelectionGroup(ADCMDjangoAPISuite):
         config_after_upgrade = response.json()
         self.assertDictEqual(config_after_upgrade["adcmMeta"], activated_meta)
         self.assertDictEqual(config_after_upgrade["config"], activated_config)
+
+    @parametrize(
+        ("chg_owner_type", "before_upgrade_config_state"),
+        [
+            ("cluster", "kept"),
+            ("service", "kept"),
+            ("component", "kept"),
+            ("provider", "kept"),
+            # CHG data is partially lost between the upgrade and the revert.
+            # `chg_deleted` keeps the `before_upgrade` ConfigLog, so the CHG is recreated with the
+            # old config; `configlog_deleted*` lose it, so a fresh default config is expected.
+            ("cluster", "chg_deleted"),
+            ("cluster", "configlog_deleted"),
+            ("cluster", "configlog_deleted_and_chg_deleted"),
+        ],
+        ids=[
+            "cluster",
+            "service",
+            "component",
+            "provider",
+            "cluster_chg_deleted",
+            "cluster_before_upgrade_configlog_deleted",
+            "cluster_before_upgrade_configlog_deleted_and_chg_deleted",
+        ],
+    )
+    def test_adcm_8421_revert_upgrade_and_activation_in_chgs(self, chg_owner_type, before_upgrade_config_state):
+        # `chg_owner` owns the config host group, `upgrade_target` is the object the upgrade runs on
+        # (the cluster for cluster / service / component owners, the provider for a provider owner)
+        chg_owner, upgrade_target, upgrade = self._adcm_8421_get_chg_owner_upgrade_target_upgrade(
+            chg_owner_type=chg_owner_type
+        )
+
+        # create CHG
+        response = self.client.v2[chg_owner, "config-groups"].post(data={"name": "chg"})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+        chg_id = response.json()["id"]
+
+        initial_chg_config = self._get_current_chg_config(obj=chg_owner, chg_id=chg_id)
+
+        # set CHG config
+        edited_config = deepcopy(initial_chg_config)
+
+        # desync and activate /group;
+        # after upgrade: is not activatable
+        edited_config["adcmMeta"]["/group"]["isSynchronized"] = False
+        edited_config["adcmMeta"]["/group"]["isActive"] = True
+
+        # desync and activate /nested_group, /nested_group/g1/g2;
+        # desync and set /nested_group/g1/g2/g3/password
+        # after upgrade:
+        #   /nested_group/g1 - becomes activatable and active
+        #   /nested_group/g1/g2/g3 - not exists
+        edited_config["adcmMeta"]["/nested_group"]["isSynchronized"] = False
+        edited_config["adcmMeta"]["/nested_group"]["isActive"] = True
+        edited_config["adcmMeta"]["/nested_group/g1/g2"]["isSynchronized"] = False
+        edited_config["adcmMeta"]["/nested_group/g1/g2"]["isActive"] = True
+
+        edited_config["adcmMeta"]["/nested_group/g1/g2/g3/password"]["isSynchronized"] = False
+        edited_config["config"]["nested_group"]["g1"]["g2"]["g3"]["password"] = "secret_password"
+
+        response = self.client.v2[chg_owner, "config-groups", str(chg_id), "configs"].post(data=edited_config)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        # config-group's representation keeps secret values ansible-encrypted,
+        # so compare against what's actually stored right after the edit
+        edited_config = self._get_current_chg_config(obj=chg_owner, chg_id=chg_id)
+
+        # upgrade
+        response = self.client.v2[upgrade_target, "upgrades", upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        launched_task_id = response.json()["id"]
+        self.task_runner().launch_task(launched_task_id)
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task_id)
+        self.assertEqual(task_status, "success")
+
+        upgrade_target.refresh_from_db(fields=["prototype"])
+        self.assertEqual(upgrade_target.prototype.version, "2.0")
+
+        self._adcm_8421_break_before_upgrade_chg_state(
+            chg_owner=chg_owner, chg_id=chg_id, before_upgrade_config_state=before_upgrade_config_state
+        )
+
+        # revert
+        revert_action = Action.objects.get(name="revert_upgrade", prototype=upgrade_target.prototype)
+        response = self.client.v2[upgrade_target, "actions", revert_action, "run"].post()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        launched_task_id = response.json()["id"]
+        self.task_runner().launch_task(launched_task_id)
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task_id)
+        self.assertEqual(task_status, "success")
+
+        upgrade_target.refresh_from_db(fields=["prototype"])
+        self.assertEqual(upgrade_target.prototype.version, "1.0")
+
+        if before_upgrade_config_state in ("chg_deleted", "configlog_deleted_and_chg_deleted"):
+            # revert recreates the CHG, so it gets a new id
+            chg_owner_ct = ContentType.objects.get_for_model(chg_owner)
+            recreated_chg = ConfigHostGroup.objects.get(name="chg", object_type=chg_owner_ct, object_id=chg_owner.id)
+            self.assertNotEqual(recreated_chg.id, chg_id)
+            chg_id = recreated_chg.id
+
+        after_revert_chg_config = self._get_current_chg_config(obj=chg_owner, chg_id=chg_id)
+
+        if before_upgrade_config_state in ("configlog_deleted", "configlog_deleted_and_chg_deleted"):
+            # the pre-upgrade ConfigLog is gone: revert falls back to a fresh, fully synced
+            # default config-group config built against the reverted specification
+            self.assertDictEqual(initial_chg_config, after_revert_chg_config)
+        else:
+            # revert must restore the exact pre-upgrade config-group state (including
+            # `isSynchronized` / `isActive` and desynced values), recreating the CHG if needed
+            self.assertDictEqual(edited_config, after_revert_chg_config)

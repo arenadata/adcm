@@ -258,14 +258,12 @@ class ADCMPluginExecutorSuite(
         return JobRepo().get_task_jobs(task_id)
 
 
-class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
+class ADCMDjangoAPISuiteNoBundles(
+    ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase
+):
     # is required for correct type detection in test cases
     client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
     client_class = ADCMTestClient
-
-    # strange to bind it in here, but api cases will be related to `api_v2` for a while
-    test_bundles_dir = TEST_API_V2_BUNDLES_DIR
-    test_files_dir = TEST_API_V2_FILES_DIR
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -273,6 +271,21 @@ class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, Busine
 
         cls._initialize_roles_and_adcm()
         cls._set_adcm_max_password_length()
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.client.login(username="admin", password="admin")
+
+
+class ADCMDjangoAPISuite(ADCMDjangoAPISuiteNoBundles):
+    # strange to bind it in here, but api cases will be related to `api_v2` for a while
+    test_bundles_dir = TEST_API_V2_BUNDLES_DIR
+    test_files_dir = TEST_API_V2_FILES_DIR
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
         cluster_bundle_1_path = cls.test_bundles_dir / "cluster_one"
         cluster_bundle_2_path = cls.test_bundles_dir / "cluster_two"
@@ -285,11 +298,6 @@ class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, Busine
         cls.cluster_1 = cls.uc.add_cluster(bundle=cls.bundle_1, name="cluster_1", description="cluster_1")
         cls.cluster_2 = cls.uc.add_cluster(bundle=cls.bundle_2, name="cluster_2", description="cluster_2")
         cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="provider", description="provider")
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.client.login(username="admin", password="admin")
 
 
 class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):

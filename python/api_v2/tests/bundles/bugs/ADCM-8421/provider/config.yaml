@@ -1,0 +1,50 @@
+- type: provider
+  name: test_provider
+  version: &version '1.0'
+  contract_version: "2.1"
+  venv: "2.16"
+
+  config: &config
+    - name: group
+      type: group
+      group_customization: true
+      activatable: true
+      active: false
+      subs:
+        - name: string_in_group
+          type: string
+          default: "inside_of_group"
+          group_customization: true
+    - name: nested_group
+      type: group
+      activatable: true
+      active: true
+      group_customization: true
+      subs:
+        - name: g1
+          type: group
+          group_customization: true
+          subs:
+            - name: g2
+              type: group
+              activatable: true
+              active: true
+              group_customization: true
+              subs:
+                - name: string_in_nested
+                  type: string
+                  required: false
+                  default: "test"
+                  group_customization: true
+                - name: g3
+                  type: group
+                  group_customization: true
+                  subs:
+                    - name: password
+                      type: password
+                      required: false
+                      group_customization: true
+
+- type: host
+  name: test_host
+  version: *version
