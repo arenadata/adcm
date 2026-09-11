@@ -27,8 +27,11 @@ from core.types import (
     ADCMCoreType,
     ADCMHostGroupType,
     ClusterID,
+    ConfigHostGroupID,
+    ConfigID,
     CoreObjectDescriptor,
     Descriptor,
+    HostGroupDescriptor,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -648,7 +651,20 @@ def _revert_object(
         except KeyError:
             previous_spec = (core.config.spec.FullSpec(), core.config.Defaults())
 
-        _restore_config_host_groups(obj=obj, config_service=config_service)
+        # Restore CHGs, collect existing before_upgrade configs in `before_upgrade_host_group_configs` and
+        #   CHG descriptors to init a new config in `config_host_groups_to_initialize`
+        chg_bu_config_map = _restore_config_host_groups(obj=obj)
+        configs_by_id = config_service.retrieve_configurations_by_id(configurations=chg_bu_config_map.values())
+
+        config_host_groups_to_initialize = []
+        before_upgrade_host_group_configs: dict[HostGroupDescriptor, core.config.Configuration] = {}
+        for chg_id, bu_config_id in chg_bu_config_map.items():
+            chg_desc = HostGroupDescriptor(id=chg_id, type=ADCMHostGroupType.CONFIG)
+            if bu_config_id in configs_by_id:
+                before_upgrade_host_group_configs[chg_desc] = configs_by_id[bu_config_id]
+            else:
+                config_host_groups_to_initialize.append(chg_desc)
+
         _restore_config_of_main_object_and_update_host_groups(
             owner=owner,
             config=config,
@@ -656,6 +672,8 @@ def _revert_object(
             old=previous_spec,
             config_service=config_service,
             config_scenarios=config_scenarios,
+            config_host_groups_to_initialize=config_host_groups_to_initialize,
+            before_upgrade_host_group_configs=before_upgrade_host_group_configs,
         )
 
     obj.before_upgrade = {"state": None}
@@ -720,36 +738,38 @@ def _to_congifuration(raw_values: dict, raw_attributes: dict) -> core.config.Con
     return core.config.Configuration(values=raw_values, attributes=attributes)
 
 
-def _restore_config_host_groups(
-    obj: Cluster | Service | Component | Provider, config_service: core.config.ConfigService
-) -> None:
-    """Creates absent CHGs, listed in `before_upgrade`"""
-    chgs_before_upgrade: set[str] = set(obj.before_upgrade.get("config_host_groups", ()))
+def _restore_config_host_groups(obj: Cluster | Service | Component | Provider) -> dict[ConfigHostGroupID, ConfigID]:
+    """
+    Recreates CHGs that are listed in `before_upgrade` but currently absent, without creating configs for them yet.
+    Returns a ``CHG_ID -> config_ID`` map for every `before_upgrade` entry.
+    """
+    chgs_before_upgrade: dict = obj.before_upgrade.get("config_host_groups", {})
     if not chgs_before_upgrade:
-        return
+        return {}
 
     obj_ct = ContentType.objects.get_for_model(obj)
-    existing_chgs: set[str] = set(
-        ConfigHostGroup.objects.filter(object_id=obj.id, object_type=obj_ct).values_list("name", flat=True)
+    name_to_id: dict[str, int] = dict(
+        ConfigHostGroup.objects.filter(object_id=obj.id, object_type=obj_ct).values_list("name", "id")
     )
-    to_create = chgs_before_upgrade.difference(existing_chgs)
 
-    owner = orm_object_to_core_descriptor(obj)
+    for chg_name, chg in chgs_before_upgrade.items():
+        if chg_name in name_to_id:
+            continue
 
-    for chg_name in to_create:
         config_host_group = ConfigHostGroup.objects.create(
             name=chg_name,
             description="revert_upgrade",
             object_id=obj.pk,
             object_type=obj_ct,
         )
-        config_host_group.hosts.set(
-            Host.objects.filter(fqdn__in=obj.before_upgrade["config_host_groups"][chg_name].get("hosts", ()))
-        )
-        config_service.create_initial_configuration_of_host_group(
-            group=Descriptor(id=config_host_group.pk, type=ADCMHostGroupType.CONFIG),
-            owner=owner,
-        )
+        config_host_group.hosts.set(Host.objects.filter(fqdn__in=chg.get("hosts", ())))
+        name_to_id[chg_name] = config_host_group.pk
+
+    return {
+        name_to_id[chg_name]: chg_data.get("config_id")
+        for chg_name, chg_data in chgs_before_upgrade.items()
+        if chg_name in name_to_id
+    }
 
 
 def _restore_config_of_main_object_and_update_host_groups(
@@ -759,10 +779,11 @@ def _restore_config_of_main_object_and_update_host_groups(
     new: tuple[core.config.spec.FullSpec, core.config.Defaults],
     config_service: core.config.ConfigService,
     config_scenarios: ConfigScenarios,
+    config_host_groups_to_initialize: list[HostGroupDescriptor],
+    before_upgrade_host_group_configs: dict[HostGroupDescriptor, core.config.Configuration],
 ):
     description = "revert_upgrade"
 
-    # update all existing configurations of host groups
     old_spec, old_defaults = old
     new_spec, new_defaults = new
     update_for_new_spec = partial(
@@ -773,10 +794,21 @@ def _restore_config_of_main_object_and_update_host_groups(
         new_defaults=new_defaults,
     )
 
-    configs_of_host_groups = config_service.retrieve_host_group_configurations(owner=owner)
+    # CHGs without a usable `before_upgrade` config (recreated deleted groups, or groups whose
+    # `before_upgrade` ConfigLog is gone): create a new initial config, then adapt it to the
+    # specification being reverted to.
+    initial_config_ids_of_host_groups = {
+        group: config_service.create_initial_configuration_of_host_group(group=group, owner=owner)
+        for group in config_host_groups_to_initialize
+    }
+    initial_configs_of_host_groups = config_service.retrieve_configurations_by_id(
+        configurations=initial_config_ids_of_host_groups.values()
+    )
     adaptation_results = {
-        group: update_for_new_spec(configuration=config_of_group, include_synchronization=True)
-        for group, config_of_group in configs_of_host_groups.items()
+        group: update_for_new_spec(
+            configuration=initial_configs_of_host_groups[config_id], include_synchronization=True
+        )
+        for group, config_id in initial_config_ids_of_host_groups.items()
     }
     adapted_configs_of_host_groups = {}
     for group, result in adaptation_results.items():
@@ -784,6 +816,10 @@ def _restore_config_of_main_object_and_update_host_groups(
             raise core.config.ConfigOperationError(f"Failed to adapt configs of host groups: {str(result.value)}")
 
         adapted_configs_of_host_groups[group] = result.value
+
+    # `before_upgrade` CHG configs are already stored against the specification we revert to,
+    # so they need no adaptation.
+    adapted_configs_of_host_groups.update(before_upgrade_host_group_configs)
 
     config_scenarios.save_encrypted_config_with_host_groups(
         owner=owner,
