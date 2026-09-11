@@ -43,6 +43,8 @@ from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_templa
 
 
 class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardProcessHelpers, BusinessLogicMixin):
+    maxDiff = None
+
     @classmethod
     def setUpTestData(cls) -> None:
         cls._initialize_roles_and_adcm()

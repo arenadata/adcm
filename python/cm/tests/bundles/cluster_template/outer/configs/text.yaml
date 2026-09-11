@@ -1,0 +1,9 @@
+root:
+  match: dict
+  items:
+    tutu: string
+    tata: integer
+string:
+  match: string
+integer:
+  match: int

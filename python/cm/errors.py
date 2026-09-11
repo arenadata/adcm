@@ -18,7 +18,6 @@ from rest_framework.status import (
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
-    HTTP_422_UNPROCESSABLE_ENTITY,
     HTTP_500_INTERNAL_SERVER_ERROR,
     HTTP_501_NOT_IMPLEMENTED,
 )
@@ -214,7 +213,6 @@ ERRORS = {
     "BAD_REQUEST": ("Bad request", HTTP_400_BAD_REQUEST, ERR),
     "HOSTPROVIDER_CREATE_ERROR": ("Error during process of host provider creating", HTTP_409_CONFLICT, ERR),
     "CONFIG_OPTION_ERROR": ("error in config option type", HTTP_409_CONFLICT, ERR),
-    "UNPROCESSABLE_ENTITY": ("Can't process data", HTTP_422_UNPROCESSABLE_ENTITY, ERR),
     "CREATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "UPDATE_CONFLICT": ("Can't create object", HTTP_409_CONFLICT, ERR),
     "HOST_GROUP_CONFLICT": ("Can't change hosts in group", HTTP_409_CONFLICT, ERR),

@@ -28,8 +28,6 @@ from cm.transition.ansible import ansible_decrypt
 
 
 class TestScriptsTemplateEnvironment(TaskTestMixin, ADCMDjangoAPISuite):
-    # COPIED FROM cm.tests.test_jinja_scripts.TestJinjaScriptsEnvironment
-
     maxDiff = None
 
     @classmethod
