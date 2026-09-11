@@ -218,6 +218,7 @@ def _get_error_on_service_deletion(
         },
         named_mapping=named_mapping_from_topology(topology=cluster_topology),
     )
+    service_required_by = []
     for violation in unsatisfied_service_requirements:
         if service_data["name"] != violation.required_service:
             continue
@@ -227,12 +228,13 @@ def _get_error_on_service_deletion(
         )
 
         if isinstance(violation.dependant_object, ServiceNameKey):
-            error_msg = f'Service "{service_display_name}" requires this service or its component'
-            return AdcmEx(code="SERVICE_CONFLICT", msg=error_msg)
+            service_required_by.append(f'service "{service_display_name}"')
 
         elif isinstance(violation.dependant_object, ComponentNameKey):
-            error_msg = (
-                f'Component "{violation.dependant_object.component}" of service '
-                f'"{service_display_name} requires this service or its component'
+            service_required_by.append(
+                f'component "{violation.dependant_object.component}" of service "{service_display_name}"'
             )
-            return AdcmEx(code="SERVICE_CONFLICT", msg=error_msg)
+
+    if service_required_by:
+        error_msg = f'Service "{display_name}" is required by: {", ".join(service_required_by)}'
+        return AdcmEx(code="SERVICE_CONFLICT", msg=error_msg)
