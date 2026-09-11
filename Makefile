@@ -8,26 +8,49 @@ PY_FILES = python dev/linters conf/adcm/python_scripts
 
 .PHONY: build unittests pretty lint version
 
+define uv_sync
+uv sync --inexact --group $(1)
+endef
+
+define pg_start
+docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432 postgres:14
+i=0; until docker exec postgres pg_isready -U postgres > /dev/null 2>&1; do \
+	i=$$((i+1)); \
+	if [ $$i -ge 30 ]; then \
+		echo "Postgres did not become ready within 30s" >&2; \
+		docker stop postgres; \
+		exit 1; \
+	fi; \
+	sleep 1; \
+done
+endef
+
+define pg_stop
+docker stop postgres
+endef
+
 build:
 	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
-	docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
-	uv sync --inexact --group unittests
+	$(pg_start)
+	$(call uv_sync,unittests)
 	DJANGO_SETTINGS_MODULE=adcm.settings_setups.test \
 	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
-	uv run python/manage.py test python -v 2 --parallel --keepdb
-	docker stop postgres
+	uv run python/manage.py test python -v 2 --parallel --keepdb; \
+	TEST_EXIT=$$?; \
+	$(pg_stop); \
+	exit $$TEST_EXIT
 
 pretty:
-	uv sync --inexact --group lint
+	$(call uv_sync,lint)
 	uv run ruff format $(PY_FILES)
 	uv run ruff check --fix $(PY_FILES)
 	uv run ruff format $(PY_FILES)
 	uv run python dev/linters/license_checker.py --fix --folders $(PY_FILES) go
 
 lint:
-	uv sync --inexact --group lint
+	$(call uv_sync,lint)
 	uv run ruff check $(PY_FILES)
 	uv run ruff format --check $(PY_FILES)
 	uv run pyright --project pyproject.toml
