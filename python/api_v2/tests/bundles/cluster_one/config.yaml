@@ -54,6 +54,7 @@
           script: ./playbook.yaml
           script_type: ansible
     with_config:
+      description: Action with configuration parameters
       config:
         - name: simple
           type: string
@@ -88,6 +89,9 @@
           script: ./playbook.yaml
           script_type: ansible
     with_hc:
+      description: |-
+        Action with hc_acl rules.
+        It adds component_1 and removes component_2.
       allow_in_maintenance_mode: true
       hc_acl:
         - action: add

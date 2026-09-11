@@ -688,6 +688,13 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
 class TestAction(ADCMDjangoAPISuite):
     maxDiff = None
 
+    # description isn't specified in bundle / single line / multi line
+    EXPECTED_ACTION_DESCRIPTIONS = {
+        "action": "",
+        "with_config": "Action with configuration parameters",
+        "with_hc": "Action with hc_acl rules.\nIt adds component_1 and removes component_2.",
+    }
+
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
@@ -729,6 +736,26 @@ class TestAction(ADCMDjangoAPISuite):
             },
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
+
+    def test_adcm_7956_retrieve_description_success(self) -> None:
+        for action_name, expected_description in self.EXPECTED_ACTION_DESCRIPTIONS.items():
+            with self.subTest(action=action_name):
+                action = Action.objects.get(name=action_name, prototype=self.cluster_1.prototype)
+
+                response = self.client.v2[self.cluster_1, "actions", action].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["description"], expected_description)
+
+    def test_adcm_7956_list_description_success(self) -> None:
+        response = self.client.v2[self.cluster_1, "actions"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        descriptions = {entry["name"]: entry["description"] for entry in response.json()}
+        for action_name, expected_description in self.EXPECTED_ACTION_DESCRIPTIONS.items():
+            with self.subTest(action=action_name):
+                self.assertEqual(descriptions[action_name], expected_description)
 
     def test_run_non_blocking(self) -> None:
         action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
