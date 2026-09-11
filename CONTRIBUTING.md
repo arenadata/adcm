@@ -99,7 +99,8 @@ then force-push your branch.
 * Fill in a clear description of what changed and why.
 * Make sure `make pretty`, `make lint`, and the relevant test suite pass locally.
 * Make sure all commits are signed off (see [DCO](#developer-certificate-of-origin-dco) above).
-* A [`CODEOWNERS`](CODEOWNERS)-based reviewer will be requested automatically; please address review feedback with follow-up commits rather than force-pushing over history mid-review.
+* **The PR must contain a single commit.** It's fine to push follow-up commits while addressing review feedback; squash everything into one commit (e.g. `git rebase -i`, or `git reset --soft <base> && git commit -s`) before it's merged.
+* A [`CODEOWNERS`](CODEOWNERS)-based reviewer will be requested automatically; keep pushing follow-up commits during review, then squash to the single final commit and force-push right before merge.
 
 ## License
 
