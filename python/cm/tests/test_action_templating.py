@@ -17,7 +17,9 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.templates import parse_template
 from tests.base import BaseTestCase
 from tests.deprecated import BusinessLogicMixin
+from unittest_parametrize import ParametrizedTestCase, parametrize
 from use_cases.dto import ConfigurationDTO, RunActionDTO
+from use_cases.transition.job.schedule import RetrieveConfigurationForAction
 import core
 
 from cm.impl.bundle.context import ActionArgs, TaskArgs
@@ -26,15 +28,15 @@ from cm.tests.dependencies import WithDishkaContainer
 from cm.tests.test_action_host_group import ScheduleTask
 
 
-class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
+class TestActionProcessContext(ParametrizedTestCase, WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
     maxDiff = None
 
     def setUp(self) -> None:
         super().setUp()
 
-        bundle_dir = Path(__file__).parent / "bundles" / "cluster_template"
+        self.bundle_dir = Path(__file__).parent / "bundles" / "cluster_template"
 
-        bundle = self.add_bundle(bundle_dir)
+        bundle = self.add_bundle(self.bundle_dir)
 
         self.cluster = self.uc.add_cluster(bundle=bundle, name="cc")
 
@@ -58,6 +60,64 @@ class TestActionProcessContext(WithDishkaContainer, BusinessLogicMixin, BaseTest
         self.assertEqual(jobs[0].name, "first")
         config = TaskLog.objects.values_list("config", flat=True).get(id=task_id)
         self.assertEqual(config, input_config["config"])
+
+    def test_adcm_5556_paths_in_rendered_config_are_resolved(self):
+        expected_full_yspec = {
+            "root": {
+                "match": "dict",
+                "items": {"string": "string", "integer": "integer"},
+            },
+            "string": {"match": "string"},
+            "integer": {"match": "int"},
+        }
+        expected_relative_yspec = {
+            **expected_full_yspec,
+            "root": {**expected_full_yspec["root"], "items": {"tutu": "string", "tata": "integer"}},
+        }
+        action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="adcm_5556_paths")
+
+        with self.container() as container:
+            result = container.get(RetrieveConfigurationForAction).do(action_orm=action, target=self.cluster)
+            secrets = container.get(core.config.secrets.AnsibleSecrets)
+
+        self.assertIsNotNone(result)
+        specification, defaults, _, _ = result
+        self.assertDictEqual(specification.parameters["/full"].yspec, expected_full_yspec)
+        self.assertDictEqual(specification.parameters["/relative"].yspec, expected_relative_yspec)
+        self.assertEqual(defaults.values["/fplain"], (self.bundle_dir / "outer" / "text.yaml").read_text())
+        self.assertEqual(
+            secrets.decrypt(defaults.values["/fsec"]),
+            (self.bundle_dir / "outer" / "configs" / "text.yaml").read_text(),
+        )
+
+    @parametrize(
+        ("is_active", "expected_jobs"),
+        [(False, ["default", "inactive"]), (True, ["default", "active"])],
+        ids=["inactive", "active"],
+    )
+    def test_use_activatable_group_in_config(self, is_active: bool, expected_jobs: list[str]):
+        # related with ADCM-6012
+        action = Action.objects.get(prototype_id=self.cluster.prototype_id, name="with_activatable_group")
+
+        configuration = ConfigurationDTO(
+            convert=lambda value, _: value,
+            input_config=core.config.Configuration(
+                values={"group": {"x": 2}},
+                attributes={"/group": core.config.Attributes(is_active=is_active)},
+            ),
+        )
+
+        with self.container() as container:
+            task = container.get(ScheduleTask).do(
+                action_orm=action,
+                target=self.cluster,
+                payload=RunActionDTO(configuration=configuration),
+            )
+
+        self.assertListEqual(
+            list(JobLog.objects.filter(task=task).order_by("id").values_list("name", flat=True)),
+            expected_jobs,
+        )
 
 
 class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCase):
