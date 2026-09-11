@@ -16,11 +16,11 @@ interface DynamicActionsCommonProps {
 
 const DynamicActionsCommon: React.FC<DynamicActionsCommonProps> = ({ actions, children, onSelectAction }) => {
   const dynamicActionsOptions = useMemo(() => {
-    return (actions ?? []).map(({ displayName, id, startImpossibleReason }) => ({
+    return (actions ?? []).map(({ displayName, id, startImpossibleReason, description }) => ({
       label: displayName,
       value: id,
       disabled: startImpossibleReason !== null,
-      title: startImpossibleReason,
+      title: startImpossibleReason || description,
     }));
   }, [actions]);
 

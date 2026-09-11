@@ -40,7 +40,7 @@ const SingleSelectList = <T,>() => {
   return (
     <ul className={cn(s.singleSelectList, 'scroll')} style={{ maxHeight }} data-test="options">
       {options.map((optionProps) => {
-        const { value, label, disabled, ItemComponent = DefaulSingleSelectListItem } = optionProps;
+        const { value, label, disabled, ItemComponent = DefaultSingleSelectListItem } = optionProps;
         const isSelected = selectedValue === value;
 
         const itemClass = cn(s.singleSelectListItem, {
@@ -63,7 +63,7 @@ const SingleSelectList = <T,>() => {
 };
 export default SingleSelectList;
 
-const DefaulSingleSelectListItem = <T,>(props: DefaultSelectListItemProps<T>) => {
+const DefaultSingleSelectListItem = <T,>(props: DefaultSelectListItemProps<T>) => {
   const { label } = props.option;
 
   return (
