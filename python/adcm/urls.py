@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Check GitHub pipelines
+"""
+
 from django.conf.urls import include
 from django.urls import path
 
