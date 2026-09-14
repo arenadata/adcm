@@ -109,12 +109,11 @@ class _TestTemplate:
             super().setUpClass()
             cls.scripts_section = [{"name": "a", "script": "o", "script_type": "ansible"}]
 
-        def prepare_cluster_with_action(self, extra: dict, include_scripts: bool = False) -> dict:
-            action = {"type": "task", **extra}
+        def prepare_cluster_with_action(self, action_data: dict, include_scripts: bool = False) -> dict:
             if include_scripts:
-                action["scripts"] = [*self.scripts_section]
+                action_data["scripts"] = [*self.scripts_section]
 
-            return {**self.cluster_entry, "actions": {"a": action}}
+            return {**self.cluster_entry, "actions": {"a": action_data}}
 
         def expect_template(self, template: Template | None) -> Template:
             self.assertIsNotNone(template)
@@ -248,10 +247,7 @@ class _TestTemplate:
 
 
 class TestPathResolutionV2(V2Implementation, _TestTemplate.ParserPathResolution):
-    def prepare_cluster_with_action(self, extra: dict, include_scripts: bool = False) -> dict:
-        cluster_with_task = super().prepare_cluster_with_action(extra=extra, include_scripts=include_scripts)
-        cluster_with_task["actions"]["a"].pop("type")
-        return cluster_with_task
+    pass
 
 
 class TestIncorrectFieldsV2(V2Implementation, _TestTemplate.ParserExtraFields):
@@ -1479,9 +1475,7 @@ class TestBundleDefinitionConversion(TestCase):
         self.assertEqual(result[("component", "strange", "b")], expected_component_b)
 
     def test_actions(self):
-        # 2.x has no job/task distinction: every action always carries a `scripts` list, and
-        # ActionDefinition.type is always "task" (see v_2_0/base_parser.py's _propagate_attributes,
-        # which hardcodes action["type"] = "task" for every action during conversion).
+        # 2.x has no job/task distinction: every action always carries a `scripts` list.
         raw = {
             "type": "service",
             "name": "strange",
@@ -1527,7 +1521,6 @@ class TestBundleDefinitionConversion(TestCase):
 
         actions = [
             ActionDefinition(
-                type="task",
                 name="simple_job",
                 display_name="simple_job",
                 venv=MAIN_VENV,
@@ -1543,7 +1536,6 @@ class TestBundleDefinitionConversion(TestCase):
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
-                type="task",
                 name="simple_task",
                 display_name="Awesome ma I",
                 venv=MAIN_VENV,
@@ -1566,7 +1558,6 @@ class TestBundleDefinitionConversion(TestCase):
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
-                type="task",
                 name="not_full_states",
                 display_name="not_full_states",
                 venv=MAIN_VENV,
@@ -1582,7 +1573,6 @@ class TestBundleDefinitionConversion(TestCase):
                 available_at=ActionAvailability(states="any", multi_states="any"),
             ),
             ActionDefinition(
-                type="task",
                 name="not_full_masking",
                 display_name="not_full_masking",
                 venv=MAIN_VENV,
@@ -1770,7 +1760,6 @@ class TestBundleDefinitionConversion(TestCase):
                 action=ActionDefinition(
                     name=upgrade_action_name,
                     display_name="Upgrade: action-like",
-                    type="task",
                     venv=MAIN_VENV,
                     available_at=ActionAvailability(states="any", multi_states="any"),
                     scripts=[

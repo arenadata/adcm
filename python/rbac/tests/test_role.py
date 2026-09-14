@@ -16,7 +16,6 @@ import hashlib
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
-    ActionType,
     Bundle,
     Cluster,
     Component,
@@ -178,21 +177,18 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
 
         self.cluster_action = Action.objects.create(
             name="cluster_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.clp,
             display_name="Cluster Action",
         )
         self.service1_action = Action.objects.create(
             name="service_1_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.sp_1,
             display_name="Service 1 Action",
         )
         self.component11_action = Action.objects.create(
             name="component_1_1_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.cop_11,
             display_name="Component 1 from Service 1 Action",
@@ -205,21 +201,18 @@ class RoleFunctionalTestRBAC(RBACBaseTestCase):
         )
         self.service2_action = Action.objects.create(
             name="service_2_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.sp_2,
             display_name="Service 2 Action",
         )
         self.component12_action = Action.objects.create(
             name="component_1_2_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.cop_21,
             display_name="Component 1 from Service 2 Action",
         )
         self.component22_action = Action.objects.create(
             name="component_2_2_action",
-            type=ActionType.JOB,
             state_available="any",
             prototype=self.cop_22,
             display_name="Component 2 from Service 2 Action",

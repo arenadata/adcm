@@ -138,7 +138,6 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, dict]) -> None:
                     _propagate(property_key, source=parent, target=definition)
 
             for action in (definition.get("actions") or {}).values():
-                action["type"] = "task"  # required for conversion
                 _propagate("venv", source=definition, target=action)
 
                 for script in action.get("scripts") or ():

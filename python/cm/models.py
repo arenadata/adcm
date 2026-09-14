@@ -834,11 +834,6 @@ class ConfigHostGroup(ADCMModel):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
 
-class ActionType(models.TextChoices):
-    TASK = "task", "task"
-    JOB = "job", "job"
-
-
 SCRIPT_TYPE = tuple((entry.value, entry.value) for entry in ScriptType)
 
 
@@ -849,8 +844,6 @@ class AbstractAction(ADCMModel):
     display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
-
-    type = models.CharField(max_length=1000, choices=ActionType)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -866,19 +859,13 @@ class AbstractAction(ADCMModel):
 
     hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
-    partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
     allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
     wizard_template = models.JSONField(null=True, default=None)
 
-    # Deprecated: the config_jinja/scripts_jinja mechanic is no longer supported.
-    # Columns are kept for now (existing data), but nothing reads or writes them anymore.
-    # Use config_template/scripts_template instead.
-    config_jinja = models.CharField(max_length=1000, blank=True, null=True)
     config_template = models.JSONField(null=True, default=None)
-    scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")
     scripts_template = models.JSONField(null=True, default=None)
 
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)

@@ -290,7 +290,6 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
             description="TEST DESCRIPTION 2",
             display_name="Test service action name",
             prototype=self.cluster.prototype,
-            type="task",
             state_available="any",
             name="test_service_action_name",
             host_action=False,
