@@ -74,7 +74,7 @@ def make_def(key, **kwargs):
 
 
 def make_action(**kwargs):
-    defaults = {"name": "aaa", "type": "job"}
+    defaults = {"name": "aaa"}
     return ActionDefinition(**(defaults | kwargs))
 
 
@@ -175,7 +175,7 @@ class TestTemplatesPath(ParametrizedTestCase, TestCase):
     )
     def test_check_templates_are_correct(self, template_var_name: str, template_field: str):
         template = getattr(self, template_var_name)
-        action = ActionDefinition(type="job", name="a", **{template_field: template})
+        action = ActionDefinition(name="a", **{template_field: template})
 
         check_templates_are_correct(action=action, bundle_root=self.bundle_root)
 
@@ -189,7 +189,7 @@ class TestTemplatesPath(ParametrizedTestCase, TestCase):
     )
     def test_check_templates_are_incorrect(self, template_var_name: str, template_field: str):
         template = getattr(self, template_var_name)
-        action = ActionDefinition(type="job", name="a", **{template_field: template})
+        action = ActionDefinition(name="a", **{template_field: template})
 
         with self.assertRaises(BundleValidationError, msg="Incorrect template for *_template at"):
             check_templates_are_correct(action=action, bundle_root=self.bundle_root)
@@ -200,7 +200,7 @@ class TestTemplatesPath(ParametrizedTestCase, TestCase):
     ):
         upgrade = UpgradeDefinition(
             name="correct_scripts_template",
-            action=ActionDefinition(type="job", name="a", scripts_template=self.existing_jinja),
+            action=ActionDefinition(name="a", scripts_template=self.existing_jinja),
         )
 
         check_upgrades(upgrades=[upgrade], definitions={}, bundle_root=self.bundle_root)
@@ -209,7 +209,7 @@ class TestTemplatesPath(ParametrizedTestCase, TestCase):
 
     @patch("core.bundle._validate.check_templates_are_correct")
     def test_check_actions_calls_templates_check_on_action_with_scripts(self, check_jinja_templates_mock: Mock):
-        action = ActionDefinition(type="job", name="a", scripts_template=self.existing_jinja)
+        action = ActionDefinition(name="a", scripts_template=self.existing_jinja)
 
         check_actions(actions=[action], bundle_root=self.bundle_root, definitions={}, definition_type="notimportant")
 
@@ -240,7 +240,7 @@ class TestBundleValidation(TestCase):
         for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
             for type_ in ("service", "component", "provider", "host", "adcm"):
                 with self.subTest(f"{name}-{type_}"):
-                    action = ActionDefinition(type="job", name=name)
+                    action = ActionDefinition(name=name)
                     definition = Definition(type=type_, name="aaa", version="1")
 
                     with self.assertRaises(BundleValidationError) as err:
@@ -253,7 +253,7 @@ class TestBundleValidation(TestCase):
     def test_check_mm_on_host_not_host_action_type_fail(self) -> None:
         for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
             with self.subTest(name):
-                action = ActionDefinition(type="task", name=name, is_host_action=False)
+                action = ActionDefinition(name=name, is_host_action=False)
                 definition = Definition(type="cluster", name="aaa", version="1")
 
                 with self.assertRaises(BundleValidationError) as err:
@@ -264,7 +264,7 @@ class TestBundleValidation(TestCase):
     def test_check_mm_on_host_not_host_action_type_success(self) -> None:
         for name in (ADCM_HOST_TURN_ON_MM_ACTION_NAME, ADCM_HOST_TURN_OFF_MM_ACTION_NAME):
             with self.subTest(name):
-                action = ActionDefinition(type="task", name=name, is_host_action=True)
+                action = ActionDefinition(name=name, is_host_action=True)
                 definition = Definition(type="cluster", name="aaa", version="1")
 
                 check_mm_host_action_is_allowed(action, definition.type)

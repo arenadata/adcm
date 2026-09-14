@@ -175,7 +175,7 @@ def _extract_action(entity, context):
     defaults_for_available_at = {"states": "any", "multi_states": "any"}
     defaults_for_unavailable_at = {"states": [], "multi_states": []}
 
-    entity = _states_to_masking(_universalise_action_types(entity))
+    entity = _states_to_masking(_ensure_scripts_present(entity))
 
     result = {
         "config": _extract_config(entity, context),
@@ -186,7 +186,6 @@ def _extract_action(entity, context):
         "on_fail": _extract_action_completion(entity, "on_fail"),
     }
 
-    _fill_value(result, entity, "type")
     _fill_value(result, entity, "name")
     _fill_value(result, entity, "description")
     _fill_value(result, entity, "ui_options")
@@ -194,11 +193,8 @@ def _extract_action(entity, context):
     _fill_value(result, entity, "allow_for_action_host_group")
     _fill_value(result, entity, "allow_in_maintenance_mode")
     _fill_value(result, entity, "venv")
-    _fill_value(result, entity, "partial_execution")
     _fill_value(result, entity, "is_host_action", source_keys=("host_action",))
     _fill_value(result, entity, "hostcomponentmap", source_keys=("hc_acl",))
-    _fill_value(result, entity, "config_jinja", cast=partial(_normalize_path, context=context))
-    _fill_value(result, entity, "scripts_jinja", cast=partial(_normalize_path, context=context))
     _fill_value(result, entity, "config_template", cast=partial(_to_template_with_normalized_path, context=context))
     _fill_value(result, entity, "scripts_template", cast=partial(_to_template_with_normalized_path, context=context))
     _fill_value(result, entity, "wizard_template", cast=partial(_to_template_with_normalized_path, context=context))
@@ -365,16 +361,10 @@ def _extract_license(result: dict, context: dict) -> License | None:
     return License(status="unaccepted", path=_normalize_path(license_path, context=context))
 
 
-def _universalise_action_types(result: dict):
-    if "type" not in result:
-        # upgrade case
-        return result | {"type": "task"}
-
-    if result.get("type") == "job":
-        return result | {"scripts": (result,)}
-
+def _ensure_scripts_present(result: dict) -> dict:
+    # actions defined via `scripts_template` carry no `scripts` key
     if "scripts" not in result:
-        result["scripts"] = ()
+        return result | {"scripts": ()}
 
     return result
 

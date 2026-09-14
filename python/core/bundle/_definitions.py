@@ -90,7 +90,6 @@ class ActionAvailability:
 @dataclass(slots=True)
 class ActionDefinition:
     # Identification
-    type: Literal["task", "job"]
     name: str
 
     # Details
@@ -126,9 +125,6 @@ class ActionDefinition:
     # Task completion
     on_success: OnCompletion = field(default_factory=OnCompletion)
     on_fail: OnCompletion = field(default_factory=OnCompletion)
-
-    # Misc
-    partial_execution: bool = False
 
 
 @dataclass(slots=True)
