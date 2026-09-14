@@ -2,11 +2,17 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useStore } from '@hooks';
 import type { AppDispatch } from '@store/store';
 import type { AdcmHost } from '@models/adcm';
-import { openDeleteDialog, openLinkDialog, openUnlinkDialog } from '@store/adcm/hosts/hostsActionsSlice';
+import {
+  openDeleteDialog,
+  openLinkDialog,
+  openShareDialog,
+  openUnlinkDialog,
+} from '@store/adcm/hosts/hostsActionsSlice';
 import { openBulkHostDynamicActionDialog } from '@store/adcm/hosts/hostsDynamicActionsSlice';
 import {
   canBulkDelete,
   canBulkLink,
+  canBulkShare,
   canBulkUnlink,
   getBulkOperationsState,
 } from '@pages/HostsPage/hostsBulkOperations.utils';
@@ -24,6 +30,7 @@ interface BulkOperationItem {
 const BULK_OPERATION_ITEMS: BulkOperationItem[] = [
   { label: 'Unlink', isApplicable: canBulkUnlink, openDialog: openUnlinkDialog },
   { label: 'Link', isApplicable: canBulkLink, openDialog: openLinkDialog },
+  { label: 'Share host', isApplicable: canBulkShare, openDialog: openShareDialog },
   { label: 'Delete', isApplicable: canBulkDelete, openDialog: openDeleteDialog },
 ];
 

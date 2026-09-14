@@ -116,13 +116,16 @@ const createHostWithUpdate = createAsyncThunk(
   },
 );
 
-const createHostDuplicate = createAsyncThunk(
-  'adcm/hostsActions/createHostDublicate',
-  async (payload: CreateHostDuplicatePayload, thunkAPI) => {
+const createHostDuplicates = createAsyncThunk(
+  'adcm/hostsActions/createHostDuplicates',
+  async (payloads: CreateHostDuplicatePayload[], thunkAPI) => {
     try {
       thunkAPI.dispatch(setIsActionInProgress(true));
-      const host = await AdcmHostsApi.createDuplicateHost(payload);
-      return host;
+      arePromisesResolved(
+        await Promise.allSettled(payloads.map((payload) => AdcmHostsApi.createDuplicateHost(payload))),
+      );
+      const message = payloads.length > 1 ? 'All selected hosts have been shared' : 'The host has been shared';
+      thunkAPI.dispatch(showSuccess({ message }));
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -132,11 +135,12 @@ const createHostDuplicate = createAsyncThunk(
   },
 );
 
-const createHostDuplicateWithUpdate = createAsyncThunk(
-  'adcm/hostsActions/createHostDuplicateWithUpdate',
-  async (payload: CreateHostDuplicatePayload, thunkAPI) => {
-    await thunkAPI.dispatch(createHostDuplicate(payload)).unwrap();
-    await thunkAPI.dispatch(getHosts());
+const createHostDuplicatesWithUpdate = createAsyncThunk(
+  'adcm/hostsActions/createHostDuplicatesWithUpdate',
+  async (payloads: CreateHostDuplicatePayload[], thunkAPI) => {
+    // Do not use .unwrap() so getHosts() runs even on partial failure
+    await thunkAPI.dispatch(createHostDuplicates(payloads));
+    thunkAPI.dispatch(getHosts());
   },
 );
 
@@ -216,6 +220,9 @@ interface AdcmHostsActionsState {
   unlinkDialog: {
     hosts: AdcmHost[];
   };
+  shareDialog: {
+    hosts: AdcmHost[];
+  };
   hostSharingDialog: {
     host: AdcmHost | null;
   };
@@ -244,6 +251,9 @@ const createInitialState = (): AdcmHostsActionsState => ({
     hosts: [],
   },
   unlinkDialog: {
+    hosts: [],
+  },
+  shareDialog: {
     hosts: [],
   },
   hostSharingDialog: {
@@ -303,6 +313,12 @@ const hostsActionsSlice = createSlice({
     closeUnlinkDialog(state) {
       state.unlinkDialog.hosts = [];
     },
+    openShareDialog(state, action: PayloadAction<AdcmHost[]>) {
+      state.shareDialog.hosts = action.payload;
+    },
+    closeShareDialog(state) {
+      state.shareDialog.hosts = [];
+    },
     openHostSharingDialog(state, action) {
       state.hostSharingDialog.host = action.payload;
     },
@@ -317,8 +333,10 @@ const hostsActionsSlice = createSlice({
     builder.addCase(toggleMaintenanceMode.pending, (state) => {
       hostsActionsSlice.caseReducers.closeMaintenanceModeDialog(state);
     });
-    builder.addCase(createHostDuplicate.pending, (state) => {
+    builder.addCase(createHostDuplicates.pending, (state) => {
+      state.selectedItemsIds = [];
       hostsActionsSlice.caseReducers.closeHostSharingDialog(state);
+      hostsActionsSlice.caseReducers.closeShareDialog(state);
     });
     builder.addCase(createHost.fulfilled, (state) => {
       hostsActionsSlice.caseReducers.closeCreateDialog(state);
@@ -371,6 +389,8 @@ export const {
   closeLinkDialog,
   openUnlinkDialog,
   closeUnlinkDialog,
+  openShareDialog,
+  closeShareDialog,
   openUpdateDialog,
   closeUpdateDialog,
   setIsActionInProgress,
@@ -391,7 +411,7 @@ export {
   deleteHostsWithUpdate,
   toggleMaintenanceMode,
   updateHostWithUpdate as updateHost,
-  createHostDuplicateWithUpdate as createHostDuplicate,
+  createHostDuplicatesWithUpdate as createHostDuplicates,
 };
 
 export default hostsActionsSlice.reducer;
