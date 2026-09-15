@@ -20,7 +20,13 @@ from core.bundle._parsing.shared.validation import (
     forbidden_mm_actions,
     script_is_correct_path,
 )
-from core.bundle._parsing.v_2_0.internal_scripts import ConfigApplyParams, HcApplyParams, ServiceManageParams
+from core.bundle._parsing.v_2_0.internal_scripts import (
+    ConfigApplyParams,
+    HcApplyParams,
+    HostGroupManageParams,
+    HostManageParams,
+    ServiceManageParams,
+)
 from core.bundle._parsing.v_2_0.schema import (
     ConfigTemplate,
     Masking,
@@ -121,12 +127,31 @@ class ServiceManageInternalScript(_BaseScript):
     params: ServiceManageParams
 
 
+@dataclass(slots=True)
+class HostManageInternalScript(_BaseScript):
+    script_type: Literal["internal"]
+    script: Literal["host_manage"]
+    params: HostManageParams
+
+
+@dataclass(slots=True)
+class HostGroupManageInternalScript(_BaseScript):
+    script_type: Literal["internal"]
+    script: Literal["host_group_manage"]
+    params: HostGroupManageParams
+
+
 ProviderInternalScript = Annotated[
     BundleSwitchInternalScript | BundleRevertInternalScript | BeforeUpgradeCleanScript, Field(discriminator="script")
 ]
 
 ClusterStaticInternalScript = Annotated[
-    ProviderInternalScript | HcApplyInternalScript | ServiceManageInternalScript, Field(discriminator="script")
+    ProviderInternalScript
+    | HcApplyInternalScript
+    | ServiceManageInternalScript
+    | HostManageInternalScript
+    | HostGroupManageInternalScript,
+    Field(discriminator="script"),
 ]
 
 ClusterScript = Annotated[
