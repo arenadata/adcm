@@ -16,9 +16,11 @@ from pathlib import Path
 from typing import Any, Literal
 import re
 
+from pydantic import TypeAdapter
 import yaml
 
-from core import action
+from core import action, config
+from core.action.types import JobDetails, JobSpecV1, Script, ScriptSpec
 from core.bundle._definitions import (
     ActionAvailability,
     ActionDefinition,
@@ -33,7 +35,13 @@ from core.bundle._definitions import (
     UpgradeRestrictions,
     VersionBound,
 )
+from core.spec.keys import level_keys_to_full_key
+from core.spec.types import FullSpecKey, LevelSpecKey
 from core.templates import Template, parse_template
+from core.types import Names
+
+_SCRIPT_ADAPTER = TypeAdapter(Script)
+
 
 # Public
 
@@ -88,7 +96,7 @@ def check_variant(config: dict) -> dict:
 # COPY End
 
 
-def extract_scripts(scripts: list[dict], path_resolution_root: Path) -> list[action.JobSpec] | None:
+def extract_scripts(scripts: list[dict], path_resolution_root: Path) -> JobSpecV1 | None:
     return _extract_scripts(entity={"scripts": scripts}, context={"path": path_resolution_root})
 
 
@@ -204,38 +212,70 @@ def _extract_action(entity, context):
     return ActionDefinition(**_drop_unset(result))
 
 
-def _extract_scripts(entity: dict, context: dict) -> list[action.JobSpec] | None:
+def _extract_scripts(entity: dict, context: dict) -> JobSpecV1 | None:
     scripts = entity.get("scripts")
     if scripts is None:
         return None
 
-    scripts_list = []
+    # only one sequential level is supported for now, so scripts are the root level's fields
+    # and their keys are their positions in the declaration order
+    return JobSpecV1.from_scripts(
+        *(
+            _to_script_spec(key=_position_to_node_code(position), script=script, context=context)
+            for position, script in enumerate(scripts)
+        )
+    )
 
-    for script in map(_flatten_on_fail, scripts):
-        result = {}
 
-        if (
-            isinstance(script.get("params"), list)
-            and script.get("script") == "hc_apply"
-            and script.get("script_type") == "internal"
-        ):
-            script["params"] = {"hc_apply": script["params"]}
+def _position_to_node_code(position: int) -> FullSpecKey:
+    return FullSpecKey(level_keys_to_full_key((LevelSpecKey(str(position)),)))
 
-        _fill_value(result, script, "name")
-        _fill_value(result, script, "params")
-        _fill_value(result, script, "state_on_fail")
-        _fill_value(result, script, "multi_state_on_fail_set")
-        _fill_value(result, script, "multi_state_on_fail_unset")
-        _fill_value(result, script, "allow_to_terminate")
-        _fill_value(result, script, "script", cast=partial(_normalize_path, context=context))
-        _fill_value(result, script, "script_type", cast=action.ScriptType)
 
-        _patch_display_name(result, script)
+def _to_script_spec(key: FullSpecKey, script: dict, context: dict) -> ScriptSpec:
+    script_type = action.ScriptType(script["script_type"])
+    on_fail = _flatten_on_fail(script)
 
-        # set defaults before cleanup
-        scripts_list.append(action.JobSpec(**_drop_unset({"params": {}, "allow_to_terminate": False} | result)))
+    return ScriptSpec(
+        key=key,
+        names=Names(internal=script["name"], display=script.get("display_name") or ""),
+        script=_SCRIPT_ADAPTER.validate_python(
+            {
+                "type": script_type,
+                # internal scripts are named, not pathed, and their names never start with "./",
+                # so normalization leaves them as they are
+                "path": _normalize_path(result=script["script"], context=context),
+                "params": _to_script_params(script_type=script_type, script=script),
+            }
+        ),
+        on_fail=action.StateChanges(
+            state=on_fail["state_on_fail"] or None,
+            multi_state_set=tuple(on_fail["multi_state_on_fail_set"]),
+            multi_state_unset=tuple(on_fail["multi_state_on_fail_unset"]),
+        ),
+        details=JobDetails(terminatable=_is_terminatable(script_type=script_type, script=script)),
+    )
 
-    return scripts_list
+
+def _to_script_params(script_type: action.ScriptType, script: dict) -> Any:
+    params = script.get("params")
+
+    # DSL spells "no params" as an absent key, `null` and `{}` alike,
+    # `None` is the single representation of it in spec
+    if not params:
+        # ansible params are always an object thou: it has defaults of its own to fill in
+        return {} if script_type == action.ScriptType.ANSIBLE else None
+
+    return params
+
+
+def _is_terminatable(script_type: action.ScriptType, script: dict) -> bool:
+    if script_type == action.ScriptType.INTERNAL:
+        # internal scripts are performed by ADCM itself, there's no process to terminate.
+        # forced rather than rejected on purpose: existing bundles may say otherwise
+        # and that shouldn't make them invalid
+        return False
+
+    return bool(script.get("allow_to_terminate", False))
 
 
 def _extract_config(entity: dict, context: dict) -> ConfigDefinition | None:
@@ -532,7 +572,7 @@ def _extract_spec(entity: dict, context: dict) -> ConfigParamPlainSpec:
 
 def __iterate_parameters(group: list[dict], key: ParameterKey) -> Iterable[tuple[ParameterKey, dict]]:
     for param in group:
-        param_key = (*key, str(param["name"]))
+        param_key = (*key, config.ParameterLevelName(str(param["name"])))
 
         yield param_key, param
 

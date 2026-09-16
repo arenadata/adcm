@@ -232,7 +232,7 @@ layers = [
     "core.action",
     # core.upgrade may be moved later if required
     "core.config | core.mapping | core.cluster | core.provider | core.upgrade | core.logs",
-    "core.templates | core.secrets",
+    "core.templates | core.secrets | core.spec",
     "core.errors | core.settings",
     "core.types",
     "core.result",

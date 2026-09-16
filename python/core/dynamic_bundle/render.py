@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Generic, Protocol, TypeVar
 
 from core import action, bundle, config, mapping, templates
+from core.action.types import JobSpecV1
 from core.dynamic_bundle.types import ContextGathererI
 from core.types import CoreObjectDescriptor
 
@@ -59,7 +60,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(
@@ -79,7 +80,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(
@@ -99,7 +100,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(

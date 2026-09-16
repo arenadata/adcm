@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal, Protocol, TypeAlias
 
-from core import action
+from core import config
+from core.action.types import JobSpecV1
 from core.bundle._types import BundleDefinitionKey, ContractVersionTag
 from core.templates import Template
 
@@ -27,7 +28,7 @@ class GeneralObjectDescription(Protocol):
 
 # EXTERNAL SECTION START
 
-ParameterKey: TypeAlias = tuple[str, ...]
+ParameterKey: TypeAlias = tuple[config.ParameterLevelName, ...]
 
 
 # copied from cm.legacy.services.config.spec for ADCM-6355
@@ -113,7 +114,7 @@ class ActionDefinition:
     unavailable_at: ActionAvailability = field(default_factory=lambda: ActionAvailability(states=[], multi_states=[]))
 
     # Task settings
-    scripts: list[action.JobSpec] = field(default_factory=list)
+    scripts: JobSpecV1 | None = None
     scripts_template: Template | None = None
 
     config: ConfigDefinition | None = None

@@ -17,8 +17,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple, Protocol
 
-from core.action import ExecutionStatus, Job, Task
+from core.action import ExecutionStatus, Task
 from core.action.job import JobRepoI
+from core.action.types import RichJob
 from core.cluster import ClusterService
 from core.legacy.job.executors import Executor
 
@@ -51,7 +52,7 @@ class ExternalSettings(NamedTuple):
 
 
 class JobFinalizer(Protocol):
-    def __call__(self, job: Job) -> None:
+    def __call__(self, job: RichJob) -> None:
         ...
 
 
@@ -59,7 +60,7 @@ class JobEnvironmentBuilder(Protocol):
     def __call__(
         self,
         task: Task,
-        job: Job,
+        job: RichJob,
         configuration: ExternalSettings,
         cluster_service: ClusterService,
     ) -> None:
@@ -67,7 +68,7 @@ class JobEnvironmentBuilder(Protocol):
 
 
 class ExecutionTarget(NamedTuple):
-    job: Job
+    job: RichJob
     executor: Executor
     environment_builders: Iterable[JobEnvironmentBuilder]
     # stuff like `finish_check` should go to finalizers
@@ -75,23 +76,15 @@ class ExecutionTarget(NamedTuple):
 
 
 class ExecutionTargetFactoryI(Protocol):
-    def __call__(self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings) -> Iterable[ExecutionTarget]:
-        ...
-
-
-def always_true(_: "Job") -> bool:
-    return True
-
-
-class JobFilterPredicate(Protocol):
-    def __call__(self, job: Job, /) -> bool:
+    def __call__(
+        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
+    ) -> Iterable[ExecutionTarget]:
         ...
 
 
 @dataclass(slots=True)
 class JobProcessor:
     convert: ExecutionTargetFactoryI
-    filter_predicate: JobFilterPredicate = always_true
 
 
 class RunnerEnvironment(Protocol):

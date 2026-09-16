@@ -19,6 +19,7 @@ import tarfile
 from cm.legacy.bundle import _get_file_hashes
 from cm.legacy.services.adcm import adcm_config
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
+from cm.tests.scripts import read_plan_scripts
 from django.conf import settings
 from django.db.models import F
 from rest_framework.response import Response
@@ -541,17 +542,17 @@ class TestBundle(ADCMDjangoAPISuite):
             bundle = Bundle.objects.get(name="hc_apply_scripts_cluster")
             prototype = Prototype.objects.get(bundle=bundle, type="cluster")
 
-            subaction = Action.objects.filter(prototype__name=prototype.name)[0].subaction_set.first()
+            script, *_ = read_plan_scripts(Action.objects.filter(prototype__name=prototype.name))
 
-            self.assertEqual("script_1", subaction.name)
-            self.assertEqual("hc_apply", subaction.script)
+            self.assertEqual("script_1", script.names.internal)
+            self.assertEqual("hc_apply", script.script.path)
             self.assertListEqual(
                 [
                     {"action": "add", "component": "component_1", "service": "service_1"},
                     {"action": "remove", "component": "component_2", "service": "service_2"},
                     {"action": "add", "component": "component_3", "service": "service_2"},
                 ],
-                subaction.params["rules"],
+                [rule._asdict() for rule in script.script.params.rules],
             )
 
         with self.subTest("hc_apply internal script: wrong definition"):

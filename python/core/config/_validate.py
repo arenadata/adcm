@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Final, Protocol, TypeAlias
 
 from core.config import _yspec, spec
 from core.config._config import detect_active_groups
@@ -241,6 +241,12 @@ def validate_values_are_correct(
 
 # Steps And Utilities
 
+_ROOT_GROUP: Final[ParameterFullName] = ParameterFullName("")
+"""
+Prefix of the configuration root: joining a level name with it adds nothing but the separator.
+It is not a valid full name on its own, which is why it's built directly instead of via `names`.
+"""
+
 _AnyAsConfigValues = ConfigValues | Any
 _ValuesStructureValidator = Callable[
     [_AnyAsConfigValues, spec.SpecHierarchyLevel, tuple[ParameterLevelName, ...]], Violations
@@ -418,7 +424,7 @@ def _find_attribute_violations(
 
 
 def _detect_excluded_groups_from_values(
-    values: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group: ParameterFullName = ""
+    values: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group: ParameterFullName = _ROOT_GROUP
 ) -> list[ParameterFullName]:
     excluded = []
 

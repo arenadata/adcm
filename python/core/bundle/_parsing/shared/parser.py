@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Generic, Literal, TypeAlias, TypeVar
 
 from core import action, mapping
+from core.action.types import JobSpecV1
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._errors import BundleParsingError, convert_validation_to_bundle_error
 from core.bundle._parsing.shared.conversion import detect_relative_path_to_bundle_root, extract_config, extract_scripts
@@ -26,7 +27,7 @@ from core.bundle._parsing.shared.wizard import ConfigurationStep, MappingStep, O
 from core.bundle._parsing.types import BundleParser, RootEntry
 from core.bundle._representation import repr_from_raw
 from core.bundle._types import BundleDefinitionKey, ComponentKey
-from core.bundle._validate import check_action_hc_acl_rules
+from core.bundle._validate import check_action_hc_acl_rules, check_execution_hierarchy, check_no_bundle_switch
 from core.errors import localize_error
 
 _RelativePath: TypeAlias = str
@@ -105,7 +106,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         template_path: Path,
         action_allow_to_terminate: bool,
         mode: Literal["action", "upgrade", "wizard"],
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         model_ = self._get_scripts_model(mode)
         parsed = model_.model_validate({"scripts": scripts})
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
@@ -116,9 +117,18 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
 
         result = extract_scripts(scripts=dumped, path_resolution_root=template_path.parent)
 
-        if not result:
-            message = "Conversion to scripts definition failed: unexpectedly got None"
+        if result is None or not result.scripts:
+            message = "Conversion to scripts definition failed: unexpectedly got nothing"
             raise BundleParsingError(message)
+
+        # rendered scripts never reach bundle validation, so the plan is checked right here
+        check_execution_hierarchy(spec=result)
+
+        if mode == "action":
+            # the DSL lets an action's scripts reach `bundle_switch` through the internal script union,
+            # so the rule that regular actions must not switch bundles is enforced here,
+            # the same way `check_actions` enforces it for statically declared scripts
+            check_no_bundle_switch(scripts=result)
 
         return result
 

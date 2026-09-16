@@ -16,6 +16,7 @@ from itertools import chain
 from pathlib import Path
 
 from core import action, config, mapping
+from core.action.types import JobSpecV1
 from core.bundle import LicenseError, parsing
 from core.bundle._contract_version import check_contract_version_supported, is_contract_version_supported
 from core.bundle._definitions import DefinitionsMap, PrototypeMetaInfo
@@ -132,7 +133,7 @@ class BundleService:
         bundle_context: BundleContext,
         template_path: Path,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         return parser.parse_scripts(
             scripts=data,
@@ -147,7 +148,7 @@ class BundleService:
         bundle_context: BundleContext,
         template_path: Path,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         return parser.parse_scripts(
             scripts=data,
@@ -162,7 +163,7 @@ class BundleService:
         bundle_context: BundleContext,
         template_path: Path,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         parser = parsing.pick_suitable_parser(version=bundle_context.contract_version, parsers=self.parsers)
         return parser.parse_scripts(
             scripts=data,

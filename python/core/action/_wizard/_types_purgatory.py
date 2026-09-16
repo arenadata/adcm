@@ -19,8 +19,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from core import config, mapping
-from core.action._types import JobSpec
 from core.action._wizard._types import ConfigStepSpec, MappingStepSpec, OperationStepSpec, Stage, StepState, StepType
+from core.action.types import JobSpecV1
 from core.types import (
     ActionProcessID,
     ActionProcessStepID,
@@ -123,7 +123,7 @@ class Step(BaseModel):
     name: str
     stage: str
     display_name: str
-    step_spec: list[dict] | None = None
+    step_spec: list | dict | None = None
     description: str = ""
     required: bool = True
     type: StepType
@@ -150,7 +150,7 @@ class Step(BaseModel):
                 return config_spec, config_defaults
 
             case StepType.OPERATION:
-                return [JobSpec.model_validate(record) for record in self.step_spec]
+                return JobSpecV1.model_validate(self.step_spec)
 
             case StepType.MAPPING:
                 return [mapping.MappingRule(**record) for record in self.step_spec]

@@ -49,6 +49,7 @@ from cm.models import (
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core.action import AssociatedProcess, TaskMappingDelta, operations
+from core.action.types import JobSpecV1
 from core.bundle import AvailableContractVersions, BundleOperationError, is_contract_version_supported
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
@@ -306,11 +307,13 @@ class _ScheduleTask(ABC):
                         f"Can't run {action_orm.display_name or action_orm.name} to unsupported bundle"
                     )
 
+            self.job_service.set_post_init_task_attributes(
+                task_id=task_id,
+                payload=core.action.job.PostInitTaskAttributesDTO(
+                    execution_plan=scripts, configuration=config_to_set, mapping_delta=delta
+                ),
+            )
             self.job_service.create_jobs(task_id=task_id, scripts=scripts)
-
-            if config_to_set is not None or delta is not None:
-                update_dto = core.action.job.TaskUpdateMainFieldsDTO(configuration=config_to_set, mapping_delta=delta)
-                self.job_service.set_task_mapping_and_configuration(task_id=task_id, payload=update_dto)
 
             orm_task = TaskLog.objects.get(id=task_id)
             self.rbac_scenarios.re_apply_policy_for_jobs(task=orm_task)
@@ -480,7 +483,7 @@ def _resolve_scripts(
     is_upgrade_action: bool,
     job_service: core.action.job.JobService,
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs],
-) -> tuple[core.action.JobSpec, ...]:
+) -> JobSpecV1:
     if not action.scripts_template:
         return job_service.retrieve_scripts(action_id=action.pk)
 
@@ -490,13 +493,12 @@ def _resolve_scripts(
     render_func = (
         bundle_renderer.render_scripts_for_upgrade if is_upgrade_action else bundle_renderer.render_scripts_for_action
     )
-    scripts = render_func(
+    return render_func(
         template=template,
         args=task_args,
         bundle_context=bundle_context,
         action_allow_to_terminate=action.allow_to_terminate,
     )
-    return tuple(scripts)
 
 
 def _check_associated_process(

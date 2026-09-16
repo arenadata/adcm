@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Literal, Protocol, TypeVar
+from typing import Final, Literal, Protocol, TypeVar
 
 from core.config import files, operations, spec
 from core.config._config import detect_active_groups, detect_changes, nested_to_flat
@@ -32,6 +32,7 @@ from core.config._types import (
     Defaults,
     FlatConfiguration,
     HostGroupConfigOwner,
+    ParameterLevelName,
     RevisionDiff,
 )
 from core.config._validate import (
@@ -59,6 +60,8 @@ from core.types import (
     TaskDescriptor,
 )
 import core.config
+
+_ANSIBLE_SSH_PRIVATE_KEY_FILE: Final = ParameterLevelName("ansible_ssh_private_key_file")
 
 T = TypeVar("T")
 
@@ -539,7 +542,7 @@ def _write_to_files_dir_with_prefix(
     # So when we create that key from playbook and save it in ADCM we get
     # "Load key : invalid format" on next connect to host.
     if (
-        is_parameter_file_name_startswith(file_name=parameter_identifier, name="ansible_ssh_private_key_file")
+        is_parameter_file_name_startswith(file_name=parameter_identifier, name=_ANSIBLE_SSH_PRIVATE_KEY_FILE)
         and decoded_content != ""
         and decoded_content[-1] == "-"
     ):

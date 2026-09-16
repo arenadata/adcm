@@ -868,6 +868,10 @@ class AbstractAction(ADCMModel):
     config_template = models.JSONField(null=True, default=None)
     scripts_template = models.JSONField(null=True, default=None)
 
+    # serialized `core.action.types.JobSpecV1` of statically declared scripts,
+    # `None` for actions that render their plan from `scripts_template`
+    scripts = models.JSONField(null=True, default=None)
+
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 
     @property
@@ -949,27 +953,6 @@ class Action(AbstractAction):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
-
-
-class AbstractSubAction(ADCMModel):
-    action = None
-
-    name = models.CharField(max_length=1000)
-    display_name = models.CharField(max_length=1000, blank=True)
-    script = models.CharField(max_length=1000)
-    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=1000, blank=True)
-    multi_state_on_fail_set = models.JSONField(default=list)
-    multi_state_on_fail_unset = models.JSONField(default=list)
-    params = models.JSONField(default=dict)
-    allow_to_terminate = models.BooleanField(default=False)
-
-    class Meta:
-        abstract = True
-
-
-class SubAction(AbstractSubAction):
-    action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
 class HostComponent(ADCMModel):
@@ -1113,6 +1096,10 @@ class TaskLog(ADCMModel):
     is_blocking = models.BooleanField(default=True)
     process = models.JSONField(null=True, default=None)
 
+    # serialized `core.action.types.JobSpecV1` the task runs: either the action's own `scripts`
+    # or the result of rendering its `scripts_template`
+    execution_plan = models.JSONField(null=True, default=None)
+
     # default for name is made for tasks that have no action after bundle is deleted
     name = models.CharField(max_length=1200, default="-")
     display_name = models.CharField(max_length=1200, default="-")
@@ -1133,8 +1120,23 @@ class TaskLog(ADCMModel):
         return (self.finish_date - self.start_date).total_seconds()
 
 
-class JobLog(AbstractSubAction):
+class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
+
+    # key of the node in the task's `execution_plan` this job was created for
+    spec_key = models.CharField(max_length=1000, blank=True, default="")
+
+    # duplicates of the spec node's fields, kept until the plan becomes the only source
+    name = models.CharField(max_length=1000)
+    display_name = models.CharField(max_length=1000, blank=True)
+    script = models.CharField(max_length=1000)
+    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
+    state_on_fail = models.CharField(max_length=1000, blank=True)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
+    params = models.JSONField(default=dict)
+    allow_to_terminate = models.BooleanField(default=False)
+
     pid = models.PositiveIntegerField(blank=True, default=0)
     status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)

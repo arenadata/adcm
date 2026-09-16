@@ -17,7 +17,7 @@ from cm.transition.action import RetrieveStartImpossibleReason
 from core.action import ExecutionStatus, TaskRunnerEnvironment, WorkerInfo
 from core.action.job import JobRepoI
 from core.action.scheduler import TaskQueuer
-from core.legacy.job.runners import JobFilterPredicate, TaskRunner, always_true
+from core.legacy.job.runners import TaskRunner
 from core.scenarios.concern import ConcernScenarios
 from core.types import TaskID
 from jobs.scheduler import repo as scheduler_repo_module
@@ -102,7 +102,7 @@ class TaskFlow:
     def execute_task(self, task_id: TaskID) -> None:
         """Performs what `task_runner.py` does for a task, but in current process"""
 
-        with self.container(context={JobFilterPredicate: always_true}):
+        with self.container():
             runner = self.container.get(TaskRunner)
             runner.run(task_id=task_id)
 

@@ -17,7 +17,8 @@
 from collections import defaultdict
 from collections.abc import Iterable
 
-from core.action import Job, Task
+from core.action import Task
+from core.action.types import RichJob
 from core.cluster import ClusterTopology
 from core.concern.types import ConcernCause, ConcernDraft, ConcernRelatedObjects, ConcernTarget, ConcernType
 from core.constants import ADCM_DELETE_SERVICE_ACTION_NAME
@@ -112,7 +113,7 @@ def build_id_chain(selector: dict) -> dict:
     return {f"{type_name}_id": info["id"] for type_name, info in selector.items()}
 
 
-def build_task_concern(task: Task, job: Job, target: ConcernTarget) -> ConcernDraft:
+def build_task_concern(task: Task, job: RichJob, target: ConcernTarget) -> ConcernDraft:
     if task.is_blocking:
         name = (
             task.name
@@ -149,10 +150,10 @@ def build_task_concern(task: Task, job: Job, target: ConcernTarget) -> ConcernDr
     )
 
 
-def _job_placeholder(task_id: TaskID, job: Job) -> dict:
+def _job_placeholder(task_id: TaskID, job: RichJob) -> dict:
     return {
         "type": "job",
-        "name": job.display_name or job.name,
+        "name": job.spec.names.display,
         "params": {"task_id": task_id},
     }
 

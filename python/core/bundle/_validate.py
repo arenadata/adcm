@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Final, TypeAlias, cast
 
 from core import action, config
+from core.action.types import ExecutionStyle, HcApplyScript, JobHierarchyLevel, JobSpecV1, ScriptSpec
 from core.bundle._definitions import (
     ActionDefinition,
     ConfigDefinition,
@@ -37,6 +38,14 @@ from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
 
 FILE_TYPES: Final = {"file", "secretfile"}
+
+_MAX_DECLARED_HIERARCHY_DEPTH: Final = 2
+"""
+Root level is always present and always sequential, two more levels may be declared under it.
+
+It's a restriction of what a bundle may declare, not of what a spec may be:
+operations over an execution plan are expected to handle any depth.
+"""
 
 ConvertConfigDefinition: TypeAlias = Callable[[ConfigDefinition, Path], tuple[config.spec.FullSpec, config.Defaults]]
 
@@ -157,7 +166,7 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def _is_parameter_present_in_definition(name: str, definition: ConfigDefinition) -> bool:
+def _is_parameter_present_in_definition(name: config.ParameterFullName, definition: ConfigDefinition) -> bool:
     return config.names.full_name_to_level_names(name) in definition.parameters
 
 
@@ -169,7 +178,7 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path):
     )
 
 
-def _is_parameter_present_in_fullspec(name: str, spec: config.spec.FullSpec) -> bool:
+def _is_parameter_present_in_fullspec(name: config.ParameterFullName, spec: config.spec.FullSpec) -> bool:
     return name in spec.parameters
 
 
@@ -188,7 +197,7 @@ def check_dynamic_config_definition(
 def _check_config_definition(
     definition: ConfigDefinition,
     bundle_root: Path,
-    is_parameter_present_in_config: Callable[[str], bool],
+    is_parameter_present_in_config: Callable[[config.ParameterFullName], bool],
 ) -> None:
     # For now performing these checks in here,
     # because later they will be "invalidated" by conversion to spec and defaults.
@@ -262,37 +271,42 @@ def check_actions(
 ) -> None:
     for action_definition in actions:
         with localize_error(f"Action {action_definition.name}"):
-            check_no_bundle_switch(scripts=action_definition.scripts)
             check_mm_host_action_is_allowed(action=action_definition, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action_definition.hostcomponentmap, definitions=definitions)
             check_templates_are_correct(action=action_definition, bundle_root=bundle_root)
-            check_action_scripts(action=action_definition)
 
-
-def check_action_scripts(action: ActionDefinition):
-    for script in action.scripts:
-        if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
-            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
-            action_rules = {
-                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
-            }
-
-            extra_rules = apply_rules - action_rules
-            if extra_rules:
-                extra_rules_repr = ", ".join(
-                    map(
-                        str,
-                        (
-                            {"action": action, "service": service, "component": component}
-                            for action, service, component in extra_rules
-                        ),
-                    )
+            if action_definition.scripts is not None:
+                check_no_bundle_switch(scripts=action_definition.scripts)
+                check_action_scripts(
+                    scripts=action_definition.scripts, hostcomponentmap=action_definition.hostcomponentmap
                 )
-                message = (
-                    "HC rules in hc_apply script should follow action's hc_acl rules, "
-                    f"but following are missing in action's definition: {extra_rules_repr}"
+                check_execution_hierarchy(spec=action_definition.scripts)
+
+
+def check_action_scripts(scripts: JobSpecV1, hostcomponentmap: list) -> None:
+    for script_spec in scripts.scripts.values():
+        if not isinstance(script_spec.script, HcApplyScript) or script_spec.script.params is None:
+            continue
+
+        apply_rules = {(rule.action, rule.service, rule.component) for rule in script_spec.script.params.rules}
+        action_rules = {(entry["action"], entry["service"], entry["component"]) for entry in hostcomponentmap}
+
+        extra_rules = apply_rules - action_rules
+        if extra_rules:
+            extra_rules_repr = ", ".join(
+                map(
+                    str,
+                    (
+                        {"action": action, "service": service, "component": component}
+                        for action, service, component in extra_rules
+                    ),
                 )
-                raise BundleValidationError(message)
+            )
+            message = (
+                "HC rules in hc_apply script should follow action's hc_acl rules, "
+                f"but following are missing in action's definition: {extra_rules_repr}"
+            )
+            raise BundleValidationError(message)
 
 
 def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap, bundle_root: Path) -> None:
@@ -304,6 +318,9 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
             check_action_hc_acl_rules(hostcomponentmap=upgrade.action.hostcomponentmap, definitions=definitions)
             if upgrade.action.scripts_template is None:
                 check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
+
+                if upgrade.action.scripts is not None:
+                    check_execution_hierarchy(spec=upgrade.action.scripts)
             else:
                 check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
 
@@ -316,10 +333,34 @@ def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> 
 # Atomic checks
 
 
-def check_no_bundle_switch(scripts: Iterable[action.JobSpec]) -> None:
-    for script in scripts:
-        if script.script_type == action.ScriptType.INTERNAL and script.script == "bundle_switch":
-            message = f"bundle_switch is disallowed for {script.name} script"
+def check_execution_hierarchy(spec: JobSpecV1) -> None:
+    _check_hierarchy_level(level=spec.hierarchy, parent_rule=None, depth=0)
+
+
+def _check_hierarchy_level(level: JobHierarchyLevel, parent_rule: ExecutionStyle | None, depth: int) -> None:
+    if depth > _MAX_DECLARED_HIERARCHY_DEPTH:
+        message = (
+            f"Scripts can be nested in {_MAX_DECLARED_HIERARCHY_DEPTH} levels of groups at most, "
+            f"got a group at depth {depth}"
+        )
+        raise BundleValidationError(message)
+
+    # the root level is sequential by definition rather than by declaration,
+    # so the first declared level is allowed to repeat it
+    is_first_declared_level = depth == 1
+
+    if parent_rule is not None and level.rule == parent_rule and not is_first_declared_level:
+        message = f'Nested groups must alternate execution style, got "{level.rule.value}" inside "{parent_rule.value}"'
+        raise BundleValidationError(message)
+
+    for child_level in level.child_groups.values():
+        _check_hierarchy_level(level=child_level, parent_rule=level.rule, depth=depth + 1)
+
+
+def check_no_bundle_switch(scripts: JobSpecV1) -> None:
+    for script_spec in scripts.scripts.values():
+        if _is_bundle_switch(script_spec):
+            message = f"bundle_switch is disallowed for {script_spec.names.internal} script"
             raise BundleValidationError(message)
 
 
@@ -358,25 +399,38 @@ def check_file_is_correct_template(bundle_root: Path, template: Template) -> Non
 
 
 def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) -> None:
-    if not upgrade.action:
+    if not upgrade.action or upgrade.action.scripts is None:
         return
 
-    scripts = upgrade.action.scripts
-
-    match validate_bundle_switch_amount(scripts):
+    match validate_bundle_switch_amount_in_spec(upgrade.action.scripts):
         case Fail(value=err_message):
             message = f'{err_message} in upgrade "{upgrade.name}"'
             raise BundleValidationError(message)
 
 
+def validate_bundle_switch_amount_in_spec(spec: JobSpecV1) -> Success[None] | Fail[str]:
+    return _detect_bundle_switch_amount_violation(
+        amount=sum(1 for script_spec in spec.scripts.values() if _is_bundle_switch(script_spec))
+    )
+
+
 # scripts typehint is bad due to this function requirements to be quite universal,
-# yet current typesystem handles it differently
+# yet current typesystem handles it differently.
+# It works on DSL-shaped scripts, `validate_bundle_switch_amount_in_spec` is its spec counterpart.
 def validate_bundle_switch_amount(scripts: list) -> Success[None] | Fail[str]:
     scripts_with_bundle_switch = tuple(
         script for script in scripts if script.script_type == "internal" and script.script == "bundle_switch"
     )
 
-    amount_of_bundle_switches = len(scripts_with_bundle_switch)
+    return _detect_bundle_switch_amount_violation(amount=len(scripts_with_bundle_switch))
+
+
+def _is_bundle_switch(script_spec: ScriptSpec) -> bool:
+    return script_spec.script.type == action.ScriptType.INTERNAL and script_spec.script.path == "bundle_switch"
+
+
+def _detect_bundle_switch_amount_violation(amount: int) -> Success[None] | Fail[str]:
+    amount_of_bundle_switches = amount
 
     if amount_of_bundle_switches == 0:
         return Fail('Scripts block must contain exact one block with script "bundle_switch"')

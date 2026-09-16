@@ -19,7 +19,7 @@ from typing import Literal, cast
 import json
 import hashlib
 
-from core import action, bundle
+from core import bundle
 from core.types import (
     ADCMCoreType,
     BindObjectDescriptor,
@@ -34,6 +34,7 @@ from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
 from pydantic import BaseModel
 
 from cm.errors import AdcmEx
+from cm.impl.common.execution_plan import dump_execution_plan
 from cm.models import (
     ADCM,
     Action,
@@ -45,7 +46,6 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     Provider,
-    SubAction,
     Upgrade,
 )
 
@@ -78,7 +78,6 @@ class BundleRepo(bundle.BundleRepoI):
 
         configs = deque()
         actions = deque()
-        sub_actions = deque()
         upgrades = deque()
         exports = deque()
         imports = deque()
@@ -107,21 +106,17 @@ class BundleRepo(bundle.BundleRepoI):
                 )
 
             for action_def in sort_by_name(definition.actions):
-                action, configs_, sub_actions_ = _prepare_action_related_models(
-                    definition=action_def, prototype=prototype
-                )
+                action, configs_ = _prepare_action_related_models(definition=action_def, prototype=prototype)
                 actions.append(action)
-                sub_actions.extend(sub_actions_)
                 configs.extend(configs_)
 
             for upgrade_def in definition.upgrades:
                 action = None
                 if upgrade_def.action:
-                    action, configs_, sub_actions_ = _prepare_action_related_models(
+                    action, configs_ = _prepare_action_related_models(
                         definition=upgrade_def.action, prototype=prototype
                     )
                     actions.append(action)
-                    sub_actions.extend(sub_actions_)
                     configs.extend(configs_)
 
                 upgrade = _upgrade_definition_to_model(definition=upgrade_def, bundle=created_bundle, action=action)
@@ -140,7 +135,6 @@ class BundleRepo(bundle.BundleRepoI):
 
         Prototype.objects.bulk_create(objs=map(itemgetter(0), prototypes_with_parent))
         Action.objects.bulk_create(objs=actions)
-        SubAction.objects.bulk_create(objs=sub_actions)
         Upgrade.objects.bulk_create(objs=upgrades)
         PrototypeConfig.objects.bulk_create(objs=configs)
         PrototypeImport.objects.bulk_create(objs=imports)
@@ -327,19 +321,15 @@ def _definition_to_model(
 
 def _prepare_action_related_models(
     definition: bundle.d.ActionDefinition, prototype: Prototype
-) -> tuple[Action, Iterable[PrototypeConfig], Iterable[SubAction]]:
+) -> tuple[Action, Iterable[PrototypeConfig]]:
     action = _action_definition_to_model(definition=definition, prototype=prototype)
 
     configs = ()
 
-    sub_actions = tuple(
-        _sub_action_to_definition_to_model(definition=script, action=action) for script in definition.scripts
-    )
-
     if definition.config:
         configs = tuple(convert_config_definition_to_orm_model(definition.config, prototype=prototype, action=action))
 
-    return action, configs, sub_actions
+    return action, configs
 
 
 def _action_definition_to_model(definition: bundle.d.ActionDefinition, prototype: Prototype) -> Action:
@@ -368,21 +358,8 @@ def _action_definition_to_model(definition: bundle.d.ActionDefinition, prototype
         config_template=_dump_or_none(definition.config_template),
         scripts_template=_dump_or_none(definition.scripts_template),
         wizard_template=_dump_or_none(definition.wizard_template),
-    )
-
-
-def _sub_action_to_definition_to_model(definition: action.JobSpec, action: Action) -> SubAction:
-    return SubAction(
-        action=action,
-        name=definition.name,
-        display_name=definition.display_name,
-        script=definition.script,
-        script_type=definition.script_type.value,
-        state_on_fail=definition.state_on_fail,
-        multi_state_on_fail_set=definition.multi_state_on_fail_set,
-        multi_state_on_fail_unset=definition.multi_state_on_fail_unset,
-        params=definition.params,
-        allow_to_terminate=definition.allow_to_terminate,
+        # actions rendering their plan from a template have nothing to store here
+        scripts=dump_execution_plan(definition.scripts) if definition.scripts else None,
     )
 
 

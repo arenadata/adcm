@@ -15,7 +15,8 @@ from datetime import datetime
 from functools import partial
 from typing import Any, NamedTuple
 
-from core.action import Job, ScriptType, Task
+from core.action import ScriptType, Task
+from core.action.types import RichJob
 from core.cluster import ClusterService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
@@ -86,14 +87,15 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         self._failed_job = failed_job
 
     def __call__(
-        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
+        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
     ) -> Generator[ExecutionTarget, None, None]:
         _ = task
         for job_num, job in enumerate(jobs):
-            work_dir = configuration.adcm.run_dir / str(job.id)
+            work_dir = configuration.adcm.run_dir / str(job.runtime.id)
+            script_spec = job.spec.script
 
-            if job.type == ScriptType.INTERNAL:
-                internal_script_func = self._supported_internal_scripts[job.script]
+            if script_spec.type == ScriptType.INTERNAL:
+                internal_script_func = self._supported_internal_scripts[script_spec.path]
                 script = partial(internal_script_func, task=task, job=job)
                 executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
 
@@ -104,9 +106,9 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
 
                 job_imitator = JobImitator(**executor_kwargs)
                 executor = MockExecutor(
-                    script_type=job.script,
+                    script_type=script_spec.path,
                     imitator=job_imitator,
-                    config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
+                    config=ExecutorConfig(work_dir=work_dir),
                 )
 
             yield ExecutionTarget(
@@ -148,17 +150,17 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         self.default_imitator = default_imitator
 
     def __call__(
-        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
+        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
     ) -> Generator[ExecutionTarget, None, None]:
         for i, target in enumerate(super().__call__(task=task, jobs=jobs, configuration=configuration)):
-            if target.job.type == ScriptType.INTERNAL:
+            if target.job.spec.script.type == ScriptType.INTERNAL:
                 yield target
                 continue
 
             imitator = self.imitators.get(i, self.default_imitator)
             executor = MockExecutor(
                 script_type=target.executor.script_type,
-                config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.id)),
+                config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.runtime.id)),
                 imitator=imitator,
             )
 

@@ -15,6 +15,8 @@ from operator import attrgetter
 from typing import cast
 from unittest.mock import patch
 
+from core.action.job import JobShortFilter
+from core.action.operations import to_rich_job
 from core.concern.operations import build_id_chain, build_task_concern
 from core.concern.types import ConcernTarget
 from core.config import ConfigService
@@ -391,7 +393,10 @@ class TestConcernsRedistribution(GenericTestCase):
         # bare lock concern to hand-distribute itself, not the real distribution logic
         job_repo = JobRepo()
         task = job_repo.get_task(id=task_orm.pk)
-        job = job_repo.get_job(id=job_orm.pk)
+        job = to_rich_job(
+            spec=job_repo.get_execution_plan(task_id=task_orm.pk),
+            job=next(iter(job_repo.find_jobs_short(JobShortFilter(ids=[job_orm.pk])))),
+        )
         target = ConcernTarget(
             id=task.target.id,
             type=cast(ADCMCoreType, task.target.type),

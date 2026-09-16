@@ -14,8 +14,9 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import cast
 
-from core.action import Job, Task
+from core.action import Task
 from core.action.job import JobRepoI, TaskUpdateDTO
+from core.action.types import RichJob
 from core.cluster import ClusterService
 from core.concern.operations import (
     build_id_chain,
@@ -126,7 +127,7 @@ class ConcernScenarios:
     status_scenarios: StatusScenariosI
     concern_distribution: ConcernDistributionScenarios
 
-    def create_job_concern(self, *, task: Task, first_job: Job) -> ConcernID:
+    def create_job_concern(self, *, task: Task, first_job: RichJob) -> ConcernID:
         if task.target is None:
             message = f"Task #{task.id} has no target, can't create concern"
             raise RuntimeError(message)

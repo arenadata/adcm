@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action, mapping
+from core.action.types import JobSpecV1
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._types import ComponentKey, ContractVersionTag, VersionInfo
 
@@ -52,7 +53,7 @@ class BundleParser(Protocol):
         template_path: Path,
         action_allow_to_terminate: bool,
         mode: Literal["action", "upgrade", "wizard"],
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         ...
 
     def parse_wizard_stages(

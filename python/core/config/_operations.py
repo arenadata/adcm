@@ -49,12 +49,14 @@ from core.config._types import (
     Change,
     ChangeRequest,
     ChangeType,
+    ConfigFlatValues,
     ConfigParameterValue,
     Configuration,
     ConfigValues,
     Defaults,
     FlatConfiguration,
     ParameterFullName,
+    ParameterLevelName,
 )
 from core.config._validate import (
     Validators,
@@ -87,7 +89,7 @@ class ValidationResult:
 class MissingDefaults:
     value: ConfigParameterValue = None
     activation: bool = False
-    selection: str | None = None
+    selection: ParameterLevelName | None = None
 
 
 _MISSING_DEFAULTS = MissingDefaults()
@@ -575,9 +577,9 @@ def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "att
 def _resolve_chosen_options(
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
-    previous_values: ConfigValues,
-    previous_default_values: ConfigValues,
-) -> dict[ParameterFullName, str | None]:
+    previous_values: ConfigFlatValues,
+    previous_default_values: ConfigFlatValues,
+) -> dict[ParameterFullName, ParameterLevelName | None]:
     """
     Detect option of each selection group of new specification.
 
@@ -623,8 +625,8 @@ def _pick_values_for_new_specification(
     new_specification: spec.FullSpec,
     defaults: Defaults,
     new_defaults: Defaults,
-    previous_values: ConfigValues,
-    chosen_options: dict[ParameterFullName, str | None],
+    previous_values: ConfigFlatValues,
+    chosen_options: dict[ParameterFullName, ParameterLevelName | None],
 ) -> dict[ParameterFullName, ConfigParameterValue]:
     """
     Pick value for each parameter that is present in new specification:
@@ -658,7 +660,7 @@ def _build_attributes_for_new_specification(
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
     previous_attributes: dict[ParameterFullName, Attributes],
-    chosen_options: dict[ParameterFullName, str | None],
+    chosen_options: dict[ParameterFullName, ParameterLevelName | None],
 ) -> dict[ParameterFullName, Attributes]:
     """Activation set by user wins over new default, groups unknown to previous configuration take new default"""
     attributes = {}
@@ -699,7 +701,9 @@ def _set_synchronization(
         )
 
 
-def _is_present_in_chosen_options(name: ParameterFullName, chosen_options: dict[ParameterFullName, str | None]) -> bool:
+def _is_present_in_chosen_options(
+    name: ParameterFullName, chosen_options: dict[ParameterFullName, ParameterLevelName | None]
+) -> bool:
     """Detect whether `name` belongs to options that are chosen in their selection groups"""
     for selection_group, chosen in chosen_options.items():
         if not is_part_of_group(name=name, group=selection_group):
@@ -714,14 +718,17 @@ def _is_present_in_chosen_options(name: ParameterFullName, chosen_options: dict[
     return True
 
 
-def _extract_subtree(values: ConfigValues, group: ParameterFullName) -> dict:
+def _extract_subtree(values: ConfigFlatValues, group: ParameterFullName) -> dict:
     return {name: value for name, value in values.items() if is_part_of_group(name=name, group=group)}
 
 
-def _detect_chosen_option(values: ConfigValues, group: ParameterFullName) -> str | None:
+def _detect_chosen_option(values: ConfigFlatValues, group: ParameterFullName) -> ParameterLevelName | None:
     for name in values:
         if is_part_of_group(name=name, group=group):
-            return remove_group_from_name(name=name, group=group).lstrip("/").split("/")[0]
+            relative_name = remove_group_from_name(name=name, group=group)
+            # `is_part_of_group` guarantees at least one level is left after the group is cut off
+            first_level, *_ = full_name_to_level_names(relative_name)
+            return first_level
 
     return None
 
@@ -821,7 +828,7 @@ def _apply_selection_group_change_registering_violation(
             # current choice is one's to set, so no need in changes
             return False
 
-        new_group_key = join_level_name_with_group_name(name=value, group=key)
+        new_group_key = join_level_name_with_group_name(name=ParameterLevelName(value), group=key)
         group_defaults = _extract_group_defaults(defaults=defaults, group=new_group_key, relative_to=key)
         # only options that are default ones for nested selection groups get into configuration,
         # so attributes should be limited to them the same way values are

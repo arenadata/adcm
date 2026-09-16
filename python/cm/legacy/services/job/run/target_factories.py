@@ -11,32 +11,34 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
 from configparser import ConfigParser
 from dataclasses import asdict
 from functools import partial
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeAlias
 import json
 import traceback
 
 from core.action import (
-    AnsibleJob,
     AssociatedProcess,
     ConfigApplyChangeEntry,
-    ConfigApplyJob,
     HcAclRule,
-    HcApplyJob,
-    Job,
-    ScriptType,
-    ServiceManageJob,
     ServiceManageServiceEntry,
-    SimpleInternalJob,
     Task,
     TaskMappingDelta,
 )
 from core.action.job import TaskUpdateDTO
+from core.action.types import (
+    AnsibleScript,
+    ConfigApplyScript,
+    HcApplyScript,
+    PythonScript,
+    RichJob,
+    ServiceManageScript,
+    SimpleInternalScript,
+)
 from core.cluster import ClusterService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import ExecutorConfig
@@ -100,6 +102,9 @@ from cm.models import (
 logger = getLogger("adcm")
 
 
+InternalScript: TypeAlias = Callable[..., InternalScriptResult]
+
+
 class ExecutionTargetFactory(ExecutionTargetFactoryI):
     def __init__(
         self,
@@ -113,7 +118,9 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         config_scenarios: ConfigScenarios,
         before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
-        self._default_ansible_finalizers = (lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.id),)
+        self._default_ansible_finalizers = (
+            lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.runtime.id),
+        )
         self._rbac_scenarios = rbac_scenarios
         # Reaching into `config_scenarios` for its `config_service` is just simpler than adding another
         # constructor dependency right now; `config_service` should become its own injected dependency.
@@ -146,22 +153,24 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
         }
 
     def __call__(
-        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
+        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
     ) -> Generator[ExecutionTarget, None, None]:
         for job_info in jobs:
-            work_dir = configuration.adcm.run_dir / str(job_info.id)
+            work_dir = configuration.adcm.run_dir / str(job_info.runtime.id)
             finalizers = (
                 partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stderr"),
                 partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stdout"),
             )
-            match job_info.type:
-                case ScriptType.ANSIBLE:
+            # the script's own type is what tells one executor from another,
+            # and it narrows the params each internal script is handed along the way
+            match job_info.spec.script:
+                case AnsibleScript() as script_spec:
                     executor = AnsibleProcessExecutor(
                         config=AnsibleExecutorConfig(
-                            job_script=job_info.script,
+                            job_script=script_spec.path,
                             work_dir=work_dir,
                             bundle=task.bundle,
-                            tags=job_info.params.ansible_tags,
+                            tags=script_spec.params.ansible_tags,
                             verbose=task.verbose,
                             venv=task.action.venv,
                             ansible_secret_script=configuration.ansible.ansible_secret_script,
@@ -169,32 +178,36 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
                     )
                     finalizers = (*self._default_ansible_finalizers, *finalizers)
                     environment_builders = (partial(prepare_ansible_environment, config_service=self._config_service),)
-                case ScriptType.PYTHON:
+                case PythonScript() as script_spec:
                     executor = PythonProcessExecutor(
                         config=PythonExecutorConfig(
-                            job_script=job_info.script,
+                            job_script=script_spec.path,
                             work_dir=work_dir,
                             bundle=task.bundle,
                             venv=task.action.venv,
                         )
                     )
                     environment_builders = ()
-                case ScriptType.INTERNAL:
-                    internal_script_func = self._supported_internal_scripts.get(job_info.script)
-                    if not internal_script_func:
-                        message = f"Unknown internal script {job_info.type}, can't build runner for it"
-                        raise NotImplementedError(message)
-
-                    script = partial(internal_script_func, task=task, job=job_info)
+                case SimpleInternalScript() | HcApplyScript() | ConfigApplyScript() | ServiceManageScript():
+                    script = partial(self._internal_script(job_info), task=task, job=job_info)
                     executor = InternalExecutor(config=ExecutorConfig(work_dir=work_dir), script=script)
                     environment_builders = ()
                 case _:
-                    message = f"Can't convert job of type {job_info.type}"
+                    message = f"Can't convert job of type {job_info.spec.script.type}"
                     raise NotImplementedError(message)
 
             yield ExecutionTarget(
                 job=job_info, executor=executor, environment_builders=environment_builders, finalizers=finalizers
             )
+
+    def _internal_script(self, job: RichJob) -> InternalScript:
+        script_name = job.spec.script.path
+
+        try:
+            return self._supported_internal_scripts[script_name]
+        except KeyError as err:
+            message = f"Unknown internal script {script_name}, can't build runner for it"
+            raise NotImplementedError(message) from err
 
 
 # INTERNAL SCRIPTS
@@ -203,7 +216,7 @@ class ExecutionTargetFactory(ExecutionTargetFactoryI):
 @atomic()
 def internal_script_bundle_switch(
     task: Task,
-    job: SimpleInternalJob,
+    job: RichJob,
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
@@ -247,7 +260,7 @@ def internal_script_bundle_switch(
 @atomic()
 def internal_script_bundle_revert(
     task: Task,
-    job: SimpleInternalJob,
+    job: RichJob,
     rbac_scenarios: RBACScenarios,
     config_scenarios: ConfigScenarios,
     cluster_service: ClusterService,
@@ -302,14 +315,15 @@ def internal_script_bundle_revert(
     return InternalScriptResult(code=0, message=result_message)
 
 
-def internal_script_hc_apply(task: Task, job: HcApplyJob, cluster_service: ClusterService) -> InternalScriptResult:
+def internal_script_hc_apply(task: Task, job: RichJob, cluster_service: ClusterService) -> InternalScriptResult:
     if task.owner and task.owner.type not in {ADCMCoreType.CLUSTER, ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT}:
         raise AdcmEx(
             code="WRONG_OWNER",
             msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
         )
 
-    hc_apply_rules = job.params.rules if job.params else None
+    params = job.spec.script.params
+    hc_apply_rules = params.rules if params else None
 
     if not hc_apply_rules:
         hc_apply_rules = task.action.hc_acl
@@ -361,15 +375,15 @@ def internal_script_hc_apply(task: Task, job: HcApplyJob, cluster_service: Clust
 
 def internal_script_config_apply(
     task: Task,
-    job: ConfigApplyJob,
+    job: RichJob,
     update_configuration_from_job: UpdateConfigurationFromJob,
 ) -> InternalScriptResult:
     with_updates = False
     # are we going to allow to change one component from context of another?
-    for change in job.params.changes:
+    for change in job.spec.script.params.changes:
         changing_object = _extract_apply_config_target(task=task, change=change)
         has_changed = apply_config_changes(
-            job_id=job.id,
+            job_id=job.runtime.id,
             db_object=changing_object,
             parameters=[asdict(parameter) for parameter in change.parameters],
             changes_description=f"{task.display_name} process update",
@@ -389,7 +403,7 @@ def internal_script_config_apply(
 
 def internal_script_service_manage(
     task: Task,
-    job: ServiceManageJob,
+    job: RichJob,
     manage_services: ManageClusterServices,
 ) -> InternalScriptResult:
     cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
@@ -397,7 +411,7 @@ def internal_script_service_manage(
     outcome = manage_services.add(
         cluster_id=cluster_id,
         entries=entries,
-        job_id=job.id,
+        job_id=job.runtime.id,
         task_owner=task.owner,
         changes_description=f"{task.display_name} process update",
     )
@@ -412,19 +426,19 @@ def internal_script_service_manage(
 
 
 def _parse_service_manage_arguments(
-    task: Task, job: ServiceManageJob
+    task: Task, job: RichJob
 ) -> tuple[ClusterID, tuple[ServiceManageServiceEntry, ...]]:
     if task.owner is None:
         raise RuntimeError("misconfigured task runner: no owner")
 
     cluster_id = task.owner.id if task.owner.type == ADCMCoreType.CLUSTER else task.owner.related_objects.cluster.id
 
-    return cluster_id, tuple(job.params.services or ())
+    return cluster_id, tuple(job.spec.script.params.services or ())
 
 
 def internal_script_before_upgrade_clean(
     task: Task,
-    job: SimpleInternalJob,
+    job: RichJob,
     cluster_uc: ResetBeforeUpgradeCluster,
     provider_uc: ResetBeforeUpgradeProvider,
 ) -> InternalScriptResult:
@@ -598,7 +612,7 @@ def _switch_hc_if_required(task: Task) -> None:
 
 def prepare_ansible_environment(
     task: Task,
-    job: AnsibleJob,
+    job: RichJob,
     configuration: ExternalSettings,
     cluster_service: ClusterService,
     config_service: core.config.ConfigService,
@@ -616,7 +630,7 @@ def prepare_ansible_environment(
     job_config = prepare_ansible_job_config(
         task=task, job=job, configuration=configuration, config_service=config_service, topology=topology
     )
-    job_run_dir = configuration.adcm.run_dir / str(job.id)
+    job_run_dir = configuration.adcm.run_dir / str(job.runtime.id)
 
     with (job_run_dir / "config.json").open(mode="w", encoding="utf-8") as config_file:
         json.dump(obj=job_config, fp=config_file, sort_keys=True, separators=(",", ":"))
@@ -661,19 +675,19 @@ def prepare_ansible_inventory(
 
 def prepare_ansible_job_config(
     task: Task,
-    job: AnsibleJob,
+    job: RichJob,
     configuration: ExternalSettings,
     config_service: core.config.ConfigService,
     topology: ClusterTopology | None = None,
 ) -> dict[str, Any]:
     job_data = JobData(
-        id=job.id,
+        id=job.runtime.id,
         action=task.action.name,
-        job_name=job.name,
-        command=job.name,
-        script=job.script,
+        job_name=job.spec.names.internal,
+        command=job.spec.names.internal,
+        script=job.spec.script.path,
         verbose=task.verbose,
-        playbook=str(task.bundle.root / job.script),
+        playbook=str(task.bundle.root / job.spec.script.path),
         action_type_specification=_get_owner_specific_data(task=task),
     )
 
@@ -683,7 +697,7 @@ def prepare_ansible_job_config(
     if task.config:
         job_data.config = task.config
 
-    params: dict = job.params.model_dump()
+    params: dict = job.spec.script.params.model_dump()
     if not params["ansible_tags"]:
         # if it's empty, it shouldn't be included
         # and since it's the only "pre-defined" field we want empty dict if that's the case
@@ -708,7 +722,7 @@ def prepare_ansible_job_config(
         env=JobEnv(
             run_dir=str(configuration.adcm.run_dir),
             log_dir=str(configuration.adcm.log_dir),
-            tmp_dir=str(configuration.adcm.run_dir / str(job.id) / "tmp"),
+            tmp_dir=str(configuration.adcm.run_dir / str(job.runtime.id) / "tmp"),
             stack_dir=str(task.bundle.root),
             status_api_token=configuration.integrations.status_server_token,
             consul_url=configuration.consul.url,
@@ -798,12 +812,14 @@ def _get_owner_specific_data(
 # FINALIZERS
 
 
-def save_fs_logs_to_db(job: Job, work_dir: Path, log_type: Literal["stdout", "stderr"]) -> None:
-    log_path = work_dir / f"{job.type.value}-{log_type}.txt"
+def save_fs_logs_to_db(job: RichJob, work_dir: Path, log_type: Literal["stdout", "stderr"]) -> None:
+    log_path = work_dir / f"{job.spec.script.type.value}-{log_type}.txt"
     if not log_path.is_file():
         return
 
-    corresponding_log = LogStorage.objects.filter(job_id=job.id, name=job.type.value, type=log_type).first()
+    corresponding_log = LogStorage.objects.filter(
+        job_id=job.runtime.id, name=job.spec.script.type.value, type=log_type
+    ).first()
     if not corresponding_log:
         return
 

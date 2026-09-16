@@ -14,11 +14,22 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Final, cast
 from unittest import TestCase
+from unittest.mock import Mock, patch
 
 from pydantic import TypeAdapter, ValidationError
 import yaml
 
-from core.action import JobSpec, ScriptType
+from core.action import ScriptType
+from core.action.types import (
+    AnsibleScript,
+    AnsibleScriptParams,
+    ExecutionStyle,
+    JobDetails,
+    JobSpecV1,
+    PythonScript,
+    ScriptSpec,
+    SimpleInternalScript,
+)
 from core.bundle._constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET
 from core.bundle._definitions import (
     ActionAvailability,
@@ -37,7 +48,9 @@ from core.bundle._parsing.types import BundleParser, RootEntry, VersionTag
 from core.bundle._parsing.v_2_0.actions import ClusterObjectAction, ConfigApplyInternalScript
 from core.bundle._parsing.v_2_0.upgrades import UpgradeWithScripts
 from core.bundle._validate import check_config_definition, check_templates_are_correct
+from core.spec.types import FullSpecKey
 from core.templates._types import Template
+from core.types import Names
 
 BUNDLE_ROOT = Path(__file__).parent
 NESTED_DIR_NAME = "nested"
@@ -51,8 +64,37 @@ CASES_FROM_FILE_IN_NESTED = (
     ("full-nested", TEMPLATE_PATH, Path(TEMPLATE_PATH)),
 )
 
+
 # Latest contract version targeted by tests that need a concrete, up-to-date parser
 # (as opposed to get_parsers(), which cross-checks behavior shared across all versions).
+def build_script_spec(
+    key: str,
+    name: str,
+    script: AnsibleScript | PythonScript | SimpleInternalScript,
+    *,
+    display_name: str = "",
+    terminatable: bool = False,
+) -> ScriptSpec:
+    return ScriptSpec(
+        key=FullSpecKey(key),
+        names=Names(internal=name, display=display_name),
+        script=script,
+        details=JobDetails(terminatable=terminatable),
+    )
+
+
+def ansible_script(path: str, **params) -> AnsibleScript:
+    return AnsibleScript(type=ScriptType.ANSIBLE, path=path, params=AnsibleScriptParams(**params))
+
+
+def python_script(path: str) -> PythonScript:
+    return PythonScript(type=ScriptType.PYTHON, path=path, params=None)
+
+
+def simple_internal_script(name: str) -> SimpleInternalScript:
+    return SimpleInternalScript(type=ScriptType.INTERNAL, path=name, params=None)
+
+
 CONTRACT_VERSION: Final = "2.1"
 MAIN_VENV: Final = "2.21"
 
@@ -176,7 +218,7 @@ class _TestTemplate:
                         action_allow_to_terminate=False,
                     )
 
-                    self.assertEqual(result[0].script, str(expected_path))
+                    self.assertEqual(result.scripts["/0"].script.path, str(expected_path))
 
     class ParserExtraFields(ParserTestCase):
         @abstractmethod
@@ -466,10 +508,155 @@ class TestServiceManage(TestCase):
                 result = parser.parse_scripts(
                     scripts, template_path=Path(), action_allow_to_terminate=False, mode="action"
                 )
-                script, *_ = result
+                script_spec = result.scripts["/0"]
+                params = script_spec.script.params
 
-                self.assertListEqual(script.params["operation"], ["a", "b"])
-                self.assertEqual(script.params["services"], "very nice, awesome")
+                # extra params of an ansible script are kept as they are, no matter their names
+                self.assertListEqual(params.operation, ["a", "b"])
+                self.assertEqual(params.services, "very nice, awesome")
+
+
+class TestScriptsConversion(TestCase):
+    """Conversion of DSL spellings that mean the same thing into a single spec representation"""
+
+    def parse(self, as_yaml: str) -> JobSpecV1:
+        _, parser = get_parsers()[-1]
+        return parser.parse_scripts(
+            yaml.safe_load(as_yaml), template_path=Path(), action_allow_to_terminate=False, mode="action"
+        )
+
+    def test_unset_ansible_params_spellings_are_equal(self):
+        # `params` of an ansible script is the only one the DSL lets spell "empty" in all three ways
+        absent = """
+        - name: s
+          script: s.yaml
+          script_type: ansible
+        """
+        explicit_null = """
+        - name: s
+          script: s.yaml
+          script_type: ansible
+          params:
+        """
+        empty_map = """
+        - name: s
+          script: s.yaml
+          script_type: ansible
+          params: {}
+        """
+
+        specs = [self.parse(case) for case in (absent, explicit_null, empty_map)]
+
+        self.assertEqual(specs[0], specs[1])
+        self.assertEqual(specs[0], specs[2])
+        # they mean "no params of our own", which for ansible is its own defaults
+        self.assertEqual(specs[0].scripts["/0"].script.params.ansible_tags, "")
+
+    def test_scripts_without_params_get_none(self):
+        # neither python nor simple internal scripts accept `params` in the DSL at all
+        spec = self.parse(
+            """
+            - name: py
+              script: s.py
+              script_type: python
+            - name: clean
+              script: before_upgrade_clean
+              script_type: internal
+            """
+        )
+
+        self.assertIsNone(spec.scripts["/0"].script.params)
+        self.assertIsNone(spec.scripts["/1"].script.params)
+
+    def test_keys_follow_declaration_order(self):
+        spec = self.parse(
+            """
+            - name: first
+              script: a.yaml
+              script_type: ansible
+            - name: second
+              script: b.yaml
+              script_type: ansible
+            """
+        )
+
+        self.assertEqual(list(spec.scripts), ["/0", "/1"])
+        self.assertEqual([script.key for script in spec.scripts.values()], ["/0", "/1"])
+        self.assertEqual(spec.hierarchy.fields, ["0", "1"])
+        self.assertEqual(spec.hierarchy.rule, ExecutionStyle.SEQUENCE)
+
+    def test_bundle_switch_in_rendered_action_fail(self):
+        # the DSL union lets it through, so parsing rejects it the way `check_actions` does statically
+        as_yaml = """
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+        """
+
+        with self.assertRaises(BundleValidationError) as err:
+            self.parse(as_yaml)
+
+        self.assertIn("bundle_switch is disallowed", str(err.exception))
+
+    @patch("core.bundle._parsing.shared.parser.check_execution_hierarchy")
+    def test_rendered_scripts_are_checked_for_hierarchy(self, check_mock: Mock):
+        # rendered scripts never reach bundle validation, so parsing has to run the check itself
+        spec = self.parse(
+            """
+            - name: s
+              script: s.yaml
+              script_type: ansible
+            """
+        )
+
+        check_mock.assert_called_once_with(spec=spec)
+
+    def test_terminatable_is_off_unless_stated(self):
+        spec = self.parse(
+            """
+            - name: silent
+              script: a.yaml
+              script_type: ansible
+            - name: loud
+              script: b.yaml
+              script_type: ansible
+              allow_to_terminate: true
+            """
+        )
+
+        self.assertFalse(spec.scripts["/0"].details.terminatable)
+        self.assertTrue(spec.scripts["/1"].details.terminatable)
+
+    def test_internal_scripts_are_never_terminatable(self):
+        spec = self.parse(
+            """
+            - name: clean
+              script: before_upgrade_clean
+              script_type: internal
+              allow_to_terminate: true
+            """
+        )
+
+        self.assertFalse(spec.scripts["/0"].details.terminatable)
+
+    def test_action_level_terminate_propagates_to_scripts(self):
+        _, parser = get_parsers()[-1]
+        as_yaml = """
+        - name: ansible
+          script: a.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+        """
+
+        spec = parser.parse_scripts(
+            yaml.safe_load(as_yaml), template_path=Path(), action_allow_to_terminate=True, mode="upgrade"
+        )
+
+        self.assertTrue(spec.scripts["/0"].details.terminatable)
+        # ... except internal ones, which have no process to terminate
+        self.assertFalse(spec.scripts["/1"].details.terminatable)
 
 
 class TestUpgradeScripts(TestCase):
@@ -1511,80 +1698,42 @@ class TestBundleDefinitionConversion(TestCase):
             "name": "parent",
             "version": "1",
         }
-        script_defaults = {
-            "params": {},
-            "allow_to_terminate": False,
-            "state_on_fail": "",
-            "multi_state_on_fail_set": [],
-            "multi_state_on_fail_unset": [],
-        }
-
         actions = [
             ActionDefinition(
                 name="simple_job",
                 display_name="simple_job",
                 venv=MAIN_VENV,
-                scripts=[
-                    JobSpec(
-                        name="simple_job",
-                        display_name="simple_job",
-                        script="wow.yaml",
-                        script_type=ScriptType.ANSIBLE,
-                        **script_defaults,
-                    )
-                ],
+                scripts=JobSpecV1.from_scripts(
+                    build_script_spec("/0", "simple_job", ansible_script("wow.yaml")),
+                ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
                 name="simple_task",
                 display_name="Awesome ma I",
                 venv=MAIN_VENV,
-                scripts=[
-                    JobSpec(
-                        name="first",
-                        display_name="first",
-                        script="inner/root.yaml",
-                        script_type=ScriptType.ANSIBLE,
-                        **script_defaults,
-                    ),
-                    JobSpec(
-                        name="second",
-                        display_name="Special",
-                        script="another.yaml",
-                        script_type=ScriptType.ANSIBLE,
-                        **script_defaults,
-                    ),
-                ],
+                scripts=JobSpecV1.from_scripts(
+                    build_script_spec("/0", "first", ansible_script("inner/root.yaml")),
+                    build_script_spec("/1", "second", ansible_script("another.yaml"), display_name="Special"),
+                ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
             ActionDefinition(
                 name="not_full_states",
                 display_name="not_full_states",
                 venv=MAIN_VENV,
-                scripts=[
-                    JobSpec(
-                        name="not_full_states",
-                        display_name="not_full_states",
-                        script="x.py",
-                        script_type=ScriptType.PYTHON,
-                        **script_defaults,
-                    )
-                ],
+                scripts=JobSpecV1.from_scripts(
+                    build_script_spec("/0", "not_full_states", python_script("x.py")),
+                ),
                 available_at=ActionAvailability(states="any", multi_states="any"),
             ),
             ActionDefinition(
                 name="not_full_masking",
                 display_name="not_full_masking",
                 venv=MAIN_VENV,
-                scripts=[
-                    JobSpec(
-                        name="not_full_masking",
-                        display_name="not_full_masking",
-                        script="x.py",
-                        script_type=ScriptType.PYTHON,
-                        **script_defaults,
-                    )
-                ],
+                scripts=JobSpecV1.from_scripts(
+                    build_script_spec("/0", "not_full_masking", python_script("x.py")),
+                ),
                 unavailable_at=ActionAvailability(states=["o"], multi_states=[]),
             ),
         ]
@@ -1719,14 +1868,6 @@ class TestBundleDefinitionConversion(TestCase):
             "editions-yet_custom_state_available-a_n_y_state_on_success-"
         )
 
-        script_defaults = {
-            "params": {},
-            "allow_to_terminate": False,
-            "state_on_fail": "",
-            "multi_state_on_fail_set": [],
-            "multi_state_on_fail_unset": [],
-        }
-
         upgrades = [
             UpgradeDefinition(
                 name="full",
@@ -1762,22 +1903,12 @@ class TestBundleDefinitionConversion(TestCase):
                     display_name="Upgrade: action-like",
                     venv=MAIN_VENV,
                     available_at=ActionAvailability(states="any", multi_states="any"),
-                    scripts=[
-                        JobSpec(
-                            name="first",
-                            display_name="first",
-                            script="root.yaml",
-                            script_type=ScriptType.ANSIBLE,
-                            **script_defaults,
+                    scripts=JobSpecV1.from_scripts(
+                        build_script_spec("/0", "first", ansible_script("root.yaml")),
+                        build_script_spec(
+                            "/1", "second", simple_internal_script("bundle_switch"), display_name="Special"
                         ),
-                        JobSpec(
-                            name="second",
-                            display_name="Special",
-                            script="bundle_switch",
-                            script_type=ScriptType.INTERNAL,
-                            **script_defaults,
-                        ),
-                    ],
+                    ),
                 ),
             ),
         ]
