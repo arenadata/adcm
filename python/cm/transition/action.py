@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import cast
+from typing import Final, cast
 
 from core.action import operations
 from core.result import Fail, Success
@@ -28,6 +28,8 @@ from core.types import (
     ProviderObjectDesc,
 )
 import core
+
+_LDAP_INTEGRATION_NAME: Final = core.config.names.ensure_full_name("ldap_integration")
 
 
 @dataclass(slots=True)
@@ -53,7 +55,7 @@ class RetrieveStartImpossibleReason:
                     owner=CoreObjectDescriptor(id=target_desc.id, type=ADCMCoreType.ADCM)
                 )
                 result = operations.detect_start_impossible_reason_for_adcm(
-                    ldap_integration_attr=adcm_config.attributes["/ldap_integration"]
+                    ldap_integration_attr=adcm_config.attributes[_LDAP_INTEGRATION_NAME]
                 )
 
                 match result:

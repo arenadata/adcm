@@ -58,7 +58,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
     def execute_plugin(self, task: Task, call_arguments: str | dict) -> CallResult:
         job, *_ = self.get_task_jobs(task.id)
-        create_related_configs(job_id=job.id, owner=task.owner)
+        create_related_configs(job_id=job.runtime.id, owner=task.owner)
 
         executor = self.prepare_executor(
             executor_type=ADCMConfigPluginExecutor,

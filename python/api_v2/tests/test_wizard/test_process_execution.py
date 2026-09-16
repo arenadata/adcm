@@ -30,6 +30,7 @@ from cm.models import (
     Process,
     ProcessStep,
 )
+from cm.tests.scripts import build_plan, build_script_spec
 from core.dynamic_bundle.types import ContextGathererI
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
@@ -429,19 +430,14 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
             "step_2_mapping": [
                 {"service": self.service_1.name, "component": self.component_1.name, "operation": "remove"}
             ],
-            "step_3_operation": [
-                {
-                    "name": "sleep_script",
-                    "params": {},
-                    "script": "wizard_jinja/scripts/sleep.yaml",
-                    "script_type": "ansible",
-                    "display_name": "Sleep",
-                    "state_on_fail": "",
-                    "allow_to_terminate": False,
-                    "multi_state_on_fail_set": [],
-                    "multi_state_on_fail_unset": [],
-                }
-            ],
+            "step_3_operation": build_plan(
+                build_script_spec(
+                    "/0",
+                    "sleep_script",
+                    display_name="Sleep",
+                    path="wizard_jinja/scripts/sleep.yaml",
+                ),
+            ),
         }
 
         cluster, service, component = self.cluster_1, self.service_1, self.component_1
@@ -589,7 +585,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 # third operation step
                 process.refresh_from_db()
                 step_3_operation = ProcessStep.objects.get(process=process, name="step_3_operation")
-                self.assertListEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
+                self.assertEqual(step_3_operation.step_spec, expected_step_spec[step_3_operation.name])
                 self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
                 with expect_task_launched() as launched:

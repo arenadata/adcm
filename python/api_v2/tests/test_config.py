@@ -131,6 +131,29 @@ class TestClusterConfig(ADCMDjangoAPISuite):
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
 
+    def test_create_adcm_meta_key_without_root_prefix_fail(self):
+        data = {
+            "config": {
+                "activatable_group": {"integer": 100},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            # same attribute as in `test_create_success`, but keyed without the leading "/",
+            # which makes it not a full name and thus not a key of anything in specification
+            "adcmMeta": {"activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST, response.json())
+        self.assertEqual(response.json()["code"], "ATTRIBUTE_ERROR")
+        self.assertEqual(
+            response.json()["desc"],
+            "Incorrect adcmMeta parameter key: Full key is expected to start with '/', got 'activatable_group'",
+        )
+
     def test_create_more_than_64_bit_number(self):
         large_int = 8**35
         self.assertTrue(large_int.bit_length() > 64)

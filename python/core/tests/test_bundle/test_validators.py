@@ -17,7 +17,18 @@ from unittest.mock import Mock, patch
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from core import config
-from core.action import JobSpec
+from core.action.types import (
+    AnsibleScript,
+    AnsibleScriptParams,
+    ExecutionStyle,
+    HcApplyScript,
+    HcApplyScriptParams,
+    JobHierarchyLevel,
+    JobSpecV1,
+    ScriptSpec,
+    ScriptType,
+    SimpleInternalScript,
+)
 from core.bundle._definitions import (
     ActionDefinition,
     ConfigDefinition,
@@ -35,6 +46,7 @@ from core.bundle._validate import (
     check_bundle_switch_amount_for_upgrade_action,
     check_config_defaults,
     check_display_names_are_unique,
+    check_execution_hierarchy,
     check_exported_values_exists_in_config,
     check_import_defaults_exist_in_config,
     check_mm_host_action_is_allowed,
@@ -43,6 +55,7 @@ from core.bundle._validate import (
     check_upgrades,
 )
 from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
+from core.spec.types import FullSpecKey
 from core.templates._types import (
     Jinja2Engine,
     Jinja2Template,
@@ -54,10 +67,14 @@ from core.templates._types import (
 )
 from core.tests.doubles.config import build_config_service_with_fakes
 from core.tests.test_config.utils import name_id
+from core.types import Names
 
 CLUSTER = "cluster"
 SERVICE = "service"
 COMPONENT = "component"
+
+SEQUENCE = ExecutionStyle.SEQUENCE
+PARALLEL = ExecutionStyle.PARALLEL
 
 
 def make_def(key, **kwargs):
@@ -83,19 +100,36 @@ def make_upgrade(**kwargs):
     return UpgradeDefinition(**(defaults | kwargs))
 
 
-def make_script(**kwargs):
-    defaults = {
-        "script": "aaa.yaml",
-        "script_type": "ansible",
-        "allow_to_terminate": False,
-        "name": "aaa",
-        "display_name": "aaa",
-        "state_on_fail": "",
-        "multi_state_on_fail_set": [],
-        "multi_state_on_fail_unset": [],
-        "params": {},
-    }
-    return JobSpec(**(defaults | kwargs))
+def make_scripts_spec(*scripts: dict) -> JobSpecV1:
+    """
+    Build an execution plan out of short script descriptions, one sequential level deep.
+
+    Positions in the given order become node keys, the same way parsing assigns them.
+    """
+
+    return JobSpecV1.from_scripts(
+        *(
+            ScriptSpec(
+                key=FullSpecKey(f"/{position}"),
+                names=Names(internal=script.get("name", "aaa")),
+                script=_make_script(script),
+            )
+            for position, script in enumerate(scripts)
+        )
+    )
+
+
+def _make_script(script: dict) -> AnsibleScript | SimpleInternalScript | HcApplyScript:
+    match script.get("script_type", "ansible"), script.get("script", "aaa.yaml"):
+        case "ansible", path:
+            return AnsibleScript(type=ScriptType.ANSIBLE, path=path, params=AnsibleScriptParams())
+        case "internal", "hc_apply":
+            return HcApplyScript(type=ScriptType.INTERNAL, path="hc_apply", params=HcApplyScriptParams())
+        case "internal", name:
+            return SimpleInternalScript(type=ScriptType.INTERNAL, path=name, params=None)
+        case script_type, _:
+            message = f"Test helper can't build a script of type {script_type}"
+            raise NotImplementedError(message)
 
 
 def make_config(**kwargs):
@@ -113,6 +147,51 @@ def make_config(**kwargs):
     result = defaults | kwargs
     result["key"] = tuple(result.pop("name").split("/"))
     return ConfigParamPlainSpec(**result)
+
+
+def make_level(rule: ExecutionStyle, **children: JobHierarchyLevel):
+    return JobHierarchyLevel(rule=rule, fields=list(children), child_groups=dict(children))
+
+
+class TestExecutionHierarchy(TestCase):
+    """
+    Restrictions on what a bundle may declare.
+
+    They are about declaration only: operations over a plan must cope with any depth.
+    """
+
+    def check(self, hierarchy: JobHierarchyLevel) -> None:
+        spec = JobSpecV1()
+        spec.hierarchy = hierarchy
+        check_execution_hierarchy(spec=spec)
+
+    def test_flat_plan_success(self):
+        self.check(make_level(SEQUENCE))
+
+    def test_first_declared_level_may_repeat_sequential_root_success(self):
+        # the root is sequential by definition, not by declaration, so it doesn't count as a repeat
+        self.check(make_level(SEQUENCE, group=make_level(SEQUENCE)))
+
+    def test_alternating_levels_success(self):
+        self.check(make_level(SEQUENCE, group=make_level(PARALLEL, nested=make_level(SEQUENCE))))
+
+    def test_repeated_style_deeper_fail(self):
+        for case, hierarchy in (
+            ("sequence in sequence", make_level(SEQUENCE, g=make_level(SEQUENCE, n=make_level(SEQUENCE)))),
+            ("parallel in parallel", make_level(SEQUENCE, g=make_level(PARALLEL, n=make_level(PARALLEL)))),
+        ):
+            with self.subTest(case), self.assertRaises(BundleValidationError) as err:
+                self.check(hierarchy)
+
+            self.assertIn("must alternate execution style", err.exception.message)
+
+    def test_too_deep_fail(self):
+        hierarchy = make_level(SEQUENCE, g=make_level(PARALLEL, n=make_level(SEQUENCE, deepest=make_level(PARALLEL))))
+
+        with self.assertRaises(BundleValidationError) as err:
+            self.check(hierarchy)
+
+        self.assertIn("levels of groups at most", err.exception.message)
 
 
 class TestCheckDisplayNamesAreUnique(TestCase):
@@ -434,9 +513,7 @@ class TestBundleValidation(TestCase):
             ),
         ]:
             with self.subTest(case):
-                upgrade = make_upgrade(
-                    action=make_action(scripts=[make_script(**script) for script in correct_scripts])
-                )
+                upgrade = make_upgrade(action=make_action(scripts=make_scripts_spec(*correct_scripts)))
 
                 check_bundle_switch_amount_for_upgrade_action(upgrade)
 
@@ -454,9 +531,7 @@ class TestBundleValidation(TestCase):
             ("multi_switch", multiple_switch_err, [ansible, bundle_switch, ansible, bundle_switch]),
         ]:
             with self.subTest(case):
-                upgrade = make_upgrade(
-                    action=make_action(scripts=[make_script(**script) for script in correct_scripts])
-                )
+                upgrade = make_upgrade(action=make_action(scripts=make_scripts_spec(*correct_scripts)))
 
                 with self.assertRaises(BundleValidationError) as err:
                     check_bundle_switch_amount_for_upgrade_action(upgrade)

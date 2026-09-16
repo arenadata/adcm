@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Literal, Protocol, TypeAlias
 import time
 
-from core.action._types import ExecutionStatus, JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo
+from core.action.types import ExecutionStatus, JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo
 from core.shortcuts import UTC
 from core.types import PID, JobID, TaskID
 

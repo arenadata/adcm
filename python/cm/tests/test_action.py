@@ -27,6 +27,8 @@ from core.action import (
     TaskMappingDelta,
     TypeBasedConfigApplyTarget,
 )
+from core.action.job import JobShortFilter
+from core.action.operations import flatten_execution_plan, to_rich_jobs
 from core.cluster import ClusterService
 from core.config import ConfigService
 from core.legacy.job.runners import (
@@ -58,6 +60,18 @@ from cm.legacy.services.job.run.target_factories import (
     prepare_ansible_environment,
 )
 from cm.models import Action, Component, ConfigLog, Host, HostComponent, MaintenanceMode, Service, get_object_cluster
+
+
+def set_dummy_job_spec(job: object, params: object) -> None:
+    """Give a dummy job the bits of a plan node the internal scripts read"""
+
+    script = DummyObject()
+    script.params = params
+
+    spec = DummyObject()
+    spec.script = script
+
+    job.spec = spec
 
 
 class DummyObject:
@@ -123,10 +137,15 @@ class TestActionParams(ADCMDjangoAPISuite):
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task = JobRepo().get_task(id=response.json()["id"])
-        job, *_ = JobRepo().get_task_jobs(task_id=task.id)
+        repo = JobRepo()
+        task = repo.get_task(id=response.json()["id"])
 
-        job_dir: Path = self.directories.run / str(job.id)
+        plan = repo.get_execution_plan(task_id=task.id)
+        task_jobs = repo.find_jobs_short(JobShortFilter(task_ids=[task.id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+        job, *_ = (jobs_by_key[key] for key in flatten_execution_plan(plan))
+
+        job_dir: Path = self.directories.run / str(job.runtime.id)
         job_dir.mkdir(parents=True)
         prepare_ansible_environment(
             task=task,
@@ -303,7 +322,7 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
 
         params = DummyObject()
         params.rules = rules
-        job.params = params
+        set_dummy_job_spec(job, params)
 
         return task, job
 
@@ -326,8 +345,9 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
             )
         ]
 
-        job.id = 111
-        job.params = params
+        job.runtime = DummyObject()
+        job.runtime.id = 111
+        set_dummy_job_spec(job, params)
 
         return task, job
 
@@ -468,8 +488,9 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
         params = DummyObject()
         params.operation = "add"
         params.services = [ServiceManageServiceEntry.model_validate(entry) for entry in services]
-        job.params = params
-        job.id = 112
+        set_dummy_job_spec(job, params)
+        job.runtime = DummyObject()
+        job.runtime.id = 112
 
         return task, job
 
@@ -494,7 +515,7 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
             self.assertEqual(Component.objects.filter(service=service).count(), 2)
             self.assertIsNotNone(service.config)
 
-        related_configs_mock.assert_called_once_with(job_id=job.id, owner=task.owner)
+        related_configs_mock.assert_called_once_with(job_id=job.runtime.id, owner=task.owner)
 
     def test_internal_service_manage_add_existing_service_success(self):
         task, job = self.get_dummy_service_manage_task_job(

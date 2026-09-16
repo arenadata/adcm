@@ -142,5 +142,5 @@ class TestTemplateRendering(WithDishkaContainer, BusinessLogicMixin, BaseTestCas
                 template=template, args=args, bundle_context=context, action_allow_to_terminate=False
             )
 
-        self.assertEqual(len(scripts), 1)
-        self.assertEqual(scripts[0].script, "wizard_jinja/scripts/sleep.yaml")
+        self.assertEqual(list(scripts.scripts), ["/0"])
+        self.assertEqual(scripts.scripts["/0"].script.path, "wizard_jinja/scripts/sleep.yaml")

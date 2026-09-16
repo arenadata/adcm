@@ -17,19 +17,19 @@ from typing import Any, Protocol, TypeAlias
 
 from pydantic import BaseModel, Field
 
-from core.action._types import (
+from core.action.types import (
     ActionInfo,
     AssociatedProcess,
     CallingProcess,
     ExecutionStatus,
     HostComponentChanges,
-    Job,
     JobShortInfo,
-    JobSpec,
+    JobSpecV1,
     Task,
     TaskMappingDelta,
     TaskShortInfo,
 )
+from core.config import ParameterLevelName
 from core.types import (
     ActionID,
     ActionTargetDescriptor,
@@ -40,7 +40,7 @@ from core.types import (
     TaskID,
 )
 
-PreparedConfigValues: TypeAlias = dict[str, Any]
+PreparedConfigValues: TypeAlias = dict[ParameterLevelName, Any]
 HasChanged: TypeAlias = bool
 ChangedAmount: TypeAlias = int
 
@@ -92,9 +92,17 @@ class LogCreateDTO(BaseModel):
     format: str
 
 
-class TaskUpdateMainFieldsDTO(BaseModel):
-    mapping_delta: TaskMappingDelta | None
-    configuration: PreparedConfigValues | None
+class PostInitTaskAttributesDTO(BaseModel):
+    """
+    Everything a task gets once, right after it is created.
+
+    They can't be part of its creation: preparing the configuration needs the task's own id
+    to name files with, and the plan of a template-rendered action is built out of that configuration.
+    """
+
+    execution_plan: JobSpecV1
+    mapping_delta: TaskMappingDelta | None = None
+    configuration: PreparedConfigValues | None = None
 
 
 class TaskMutableFieldsDTO(BaseModel):
@@ -143,18 +151,11 @@ class JobRepoI(Protocol):
         """Should raise `NotFoundError` on fail"""
         ...
 
-    def get_job(self, id: int) -> Job:  # noqa: A002
+    def find_scripts_of_action(self, action_id: ActionID) -> JobSpecV1:
+        ...
+
+    def get_execution_plan(self, task_id: TaskID) -> JobSpecV1:
         """Should raise `NotFoundError` on fail"""
-        ...
-
-    def find_jobs_of_task(self, task_id: TaskID) -> tuple[Job, ...]:
-        ...
-
-    # DEPRECATED, duplicate of `find_jobs_of_task`
-    def get_task_jobs(self, task_id: int) -> Iterable[Job]:
-        ...
-
-    def find_scripts_of_action(self, action_id: ActionID) -> tuple[JobSpec, ...]:
         ...
 
     def find_action_owner(self, action_id: ActionID, target: ActionTargetDescriptor) -> CoreObjectDescriptor:
@@ -177,7 +178,7 @@ class JobRepoI(Protocol):
         ...
 
     # NEED REVIEW, from ActionRepoInterface
-    def get_job_specs(self, id: ActionID) -> Iterable[JobSpec]:  # noqa: A002
+    def get_job_specs(self, id: ActionID) -> JobSpecV1:  # noqa: A002
         ...
 
     # NEED REVIEW
@@ -196,7 +197,8 @@ class JobRepoI(Protocol):
     def create_task(self, payload: TaskCreateDTO) -> TaskID:
         ...
 
-    def create_jobs(self, task_id: TaskID, scripts: Iterable[JobSpec]) -> None:
+    def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> tuple[JobShortInfo, ...]:
+        """Create a job per script of the plan, reporting the jobs it made"""
         ...
 
     def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
@@ -204,7 +206,7 @@ class JobRepoI(Protocol):
 
     # update
 
-    def fill_task_mapping_and_configuration(self, task_id: TaskID, payload: TaskUpdateMainFieldsDTO) -> None:
+    def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
         ...
 
     def change_task_status(self, id: TaskID, previous: ExecutionStatus, new: ExecutionStatus) -> HasChanged:  # noqa: A002

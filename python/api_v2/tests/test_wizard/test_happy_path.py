@@ -24,6 +24,7 @@ from cm.models import (
     ProcessStep,
     Service,
 )
+from cm.tests.scripts import build_plan, build_script_spec
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from tests.client import APINode
@@ -103,19 +104,14 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
             "step_2_mapping": [
                 {"service": cls.component.service.name, "component": cls.component.name, "operation": "remove"}
             ],
-            "step_3_operation": [
-                {
-                    "name": "sleep_script",
-                    "params": {},
-                    "script": "wizard_jinja/scripts/sleep.yaml",
-                    "script_type": "ansible",
-                    "display_name": "Sleep",
-                    "state_on_fail": "",
-                    "allow_to_terminate": False,
-                    "multi_state_on_fail_set": [],
-                    "multi_state_on_fail_unset": [],
-                }
-            ],
+            "step_3_operation": build_plan(
+                build_script_spec(
+                    "/0",
+                    "sleep_script",
+                    display_name="Sleep",
+                    path="wizard_jinja/scripts/sleep.yaml",
+                ),
+            ),
         }
 
     def check_wizard_action_retrieval(self, ahg: ActionHostGroup, action: Action) -> None:
@@ -216,7 +212,7 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
         process.refresh_from_db()
 
         step_3_operation = ProcessStep.objects.get(process=process, name=name)
-        self.assertListEqual(step_3_operation.step_spec, self.expected_step_spec[step_3_operation.name])
+        self.assertEqual(step_3_operation.step_spec, self.expected_step_spec[step_3_operation.name])
         self.assertEqual(step_3_operation.state, ProcessStepState.CREATED.value)
 
         with expect_task_launched() as launched:

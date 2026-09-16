@@ -16,12 +16,16 @@ from datetime import datetime
 from enum import Enum
 from itertools import chain
 from pathlib import Path
-from typing import Annotated, Any, Generic, Literal, NamedTuple, TypeAlias, TypedDict, TypeGuard, TypeVar
+from typing import Annotated, Any, Generic, Literal, NamedTuple, TypeAlias, TypeGuard, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import Self
 
 from core.constants import MM_ACTION_NAMES
+from core.spec.hierarchy import HierarchyLevel
+from core.spec.keys import full_key_to_level_keys
+from core.spec.types import FullSpecKey
 from core.templates import Template
 from core.types import (
     ActionID,
@@ -33,6 +37,7 @@ from core.types import (
     JobID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
+    Names,
     ObjectID,
     PrototypeDescriptor,
     PrototypeID,
@@ -82,23 +87,6 @@ class ExecutionEnvironment:
     worker_id: int | str | None
 
 
-class JobSpec(BaseModel):
-    # basic info
-    name: str
-    display_name: str
-    script: str
-    script_type: ScriptType
-    allow_to_terminate: bool
-
-    # states
-    state_on_fail: str
-    multi_state_on_fail_set: list
-    multi_state_on_fail_unset: list
-
-    # extra
-    params: dict
-
-
 class AssociatedProcess(BaseModel):
     # The process passed explicitly when launching the action.
     id: int
@@ -124,9 +112,9 @@ class TaskMappingDelta:
 
 
 class StateChanges(NamedTuple):
-    state: str | None
-    multi_state_set: tuple[str, ...]
-    multi_state_unset: tuple[str, ...]
+    state: str | None = None
+    multi_state_set: tuple[str, ...] = ()
+    multi_state_unset: tuple[str, ...] = ()
 
 
 class HcAclRule(NamedTuple):
@@ -219,73 +207,6 @@ class ConfigApplyScriptParams:
 class ServiceManageScriptParams:
     operation: Literal["add"]
     services: list[ServiceManageServiceEntry]
-
-
-# JOB
-#
-# `type` and `script` act as discriminators of the `Job` union below, so they're mandatory here.
-# Unlike loosely-typed intermediate bundle-parsing dicts (where their presence can't always
-# be relied on), construction of any of these types must supply both explicitly.
-
-ScriptTypeT = TypeVar("ScriptTypeT", bound=ScriptType)
-ScriptNameT = TypeVar("ScriptNameT", bound=str)
-ParamsT = TypeVar("ParamsT")
-
-
-class _BaseJob(BaseModel, Generic[ScriptTypeT, ScriptNameT, ParamsT]):
-    id: int
-    pid: int
-    name: str
-    display_name: str
-    type: ScriptTypeT
-    script: ScriptNameT
-    status: ExecutionStatus
-
-    params: ParamsT
-
-    on_fail: StateChanges
-
-    is_termination_allowed: bool
-
-    execution_env: ExecutionEnvironment
-
-
-class AnsibleJob(_BaseJob[Literal[ScriptType.ANSIBLE], str, AnsibleScriptParams]):
-    pass
-
-
-class PythonJob(_BaseJob[Literal[ScriptType.PYTHON], str, None]):
-    pass
-
-
-# common parent of all internal scripts, so it's possible to match/isinstance-check
-# against "any internal script job" without enumerating every concrete script
-class InternalJob(_BaseJob[Literal[ScriptType.INTERNAL], ScriptNameT, ParamsT], Generic[ScriptNameT, ParamsT]):
-    pass
-
-
-class SimpleInternalJob(InternalJob[Literal["bundle_switch", "bundle_revert", "before_upgrade_clean"], None]):
-    pass
-
-
-class HcApplyJob(InternalJob[Literal["hc_apply"], HcApplyScriptParams | None]):
-    pass
-
-
-class ConfigApplyJob(InternalJob[Literal["config_apply"], ConfigApplyScriptParams]):
-    pass
-
-
-class ServiceManageJob(InternalJob[Literal["service_manage"], ServiceManageScriptParams]):
-    pass
-
-
-_InternalJobVariants = Annotated[
-    SimpleInternalJob | HcApplyJob | ConfigApplyJob | ServiceManageJob,
-    Field(discriminator="script"),
-]
-
-Job = Annotated[AnsibleJob | PythonJob | _InternalJobVariants, Field(discriminator="type")]
 
 
 class BundleInfo(NamedTuple):
@@ -384,9 +305,18 @@ class TaskRunnerEnvironment(str, Enum):
     CELERY = "celery"
 
 
-class WorkerInfo(TypedDict):
-    environment: TaskRunnerEnvironment
-    worker_id: WorkerTaskID
+@dataclass(slots=True, frozen=True)
+class WorkerInfo:
+    """
+    Where a task or a job is being executed.
+
+    All fields are optional, because there is nothing to fill them with
+    until execution of what they describe actually starts.
+    """
+
+    environment: TaskRunnerEnvironment | None = None
+    worker_id: WorkerTaskID | None = None
+    pid: int = 0
 
 
 @dataclass
@@ -412,8 +342,145 @@ class TaskShortInfo:
 
 @dataclass(slots=True, frozen=True)
 class JobShortInfo:
+    """Everything about a job that isn't its spec: the spec is reachable by `spec_key` from the task's plan"""
+
     id: JobID
     task_id: TaskID
+    spec_key: FullSpecKey
     finish_date: datetime | None
     worker: WorkerInfo
     status: ExecutionStatus
+
+
+# !===== Specification =====!
+
+
+@dataclass(slots=True)
+class JobDetails:
+    # `False` mirrors what the bundle DSL means by saying nothing,
+    # so a script that states nothing doesn't silently become terminatable
+    terminatable: bool = False
+
+
+# script by type
+
+ScriptTypeT = TypeVar("ScriptTypeT", bound=ScriptType)
+ScriptPathT = TypeVar("ScriptPathT", bound=str)
+ParamsT = TypeVar("ParamsT")
+
+
+# Made it BaseModel descendant for a stricter validation,
+# change it only if affects perfomance and you can ensure invariants.
+class _Script(BaseModel, Generic[ScriptTypeT, ScriptPathT, ParamsT]):
+    type: ScriptTypeT
+    # `path` is `script` in bundle DSL
+    path: ScriptPathT
+    params: ParamsT
+
+
+class AnsibleScript(_Script[Literal[ScriptType.ANSIBLE], str, AnsibleScriptParams]):
+    ...
+
+
+class PythonScript(_Script[Literal[ScriptType.PYTHON], str, None]):
+    ...
+
+
+# common parent of all internal scripts, so it's possible to match/isinstance-check
+# against "any internal script job" without enumerating every concrete script
+class _InternalScript(_Script[Literal[ScriptType.INTERNAL], ScriptPathT, ParamsT], Generic[ScriptPathT, ParamsT]):
+    ...
+
+
+class SimpleInternalScript(_InternalScript[Literal["bundle_switch", "bundle_revert", "before_upgrade_clean"], None]):
+    ...
+
+
+class HcApplyScript(_InternalScript[Literal["hc_apply"], HcApplyScriptParams | None]):
+    ...
+
+
+class ConfigApplyScript(_InternalScript[Literal["config_apply"], ConfigApplyScriptParams]):
+    ...
+
+
+class ServiceManageScript(_InternalScript[Literal["service_manage"], ServiceManageScriptParams]):
+    ...
+
+
+_InternalScriptVariants = Annotated[
+    SimpleInternalScript | HcApplyScript | ConfigApplyScript | ServiceManageScript,
+    Field(discriminator="path"),
+]
+
+Script: TypeAlias = Annotated[AnsibleScript | PythonScript | _InternalScriptVariants, Field(discriminator="type")]
+"""
+Any script that can be a node of an execution plan.
+
+`ScriptSpec` is a plain dataclass, so this union resolves only when it goes through pydantic:
+validate it with a `TypeAdapter` rather than instantiating `ScriptSpec` with a raw dict.
+"""
+
+
+# specs
+
+
+@dataclass(slots=True)
+class ScriptSpec:
+    key: FullSpecKey
+    names: Names
+    script: Script
+    # Default factories are specified for easier usage in tests,
+    # production code should state it all explicitly
+    on_fail: StateChanges = field(default_factory=StateChanges)
+    details: JobDetails = field(default_factory=JobDetails)
+
+
+@dataclass(slots=True)
+class GroupSpec:
+    key: FullSpecKey
+    names: Names
+
+
+class ExecutionStyle(str, Enum):
+    SEQUENCE = "sequence"
+    PARALLEL = "parallel"
+
+
+@dataclass(slots=True)
+class JobHierarchyLevel(HierarchyLevel[ExecutionStyle]):
+    @classmethod
+    def build_with_defaults(cls) -> Self:
+        return cls(rule=ExecutionStyle.SEQUENCE)
+
+
+class JobSpecV1(BaseModel):
+    hierarchy: JobHierarchyLevel = Field(default_factory=JobHierarchyLevel.build_with_defaults)
+    groups: dict[FullSpecKey, GroupSpec] = Field(default_factory=dict)
+    scripts: dict[FullSpecKey, ScriptSpec] = Field(default_factory=dict)
+
+    @classmethod
+    def from_scripts(cls, *scripts: ScriptSpec) -> Self:
+        """
+        Build a plan out of scripts that already know their keys.
+
+        Keys define the placement, so this only maps them into the plan and its hierarchy.
+        """
+
+        hierarchy = JobHierarchyLevel.build_with_defaults()
+
+        for script in scripts:
+            hierarchy.register(full_key_to_level_keys(script.key))
+
+        # everything is passed explicitly rather than mutated in place:
+        # mutating a default container leaves `model_fields_set` empty and lies
+        # to anything that asks the model what was actually set on it
+        return cls(hierarchy=hierarchy, groups={}, scripts={script.key: script for script in scripts})
+
+
+@dataclass(slots=True, frozen=True)
+class RichJob:
+    """A job paired with the plan node it was created for"""
+
+    spec: ScriptSpec
+    runtime: JobShortInfo

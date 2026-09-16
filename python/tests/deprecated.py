@@ -19,8 +19,8 @@ import tarfile
 
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
+from cm.impl.job.repo import JobRepo
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
     ADCM,
@@ -41,10 +41,19 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.action import Task
-from core.action.job import TaskPayloadDTO
+from core.action.job import (
+    LaunchOptions,
+    LogCreateDTO,
+    PostInitTaskAttributesDTO,
+    TaskCreateDTO,
+    TaskExtraInfo,
+    TaskPayloadDTO,
+)
+from core.action.job.errors import TaskCreateError
+from core.action.operations import to_rich_jobs
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
-from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic
 from rbac.models import Group, Policy, Role, RoleTypes, User
@@ -165,6 +174,62 @@ class BusinessLogicMixin(BundleLogicMixin):
         group.delete()
 
 
+def prepare_task_for_action(
+    target: ActionTargetDescriptor | CoreObjectDescriptor,
+    orm_owner: ADCM | Cluster | Service | Component | Provider | Host,
+    action: ActionID,
+    payload: TaskPayloadDTO,
+) -> Task:
+    """
+    Compose a task and its jobs directly, skipping the checks a real launch performs.
+
+    Lives here rather than in production code because nothing but tests ever wanted it:
+    tests that need a `Task` to feed somewhere, without running the action to get one.
+    """
+
+    job_repo = JobRepo()
+    owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
+    orm_action = Action.objects.select_related("prototype").get(id=action)
+
+    if payload.conf:
+        raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
+
+    create_dto = TaskCreateDTO(
+        owner=owner,
+        target=target.as_core_or_group_descriptor if not isinstance(target, CoreObjectDescriptor) else target,
+        action_id=action,
+        launch=LaunchOptions(is_verbose=payload.verbose, is_blocking=payload.is_blocking),
+        extra=TaskExtraInfo(
+            name=orm_action.name, display_name=orm_action.display_name, description=orm_action.description
+        ),
+    )
+
+    task_id = job_repo.create_task(payload=create_dto)
+    task = job_repo.get_task(task_id)
+
+    execution_plan = job_repo.get_job_specs(id=action)
+
+    if not execution_plan.scripts:
+        message = f"Can't compose task for action #{action}, because no associated jobs found"
+        raise TaskCreateError(message)
+
+    job_repo.set_post_init_task_attributes(
+        task_id=task.id, payload=PostInitTaskAttributesDTO(execution_plan=execution_plan)
+    )
+    created = job_repo.create_jobs(task_id=task.id, scripts=execution_plan)
+
+    logs = []
+    for job in to_rich_jobs(spec=execution_plan, jobs=created).values():
+        log_name = job.spec.script.type.value
+        logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stdout", format="txt"))
+        logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stderr", format="txt"))
+
+    if logs:
+        job_repo.create_logs(logs)
+
+    return task
+
+
 class TaskTestMixin:
     def prepare_task(
         self,
@@ -179,7 +244,6 @@ class TaskTestMixin:
         return prepare_task_for_action(
             target=ActionTargetDescriptor(id=target.id, type=target.type),
             orm_owner=owner,
-            orm_target=host or owner,
             action=action.id,
             payload=payload or TaskPayloadDTO(),
         )

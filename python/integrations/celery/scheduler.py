@@ -45,12 +45,12 @@ class CeleryTerminator(Terminator):
                 task_id=task.id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
             )
 
-        jobs = self.repo.find_jobs_of_task(task.id)
+        jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task.id]))
         # we assume that jobs can't be in scheduled/queued statuses,
         # when REVOKING/TERMINATING is uninteresting for this process,
         # it should be independent (at least I see it like that for now)
         running_jobs = tuple(job for job in jobs if job.status == ExecutionStatus.RUNNING)
-        job_id_celery_task_id_pairs = tuple(map(attrgetter("id", "execution_env.worker_id"), running_jobs))
+        job_id_celery_task_id_pairs = tuple(map(attrgetter("id", "worker.worker_id"), running_jobs))
 
         celery_task_ids = list(filter(None, map(itemgetter(1), job_id_celery_task_id_pairs)))
         if celery_task_ids:
@@ -61,7 +61,7 @@ class CeleryTerminator(Terminator):
             self.send_stop_executor_signal_for_job(job_id=job_id, celery_task_id=celery_task_id)
 
     def terminate_job(self, job: JobShortInfo) -> None:
-        self.send_stop_executor_signal_for_job(job_id=job.id, celery_task_id=job.worker["worker_id"])
+        self.send_stop_executor_signal_for_job(job_id=job.id, celery_task_id=job.worker.worker_id)
 
     def send_stop_executor_signal_for_job(self, job_id: int, celery_task_id: str | int | None) -> None:
         self.app.control.broadcast(
@@ -129,9 +129,7 @@ class CeleryTaskMonitor(TaskMonitor):
         self, task_with_jobs: tuple[TaskShortInfo, list[JobShortInfo]], celery_task_ids: set[str]
     ) -> TaskLivenessStatus:
         task, jobs = task_with_jobs
-        task_related_celery_ids = {task.worker.get("worker_id"), *(job.worker.get("worker_id") for job in jobs)} - {
-            None
-        }
+        task_related_celery_ids = {task.worker.worker_id, *(job.worker.worker_id for job in jobs)} - {None}
         if task_related_celery_ids.intersection(celery_task_ids):
             return TaskLivenessStatus.ALIVE
 

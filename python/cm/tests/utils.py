@@ -36,6 +36,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.tests.scripts import build_plan, build_script_spec
 
 
 def gen_name(prefix: str):
@@ -181,6 +182,9 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
     )
 
 
+GENERATED_SPEC_KEY = "/0"
+
+
 def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
     return TaskLog.objects.create(
         action=action or gen_action(prototype=obj.prototype),
@@ -189,6 +193,8 @@ def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
         task_object=obj,
         start_date=timezone.now(),
         finish_date=timezone.now(),
+        # a single node, which `gen_job_log` makes the job of
+        execution_plan=build_plan(build_script_spec(GENERATED_SPEC_KEY, "dummy")),
     )
 
 
@@ -196,6 +202,7 @@ def gen_job_log(task: TaskLog) -> JobLog:
     return JobLog.objects.create(
         task=task,
         status=JobStatus.CREATED,
+        spec_key=GENERATED_SPEC_KEY,
         script_type=ScriptType.ANSIBLE.value,
         script="main.yaml",
         start_date=timezone.now(),

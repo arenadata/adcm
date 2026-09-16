@@ -13,10 +13,12 @@
 from copy import deepcopy
 from uuid import uuid4
 
+from cm.impl.common.execution_plan import parse_execution_plan
 from cm.legacy.services.action_process.schema_validation import (
     ProcessOperationType,
 )
-from cm.models import Action, Component, ProcessStep, ProcessStepInput, TaskLog
+from cm.models import Action, Component, JobLog, ProcessStep, ProcessStepInput, TaskLog
+from cm.tests.scripts import build_plan, build_script_spec
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
@@ -90,26 +92,30 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
         self.assertEqual(sum(len(stage["steps"]) for stage in response_data["stages"]), process.steps.count())
 
         process_step = ProcessStep.objects.get(id=operation_step_id)
-        expected_spec = [
-            {
-                "name": "sleep_script",
-                "params": {"test_params": ["created"]},
-                "script": "wizard_jinja/scripts/sleep.yaml",
-                "script_type": "ansible",
-                "display_name": "Sleep",
-                "state_on_fail": "",
-                "allow_to_terminate": False,
-                "multi_state_on_fail_set": [],
-                "multi_state_on_fail_unset": [],
-            }
-        ]
-        self.assertListEqual(process_step.step_spec, expected_spec)
+        expected_spec = build_plan(
+            build_script_spec(
+                "/0",
+                "sleep_script",
+                display_name="Sleep",
+                path="wizard_jinja/scripts/sleep.yaml",
+                test_params=["created"],
+            ),
+        )
+        self.assertEqual(process_step.step_spec, expected_spec)
 
         task = TaskLog.objects.get(action=self.process_action_of_cluster)
         input_ = ProcessStepInput.objects.get(step_id=operation_step_id)
 
         self.assertIsNone(input_.configuration)
         self.assertEqual(input_.job_id, task.id)
+
+        # the step's plan is what the task runs, and each of its nodes got exactly one job
+        plan = parse_execution_plan(task.execution_plan)
+        self.assertEqual(plan, parse_execution_plan(process_step.step_spec))
+        self.assertEqual(
+            sorted(JobLog.objects.filter(task_id=task.id).values_list("spec_key", flat=True)),
+            sorted(plan.scripts),
+        )
 
         process.refresh_from_db()
         self.assertNotEqual(initial_sync_key, process.sync_key)

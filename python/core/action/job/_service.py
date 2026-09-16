@@ -12,10 +12,17 @@
 
 from dataclasses import dataclass
 
-from core.action._types import ExecutionStatus, JobSpec
-from core.action.job._repo import JobRepoI, LogCreateDTO, TaskCreateDTO, TaskUpdateMainFieldsDTO
+from core.action.job._repo import (
+    JobRepoI,
+    JobShortFilter,
+    LogCreateDTO,
+    PostInitTaskAttributesDTO,
+    TaskCreateDTO,
+)
 from core.action.job.errors import JobTerminationError, JobValidationError, TaskCreateError
 from core.action.job.operations import is_terminatable_status
+from core.action.operations import to_rich_job, to_rich_jobs
+from core.action.types import ExecutionStatus, JobSpecV1
 from core.types import ActionID, JobID, TaskID
 
 
@@ -23,26 +30,29 @@ from core.types import ActionID, JobID, TaskID
 class JobService:
     repo: JobRepoI
 
-    def retrieve_scripts(self, action_id: ActionID) -> tuple[JobSpec, ...]:
+    def retrieve_scripts(self, action_id: ActionID) -> JobSpecV1:
         return self.repo.find_scripts_of_action(action_id=action_id)
 
     def create_task(self, payload: TaskCreateDTO) -> TaskID:
         return self.repo.create_task(payload=payload)
 
-    def set_task_mapping_and_configuration(self, task_id: TaskID, payload: TaskUpdateMainFieldsDTO) -> None:
-        self.repo.fill_task_mapping_and_configuration(task_id=task_id, payload=payload)
+    def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
+        self.repo.set_post_init_task_attributes(task_id=task_id, payload=payload)
 
-    def create_jobs(self, task_id: TaskID, scripts: tuple[JobSpec, ...] = ()) -> None:
-        if not scripts:
+    def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> None:
+        if not scripts.scripts:
             message = "Can't compose task for action, because no associated jobs found"
             raise TaskCreateError(message)
 
-        self.repo.create_jobs(task_id=task_id, scripts=scripts)
+        created = self.repo.create_jobs(task_id=task_id, scripts=scripts)
+        jobs_by_key = to_rich_jobs(spec=scripts, jobs=created)
 
         logs = []
-        for job in self.repo.find_jobs_of_task(task_id=task_id):
-            logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
-            logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
+        for job in jobs_by_key.values():
+            # logs are named after the kind of script that writes them
+            log_name = job.spec.script.type.value
+            logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stdout", format="txt"))
+            logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stderr", format="txt"))
 
         if logs:
             self.repo.create_logs(logs)
@@ -64,9 +74,14 @@ class JobService:
             raise JobTerminationError(message)
 
     def terminate_job(self, job_id: JobID) -> None:
-        job = self.repo.get_job(job_id)
+        found_jobs = self.repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+        job = next(iter(found_jobs))
 
-        if not job.is_termination_allowed:
+        # a job on its own says nothing about whether it may be terminated, its plan node does
+        plan = self.repo.get_execution_plan(task_id=job.task_id)
+        script_spec = to_rich_job(spec=plan, job=job).spec
+
+        if not script_spec.details.terminatable:
             message = f"Job #{job_id} termination is not allowed due to action definition"
             raise JobValidationError(message)
 

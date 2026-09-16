@@ -18,8 +18,8 @@ from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.core.exceptions import ObjectDoesNotExist
+from tests.deprecated import prepare_task_for_action
 
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.context import get_inventory_data
 from cm.models import Action
 from cm.tests.test_inventory.base import BaseInventoryTestCase
@@ -208,9 +208,7 @@ class TestClusterHosts(BaseInventoryTestCase):
 
         action = Action.objects.get(prototype=service.prototype, name="action_on_service")
         target = CoreObjectDescriptor(id=service.id, type=ADCMCoreType.SERVICE)
-        task = prepare_task_for_action(
-            target=target, orm_owner=service, orm_target=service, action=action.id, payload=TaskPayloadDTO()
-        )
+        task = prepare_task_for_action(target=target, orm_owner=service, action=action.id, payload=TaskPayloadDTO())
 
         # imitate service deletion during task run (prev job deleted service)
         service.delete()

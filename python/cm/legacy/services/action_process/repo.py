@@ -33,6 +33,7 @@ from pydantic import RootModel
 import core
 
 from cm.converters import core_type_to_model
+from cm.impl.common.dto import to_update_payload
 from cm.legacy.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
 from cm.legacy.services.action_process.types import (
     ActionProcess,
@@ -152,13 +153,7 @@ def retrieve_process(process_id: ActionProcessID) -> ActionProcess:
 
 
 def update_step(step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
-    # patch for serialization of config (because of exclude_unset)
-    if data.step_spec is not None:
-        match data.step_spec:
-            case (core.config.spec.FullSpec(), _):
-                data.step_spec = (data.step_spec[0].model_dump(), data.step_spec[1])
-
-    ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
+    ProcessStep.objects.filter(id=step_id).update(**to_update_payload(data))
 
 
 def upsert_step_input(step_id: ActionProcessStepID, data: StepInputDTO) -> None:
@@ -193,7 +188,7 @@ def retrieve_previous_mapping_step_input_with_cumulative_delta(
 
 
 def update_process(process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
-    Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
+    Process.objects.filter(id=process_id).update(**to_update_payload(data))
 
 
 def update_process_sync_key(process_id: ActionProcessID, sync_key: UUID, new_sync_key: UUID) -> WasUpdated:

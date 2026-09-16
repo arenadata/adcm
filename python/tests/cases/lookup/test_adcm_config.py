@@ -35,8 +35,6 @@ from ansible_collections.arenadata.adcm.plugins.lookup.adcm_config import (
 )
 from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.impl.job.repo import JobRepo
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import (
     Action,
@@ -50,6 +48,7 @@ from cm.models import (
     Provider,
     Service,
 )
+from cm.tests.scripts import retrieve_rich_jobs
 from cm.transition.ansible import ansible_decrypt
 from core.action.job import TaskPayloadDTO
 from core.types import ActionTargetDescriptor
@@ -57,6 +56,7 @@ from django.conf import settings
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 import django.test
 
+from tests.deprecated import prepare_task_for_action
 from tests.suites import _ADCMTestCase
 
 BUNDLES_DIR = Path(__file__).parent / "bundles"
@@ -107,16 +107,15 @@ class TestAdcmConfigLookup(ParametrizedTestCase, _ADCMTestCase, django.test.Test
         task = prepare_task_for_action(
             target=ActionTargetDescriptor(id=owner.pk, type=orm_object_to_core_type(owner)),
             orm_owner=owner,
-            orm_target=owner,
             action=action_id,
             payload=TaskPayloadDTO(),
         )
 
-        job, *_ = JobRepo().get_task_jobs(task.id)
+        job, *_ = retrieve_rich_jobs(task_id=task.id)
         # not a subject of these tests, but without this snapshot `update_config` fails to record its change
-        create_related_configs(job_id=job.id, owner=task.owner)
+        create_related_configs(job_id=job.runtime.id, owner=task.owner)
 
-        return job.id
+        return job.runtime.id
 
     # Helpers
 

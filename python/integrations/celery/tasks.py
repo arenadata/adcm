@@ -93,6 +93,6 @@ def prepare_execution_plan(task_id: TaskID, jobs: PlannedJobs) -> Signature:
         set_broken_task_sig
     )
     return chain(
-        *(signature(RUN_JOB_TASK_NAME, kwargs=task_info | {"job_id": job.id}, immutable=True) for job in jobs),
+        *(signature(RUN_JOB_TASK_NAME, kwargs=task_info | {"job_id": job.runtime.id}, immutable=True) for job in jobs),
         complete_task_sig,
     ).on_error(complete_task_sig)

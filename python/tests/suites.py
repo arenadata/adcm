@@ -52,7 +52,10 @@ from cm.models import (
     SignatureStatus,
     TaskLog,
 )
-from core.action import Job
+from cm.tests.scripts import retrieve_rich_jobs
+from core.action.job import JobShortFilter
+from core.action.operations import to_rich_job
+from core.action.types import RichJob
 from core.config import ConfigService
 from core.legacy.job.executors import Executor as JobExecutor
 from core.legacy.job.runners import (
@@ -192,7 +195,7 @@ class ADCMPluginExecutorSuite(
         cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
     def prepare_executor(
-        self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | Job | int
+        self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | RichJob | int
     ) -> Executor:
         """
         Prepare plugin executor more or less like it will be created inside Ansible plugin call
@@ -203,7 +206,7 @@ class ADCMPluginExecutorSuite(
         If it is a string, it'll be parsed with `yaml` (so no ansible filters or environment will be there).
 
         `call_context` can be either a context dict (with `type` and `*_id` fields)
-        or a job (`Job`, `JobLog` or job's id as `int`) based on which this function will build context.
+        or a job (`RichJob`, `JobLog` or job's id as `int`) based on which this function will build context.
         """
         with self.container(scope=dishka.Scope.REQUEST) as container:
             arguments = call_arguments
@@ -225,14 +228,23 @@ class ADCMPluginExecutorSuite(
                     ),
                 )
 
-                job_id = call_context if isinstance(call_context, int) else call_context.id
+                match call_context:
+                    case int():
+                        job_id = call_context
+                    case RichJob():
+                        job_id = call_context.runtime.id
+                    case _:
+                        job_id = call_context.id
                 task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
 
                 repo = JobRepo()
 
+                found_jobs = repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+                plan = repo.get_execution_plan(task_id=task_id)
+
                 context = prepare_ansible_job_config(
                     task=repo.get_task(id=task_id),
-                    job=repo.get_job(id=job_id),
+                    job=to_rich_job(spec=plan, job=next(iter(found_jobs))),
                     configuration=configuration,
                     config_service=container.get(ConfigService),
                 )
@@ -255,7 +267,7 @@ class ADCMPluginExecutorSuite(
         return _executor_func
 
     def get_task_jobs(self, task_id):
-        return JobRepo().get_task_jobs(task_id)
+        return retrieve_rich_jobs(task_id=task_id)
 
 
 class ADCMDjangoAPISuiteNoBundles(

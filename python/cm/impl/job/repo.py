@@ -12,13 +12,10 @@
 
 from collections import defaultdict
 from collections.abc import Collection, Generator, Iterable
-from contextlib import contextmanager, suppress
-from copy import deepcopy
+from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
-from functools import reduce
 from pathlib import Path
 from typing import Final, Literal, TypeAlias, cast
-import operator
 
 from core.action import (
     ActionInfo,
@@ -30,30 +27,29 @@ from core.action import (
     ExecutionStatus,
     HcAclRule,
     HostComponentChanges,
-    Job,
     JobShortInfo,
-    JobSpec,
     RelatedObjects,
-    ScriptType,
     StateChanges,
     Task,
     TaskActionInfo,
     TaskMappingDelta,
     TaskOwner,
     TaskShortInfo,
+    WorkerInfo,
 )
 from core.action.job import (
     JobRepoI,
     JobShortFilter,
     JobUpdateDTO,
     LogCreateDTO,
+    PostInitTaskAttributesDTO,
     TaskCreateDTO,
     TaskMutableFieldsDTO,
     TaskShortFilter,
     TaskUpdateDTO,
-    TaskUpdateMainFieldsDTO,
 )
 from core.action.scheduler import Claimer
+from core.action.types import JobSpecV1, ScriptSpec
 from core.errors import NotFoundError
 from core.types import (
     ActionID,
@@ -71,7 +67,7 @@ from core.types import (
 from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import F, ObjectDoesNotExist, Value
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter
 
 from cm.converters import (
     core_type_to_model,
@@ -80,6 +76,8 @@ from cm.converters import (
     orm_object_to_action_target_type,
     orm_object_to_core_descriptor,
 )
+from cm.impl.common.dto import to_update_payload
+from cm.impl.common.execution_plan import dump_execution_plan, parse_execution_plan
 from cm.models import (
     ADCM,
     Action,
@@ -94,14 +92,11 @@ from cm.models import (
     Provider,
     QuerySet,
     Service,
-    SubAction,
     TaskLog,
     Upgrade,
 )
 
 # need to filter out "unsupported" values, because no guarantee DB have correct ones
-_SUPPORTED_STATUSES: Final = tuple(entry.value for entry in ExecutionStatus)
-_SUPPORTED_SCRIPT_TYPES: Final = tuple(entry.value for entry in ScriptType)
 _SELECTOR_FIELDS_MAP: Final = {
     Cluster: {"object_id": F("id"), "object_name": F("name"), "type_name": Value(ADCMCoreType.CLUSTER.value)},
     Service: {
@@ -192,39 +187,12 @@ class JobRepo(JobRepoI):
             description=task_record.description,
         )
 
-    def get_job(self, id: int) -> Job:  # noqa: A002
-        with suppress(ObjectDoesNotExist):
-            return _build_job(_job_log_qs().filter(id=id).get())
+    def find_scripts_of_action(self, action_id: ActionID) -> JobSpecV1:
+        return _read_action_scripts(action_id=action_id)
 
-        message = f"Can't find job with id {id}"
-        raise NotFoundError(message)
-
-    def find_jobs_of_task(self, task_id: TaskID) -> tuple[Job, ...]:
-        query = _job_log_qs()
-        filtered_by_task_id = query.filter(task_id=task_id)
-        return tuple(map(_build_job, filtered_by_task_id))
-
-    def get_task_jobs(self, task_id: int) -> Iterable[Job]:
-        return self.find_jobs_of_task(task_id)
-
-    def find_scripts_of_action(self, action_id: ActionID) -> tuple[JobSpec, ...]:
-        query = (
-            SubAction.objects.filter(action_id=action_id)
-            .order_by("id")
-            .values(
-                "name",
-                "display_name",
-                "script",
-                "script_type",
-                "allow_to_terminate",
-                "state_on_fail",
-                "multi_state_on_fail_set",
-                "multi_state_on_fail_unset",
-                "params",
-            )
-        )
-
-        return tuple(map(_dict_to_job_spec, query))
+    def get_execution_plan(self, task_id: TaskID) -> JobSpecV1:
+        stored = TaskLog.objects.values_list("execution_plan", flat=True).get(id=task_id)
+        return parse_execution_plan(stored)
 
     # copied from cm.legacy.services.job.action._ActionLaunchObjects
     def find_action_owner(self, action_id: ActionID, target: ActionTargetDescriptor) -> CoreObjectDescriptor:
@@ -273,7 +241,7 @@ class JobRepo(JobRepoI):
             filter_kwargs["status__in"] = filter_.statuses
 
         query = TaskLog.objects.filter(**filter_kwargs).values_list(
-            "id", "executor", "status", "lock_id", "action_id", "action__name", "action___venv"
+            "id", "executor", "pid", "status", "lock_id", "action_id", "action__name", "action___venv"
         )
         return [_task_log_fields_to_short_info(fields) for fields in query]
 
@@ -289,7 +257,7 @@ class JobRepo(JobRepoI):
         query = (
             JobLog.objects.filter(**filter_kwargs)
             .order_by("id")
-            .values_list("id", "task_id", "finish_date", "executor", "status")
+            .values_list("id", "task_id", "spec_key", "finish_date", "executor", "pid", "status")
         )
         return [_job_log_fields_to_short_info(fields) for fields in query]
 
@@ -355,15 +323,14 @@ class JobRepo(JobRepoI):
 
         return task.pk
 
-    def create_jobs(self, task_id: TaskID, scripts: Iterable[JobSpec]) -> None:
-        JobLog.objects.bulk_create(
-            JobLog(
-                task_id=task_id,
-                status=ExecutionStatus.CREATED.value,
-                **script.model_dump(),
-            )
-            for script in scripts
+    def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> tuple[JobShortInfo, ...]:
+        # jobs keep their own copies of the nodes' fields for now, `spec_key` ties them back to the plan
+        created = JobLog.objects.bulk_create(
+            _script_spec_to_job_log(task_id=task_id, script_spec=script_spec)
+            for script_spec in scripts.scripts.values()
         )
+
+        return tuple(_created_job_to_short_info(job) for job in created)
 
     def create_logs(self, logs: Iterable[LogCreateDTO]) -> None:
         LogStorage.objects.bulk_create(
@@ -388,16 +355,15 @@ class JobRepo(JobRepoI):
 
         core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
 
-    def fill_task_mapping_and_configuration(self, task_id: TaskID, payload: TaskUpdateMainFieldsDTO) -> None:
-        fields_to_update = {
-            "hostcomponentmap": _mapping_delta_to_db_dict(payload.mapping_delta),
-            "config": payload.configuration,
-        }
-
-        TaskLog.objects.filter(id=task_id).update(**fields_to_update)
+    def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
+        TaskLog.objects.filter(id=task_id).update(
+            execution_plan=dump_execution_plan(payload.execution_plan),
+            hostcomponentmap=_mapping_delta_to_db_dict(payload.mapping_delta),
+            config=payload.configuration,
+        )
 
     def update_task(self, id: int, data: TaskUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.model_dump(exclude_unset=True)
+        fields_to_change: dict = to_update_payload(data)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
         if "hostcomponentmap" in fields_to_change:
@@ -406,7 +372,7 @@ class JobRepo(JobRepoI):
         TaskLog.objects.filter(id=id).update(**fields_to_change)
 
     def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
-        fields_to_change: dict = data.model_dump(exclude_unset=True)
+        fields_to_change: dict = to_update_payload(data)
         if "status" in fields_to_change:
             fields_to_change["status"] = fields_to_change["status"].value
 
@@ -451,9 +417,8 @@ class JobRepo(JobRepoI):
             wizard_template=action["wizard_template"],
         )
 
-    def get_job_specs(self, id: ActionID) -> Iterable[JobSpec]:  # noqa: A002
-        query = _qs_with_spec_values(SubAction.objects.filter(action_id=id)).order_by("id")
-        return list(map(_from_entry_to_spec, query))
+    def get_job_specs(self, id: ActionID) -> JobSpecV1:  # noqa: A002
+        return _read_action_scripts(action_id=id)
 
 
 class JobClaimer(Claimer):
@@ -501,21 +466,43 @@ class JobClaimer(Claimer):
 
 
 def _task_log_fields_to_short_info(fields: tuple) -> TaskShortInfo:
-    id_, executor, status, lock_id, action_id, action_name, action_venv = fields
+    id_, executor, pid, status, lock_id, action_id, action_name, action_venv = fields
     return TaskShortInfo(
         id=id_,
-        worker=executor,
+        worker=_to_worker_info(executor=executor, pid=pid),
         status=ExecutionStatus(status.lower()),
         lock_id=lock_id,
         action=ActionShortInfo(id=action_id, name=action_name, venv=action_venv),
     )
 
 
-def _job_log_fields_to_short_info(fields: tuple) -> JobShortInfo:
-    id_, task_id, finish_date, executor, status = fields
+def _created_job_to_short_info(job: JobLog) -> JobShortInfo:
+    # nothing of it has happened yet, so everything but its identity is at its initial value
     return JobShortInfo(
-        id=id_, task_id=task_id, finish_date=finish_date, worker=executor, status=ExecutionStatus(status.lower())
+        id=job.pk,
+        task_id=job.task.pk,
+        spec_key=job.spec_key,
+        finish_date=None,
+        worker=WorkerInfo(),
+        status=ExecutionStatus(job.status),
     )
+
+
+def _job_log_fields_to_short_info(fields: tuple) -> JobShortInfo:
+    id_, task_id, spec_key, finish_date, executor, pid, status = fields
+    return JobShortInfo(
+        id=id_,
+        task_id=task_id,
+        spec_key=spec_key,
+        finish_date=finish_date,
+        worker=_to_worker_info(executor=executor, pid=pid),
+        status=ExecutionStatus(status.lower()),
+    )
+
+
+def _to_worker_info(executor: dict, pid: int) -> WorkerInfo:
+    # nothing has been executed yet while a record is only created, the column keeps an empty object for that
+    return WorkerInfo(environment=executor.get("environment"), worker_id=executor.get("worker_id"), pid=pid)
 
 
 def _mapping_delta_to_db_dict(
@@ -529,106 +516,43 @@ def _mapping_delta_to_db_dict(
     return {key: {k: sorted(v) for k, v in value.items()} for key, value in delta.items()}
 
 
-def _dict_to_job_spec(entry: dict) -> JobSpec:
-    # in db it can be dict, list or anything else actually
-    source_params = entry.pop("params", {}) or {}
-    # try to fix if it's not dict here
-    if isinstance(source_params, list) and all(isinstance(entry, dict) for entry in source_params):
-        source_params = reduce(operator.or_, source_params, {})
-    elif not isinstance(source_params, dict):
-        source_params = {}
+def _read_action_scripts(action_id: ActionID) -> JobSpecV1:
+    stored = Action.objects.values_list("scripts", flat=True).filter(id=action_id).first()
 
-    return JobSpec(**entry, params=source_params)
+    if not stored:
+        # either no such action or its plan is rendered from a template rather than stored
+        return JobSpecV1()
+
+    return parse_execution_plan(stored)
 
 
-def _from_entry_to_spec(entry: dict) -> JobSpec:
-    # in db it can be dict, list or anything else actually
-    source_params = entry.pop("params", {}) or {}
-    # try to fix if it's not dict here, until
-    if isinstance(source_params, list) and all(isinstance(entry, dict) for entry in source_params):
-        source_params = reduce(operator.or_, source_params, {})
-    elif not isinstance(source_params, dict):
-        source_params = {}
-
-    return JobSpec(**entry, params=source_params)
-
-
-_JOB_TYPE_ADAPTER: Final = TypeAdapter(Job)
-
-
-def _normalize_ansible_tags(raw_params: dict) -> None:
-    ansible_tags = raw_params.pop("ansible_tags", "") or ""
-    # todo I don't like to fix it here,
-    #  but not sure we can validate it now on config.yaml load
-    #  see https://tracker.yandex.ru/ADCM-5325
-    if isinstance(ansible_tags, list | tuple):
-        ansible_tags = ",".join(map(str, ansible_tags))
-    elif not isinstance(ansible_tags, str):
-        ansible_tags = ""
-
-    raw_params["ansible_tags"] = ansible_tags
-
-
-def _build_job(job: JobLog) -> Job:
-    script_type = ScriptType(job.script_type)
-    raw_params = deepcopy(job.params) or {}
-    if not isinstance(raw_params, dict):
-        message = f"Job {job.pk} has params of unexpected shape: {raw_params!r}"
-        raise TypeError(message)
-
-    if script_type == ScriptType.ANSIBLE:
-        _normalize_ansible_tags(raw_params)
-        params = raw_params
-    else:
-        # python jobs and parameterless internal scripts carry no params;
-        # hc_apply/config_apply/service_manage params are validated below,
-        # matched against `script` by `Job`'s own discriminated union
-        params = raw_params or None
-
-    data = {
-        "id": job.pk,
-        "pid": job.pid,
-        "name": job.name,
-        "display_name": job.display_name,
-        "type": script_type,
-        "script": job.script,
-        "status": ExecutionStatus(job.status),
-        "params": params,
-        "on_fail": StateChanges(
-            state=job.state_on_fail,
-            multi_state_set=tuple(job.multi_state_on_fail_set or ()),
-            multi_state_unset=tuple(job.multi_state_on_fail_unset or ()),
-        ),
-        "is_termination_allowed": job.allow_to_terminate,
-        "execution_env": ExecutionEnvironment(pid=job.pid, worker_id=job.executor.get("worker_id")),
-    }
-
-    try:
-        return _JOB_TYPE_ADAPTER.validate_python(data)
-    except ValidationError as error:
-        message = f"Can't build Job {job.pk} for script_type={script_type!r} script={job.script!r}: {error}"
-        raise ValueError(message) from error
-
-
-# queries
-
-
-def _qs_with_spec_values(query: QuerySet) -> QuerySet:
-    return query.values(
-        "name",
-        "display_name",
-        "script",
-        "script_type",
-        "allow_to_terminate",
-        "state_on_fail",
-        "multi_state_on_fail_set",
-        "multi_state_on_fail_unset",
-        "params",
+def _script_spec_to_job_log(task_id: TaskID, script_spec: ScriptSpec) -> JobLog:
+    return JobLog(
+        task_id=task_id,
+        status=ExecutionStatus.CREATED.value,
+        spec_key=script_spec.key,
+        name=script_spec.names.internal,
+        display_name=script_spec.names.display,
+        script=script_spec.script.path,
+        script_type=script_spec.script.type.value,
+        params=_script_params_to_db(script_spec),
+        allow_to_terminate=script_spec.details.terminatable,
+        state_on_fail=script_spec.on_fail.state or "",
+        multi_state_on_fail_set=list(script_spec.on_fail.multi_state_set),
+        multi_state_on_fail_unset=list(script_spec.on_fail.multi_state_unset),
     )
 
 
-def _job_log_qs() -> QuerySet[JobLog]:
-    return JobLog.objects.order_by("id").filter(script_type__in=_SUPPORTED_SCRIPT_TYPES, status__in=_SUPPORTED_STATUSES)
+def _script_params_to_db(script_spec: ScriptSpec) -> dict:
+    params = script_spec.script.params
+
+    if params is None:
+        return {}
+
+    if isinstance(params, BaseModel):
+        return params.model_dump(mode="json")
+
+    return asdict(params)
 
 
 # utilities

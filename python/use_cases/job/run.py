@@ -35,13 +35,14 @@ from core.action import (
     UNFINISHED_STATUSES,
     CallingProcess,
     ExecutionStatus,
-    Job,
     Task,
     TaskOwner,
     is_operation_step_task,
 )
-from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
+from core.action.operations import flatten_execution_plan, to_rich_job, to_rich_jobs
 from core.action.scheduler import ProcessStarter
+from core.action.types import RichJob
 from core.cluster import ClusterService
 from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
 from core.result import Fail, Success
@@ -57,7 +58,7 @@ import core
 
 logger = logging.getLogger("task-runner")
 
-PlannedJobs: TypeAlias = tuple[Job, ...]
+PlannedJobs: TypeAlias = tuple[RichJob, ...]
 
 
 @dataclass(slots=True)
@@ -76,7 +77,14 @@ class StartTask:
     # used by `_ScheduleTask`/wizard, which just invoke it as `starter(id)`
     def __call__(self, task_id: TaskID) -> PID:
         task = self.job_repo.get_task(id=task_id)
-        first_job = self.job_repo.find_jobs_of_task(task_id=task_id)[0]
+
+        # the concern is named after the job that runs first, which the plan's order decides
+        plan = self.job_repo.get_execution_plan(task_id=task_id)
+        first_key = flatten_execution_plan(plan)[0]
+
+        task_jobs = self.job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+        first_job = jobs_by_key[first_key]
 
         self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
 
@@ -94,7 +102,11 @@ class SetTaskToRunning:
         status = ExecutionStatus.RUNNING
 
         with atomic():
-            jobs = self.repo.get_task_jobs(task_id=task_id)
+            plan = self.repo.get_execution_plan(task_id=task_id)
+            task_jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+            jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+
+            jobs = tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
 
             to_update = TaskUpdateDTO(pid=environment.pid, start_date=environment.now(), status=status)
             self.repo.update_task(id=task_id, data=to_update)
@@ -116,10 +128,15 @@ class RunJob:
     ) -> Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.REVOKED, ExecutionStatus.ABORTED]:
         with atomic():
             task = self.repo.get_task(id=task_id)
-            job = self.repo.get_job(id=job_id)
 
-            if job.status == ExecutionStatus.REVOKED:
-                return job.status
+            found_jobs = self.repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+            runtime = next(iter(found_jobs))
+
+            if runtime.status == ExecutionStatus.REVOKED:
+                return runtime.status
+
+            plan = self.repo.get_execution_plan(task_id=task_id)
+            job = to_rich_job(spec=plan, job=runtime)
 
             execute_target, *_ = self.target_factory(task=task, jobs=(job,), configuration=self.external_settings)
             executor = execute_target.executor
@@ -210,12 +227,16 @@ class FinalizeTask:
     ):
         with atomic():
             task = self.job_repo.get_task(id=task_id)
-            jobs = tuple(self.job_repo.get_task_jobs(task_id=task_id))
+
+            plan = self.job_repo.get_execution_plan(task_id=task_id)
+            task_jobs = self.job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+            jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+            jobs = tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
 
             task_is_aborted = task.status == ExecutionStatus.TERMINATING
 
             task_result = core.action.job.operations.calculate_task_final_status(
-                last_job_status=jobs[-1].status, task_is_aborted=task_is_aborted
+                last_job_status=jobs[-1].runtime.status, task_is_aborted=task_is_aborted
             )
 
             if task.is_blocking:
@@ -242,7 +263,7 @@ class FinalizeTask:
                 # not very accurate status filtering, but ok since all those operations are chaotic for now
                 incomplete_step_statuses = {ExecutionStatus.CREATED, ExecutionStatus.REVOKED}
                 last_finished_job = next(
-                    filter(lambda j: j.status not in incomplete_step_statuses, reversed(jobs)), None
+                    filter(lambda j: j.runtime.status not in incomplete_step_statuses, reversed(jobs)), None
                 )
                 if last_finished_job:
                     owner_descriptor = CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
@@ -278,7 +299,7 @@ class FinalizeTask:
             logger.exception("Error loading host-component map on task finish")
 
     def _update_owner_state(
-        self, task: Task, last_finished_job: Job, owner: CoreObjectDescriptor, task_result: ExecutionStatus
+        self, task: Task, last_finished_job: RichJob, owner: CoreObjectDescriptor, task_result: ExecutionStatus
     ) -> None:
         if task_result == ExecutionStatus.SUCCESS:
             multi_state_set = task.on_success.multi_state_set
@@ -288,7 +309,7 @@ class FinalizeTask:
                 logger.warning('task for "%s" success state is not set', task.action.display_name)
 
         elif task_result == ExecutionStatus.FAILED:
-            job_on_fail = last_finished_job.on_fail
+            job_on_fail = last_finished_job.spec.on_fail
             task_on_fail = task.on_fail
             state = job_on_fail.state or task_on_fail.state
             multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set

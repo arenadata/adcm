@@ -16,6 +16,7 @@ from operator import itemgetter
 from typing import Literal, TypeAlias
 import json
 
+from cm.impl.common.execution_plan import parse_execution_plan
 from cm.models import (
     ADCM,
     Action,
@@ -681,6 +682,13 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
                 self.assertDictEqual(
                     JobLog.objects.filter(task_id=task_id).values_list("params", flat=True).get(name=script_name),
                     expected_params,
+                )
+
+                # the task keeps the plan it ran, and each of its nodes got exactly one job
+                plan = parse_execution_plan(TaskLog.objects.values_list("execution_plan", flat=True).get(id=task_id))
+                self.assertEqual(
+                    sorted(JobLog.objects.filter(task_id=task_id).values_list("spec_key", flat=True)),
+                    sorted(plan.scripts),
                 )
 
 

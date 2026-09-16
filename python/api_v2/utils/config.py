@@ -17,6 +17,8 @@ from typing import Any
 import json
 
 from cm.errors import AdcmEx
+from core.spec.errors import InvalidSpecKeyError
+from core.spec.keys import to_full_key
 from rest_framework.exceptions import ValidationError
 import core
 
@@ -24,9 +26,11 @@ import core
 def convert_to_attributes(
     attr: dict, allowed_keys: set[str]
 ) -> dict[core.config.ParameterFullName, core.config.Attributes]:
-    attributes = {}
+    # keys come straight from the request body, so they are checked to be full names here:
+    # a non-prefixed key is rejected outright rather than silently renamed into a valid-looking one
+    attributes: dict[core.config.ParameterFullName, core.config.Attributes] = {}
 
-    for name, value in attr.items():
+    for raw_name, value in attr.items():
         if not isinstance(value, dict):
             raise ValidationError("adcmMeta values should be dictionaries")
 
@@ -35,6 +39,11 @@ def convert_to_attributes(
                 code="ATTRIBUTE_ERROR",
                 msg=f"Incorrect attributes, at least one of {', '.join(sorted(allowed_keys))}, extra not allowed",
             )
+
+        try:
+            name = to_full_key(raw_name)
+        except InvalidSpecKeyError as e:
+            raise AdcmEx(code="ATTRIBUTE_ERROR", msg=f"Incorrect adcmMeta parameter key: {e}") from e
 
         try:
             attributes[name] = core.config.Attributes(

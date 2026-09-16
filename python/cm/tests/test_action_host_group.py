@@ -35,6 +35,7 @@ from cm.legacy.services.job.context import get_inventory_data
 from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
 from cm.models import Action, ActionHostGroup, Component, TaskLog
 from cm.tests.dependencies import WithDishkaContainer
+from cm.tests.scripts import retrieve_rich_jobs
 
 
 class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
@@ -148,7 +149,7 @@ class TestActionHostGroup(WithDishkaContainer, BaseTestCase):
 
         task_id = launched_task.pk
         task = JobRepo().get_task(task_id)
-        job, *_ = JobRepo().get_task_jobs(task.id)
+        job, *_ = retrieve_rich_jobs(task_id=task.id)
 
         config = prepare_ansible_job_config(
             task=task,

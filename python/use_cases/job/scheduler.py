@@ -13,9 +13,10 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import wraps
 from types import ModuleType
+from typing import cast
 import logging
 
 from cm.converters import core_type_to_model, orm_object_to_action_target_descriptor
@@ -29,7 +30,16 @@ from cm.models import Cluster
 from cm.transition.action import RetrieveStartImpossibleReason
 from core.action import ExecutionStatus, Task, TaskRunnerEnvironment, TaskShortInfo, is_operation_step_task
 from core.action.job import JobRepoI, JobShortFilter, TaskShortFilter, TaskUpdateDTO
-from core.action.scheduler import Claimer, TaskLivenessStatus, TaskMonitorRegistry, TaskQueuer, TerminatorRegistry
+from core.action.operations import flatten_execution_plan, to_rich_jobs
+from core.action.scheduler import (
+    Claimer,
+    TaskLivenessStatus,
+    TaskMonitor,
+    TaskMonitorRegistry,
+    TaskQueuer,
+    Terminator,
+    TerminatorRegistry,
+)
 from core.legacy.cluster.operations import construct_mapping_from_delta
 from core.legacy.job.runners import RunnerEnvironment
 from core.result import Fail, Success
@@ -169,8 +179,7 @@ class Killer:
                     id=job_id, previous=job.status, new=ExecutionStatus.TERMINATING
                 )
 
-                terminator = self.registry[job.worker["environment"]]
-                terminator.terminate_job(job)
+                self._terminator_for(job.worker.environment).terminate_job(job)
 
                 killer_logger.debug(
                     "Terminating job with id=%d finished, status changed = %s",
@@ -190,14 +199,21 @@ class Killer:
                     id=task_id, previous=task.status, new=ExecutionStatus.TERMINATING
                 )
 
-                terminator = self.registry[task.worker["environment"]]
-                terminator.terminate_task(task)
+                self._terminator_for(task.worker.environment).terminate_task(task)
 
                 killer_logger.debug(
                     "Terminating task with id=%d finished, status changed = %s",
                     task_id,
                     status_changed,
                 )
+
+    def _terminator_for(self, environment: TaskRunnerEnvironment | None) -> Terminator:
+        # an environment that isn't set has no terminator just like an unknown one has none
+        try:
+            return self.registry[cast(TaskRunnerEnvironment, environment)]
+        except KeyError as err:
+            message = f"There is no terminator for {environment!r} environment"
+            raise KeyError(message) from err
 
 
 @dataclass(slots=True)
@@ -212,12 +228,12 @@ class Monitor:
             TaskShortFilter(statuses=(ExecutionStatus.RUNNING, ExecutionStatus.TERMINATING, ExecutionStatus.QUEUED))
         )
 
-        grouped_by_environment: dict[TaskRunnerEnvironment, list[TaskShortInfo]] = defaultdict(list)
+        grouped_by_environment: dict[TaskRunnerEnvironment | None, list[TaskShortInfo]] = defaultdict(list)
         for task in tasks_to_check:
-            grouped_by_environment[task.worker["environment"]].append(task)
+            grouped_by_environment[task.worker.environment].append(task)
 
         for environment, tasks in grouped_by_environment.items():
-            task_monitor = self.registry[environment]
+            task_monitor = self._monitor_for(environment)
             result = task_monitor.analyze_liveness(tasks)
 
             for dead_task in result.get(TaskLivenessStatus.DEAD, ()):
@@ -231,6 +247,14 @@ class Monitor:
                         monitor_logger.debug("Task id=%d set to broken successfuly", dead_task.id)
                     case Fail(msg):
                         monitor_logger.debug("Task id=%d set to broken failed: %s", dead_task.id, msg)
+
+    def _monitor_for(self, environment: TaskRunnerEnvironment | None) -> TaskMonitor:
+        # an environment that isn't set has no monitor just like an unknown one has none
+        try:
+            return self.registry[cast(TaskRunnerEnvironment, environment)]
+        except KeyError as err:
+            message = f"There is no monitor for {environment!r} environment"
+            raise KeyError(message) from err
 
 
 @dataclass(slots=True)
@@ -293,7 +317,14 @@ def schedule_task(
             retrieve_sir=retrieve_sir,
         )
 
-    first_job = job_repo.find_jobs_of_task(task_id=task_id)[0]
+    # the concern is named after the job that runs first, which the plan's order decides
+    plan = job_repo.get_execution_plan(task_id=task_id)
+    first_key = flatten_execution_plan(plan)[0]
+
+    task_jobs = job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+    jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+    first_job = jobs_by_key[first_key]
+
     concern_scenarios.create_job_concern(task=task, first_job=first_job)
 
     launcher_logger.info(f"Task #{task_id} scheduled to {env_type} queuer")
@@ -308,10 +339,9 @@ def schedule_task(
 @clear_concerns_on_error
 def queue_task(*, queuer: TaskQueuer, task_id: TaskID, job_repo: JobRepoI) -> None:
     worker_info = queuer.queue(task_id)
-    # disabled during use_cases/jobs.scheduler move, code wasn't pyright-checked before, must be reviewed
-    job_repo.update_task(id=task_id, data=TaskUpdateDTO(executor=worker_info))  # pyright: ignore[reportArgumentType]
+    job_repo.update_task(id=task_id, data=TaskUpdateDTO(executor=asdict(worker_info)))
 
-    launcher_logger.info(f"Task #{task_id} queued as #{worker_info['worker_id']} {worker_info['environment']} task")
+    launcher_logger.info(f"Task #{task_id} queued as #{worker_info.worker_id} {worker_info.environment} task")
 
 
 def validate(

@@ -20,10 +20,11 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 from tests.base import BaseTestCase
+from tests.deprecated import prepare_task_for_action
 
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.utils import str_remove_non_alnum
-from cm.models import Action, Bundle, Cluster, JobLog, LogStorage, Prototype, SubAction, TaskLog
+from cm.models import Action, Bundle, Cluster, JobLog, LogStorage, Prototype, TaskLog
+from cm.tests.scripts import build_plan, build_script_spec
 from cm.tests.utils import gen_adcm
 
 
@@ -123,19 +124,16 @@ class TaskLogLockTest(BaseTestCase):
             state_available="any",
             name="test_cluster_action",
         )
-        SubAction.objects.create(
-            name="test_subaction_1",
-            action=action,
-            script_type="ansible",
-            display_name="Test   Dis%#play   NAME!",
+        action.scripts = build_plan(
+            build_script_spec("/0", "test_subaction_1", display_name="Test   Dis%#play   NAME!"),
+            build_script_spec("/1", "test_subaction_2"),
         )
-        SubAction.objects.create(name="test_subaction_2", action=action, script_type="ansible")
+        action.save(update_fields=["scripts"])
         object_ = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
         task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=object_,
                 orm_owner=cluster,
-                orm_target=cluster,
                 action=action.pk,
                 payload=TaskPayloadDTO(),
             ).id

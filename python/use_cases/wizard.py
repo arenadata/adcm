@@ -368,8 +368,11 @@ class PerformWizardProcessOperation:
                 )
 
                 task_id = self.job_service.create_task(payload=task_payload)
-                scripts = tuple(step_spec)
-                self.job_service.create_jobs(task_id=task_id, scripts=scripts)
+                self.job_service.set_post_init_task_attributes(
+                    task_id=task_id,
+                    payload=core.action.job.PostInitTaskAttributesDTO(execution_plan=step_spec),
+                )
+                self.job_service.create_jobs(task_id=task_id, scripts=step_spec)
 
                 step_input_data = core.action.wizard.StepInputDTO(job_id=task_id, created_at=timezone.now())
                 self.wizard_repo.upsert_step_input(step_id=payload.params.step_id, data=step_input_data)

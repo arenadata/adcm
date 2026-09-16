@@ -13,18 +13,14 @@
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
-from core.action import Task, TaskMappingDelta
-from core.action.job import LaunchOptions, LogCreateDTO, TaskCreateDTO, TaskExtraInfo, TaskPayloadDTO
-from core.action.job.errors import TaskCreateError
+from core.action import TaskMappingDelta
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
+from core.types import BundleID, HostID
 from django.conf import settings
 from rest_framework.status import HTTP_409_CONFLICT
 
-from cm.converters import orm_object_to_core_type
 from cm.errors import AdcmEx
-from cm.impl.job.repo import JobRepo
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
@@ -32,7 +28,6 @@ from cm.legacy.services.job.types import ActionHCRule
 from cm.legacy.services.mapping import check_no_host_in_mm
 from cm.models import (
     ADCM,
-    Action,
     ActionHostGroup,
     Cluster,
     Component,
@@ -44,66 +39,6 @@ from cm.models import (
 
 ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
-
-
-def prepare_task_for_action(
-    target: ActionTargetDescriptor | CoreObjectDescriptor,
-    orm_owner: ObjectWithAction,
-    orm_target: ActionTarget,  # noqa: ARG001
-    action: ActionID,
-    payload: TaskPayloadDTO,
-    delta: TaskMappingDelta | None = None,  # noqa: ARG001
-) -> Task:
-    """
-    USED ONLY IN TESTS, WILL BE REMOVED
-    """
-    job_repo = JobRepo()
-    action_repo = job_repo
-    owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
-    orm_action = Action.objects.select_related("prototype").get(id=action)
-
-    spec = None
-
-    if not spec:
-        if payload.conf:
-            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
-
-    elif not payload.conf:
-        raise AdcmEx("TASK_ERROR", "action config is required")
-
-    create_dto = TaskCreateDTO(
-        owner=owner,
-        target=target.as_core_or_group_descriptor if not isinstance(target, CoreObjectDescriptor) else target,
-        action_id=action,
-        launch=LaunchOptions(is_verbose=payload.verbose, is_blocking=payload.is_blocking),
-        extra=TaskExtraInfo(
-            name=orm_action.name, display_name=orm_action.display_name, description=orm_action.description
-        ),
-    )
-
-    task_id = job_repo.create_task(payload=create_dto)
-    task = job_repo.get_task(task_id)
-
-    if payload.conf:
-        raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
-
-    job_specifications = tuple(action_repo.get_job_specs(id=action))
-
-    if not job_specifications:
-        message = f"Can't compose task for action #{action}, because no associated jobs found"
-        raise TaskCreateError(message)
-
-    job_repo.create_jobs(task_id=task.id, scripts=job_specifications)
-
-    logs = []
-    for job in job_repo.get_task_jobs(task_id=task.id):
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
-
-    if logs:
-        job_repo.create_logs(logs)
-
-    return task
 
 
 def check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) -> None:

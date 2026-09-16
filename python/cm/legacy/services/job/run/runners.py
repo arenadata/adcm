@@ -14,9 +14,11 @@ from logging import Logger
 from typing import Any, Protocol
 
 from audit.alt.core import NameHalfSplitter
-from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
-from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action import CallingProcess, ExecutionStatus, Task, TaskOwner
+from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
 from core.action.job._termination import ExecutorTerminator
+from core.action.operations import flatten_execution_plan, to_rich_jobs
+from core.action.types import RichJob
 from core.cluster import ClusterService
 from core.legacy.job.runners import (
     ExecutionTarget,
@@ -98,14 +100,17 @@ class JobSequenceRunner(TaskRunner):
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True
+        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[self._runtime.task_id]))
+
         for job_to_terminate in filter(
-            lambda job_: job_.status == ExecutionStatus.RUNNING and job_.pid != NO_PROCESS_PID,
-            self._repo.get_task_jobs(task_id=self._runtime.task_id),
+            lambda job_: job_.status == ExecutionStatus.RUNNING and job_.worker.pid != NO_PROCESS_PID,
+            task_jobs,
         ):
-            self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {job_to_terminate.pid}")
-            match self._executor_terminator.terminate(job_to_terminate.pid):
+            pid = job_to_terminate.worker.pid
+            self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {pid}")
+            match self._executor_terminator.terminate(pid):
                 case Fail():
-                    self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {job_to_terminate.pid}")
+                    self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {pid}")
 
     def consider_broken(self) -> None:
         # special value is used to avoid handling NPEs
@@ -146,7 +151,8 @@ class JobSequenceRunner(TaskRunner):
                     break
 
             if self._runtime.termination.is_requested or (
-                last_job_result == ExecutionStatus.ABORTED and last_processed_job.id == configured_jobs[-1].job.id
+                last_job_result == ExecutionStatus.ABORTED
+                and last_processed_job.runtime.id == configured_jobs[-1].job.runtime.id
             ):
                 self._runtime.status = ExecutionStatus.ABORTED
             elif self._runtime.status == ExecutionStatus.RUNNING:
@@ -166,15 +172,16 @@ class JobSequenceRunner(TaskRunner):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
+        plan = self._repo.get_execution_plan(task_id=task_id)
+        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+
+        # the plan says both what to run and in which order, jobs only say how each run went
+        jobs_in_order = tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
+
         configured_jobs = tuple(
-            self._job_processor.convert(
-                task=task,
-                jobs=filter(self._job_processor.filter_predicate, self._repo.get_task_jobs(task_id=task_id)),
-                configuration=self._settings,
-            )
+            self._job_processor.convert(task=task, jobs=jobs_in_order, configuration=self._settings)
         )
-        if not configured_jobs:
-            raise RuntimeError()
 
         return task, configured_jobs
 
@@ -199,7 +206,7 @@ class JobSequenceRunner(TaskRunner):
         return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
     def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
-        (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
+        (self._settings.adcm.run_dir / str(target.job.runtime.id) / "tmp").mkdir(parents=True, exist_ok=True)
 
         cluster_service = self._container.get(ClusterService)
         for prepare_environment in target.environment_builders:
@@ -209,14 +216,14 @@ class JobSequenceRunner(TaskRunner):
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
-            create_related_configs(job_id=target.job.id, owner=task.owner)
+            create_related_configs(job_id=target.job.runtime.id, owner=task.owner)
 
         target.executor.execute()
 
         pid = getattr(target.executor.process, "pid", NO_PROCESS_PID)
 
         self._repo.update_job(
-            id=target.job.id,
+            id=target.job.runtime.id,
             data=JobUpdateDTO(
                 pid=pid,
                 status=ExecutionStatus.RUNNING,
@@ -228,9 +235,9 @@ class JobSequenceRunner(TaskRunner):
         # it's enough to detect the function once (as the delete one),
         # but implementation of such a thing is better be done with thoughfull concerns refactoring
         if task.is_blocking:
-            update_task_lock_concern(job_id=target.job.id)
+            update_task_lock_concern(job_id=target.job.runtime.id)
         else:
-            update_task_flag_concern(job_id=target.job.id)
+            update_task_flag_concern(job_id=target.job.runtime.id)
 
         result = target.executor.wait_finished().result
         # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,
@@ -245,7 +252,7 @@ class JobSequenceRunner(TaskRunner):
             job_status = ExecutionStatus.FAILED
 
         self._repo.update_job(
-            id=target.job.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
+            id=target.job.runtime.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
         )
 
         # There a some approaches to implement finalizers:
@@ -280,7 +287,7 @@ class JobSequenceRunner(TaskRunner):
         # ABORTED means "skipped" here, so if it's skipped, we just continue
         return last_job_result == ExecutionStatus.ABORTED
 
-    def _finish(self, task: Task, last_job: Job | None):
+    def _finish(self, task: Task, last_job: RichJob | None):
         task_result = self._runtime.status
 
         if task.is_blocking:
@@ -328,7 +335,7 @@ class JobSequenceRunner(TaskRunner):
         except:  # noqa: E722
             self._logger.exception("Error loading host-component map on task finish")
 
-    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, last_job: Job | None):
+    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, last_job: RichJob | None):
         """Task should be re-read before calling this method, because some flags need to be updated"""
         if last_job:
             self._update_owner_state(task=finished_task, job=last_job, owner=owner)
@@ -337,7 +344,7 @@ class JobSequenceRunner(TaskRunner):
             cluster_service = self._container.get(ClusterService)
             set_hostcomponent(task=finished_task, cluster_service=cluster_service, logger=self._logger)
 
-    def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
+    def _update_owner_state(self, task: Task, job: RichJob, owner: CoreObjectDescriptor) -> None:
         if self._runtime.status == ExecutionStatus.SUCCESS:
             multi_state_set = task.on_success.multi_state_set
             multi_state_unset = task.on_success.multi_state_unset
@@ -346,7 +353,7 @@ class JobSequenceRunner(TaskRunner):
                 self._logger.warning('task for "%s" success state is not set', task.action.display_name)
 
         elif self._runtime.status == ExecutionStatus.FAILED:
-            job_on_fail = job.on_fail
+            job_on_fail = job.spec.on_fail
             task_on_fail = task.on_fail
             state = job_on_fail.state or task_on_fail.state
             multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set

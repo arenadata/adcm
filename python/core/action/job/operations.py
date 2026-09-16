@@ -12,7 +12,7 @@
 
 from typing import Literal
 
-from core.action._types import ExecutionStatus
+from core.action.types import ExecutionStatus
 
 TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.ABORTED]
 
