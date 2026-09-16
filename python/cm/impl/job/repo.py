@@ -420,8 +420,10 @@ class JobRepo(JobRepoI):
         updated = JobLog.objects.filter(id=id, status=previous).update(status=new)
         return bool(updated)
 
-    def change_status_of_task_jobs(self, task_id: TaskID, previous: ExecutionStatus, new: ExecutionStatus) -> int:
-        return JobLog.objects.filter(task_id=task_id, status=previous).update(status=new)
+    def change_status_of_task_jobs(
+        self, task_id: TaskID, previous: Iterable[ExecutionStatus], new: ExecutionStatus
+    ) -> int:
+        return JobLog.objects.filter(task_id=task_id, status__in=previous).update(status=new)
 
     # misc
 

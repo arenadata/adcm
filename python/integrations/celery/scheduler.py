@@ -42,7 +42,7 @@ class CeleryTerminator(Terminator):
     def terminate_task(self, task: TaskShortInfo) -> None:
         with atomic():
             self.repo.change_status_of_task_jobs(
-                task_id=task.id, previous=ExecutionStatus.CREATED, new=ExecutionStatus.REVOKED
+                task_id=task.id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
             )
 
         jobs = self.repo.find_jobs_of_task(task.id)

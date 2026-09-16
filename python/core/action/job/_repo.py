@@ -220,7 +220,7 @@ class JobRepoI(Protocol):
         ...
 
     def change_status_of_task_jobs(
-        self, task_id: TaskID, previous: ExecutionStatus, new: ExecutionStatus
+        self, task_id: TaskID, previous: Iterable[ExecutionStatus], new: ExecutionStatus
     ) -> ChangedAmount:
         """
         Change status of all jobs in task from `previous` to `new` returning amount of records changed
