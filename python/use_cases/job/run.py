@@ -31,7 +31,15 @@ from cm.legacy.services.job.run.runners import (
     update_object_maintenance_mode,
 )
 from cm.transition.status import StatusScenarios
-from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner, is_operation_step_task
+from core.action import (
+    UNFINISHED_STATUSES,
+    CallingProcess,
+    ExecutionStatus,
+    Job,
+    Task,
+    TaskOwner,
+    is_operation_step_task,
+)
 from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
 from core.action.scheduler import ProcessStarter
 from core.cluster import ClusterService
@@ -357,6 +365,8 @@ class MarkTaskBroken:
             updated = self.repo.change_task_status(id=task_id, previous=from_status, new=new_status)
             if not updated:
                 return Fail("status change failed, most likely due to parallel job update")
+
+        self.repo.change_status_of_task_jobs(task_id=task_id, previous=UNFINISHED_STATUSES, new=new_status)
 
         if task.is_blocking:
             delete_task_lock_concern(task_id=task_id)

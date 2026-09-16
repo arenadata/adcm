@@ -223,7 +223,7 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Service "{service_1.display_name}" requires this service or its component',
+                "desc": f'Service "{service.display_name}" is required by: service "{service_1.display_name}"',
                 "level": "error",
             },
         )
@@ -245,8 +245,8 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Component "{component.prototype.name}" of service "{third_service.prototype.display_name} '
-                f"requires this service or its component",
+                "desc": f'Service "{service.display_name}" is required by: '
+                f'component "{component.prototype.name}" of service "{third_service.display_name}"',
                 "level": "error",
             },
         )
@@ -268,8 +268,8 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Component "{component.prototype.name}" of service "{fourth_service.prototype.display_name} '
-                f"requires this service or its component",
+                "desc": f'Service "{service.display_name}" is required by: '
+                f'component "{component.prototype.name}" of service "{fourth_service.display_name}"',
                 "level": "error",
             },
         )
