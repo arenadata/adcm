@@ -12,7 +12,6 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
-from functools import wraps
 
 from core.cluster import ClusterService
 from core.types import HostID, MaintenanceModeState
@@ -97,16 +96,6 @@ def reset_objects_in_mm(cluster_service: ClusterService) -> Response | None:
             "hosts": list(host_ids),
         },
     )
-
-
-def update_mm_objects(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        res = func(*args, **kwargs)
-        reset_objects_in_mm()
-        return res
-
-    return wrapper
 
 
 def register_all_duplicates() -> None:
