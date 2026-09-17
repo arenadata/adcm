@@ -13,17 +13,13 @@
 from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import Literal
 
 from core.bundle._definitions import Definition, DefinitionsMap
 from core.bundle._errors import BundleParsingError
-from core.bundle._parsing.shared.conversion import convert_object
+from core.bundle._parsing.shared.conversion import convert_object, iterate_scripts
 from core.bundle._parsing.shared.parser import PydanticParser
 from core.bundle._parsing.v_2_0.targets import (
-    DynamicActionScripts,
     DynamicConfig,
-    DynamicUpgradeScripts,
-    DynamicWizardScripts,
     ObjectTarget,
     RootTarget,
     Service,
@@ -35,23 +31,12 @@ from core.errors import localize_error
 
 
 class BaseParser(PydanticParser[RootTarget, ObjectTarget]):
-    # Shared pipeline for the 2.x contract family (v_2_1.Parser/v_2_2.Parser subclass this and
-    # each supply their own `_get_schema_mapping`). No contract version implements this class
-    # directly - it's a base, not a parser in its own right.
+    # Shared pipeline for the 2.x contract family (v_2_1.Parser subclasses this and
+    # supplies its own `_get_schema_mapping` and `_get_scripts_model`, since targets are parametrized by scripts).
+    # No contract version implements this class directly - it's a base, not a parser in its own right.
 
     def _get_config_model(self) -> type[DynamicConfig]:
         return DynamicConfig
-
-    def _get_scripts_model(
-        self, mode: Literal["action", "upgrade", "wizard"]
-    ) -> type[DynamicActionScripts | DynamicUpgradeScripts | DynamicWizardScripts]:
-        match mode:
-            case "action":
-                return DynamicActionScripts
-            case "upgrade":
-                return DynamicUpgradeScripts
-            case "wizard":
-                return DynamicWizardScripts
 
     def _flatten_definitions(self, definition: RootTarget) -> Iterable[tuple[BundleDefinitionKey, ObjectTarget]]:
         if not isinstance(definition, Service):
@@ -140,7 +125,7 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, dict]) -> None:
             for action in (definition.get("actions") or {}).values():
                 _propagate("venv", source=definition, target=action)
 
-                for script in action.get("scripts") or ():
+                for script in iterate_scripts(action.get("scripts") or ()):
                     _propagate("allow_to_terminate", source=action, target=script)
 
             for upgrade in definition.get("upgrade") or ():

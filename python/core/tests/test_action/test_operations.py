@@ -28,7 +28,7 @@ from core.action.types import (
 from core.spec.types import FullSpecKey
 from core.types import Names
 
-SEQUENCE = ExecutionStyle.SEQUENCE
+SEQUENTIAL = ExecutionStyle.SEQUENTIAL
 PARALLEL = ExecutionStyle.PARALLEL
 
 
@@ -55,7 +55,7 @@ class TestFlattenExecutionPlan(TestCase):
 
     def test_order_follows_declaration_not_key_order(self):
         spec = JobSpecV1(
-            hierarchy=make_level(SEQUENCE, ["zeta", "alpha", "mid"]),
+            hierarchy=make_level(SEQUENTIAL, ["zeta", "alpha", "mid"]),
             scripts={key: make_script(key) for key in ("/zeta", "/alpha", "/mid")},
         )
 
@@ -65,7 +65,7 @@ class TestFlattenExecutionPlan(TestCase):
         # the group sits between two scripts, so its own scripts come out between them
         spec = JobSpecV1(
             hierarchy=make_level(
-                SEQUENCE,
+                SEQUENTIAL,
                 ["last", "group", "first"],
                 group=make_level(PARALLEL, ["b", "a"]),
             ),
@@ -77,9 +77,9 @@ class TestFlattenExecutionPlan(TestCase):
     def test_deeply_nested_groups(self):
         spec = JobSpecV1(
             hierarchy=make_level(
-                SEQUENCE,
+                SEQUENTIAL,
                 ["outer"],
-                outer=make_level(PARALLEL, ["inner"], inner=make_level(SEQUENCE, ["z", "y"])),
+                outer=make_level(PARALLEL, ["inner"], inner=make_level(SEQUENTIAL, ["z", "y"])),
             ),
             scripts={key: make_script(key) for key in ("/outer/inner/z", "/outer/inner/y")},
         )
@@ -100,7 +100,7 @@ def make_job(job_id: int, spec_key: str) -> JobShortInfo:
 
 class TestToRichJobs(TestCase):
     def setUp(self) -> None:
-        self.spec = JobSpecV1.from_scripts(make_script("/beta"), make_script("/alpha"))
+        self.spec = JobSpecV1.from_entries(make_script("/beta"), make_script("/alpha"))
 
     def test_job_is_paired_with_its_node(self):
         rich = to_rich_job(spec=self.spec, job=make_job(7, "/alpha"))

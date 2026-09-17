@@ -101,6 +101,24 @@ class TestSpecification(ConfigTestCase):
 
         self.assertDictEqual(asdict(hierarchy), asdict(expected_hierarhcy))
 
+    def test_hierarchy_register_reports_already_present_keys(self):
+        hierarchy = build_hierarchy_level()
+
+        # new keys are placed
+        self.assertTrue(hierarchy.register(("plain",)))
+        self.assertTrue(hierarchy.register(("group", "child")))
+
+        # present keys are reported, group is present too, since it's created implicitly while placing its child
+        self.assertFalse(hierarchy.register(("plain",)))
+        self.assertFalse(hierarchy.register(("group", "child")))
+        self.assertFalse(hierarchy.register(("group",)))
+
+        # present keys aren't placed again
+        expected_hierarchy = build_hierarchy_level(
+            fields=["plain", "group"], child_groups={"group": build_hierarchy_level(fields=["child"])}
+        )
+        self.assertDictEqual(asdict(hierarchy), asdict(expected_hierarchy))
+
     def test_get_full_display_name(self):
         simple_param = spec.p.StringParameter(
             identifier=spec.build_identifier_from_name("/simple"),

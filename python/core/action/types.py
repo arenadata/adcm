@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import Self
 
 from core.constants import MM_ACTION_NAMES
+from core.spec.errors import DuplicateSpecEntryError
 from core.spec.hierarchy import HierarchyLevel
 from core.spec.keys import full_key_to_level_keys
 from core.spec.types import FullSpecKey
@@ -436,22 +437,24 @@ class ScriptSpec:
     details: JobDetails = field(default_factory=JobDetails)
 
 
+class ExecutionStyle(str, Enum):
+    SEQUENTIAL = "sequential"
+    PARALLEL = "parallel"
+
+
 @dataclass(slots=True)
 class GroupSpec:
     key: FullSpecKey
     names: Names
-
-
-class ExecutionStyle(str, Enum):
-    SEQUENCE = "sequence"
-    PARALLEL = "parallel"
+    # how entries of the group are executed, mirrored as `rule` of its hierarchy level
+    type: ExecutionStyle
 
 
 @dataclass(slots=True)
 class JobHierarchyLevel(HierarchyLevel[ExecutionStyle]):
     @classmethod
     def build_with_defaults(cls) -> Self:
-        return cls(rule=ExecutionStyle.SEQUENCE)
+        return cls(rule=ExecutionStyle.SEQUENTIAL)
 
 
 class JobSpecV1(BaseModel):
@@ -460,22 +463,64 @@ class JobSpecV1(BaseModel):
     scripts: dict[FullSpecKey, ScriptSpec] = Field(default_factory=dict)
 
     @classmethod
-    def from_scripts(cls, *scripts: ScriptSpec) -> Self:
+    def from_entries(cls, *entries: ScriptSpec | GroupSpec) -> Self:
         """
-        Build a plan out of scripts that already know their keys.
+        Build a plan out of scripts and groups that already know their keys.
+
+        It's THE way to construct a plan: hierarchy, groups and scripts have to agree with each other,
+        and only this method guarantees that. Production code shouldn't assemble a plan
+        nor change a built one directly, otherwise nothing ensures the plan is correct.
 
         Keys define the placement, so this only maps them into the plan and its hierarchy.
+        Entries are expected in declaration order, a group coming before its own entries.
+
+        Raises `DuplicateSpecEntryError` describing all conflicts at once:
+        - the same key is passed more than once;
+        - a group comes after its own entries (they have already placed it into the hierarchy);
+        - the same name is used by more than one group, no matter where these groups are.
         """
 
         hierarchy = JobHierarchyLevel.build_with_defaults()
+        groups: dict[FullSpecKey, GroupSpec] = {}
+        scripts: dict[FullSpecKey, ScriptSpec] = {}
 
-        for script in scripts:
-            hierarchy.register(full_key_to_level_keys(script.key))
+        group_keys_by_name: dict[str, list[FullSpecKey]] = {}
+        conflicts: list[str] = []
+
+        for entry in entries:
+            if entry.key in groups or entry.key in scripts:
+                taken_by = "group" if entry.key in groups else "script"
+                declared_as = "group" if isinstance(entry, GroupSpec) else "script"
+                conflicts.append(f'"{entry.key}" is declared more than once: as {taken_by}, then as {declared_as}')
+                continue
+
+            level_keys = full_key_to_level_keys(entry.key)
+            if not hierarchy.register(level_keys):
+                conflicts.append(f'"{entry.key}" is already placed by entries declared before it')
+                continue
+
+            if isinstance(entry, GroupSpec):
+                hierarchy.set_rule(group=level_keys, rule=entry.type)
+                groups[entry.key] = entry
+                group_keys_by_name.setdefault(entry.names.internal, []).append(entry.key)
+            else:
+                scripts[entry.key] = entry
+
+        for name, keys in group_keys_by_name.items():
+            if len(keys) > 1:
+                keys_repr = ", ".join(f'"{key}"' for key in keys)
+                conflicts.append(f'group name "{name}" is used by more than one group: {keys_repr}')
+
+        if conflicts:
+            message = "Entries of execution plan conflict with each other:\n" + "\n".join(
+                f"- {conflict}" for conflict in conflicts
+            )
+            raise DuplicateSpecEntryError(message)
 
         # everything is passed explicitly rather than mutated in place:
         # mutating a default container leaves `model_fields_set` empty and lies
         # to anything that asks the model what was actually set on it
-        return cls(hierarchy=hierarchy, groups={}, scripts={script.key: script for script in scripts})
+        return cls(hierarchy=hierarchy, groups=groups, scripts=scripts)
 
 
 @dataclass(slots=True, frozen=True)

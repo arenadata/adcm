@@ -25,7 +25,7 @@ from cm.tests.scripts import build_script_spec
 
 class TestExecutionPlanStorage(TestCase):
     def setUp(self) -> None:
-        self.spec = JobSpecV1.from_scripts(build_script_spec("/0", "first"), build_script_spec("/1", "second"))
+        self.spec = JobSpecV1.from_entries(build_script_spec("/0", "first"), build_script_spec("/1", "second"))
 
     def test_roundtrip_success(self):
         self.assertEqual(parse_execution_plan(dump_execution_plan(self.spec)), self.spec)

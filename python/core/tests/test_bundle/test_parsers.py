@@ -583,7 +583,7 @@ class TestScriptsConversion(TestCase):
         self.assertEqual(list(spec.scripts), ["/0", "/1"])
         self.assertEqual([script.key for script in spec.scripts.values()], ["/0", "/1"])
         self.assertEqual(spec.hierarchy.fields, ["0", "1"])
-        self.assertEqual(spec.hierarchy.rule, ExecutionStyle.SEQUENCE)
+        self.assertEqual(spec.hierarchy.rule, ExecutionStyle.SEQUENTIAL)
 
     def test_bundle_switch_in_rendered_action_fail(self):
         # the DSL union lets it through, so parsing rejects it the way `check_actions` does statically
@@ -658,8 +658,62 @@ class TestScriptsConversion(TestCase):
         # ... except internal ones, which have no process to terminate
         self.assertFalse(spec.scripts["/1"].details.terminatable)
 
+    def test_action_level_terminate_propagates_to_root_entry_scripts(self):
+        entry = V2Implementation.build_cluster_entry() | {
+            "actions": {
+                "act": {
+                    "allow_to_terminate": True,
+                    "scripts": [
+                        {"name": "inherits", "script": "a.yaml", "script_type": "ansible"},
+                        {"name": "own", "script": "b.yaml", "script_type": "ansible", "allow_to_terminate": False},
+                    ],
+                }
+            }
+        }
+
+        for version, parser in get_parsers():
+            with self.subTest(version):
+                definitions = parser.parse_root_entries(
+                    [RootEntry(data=entry | {"contract_version": version}, full_path_to_file=FILE_IN_ROOT)],
+                    bundle_root=BUNDLE_ROOT,
+                )
+
+                (action,) = definitions[("cluster",)].actions
+                self.assertIsNotNone(action.scripts)
+                self.assertTrue(action.scripts.scripts["/0"].details.terminatable)
+                # explicit `false` is kept as is, only unset values are inherited
+                self.assertFalse(action.scripts.scripts["/1"].details.terminatable)
+
 
 class TestUpgradeScripts(TestCase):
+    def test_bundle_switch_amount_in_dynamic_scripts_fail(self):
+        ansible = {"name": "ansible", "script": "a.yaml", "script_type": "ansible"}
+        switch = {"name": "switch", "script": "bundle_switch", "script_type": "internal"}
+
+        cases = (
+            (
+                "no switch",
+                [ansible],
+                'Scripts block must contain exact one block with script "bundle_switch" in upgrade',
+            ),
+            (
+                "multiple switches",
+                [switch, ansible, switch],
+                'Script with script_type "bundle_switch" must be unique in upgrade',
+            ),
+        )
+
+        for version, parser in get_parsers():
+            for case, scripts, message in cases:
+                with self.subTest(f"{version}-{case}"):
+                    # parsing error is what API reports as bundle definition error, it has to stay this way
+                    with self.assertRaises(BundleParsingError) as err:
+                        parser.parse_scripts(
+                            scripts, template_path=FILE_IN_ROOT, action_allow_to_terminate=False, mode="upgrade"
+                        )
+
+                    self.assertIn(message, err.exception.message)
+
     def test_adcm_7953_internal_revert_in_scripts_fail(self):
         yaml_schema = """
         - type: cluster
@@ -701,6 +755,51 @@ class TestUpgradeScripts(TestCase):
                     parser.parse_scripts(
                         raw, template_path=FILE_IN_ROOT, action_allow_to_terminate=False, mode="upgrade"
                     )
+
+
+class TestScriptsPresence(TestCase):
+    """Scripts rendered from template are unknown until rendering, so only statically declared ones are converted"""
+
+    def test_scripts_are_absent_for_scripts_template_success(self):
+        scripts_template = {"file": {"path": "scripts.j2"}, "engine": {"type": "jinja2"}}
+        upgrade = {"versions": {"min": "0", "max": "1"}, "states": {"available": "any"}}
+        entry = V2Implementation.build_cluster_entry() | {
+            "actions": {
+                "with_scripts": {"scripts": [{"name": "run", "script": "a.yaml", "script_type": "ansible"}]},
+                "with_scripts_template": {"scripts_template": scripts_template},
+            },
+            "upgrade": [
+                upgrade
+                | {
+                    "name": "with_scripts",
+                    "scripts": [{"name": "switch", "script": "bundle_switch", "script_type": "internal"}],
+                },
+                upgrade | {"name": "with_scripts_template", "scripts_template": scripts_template},
+            ],
+        }
+
+        for version, parser in get_parsers():
+            with self.subTest(version):
+                definitions = parser.parse_root_entries(
+                    [RootEntry(data=entry, full_path_to_file=FILE_IN_ROOT)], bundle_root=BUNDLE_ROOT
+                )
+
+                cluster = definitions[("cluster",)]
+                converted = {
+                    "actions": {action.name: action.scripts is not None for action in cluster.actions},
+                    "upgrades": {
+                        upgrade.name: upgrade.action.scripts is not None
+                        for upgrade in cluster.upgrades
+                        if upgrade.action is not None
+                    },
+                }
+                self.assertDictEqual(
+                    converted,
+                    {
+                        "actions": {"with_scripts": True, "with_scripts_template": False},
+                        "upgrades": {"with_scripts": True, "with_scripts_template": False},
+                    },
+                )
 
 
 class TestScriptsRendering(TestCase):
@@ -750,20 +849,21 @@ class TestScriptsRendering(TestCase):
     }
 
     # error path is nested through the whole script definition down to the missing field,
-    # identical across contract versions since it's produced by the same pydantic machinery
+    # entries of `scripts` are either scripts or groups, so there's a level telling which one it is
     missing_value_fragment = (
         "Errors found in definition of bundle entity:\n"
         " scripts\n"
         "  0\n"
-        "   internal\n"
-        "    config_apply\n"
-        "     params\n"
-        "      changes\n"
-        "       1\n"
-        "        parameters\n"
-        "         0\n"
-        "          value\n"
-        "          | missing: Field required"
+        "   script\n"
+        "    internal\n"
+        "     config_apply\n"
+        "      params\n"
+        "       changes\n"
+        "        1\n"
+        "         parameters\n"
+        "          0\n"
+        "           value\n"
+        "           | missing: Field required"
     )
 
     def test_parse_script_config_apply(self):
@@ -1703,7 +1803,7 @@ class TestBundleDefinitionConversion(TestCase):
                 name="simple_job",
                 display_name="simple_job",
                 venv=MAIN_VENV,
-                scripts=JobSpecV1.from_scripts(
+                scripts=JobSpecV1.from_entries(
                     build_script_spec("/0", "simple_job", ansible_script("wow.yaml")),
                 ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
@@ -1712,7 +1812,7 @@ class TestBundleDefinitionConversion(TestCase):
                 name="simple_task",
                 display_name="Awesome ma I",
                 venv=MAIN_VENV,
-                scripts=JobSpecV1.from_scripts(
+                scripts=JobSpecV1.from_entries(
                     build_script_spec("/0", "first", ansible_script("inner/root.yaml")),
                     build_script_spec("/1", "second", ansible_script("another.yaml"), display_name="Special"),
                 ),
@@ -1722,7 +1822,7 @@ class TestBundleDefinitionConversion(TestCase):
                 name="not_full_states",
                 display_name="not_full_states",
                 venv=MAIN_VENV,
-                scripts=JobSpecV1.from_scripts(
+                scripts=JobSpecV1.from_entries(
                     build_script_spec("/0", "not_full_states", python_script("x.py")),
                 ),
                 available_at=ActionAvailability(states="any", multi_states="any"),
@@ -1731,7 +1831,7 @@ class TestBundleDefinitionConversion(TestCase):
                 name="not_full_masking",
                 display_name="not_full_masking",
                 venv=MAIN_VENV,
-                scripts=JobSpecV1.from_scripts(
+                scripts=JobSpecV1.from_entries(
                     build_script_spec("/0", "not_full_masking", python_script("x.py")),
                 ),
                 unavailable_at=ActionAvailability(states=["o"], multi_states=[]),
@@ -1903,7 +2003,7 @@ class TestBundleDefinitionConversion(TestCase):
                     display_name="Upgrade: action-like",
                     venv=MAIN_VENV,
                     available_at=ActionAvailability(states="any", multi_states="any"),
-                    scripts=JobSpecV1.from_scripts(
+                    scripts=JobSpecV1.from_entries(
                         build_script_spec("/0", "first", ansible_script("root.yaml")),
                         build_script_spec(
                             "/1", "second", simple_internal_script("bundle_switch"), display_name="Special"

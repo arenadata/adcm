@@ -18,3 +18,11 @@ class InvalidSpecKeyError(ValueError):
     It's a `ValueError` descendant, because building a key out of unsuitable input
     is exactly that; domains are expected to convert it to their own error at their boundaries.
     """
+
+
+class DuplicateSpecEntryError(ValueError):
+    """
+    Raised when an entry takes a key that's already taken in a specification.
+
+    Domains are expected to convert it to their own error at their boundaries, same as `InvalidSpecKeyError`.
+    """

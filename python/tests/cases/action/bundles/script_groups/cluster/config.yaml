@@ -1,0 +1,54 @@
+# Same scripts are declared statically and rendered from template.
+# Script names are repeated on purpose: on the same level and across levels.
+- type: cluster
+  name: script_groups_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      masking:
+      scripts:
+        - name: prepare
+          script_type: ansible
+          script: ./playbook.yaml
+
+        - group:
+            type: parallel
+            name: shards
+            display_name: Shards
+            scripts:
+              - group:
+                  type: sequential
+                  name: shard_a
+                  scripts:
+                    - name: step
+                      script_type: ansible
+                      script: ./playbook.yaml
+                    - name: step
+                      script_type: ansible
+                      script: ./playbook.yaml
+                    - name: finish
+                      script_type: ansible
+                      script: ./playbook.yaml
+
+              - group:
+                  type: sequential
+                  name: shard_b
+                  scripts:
+                    - name: step
+                      script_type: ansible
+                      script: ./playbook.yaml
+
+        - name: finish
+          script_type: ansible
+          script: ./playbook.yaml
+
+    grouped_rendered:
+      masking:
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./scripts.j2

@@ -27,13 +27,15 @@ from core.bundle._definitions import (
     ImportDefinition,
     UpgradeDefinition,
 )
-from core.bundle._errors import BundleValidationError
+from core.bundle._errors import BundleParsingError, BundleValidationError
 from core.bundle._predicates import has_requires, is_component, is_component_key, is_service
 from core.bundle._representation import dependency_entry_to_key, repr_from_key
 from core.bundle._types import BundleDefinitionKey
 from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.errors import localize_error
 from core.result import Fail, Success
+from core.spec.keys import full_key_to_level_keys, level_keys_to_full_key
+from core.spec.types import LevelSpecKey
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
 
@@ -271,11 +273,13 @@ def check_actions(
 ) -> None:
     for action_definition in actions:
         with localize_error(f"Action {action_definition.name}"):
+            check_hc_apply_has_hc_acl(action=action_definition)
             check_mm_host_action_is_allowed(action=action_definition, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action_definition.hostcomponentmap, definitions=definitions)
             check_templates_are_correct(action=action_definition, bundle_root=bundle_root)
 
             if action_definition.scripts is not None:
+                check_no_bundle_changing_scripts_in_groups(spec=action_definition.scripts)
                 check_no_bundle_switch(scripts=action_definition.scripts)
                 check_action_scripts(
                     scripts=action_definition.scripts, hostcomponentmap=action_definition.hostcomponentmap
@@ -283,13 +287,25 @@ def check_actions(
                 check_execution_hierarchy(spec=action_definition.scripts)
 
 
-def check_action_scripts(scripts: JobSpecV1, hostcomponentmap: list) -> None:
+def check_hc_apply_has_hc_acl(action: ActionDefinition) -> None:
+    # wizards have mapping steps of their own, so they aren't required to declare `hc_acl`
+    if action.scripts is None or action.wizard_template is not None or action.hostcomponentmap is not None:
+        return
+
+    if any(isinstance(script_spec.script, HcApplyScript) for script_spec in action.scripts.scripts.values()):
+        # This one is because of original implementation validated it on bundle DSL level,
+        # so we keep the error type for now since it affects API error returned.
+        # Can be turned to validation error if no effect on user is registered.
+        raise BundleParsingError('"hc_apply" requires "hc_acl" declaration')
+
+
+def check_action_scripts(scripts: JobSpecV1, hostcomponentmap: list | None) -> None:
     for script_spec in scripts.scripts.values():
         if not isinstance(script_spec.script, HcApplyScript) or script_spec.script.params is None:
             continue
 
         apply_rules = {(rule.action, rule.service, rule.component) for rule in script_spec.script.params.rules}
-        action_rules = {(entry["action"], entry["service"], entry["component"]) for entry in hostcomponentmap}
+        action_rules = {(entry["action"], entry["service"], entry["component"]) for entry in hostcomponentmap or ()}
 
         extra_rules = apply_rules - action_rules
         if extra_rules:
@@ -316,12 +332,12 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
         with localize_error(f"Upgrade {upgrade.name}"):
             check_action_hc_acl_rules(hostcomponentmap=upgrade.action.hostcomponentmap, definitions=definitions)
-            if upgrade.action.scripts_template is None:
-                check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
 
-                if upgrade.action.scripts is not None:
-                    check_execution_hierarchy(spec=upgrade.action.scripts)
-            else:
+            if upgrade.action.scripts is not None:
+                check_no_bundle_changing_scripts_in_groups(spec=upgrade.action.scripts)
+                check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
+                check_execution_hierarchy(spec=upgrade.action.scripts)
+            elif upgrade.action.scripts_template is not None:
                 check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
 
 
@@ -333,11 +349,18 @@ def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> 
 # Atomic checks
 
 
+_MIN_GROUP_ENTRIES: Final = {ExecutionStyle.SEQUENTIAL: 1, ExecutionStyle.PARALLEL: 2}
+
+
 def check_execution_hierarchy(spec: JobSpecV1) -> None:
-    _check_hierarchy_level(level=spec.hierarchy, parent_rule=None, depth=0)
+    _check_hierarchy_level(level=spec.hierarchy, parent_rule=None, group_levels=())
 
 
-def _check_hierarchy_level(level: JobHierarchyLevel, parent_rule: ExecutionStyle | None, depth: int) -> None:
+def _check_hierarchy_level(
+    level: JobHierarchyLevel, parent_rule: ExecutionStyle | None, group_levels: tuple[LevelSpecKey, ...]
+) -> None:
+    depth = len(group_levels)
+
     if depth > _MAX_DECLARED_HIERARCHY_DEPTH:
         message = (
             f"Scripts can be nested in {_MAX_DECLARED_HIERARCHY_DEPTH} levels of groups at most, "
@@ -353,14 +376,43 @@ def _check_hierarchy_level(level: JobHierarchyLevel, parent_rule: ExecutionStyle
         message = f'Nested groups must alternate execution style, got "{level.rule.value}" inside "{parent_rule.value}"'
         raise BundleValidationError(message)
 
-    for child_level in level.child_groups.values():
-        _check_hierarchy_level(level=child_level, parent_rule=level.rule, depth=depth + 1)
+    entries_amount = len(level.fields)
+    minimum = _MIN_GROUP_ENTRIES[level.rule]
+
+    # the root level isn't a group, so the restriction doesn't apply to it
+    if group_levels and entries_amount < minimum:
+        entries = "entry" if minimum == 1 else "entries"
+        message = (
+            f'{level.rule.value.capitalize()} group "{level_keys_to_full_key(group_levels)}" '
+            f"has to contain at least {minimum} {entries}, got {entries_amount}"
+        )
+        raise BundleValidationError(message)
+
+    for key, child_level in level.child_groups.items():
+        _check_hierarchy_level(level=child_level, parent_rule=level.rule, group_levels=(*group_levels, key))
 
 
 def check_no_bundle_switch(scripts: JobSpecV1) -> None:
     for script_spec in scripts.scripts.values():
         if _is_bundle_switch(script_spec):
             message = f"bundle_switch is disallowed for {script_spec.names.internal} script"
+            raise BundleValidationError(message)
+
+
+def check_no_bundle_changing_scripts_in_groups(spec: JobSpecV1) -> None:
+    for script_spec in spec.scripts.values():
+        is_in_group = len(full_key_to_level_keys(script_spec.key)) > 1
+        script = script_spec.script
+
+        if (
+            is_in_group
+            and script.type == action.ScriptType.INTERNAL
+            and script.path in ("bundle_switch", "bundle_revert")
+        ):
+            message = (
+                f'"{script.path}" script isn\'t allowed inside groups: '
+                f'"{script_spec.names.internal}" is declared at "{script_spec.key}"'
+            )
             raise BundleValidationError(message)
 
 
@@ -377,8 +429,8 @@ def check_mm_host_action_is_allowed(action: ActionDefinition, definition_type: s
         raise BundleValidationError(message)
 
 
-def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[BundleDefinitionKey]) -> None:
-    for hc_entry in hostcomponentmap:
+def check_action_hc_acl_rules(hostcomponentmap: list | None, definitions: Collection[BundleDefinitionKey]) -> None:
+    for hc_entry in hostcomponentmap or ():
         try:
             hc_entry_key = dependency_entry_to_key(hc_entry)
         except KeyError as e:
@@ -414,15 +466,13 @@ def validate_bundle_switch_amount_in_spec(spec: JobSpecV1) -> Success[None] | Fa
     )
 
 
-# scripts typehint is bad due to this function requirements to be quite universal,
-# yet current typesystem handles it differently.
-# It works on DSL-shaped scripts, `validate_bundle_switch_amount_in_spec` is its spec counterpart.
-def validate_bundle_switch_amount(scripts: list) -> Success[None] | Fail[str]:
-    scripts_with_bundle_switch = tuple(
-        script for script in scripts if script.script_type == "internal" and script.script == "bundle_switch"
-    )
-
-    return _detect_bundle_switch_amount_violation(amount=len(scripts_with_bundle_switch))
+def check_bundle_switch_amount_for_rendered_upgrade(scripts: JobSpecV1) -> None:
+    match validate_bundle_switch_amount_in_spec(scripts):
+        case Fail(value=err_message):
+            # Parsing error for compatibility reasons: meaningfully it's validation one.
+            # Can be changed if users aren't affected.
+            message = f"{err_message} in upgrade"
+            raise BundleParsingError(message)
 
 
 def _is_bundle_switch(script_spec: ScriptSpec) -> bool:

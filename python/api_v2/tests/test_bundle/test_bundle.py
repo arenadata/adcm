@@ -564,14 +564,14 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertIn(
                 (
-                    "          service\n"
-                    "          | missing: Field required\n"
-                    "          component\n"
-                    "          | missing: Field required\n"
-                    "          action\n"
-                    "          | missing: Field required\n"
-                    "          ansible_tags\n"
-                    "          | unexpected_keyword_argument: Unexpected keyword argument"
+                    "           service\n"
+                    "           | missing: Field required\n"
+                    "           component\n"
+                    "           | missing: Field required\n"
+                    "           action\n"
+                    "           | missing: Field required\n"
+                    "           ansible_tags\n"
+                    "           | unexpected_keyword_argument: Unexpected keyword argument"
                 ),
                 response.data["desc"],
             )

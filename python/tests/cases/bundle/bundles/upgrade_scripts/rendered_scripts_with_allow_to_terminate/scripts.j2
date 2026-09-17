@@ -1,0 +1,7 @@
+- name: run
+  script_type: ansible
+  script: ./playbook.yaml
+  allow_to_terminate: true
+- name: switch
+  script_type: internal
+  script: bundle_switch

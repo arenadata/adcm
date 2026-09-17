@@ -350,7 +350,8 @@ def _action_definition_to_model(definition: bundle.d.ActionDefinition, prototype
         multi_state_on_success_unset=definition.on_success.unset_multi_state,
         multi_state_on_fail_set=definition.on_fail.set_multi_state,
         multi_state_on_fail_unset=definition.on_fail.unset_multi_state,
-        hostcomponentmap=definition.hostcomponentmap,
+        # absent and empty `hc_acl` are distinct only during bundle processing
+        hostcomponentmap=definition.hostcomponentmap or [],
         host_action=definition.is_host_action,
         allow_to_terminate=definition.allow_to_terminate,
         allow_for_action_host_group=definition.allow_for_action_host_group,
@@ -359,7 +360,7 @@ def _action_definition_to_model(definition: bundle.d.ActionDefinition, prototype
         scripts_template=_dump_or_none(definition.scripts_template),
         wizard_template=_dump_or_none(definition.wizard_template),
         # actions rendering their plan from a template have nothing to store here
-        scripts=dump_execution_plan(definition.scripts) if definition.scripts else None,
+        scripts=dump_execution_plan(definition.scripts) if definition.scripts is not None else None,
     )
 
 
