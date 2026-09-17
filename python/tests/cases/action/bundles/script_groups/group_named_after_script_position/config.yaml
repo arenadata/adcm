@@ -1,0 +1,20 @@
+# script takes key "0" by its position, group takes the same key by its name
+- type: cluster
+  name: script_groups_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      scripts:
+        - name: step
+          script_type: ansible
+          script: ./playbook.yaml
+        - group:
+            type: parallel
+            name: "0"
+            scripts:
+              - name: step
+                script_type: ansible
+                script: ./playbook.yaml

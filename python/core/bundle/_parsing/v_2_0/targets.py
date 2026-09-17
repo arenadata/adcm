@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Generic, Literal, TypeVar
 
 from pydantic import BeforeValidator, Field, StrictBool, StrictInt
 
@@ -19,8 +19,6 @@ from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.v_2_0.actions import (
     ADCMActions,
     ClusterActions,
-    DynamicActionScript,
-    DynamicWizardScript,
     HostActions,
     ProviderActions,
 )
@@ -38,7 +36,18 @@ from core.bundle._parsing.v_2_0.schema import (
     ServiceRequiresSchema,
     Version,
 )
-from core.bundle._parsing.v_2_0.upgrades import ClusterUpgrades, DynamicUpgradeScriptList, ProviderUpgrades
+from core.bundle._parsing.v_2_0.upgrades import (
+    DynamicUpgradeScriptList,
+    SimpleUpgrade,
+    UpgradeWithScripts,
+    UpgradeWithScriptsTemplate,
+)
+
+# Targets are parametrized by entries of `scripts` they allow,
+# concrete contract versions decide on them
+ActionScriptT = TypeVar("ActionScriptT")
+UpgradeScriptT = TypeVar("UpgradeScriptT")
+ScriptT = TypeVar("ScriptT")
 
 # Cluster Objects
 
@@ -50,11 +59,11 @@ def init_not_defined_components(components: dict[str, Any] | Any) -> dict[str, d
     return {k: v or {} for k, v in components.items()}
 
 
-class Component(BundleModel):
+class Component(BundleModel, Generic[ActionScriptT]):
     display_name: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
 
-    actions: ClusterActions
+    actions: ClusterActions[ActionScriptT]
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
@@ -67,7 +76,7 @@ class Component(BundleModel):
     requires: Annotated[list[ComponentRequiresSchema] | None, Field(default=None)]
 
 
-class Service(BundleModel):
+class Service(BundleModel, Generic[ActionScriptT]):
     type: Literal["service"]
 
     name: str
@@ -78,7 +87,7 @@ class Service(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: ClusterActions
+    actions: ClusterActions[ActionScriptT]
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
@@ -94,11 +103,11 @@ class Service(BundleModel):
     requires: Annotated[list[ServiceRequiresSchema] | None, Field(default=None)]
 
     components: Annotated[
-        dict[Name, Component] | None, Field(default=None), BeforeValidator(init_not_defined_components)
+        dict[Name, Component[ActionScriptT]] | None, Field(default=None), BeforeValidator(init_not_defined_components)
     ]
 
 
-class Cluster(BundleModel):
+class Cluster(BundleModel, Generic[ActionScriptT, UpgradeScriptT]):
     type: Literal["cluster"]
     contract_version: Literal["2.0"]
 
@@ -110,7 +119,7 @@ class Cluster(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: ClusterActions
+    actions: ClusterActions[ActionScriptT]
     venv: MainVenv
 
     config: ConfigAsListDictOrNone
@@ -121,14 +130,17 @@ class Cluster(BundleModel):
     license: License
     imports: Imports
     export: Export
-    upgrade: ClusterUpgrades
+    upgrade: Annotated[
+        list[UpgradeWithScriptsTemplate | UpgradeWithScripts[UpgradeScriptT] | SimpleUpgrade] | None,
+        Field(default=None),
+    ]
     allow_maintenance_mode: Annotated[StrictBool | None, Field(default=None)]
 
 
 # Provider Objects
 
 
-class Host(BundleModel):
+class Host(BundleModel, Generic[ActionScriptT]):
     type: Literal["host"]
 
     name: str
@@ -139,7 +151,7 @@ class Host(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: HostActions
+    actions: HostActions[ActionScriptT]
     venv: ChildVenv
 
     config: ConfigAsListDictOrNone
@@ -147,7 +159,7 @@ class Host(BundleModel):
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
 
-class Provider(BundleModel):
+class Provider(BundleModel, Generic[ActionScriptT, UpgradeScriptT]):
     type: Literal["provider"]
     contract_version: Literal["2.0"]
 
@@ -159,7 +171,7 @@ class Provider(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: ProviderActions
+    actions: ProviderActions[ActionScriptT]
     venv: MainVenv
 
     config: ConfigAsListDictOrNone
@@ -168,13 +180,13 @@ class Provider(BundleModel):
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
     license: License
-    upgrade: ProviderUpgrades
+    upgrade: Annotated[list[UpgradeWithScripts[UpgradeScriptT] | SimpleUpgrade] | None, Field(default=None)]
 
 
 # ADCM
 
 
-class ADCMSchema(BundleModel):
+class ADCMSchema(BundleModel, Generic[ActionScriptT, UpgradeScriptT]):
     type: Literal["adcm"]
     contract_version: Literal["2.0"]
 
@@ -186,29 +198,29 @@ class ADCMSchema(BundleModel):
     version: Version
     edition: Annotated[str | None, Field(default=None)]
 
-    actions: ADCMActions
+    actions: ADCMActions[ActionScriptT]
     venv: MainVenv
 
     config: ConfigAsListDictOrNone
 
     flag_autogeneration: Annotated[FlagAutogenerationSchema | None, Field(default=None)]
 
-    upgrade: ProviderUpgrades
+    upgrade: Annotated[list[UpgradeWithScripts[UpgradeScriptT] | SimpleUpgrade] | None, Field(default=None)]
 
 
 # Dynamic Blocks
 
 
-class DynamicActionScripts(BundleModel):
-    scripts: Annotated[list[DynamicActionScript], Field(min_length=1)]
+class DynamicActionScripts(BundleModel, Generic[ScriptT]):
+    scripts: Annotated[list[ScriptT], Field(min_length=1)]
 
 
-class DynamicUpgradeScripts(BundleModel):
-    scripts: Annotated[DynamicUpgradeScriptList, Field(min_length=1)]
+class DynamicUpgradeScripts(BundleModel, Generic[ScriptT]):
+    scripts: Annotated[DynamicUpgradeScriptList[ScriptT], Field(min_length=1)]
 
 
-class DynamicWizardScripts(BundleModel):
-    scripts: Annotated[list[DynamicWizardScript], Field(min_length=1)]
+class DynamicWizardScripts(BundleModel, Generic[ScriptT]):
+    scripts: Annotated[list[ScriptT], Field(min_length=1)]
 
 
 class DynamicConfig(BundleModel):

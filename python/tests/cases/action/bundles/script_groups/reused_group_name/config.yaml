@@ -1,0 +1,21 @@
+# group name "twin" is used on different levels
+- type: cluster
+  name: script_groups_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      scripts:
+        - group:
+            type: parallel
+            name: twin
+            scripts:
+              - group:
+                  type: sequential
+                  name: twin
+                  scripts:
+                    - name: step
+                      script_type: ansible
+                      script: ./playbook.yaml

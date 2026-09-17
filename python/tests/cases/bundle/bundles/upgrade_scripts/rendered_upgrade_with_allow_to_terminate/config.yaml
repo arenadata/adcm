@@ -1,0 +1,18 @@
+- type: cluster
+  name: upgrade_scripts_cluster
+  version: "2"
+  contract_version: "2.1"
+  venv: "2.16"
+  upgrade:
+    - name: upgrade
+      versions:
+        min: "1"
+        max: "1"
+      states:
+        available: any
+      allow_to_terminate: true
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./scripts.j2

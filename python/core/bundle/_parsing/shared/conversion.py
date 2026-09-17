@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from functools import partial
 from pathlib import Path
 from typing import Any, Literal
@@ -20,7 +20,7 @@ from pydantic import TypeAdapter
 import yaml
 
 from core import action, config
-from core.action.types import JobDetails, JobSpecV1, Script, ScriptSpec
+from core.action.types import ExecutionStyle, GroupSpec, JobDetails, JobSpecV1, Script, ScriptSpec
 from core.bundle._definitions import (
     ActionAvailability,
     ActionDefinition,
@@ -35,6 +35,8 @@ from core.bundle._definitions import (
     UpgradeRestrictions,
     VersionBound,
 )
+from core.bundle._errors import BundleParsingError
+from core.spec.errors import DuplicateSpecEntryError
 from core.spec.keys import level_keys_to_full_key
 from core.spec.types import FullSpecKey, LevelSpecKey
 from core.templates import Template, parse_template
@@ -98,6 +100,17 @@ def check_variant(config: dict) -> dict:
 
 def extract_scripts(scripts: list[dict], path_resolution_root: Path) -> JobSpecV1 | None:
     return _extract_scripts(entity={"scripts": scripts}, context={"path": path_resolution_root})
+
+
+def iterate_scripts(entries: Iterable[dict]) -> Iterator[dict]:
+    """Walk scripts of DSL-shaped `scripts` entries, including the ones inside groups at any depth"""
+
+    for entry in entries:
+        if (group := entry.get("group")) is not None:
+            yield from iterate_scripts(group["scripts"])
+            continue
+
+        yield entry
 
 
 def extract_config(config: list[dict], context: dict) -> ConfigDefinition | None:
@@ -183,7 +196,7 @@ def _extract_action(entity, context):
     defaults_for_available_at = {"states": "any", "multi_states": "any"}
     defaults_for_unavailable_at = {"states": [], "multi_states": []}
 
-    entity = _states_to_masking(_ensure_scripts_present(entity))
+    entity = _states_to_masking(entity)
 
     result = {
         "config": _extract_config(entity, context),
@@ -217,18 +230,33 @@ def _extract_scripts(entity: dict, context: dict) -> JobSpecV1 | None:
     if scripts is None:
         return None
 
-    # only one sequential level is supported for now, so scripts are the root level's fields
-    # and their keys are their positions in the declaration order
-    return JobSpecV1.from_scripts(
-        *(
-            _to_script_spec(key=_position_to_node_code(position), script=script, context=context)
-            for position, script in enumerate(scripts)
-        )
-    )
+    try:
+        return JobSpecV1.from_entries(*_to_spec_entries(entries=scripts, group_levels=(), context=context))
+    except DuplicateSpecEntryError as err:
+        message = f"Jobs are defined incorrectly: {err}"
+        raise BundleParsingError(message) from err
 
 
-def _position_to_node_code(position: int) -> FullSpecKey:
-    return FullSpecKey(level_keys_to_full_key((LevelSpecKey(str(position)),)))
+def _to_spec_entries(
+    entries: list[dict], group_levels: tuple[LevelSpecKey, ...], context: dict
+) -> Iterator[ScriptSpec | GroupSpec]:
+    # groups are keyed by their names, while scripts are by their positions among entries of the same level,
+    # so a group named after a position of a script takes the same key (it's reported by plan building, not here);
+    # entries are yielded in declaration order with a group coming before its own entries
+    for position, entry in enumerate(entries):
+        if (group := entry.get("group")) is not None:
+            own_levels = (*group_levels, LevelSpecKey(group["name"]))
+
+            yield GroupSpec(
+                key=level_keys_to_full_key(own_levels),
+                names=Names(internal=group["name"], display=group.get("display_name") or group["name"]),
+                type=ExecutionStyle(group["type"]),
+            )
+            yield from _to_spec_entries(entries=group["scripts"], group_levels=own_levels, context=context)
+            continue
+
+        key = level_keys_to_full_key((*group_levels, LevelSpecKey(str(position))))
+        yield _to_script_spec(key=key, script=entry, context=context)
 
 
 def _to_script_spec(key: FullSpecKey, script: dict, context: dict) -> ScriptSpec:
@@ -237,7 +265,7 @@ def _to_script_spec(key: FullSpecKey, script: dict, context: dict) -> ScriptSpec
 
     return ScriptSpec(
         key=key,
-        names=Names(internal=script["name"], display=script.get("display_name") or ""),
+        names=Names(internal=script["name"], display=script.get("display_name") or script["name"]),
         script=_SCRIPT_ADAPTER.validate_python(
             {
                 "type": script_type,
@@ -399,14 +427,6 @@ def _extract_license(result: dict, context: dict) -> License | None:
         return None
 
     return License(status="unaccepted", path=_normalize_path(license_path, context=context))
-
-
-def _ensure_scripts_present(result: dict) -> dict:
-    # actions defined via `scripts_template` carry no `scripts` key
-    if "scripts" not in result:
-        return result | {"scripts": ()}
-
-    return result
 
 
 def _states_to_masking(result: dict):

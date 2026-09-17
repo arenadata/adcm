@@ -20,14 +20,25 @@ from core import action, mapping
 from core.action.types import JobSpecV1
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._errors import BundleParsingError, convert_validation_to_bundle_error
-from core.bundle._parsing.shared.conversion import detect_relative_path_to_bundle_root, extract_config, extract_scripts
+from core.bundle._parsing.shared.conversion import (
+    detect_relative_path_to_bundle_root,
+    extract_config,
+    extract_scripts,
+    iterate_scripts,
+)
 from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.targets import ActionWizardStages, MappingRules
 from core.bundle._parsing.shared.wizard import ConfigurationStep, MappingStep, OperationStep
 from core.bundle._parsing.types import BundleParser, RootEntry
 from core.bundle._representation import repr_from_raw
 from core.bundle._types import BundleDefinitionKey, ComponentKey
-from core.bundle._validate import check_action_hc_acl_rules, check_execution_hierarchy, check_no_bundle_switch
+from core.bundle._validate import (
+    check_action_hc_acl_rules,
+    check_bundle_switch_amount_for_rendered_upgrade,
+    check_execution_hierarchy,
+    check_no_bundle_changing_scripts_in_groups,
+    check_no_bundle_switch,
+)
 from core.errors import localize_error
 
 _RelativePath: TypeAlias = str
@@ -111,7 +122,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         parsed = model_.model_validate({"scripts": scripts})
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
-        for script in dumped:  # propagate `allow_to_terminate` attr from action if not set
+        for script in iterate_scripts(dumped):  # propagate `allow_to_terminate` attr from action if not set
             if not script.get("allow_to_terminate"):
                 script["allow_to_terminate"] = action_allow_to_terminate
 
@@ -122,13 +133,17 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
             raise BundleParsingError(message)
 
         # rendered scripts never reach bundle validation, so the plan is checked right here
+        check_no_bundle_changing_scripts_in_groups(spec=result)
         check_execution_hierarchy(spec=result)
 
-        if mode == "action":
-            # the DSL lets an action's scripts reach `bundle_switch` through the internal script union,
-            # so the rule that regular actions must not switch bundles is enforced here,
-            # the same way `check_actions` enforces it for statically declared scripts
-            check_no_bundle_switch(scripts=result)
+        match mode:
+            case "action":
+                # the DSL lets an action's scripts reach `bundle_switch` through the internal script union,
+                # so the rule that regular actions must not switch bundles is enforced here,
+                # the same way `check_actions` enforces it for statically declared scripts
+                check_no_bundle_switch(scripts=result)
+            case "upgrade":
+                check_bundle_switch_amount_for_rendered_upgrade(scripts=result)
 
         return result
 

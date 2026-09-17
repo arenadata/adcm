@@ -55,7 +55,7 @@ def build_script_spec(
 def build_plan(*scripts: ScriptSpec) -> dict:
     """Build a plan in the shape it is stored in, envelope included"""
 
-    return dump_execution_plan(JobSpecV1.from_scripts(*scripts))
+    return dump_execution_plan(JobSpecV1.from_entries(*scripts))
 
 
 def read_plan_scripts(actions: Iterable[Action]) -> list[ScriptSpec]:

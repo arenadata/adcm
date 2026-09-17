@@ -73,7 +73,7 @@ CLUSTER = "cluster"
 SERVICE = "service"
 COMPONENT = "component"
 
-SEQUENCE = ExecutionStyle.SEQUENCE
+SEQUENTIAL = ExecutionStyle.SEQUENTIAL
 PARALLEL = ExecutionStyle.PARALLEL
 
 
@@ -107,7 +107,7 @@ def make_scripts_spec(*scripts: dict) -> JobSpecV1:
     Positions in the given order become node keys, the same way parsing assigns them.
     """
 
-    return JobSpecV1.from_scripts(
+    return JobSpecV1.from_entries(
         *(
             ScriptSpec(
                 key=FullSpecKey(f"/{position}"),
@@ -149,8 +149,8 @@ def make_config(**kwargs):
     return ConfigParamPlainSpec(**result)
 
 
-def make_level(rule: ExecutionStyle, **children: JobHierarchyLevel):
-    return JobHierarchyLevel(rule=rule, fields=list(children), child_groups=dict(children))
+def make_level(rule: ExecutionStyle, *scripts: str, **children: JobHierarchyLevel):
+    return JobHierarchyLevel(rule=rule, fields=[*scripts, *children], child_groups=dict(children))
 
 
 class TestExecutionHierarchy(TestCase):
@@ -166,19 +166,27 @@ class TestExecutionHierarchy(TestCase):
         check_execution_hierarchy(spec=spec)
 
     def test_flat_plan_success(self):
-        self.check(make_level(SEQUENCE))
+        self.check(make_level(SEQUENTIAL, "script"))
 
     def test_first_declared_level_may_repeat_sequential_root_success(self):
         # the root is sequential by definition, not by declaration, so it doesn't count as a repeat
-        self.check(make_level(SEQUENCE, group=make_level(SEQUENCE)))
+        self.check(make_level(SEQUENTIAL, group=make_level(SEQUENTIAL, "script")))
 
     def test_alternating_levels_success(self):
-        self.check(make_level(SEQUENCE, group=make_level(PARALLEL, nested=make_level(SEQUENCE))))
+        self.check(
+            make_level(SEQUENTIAL, group=make_level(PARALLEL, "script", nested=make_level(SEQUENTIAL, "script")))
+        )
 
     def test_repeated_style_deeper_fail(self):
         for case, hierarchy in (
-            ("sequence in sequence", make_level(SEQUENCE, g=make_level(SEQUENCE, n=make_level(SEQUENCE)))),
-            ("parallel in parallel", make_level(SEQUENCE, g=make_level(PARALLEL, n=make_level(PARALLEL)))),
+            (
+                "sequential in sequential",
+                make_level(SEQUENTIAL, g=make_level(SEQUENTIAL, n=make_level(SEQUENTIAL, "script"))),
+            ),
+            (
+                "parallel in parallel",
+                make_level(SEQUENTIAL, g=make_level(PARALLEL, "script", n=make_level(PARALLEL, "first", "second"))),
+            ),
         ):
             with self.subTest(case), self.assertRaises(BundleValidationError) as err:
                 self.check(hierarchy)
@@ -186,12 +194,48 @@ class TestExecutionHierarchy(TestCase):
             self.assertIn("must alternate execution style", err.exception.message)
 
     def test_too_deep_fail(self):
-        hierarchy = make_level(SEQUENCE, g=make_level(PARALLEL, n=make_level(SEQUENCE, deepest=make_level(PARALLEL))))
+        hierarchy = make_level(
+            SEQUENTIAL,
+            g=make_level(PARALLEL, "script", n=make_level(SEQUENTIAL, deepest=make_level(PARALLEL, "first", "second"))),
+        )
 
         with self.assertRaises(BundleValidationError) as err:
             self.check(hierarchy)
 
         self.assertIn("levels of groups at most", err.exception.message)
+
+    def test_minimal_amount_of_group_entries_success(self):
+        # nested group counts as an entry of the level it's declared at
+        self.check(
+            make_level(
+                SEQUENTIAL,
+                sequential=make_level(SEQUENTIAL, "script"),
+                parallel=make_level(PARALLEL, "script", nested=make_level(SEQUENTIAL, "script")),
+            )
+        )
+
+    def test_too_few_group_entries_fail(self):
+        for case, hierarchy, expected in (
+            (
+                "empty sequential",
+                make_level(SEQUENTIAL, "script", g=make_level(SEQUENTIAL)),
+                'Sequential group "/g" has to contain at least 1 entry, got 0',
+            ),
+            (
+                "parallel with one entry",
+                make_level(SEQUENTIAL, g=make_level(PARALLEL, "script")),
+                'Parallel group "/g" has to contain at least 2 entries, got 1',
+            ),
+            (
+                "nested parallel with one entry",
+                make_level(SEQUENTIAL, g=make_level(SEQUENTIAL, "script", n=make_level(PARALLEL, "script"))),
+                'Parallel group "/g/n" has to contain at least 2 entries, got 1',
+            ),
+        ):
+            with self.subTest(case), self.assertRaises(BundleValidationError) as err:
+                self.check(hierarchy)
+
+            self.assertIn(expected, err.exception.message)
 
 
 class TestCheckDisplayNamesAreUnique(TestCase):

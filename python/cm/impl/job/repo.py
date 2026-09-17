@@ -48,6 +48,7 @@ from core.action.job import (
     TaskShortFilter,
     TaskUpdateDTO,
 )
+from core.action.operations import flatten_execution_plan
 from core.action.scheduler import Claimer
 from core.action.types import JobSpecV1, ScriptSpec
 from core.errors import NotFoundError
@@ -325,9 +326,11 @@ class JobRepo(JobRepoI):
 
     def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> tuple[JobShortInfo, ...]:
         # jobs keep their own copies of the nodes' fields for now, `spec_key` ties them back to the plan
+        # jobs are created in the order plan runs them, because their ids define the order they're presented in,
+        # while order of plan's `scripts` isn't guaranteed to survive storage (JSON objects get reordered)
         created = JobLog.objects.bulk_create(
-            _script_spec_to_job_log(task_id=task_id, script_spec=script_spec)
-            for script_spec in scripts.scripts.values()
+            _script_spec_to_job_log(task_id=task_id, script_spec=scripts.scripts[key])
+            for key in flatten_execution_plan(scripts)
         )
 
         return tuple(_created_job_to_short_info(job) for job in created)

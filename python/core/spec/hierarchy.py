@@ -59,12 +59,23 @@ class HierarchyLevel(ABC, Generic[RuleT]):
         yet levels have to be created implicitly during `register` / `set_rule`.
         """
 
-    def register(self, key: Sequence[LevelSpecKey]) -> None:
+    def register(self, key: Sequence[LevelSpecKey]) -> bool:
+        """
+        Place `key` at its level, creating levels of groups it's nested in if they're missing.
+
+        Returns whether it was placed: `False` means the key is already present at its level
+        (registered before or created implicitly as a group of previously registered key).
+        It's up to the caller to decide whether that's an error.
+        """
+
         *groups, own_key = key
 
         if not groups:
+            if own_key in self.fields:
+                return False
+
             self.fields.append(own_key)
-            return
+            return True
 
         first_group, *rest_groups = groups
 
@@ -76,7 +87,7 @@ class HierarchyLevel(ABC, Generic[RuleT]):
 
             self.child_groups[first_group] = self.build_with_defaults()
 
-        self.child_groups[first_group].register((*rest_groups, own_key))
+        return self.child_groups[first_group].register((*rest_groups, own_key))
 
     def set_rule(self, group: Sequence[LevelSpecKey], rule: RuleT) -> None:
         *groups, own_key = group

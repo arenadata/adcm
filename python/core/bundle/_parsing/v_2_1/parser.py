@@ -10,12 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Final
+from typing import Final, Literal
 
 from core.bundle._parsing.v_2_0.base_parser import BaseParser as ParserV2
 from core.bundle._parsing.v_2_1.targets import (
     ADCMSchema,
     Cluster,
+    DynamicActionScripts,
+    DynamicUpgradeScripts,
+    DynamicWizardScripts,
     Host,
     Provider,
     RootTarget,
@@ -34,3 +37,14 @@ TYPE_SCHEMA_MAP: Final[dict[str, type[RootTarget]]] = {
 class Parser(ParserV2):
     def _get_schema_mapping(self) -> dict[str, type[RootTarget]]:  # pyright: ignore[reportIncompatibleMethodOverride]
         return TYPE_SCHEMA_MAP
+
+    def _get_scripts_model(
+        self, mode: Literal["action", "upgrade", "wizard"]
+    ) -> type[DynamicActionScripts | DynamicUpgradeScripts | DynamicWizardScripts]:
+        match mode:
+            case "action":
+                return DynamicActionScripts
+            case "upgrade":
+                return DynamicUpgradeScripts
+            case "wizard":
+                return DynamicWizardScripts

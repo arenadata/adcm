@@ -120,7 +120,11 @@ class ActionDefinition:
     config: ConfigDefinition | None = None
     config_template: Template | None = None
 
-    hostcomponentmap: list = field(default_factory=list)
+    # `None` means `hc_acl` isn't declared at all, which is told apart from an empty declaration
+    # (e.g. `hc_apply` requires `hc_acl` to be declared, yet empty one is enough).
+    # NOTE: kept this way to not change existing behavior, whether such a distinction is required is yet to be decided.
+    #       Storage doesn't tell them apart: both are saved as an empty list.
+    hostcomponentmap: list | None = None
     wizard_template: Template | None = None
 
     # Task completion
