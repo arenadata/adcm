@@ -110,6 +110,11 @@ class TestScriptGroups(ADCMDjangoAPISuite):
                 ("Jobs are defined incorrectly", '"/0" is declared more than once', "as script, then as group"),
                 id="group_named_after_script_position",
             ),
+            param(
+                "nested_group_form",
+                ("group", "Input should be 'sequential' or 'parallel'", "missing: Field required"),
+                id="nested_group_form",
+            ),
         ],
     )
     def test_upload_incorrect_groups_fail(self, bundle_name: str, expected_content: tuple[str, ...]) -> None:

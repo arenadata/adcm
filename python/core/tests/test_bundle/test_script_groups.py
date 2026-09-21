@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Final, Literal, TypeAlias
 from unittest import TestCase
 
+from pydantic import TypeAdapter
 import yaml
 
 from core.action import ScriptType
@@ -31,6 +32,7 @@ from core.bundle._definitions import DefinitionsMap
 from core.bundle._errors import BundleParsingError, BundleValidationError
 from core.bundle._parsing import v_2_1
 from core.bundle._parsing.types import RootEntry
+from core.bundle._parsing.v_2_1.scripts import ClusterEntry, detect_entry_kind
 from core.bundle._validate import check_actions, check_upgrades
 from core.spec.types import FullSpecKey
 from core.types import Names
@@ -69,40 +71,37 @@ GROUPED_SCRIPTS: Final = """
   script_type: ansible
   script: ansible/pre_check.yaml
 
-- group:
-    type: parallel
-    name: shards
-    display_name: "Shards"
-    scripts:
-      - group:
-          type: sequential
-          name: shard_a
-          display_name: "Shard A"
-          scripts:
-            - name: stop_a
-              script_type: ansible
-              script: ansible/stop.yaml
-            - name: reconfigure_a
-              script_type: ansible
-              script: ansible/cfg.yaml
-            - name: start_a
-              script_type: ansible
-              script: ansible/start.yaml
+- group: parallel
+  name: shards
+  display_name: "Shards"
+  scripts:
+    - group: sequential
+      name: shard_a
+      display_name: "Shard A"
+      scripts:
+        - name: stop_a
+          script_type: ansible
+          script: ansible/stop.yaml
+        - name: reconfigure_a
+          script_type: ansible
+          script: ansible/cfg.yaml
+        - name: start_a
+          script_type: ansible
+          script: ansible/start.yaml
 
-      - group:
-          type: sequential
-          name: shard_b
-          display_name: "Shard B"
-          scripts:
-            - name: stop_b
-              script_type: ansible
-              script: ansible/stop.yaml
-            - name: reconfigure_b
-              script_type: ansible
-              script: ansible/cfg.yaml
-            - name: start_b
-              script_type: ansible
-              script: ansible/start.yaml
+    - group: sequential
+      name: shard_b
+      display_name: "Shard B"
+      scripts:
+        - name: stop_b
+          script_type: ansible
+          script: ansible/stop.yaml
+        - name: reconfigure_b
+          script_type: ansible
+          script: ansible/cfg.yaml
+        - name: start_b
+          script_type: ansible
+          script: ansible/start.yaml
 
 - name: finalize
   display_name: "Finalize"
@@ -123,6 +122,17 @@ script_type: ansible
 script: simple.yaml
 """
 
+# the shape groups had before ADCM-8467 flattened them, kept here to prove it's rejected outright
+NESTED_GROUP: Final = """
+- group:
+    type: parallel
+    name: shards
+    scripts:
+      - name: simple
+        script_type: ansible
+        script: simple.yaml
+"""
+
 
 # Definitions building
 
@@ -136,7 +146,7 @@ def build_object(type_: Literal["cluster", "service", "provider", "host", "adcm"
 
 
 def build_group(name: str, scripts: list[dict], type_: str = "parallel") -> dict:
-    return {"group": {"type": type_, "name": name, "scripts": scripts}}
+    return {"group": type_, "name": name, "scripts": scripts}
 
 
 def grouped_scripts() -> list[dict]:
@@ -265,6 +275,65 @@ def build_expected_spec(*, terminatable: bool = False, with_bundle_switch: bool 
 # Tests
 
 
+class TestEntryKindDiscrimination(TestCase):
+    """
+    `detect_entry_kind` is the sole gatekeeper between groups and scripts:
+    script dataclasses don't forbid extra keys, so they can't reject a misrouted entry themselves.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+
+        cls.adapter: TypeAdapter[Any] = TypeAdapter(ClusterEntry)
+
+    def test_raw_entries_discriminated_success(self) -> None:
+        cases: tuple[tuple[str, dict, Literal["group", "script"]], ...] = (
+            ("group", build_group(name="shards", scripts=[load(SIMPLE_SCRIPT)]), "group"),
+            ("script", load(SIMPLE_SCRIPT), "script"),
+        )
+
+        for case, entry, expected in cases:
+            with self.subTest(case):
+                self.assertEqual(detect_entry_kind(entry), expected)
+
+    def test_parsed_entries_discriminated_success(self) -> None:
+        cases: tuple[tuple[str, dict, Literal["group", "script"]], ...] = (
+            ("group", build_group(name="shards", scripts=[load(SIMPLE_SCRIPT)]), "group"),
+            ("script", load(SIMPLE_SCRIPT), "script"),
+        )
+
+        for case, entry, expected in cases:
+            with self.subTest(case):
+                self.assertEqual(detect_entry_kind(self.adapter.validate_python(entry)), expected)
+
+    def test_entries_sharing_names_with_groups_discriminated_success(self) -> None:
+        """`name` and `display_name` are siblings of `group` now, so neither can tell a group from a script"""
+
+        cases: tuple[tuple[str, dict, Literal["group", "script"]], ...] = (
+            (
+                "group",
+                build_group(name="shards", scripts=[load(SIMPLE_SCRIPT)]) | {"display_name": "Shards"},
+                "group",
+            ),
+            (
+                "script carrying the same names",
+                load(SIMPLE_SCRIPT) | {"name": "shards", "display_name": "Shards"},
+                "script",
+            ),
+            (
+                "group named after a sibling script's position",
+                build_group(name="0", scripts=[load(SIMPLE_SCRIPT)]),
+                "group",
+            ),
+        )
+
+        for case, entry, expected in cases:
+            with self.subTest(case):
+                self.assertEqual(detect_entry_kind(entry), expected)
+                self.assertEqual(detect_entry_kind(self.adapter.validate_python(entry)), expected)
+
+
 class TestScriptGroupsParsing(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -357,6 +426,23 @@ class TestScriptGroupsParsing(TestCase):
         )
 
         self.assertEqual(spec.groups[FullSpecKey("/nameless")].names.display, "nameless")
+
+    def test_nested_group_form_rejected_fail(self) -> None:
+        # `group` holding the whole body is the replaced form: it gets a mapping where an execution style is required
+        with self.assertRaises(BundleParsingError) as err:
+            self.parse_action_scripts(load(NESTED_GROUP))
+
+        message = err.exception.message
+        self.assertIn("enum: Input should be 'sequential' or 'parallel'", message)
+        # the body's fields are expected as siblings of `group`, so they read as missing
+        self.assertIn("name\n    | missing", message)
+        self.assertIn("scripts\n    | missing", message)
+
+    def test_group_without_scripts_fail(self) -> None:
+        with self.assertRaises(BundleParsingError) as err:
+            self.parse_action_scripts([build_group(name="empty", scripts=[])])
+
+        self.assertIn("too_short: List should have at least 1 item", err.exception.message)
 
     def test_group_name_used_more_than_once_fail(self) -> None:
         for case, scripts, conflict in (

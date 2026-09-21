@@ -106,8 +106,8 @@ def iterate_scripts(entries: Iterable[dict]) -> Iterator[dict]:
     """Walk scripts of DSL-shaped `scripts` entries, including the ones inside groups at any depth"""
 
     for entry in entries:
-        if (group := entry.get("group")) is not None:
-            yield from iterate_scripts(group["scripts"])
+        if entry.get("group") is not None:
+            yield from iterate_scripts(entry["scripts"])
             continue
 
         yield entry
@@ -244,15 +244,16 @@ def _to_spec_entries(
     # so a group named after a position of a script takes the same key (it's reported by plan building, not here);
     # entries are yielded in declaration order with a group coming before its own entries
     for position, entry in enumerate(entries):
-        if (group := entry.get("group")) is not None:
-            own_levels = (*group_levels, LevelSpecKey(group["name"]))
+        if (style := entry.get("group")) is not None:
+            name = entry["name"]
+            own_levels = (*group_levels, LevelSpecKey(name))
 
             yield GroupSpec(
                 key=level_keys_to_full_key(own_levels),
-                names=Names(internal=group["name"], display=group.get("display_name") or group["name"]),
-                type=ExecutionStyle(group["type"]),
+                names=Names(internal=name, display=entry.get("display_name") or name),
+                type=ExecutionStyle(style),
             )
-            yield from _to_spec_entries(entries=group["scripts"], group_levels=own_levels, context=context)
+            yield from _to_spec_entries(entries=entry["scripts"], group_levels=own_levels, context=context)
             continue
 
         key = level_keys_to_full_key((*group_levels, LevelSpecKey(str(position))))
