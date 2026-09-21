@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from cm.legacy.services.adcm import adcm_config, get_adcm_config_id
+from cm.legacy.services.adcm import adcm_config_attr, get_adcm_config_id
 from cm.transition.ansible import ansible_decrypt
 
 from rbac.services.ldap.errors import LDAPConfigurationError
@@ -30,12 +30,12 @@ def str_join_attr_list(ldap_attributes: LDAPAttributes, target_attr: str, sort: 
 
 
 def get_ldap_settings() -> LDAPSettings:
-    adcm_config_attr = adcm_config(config_id=get_adcm_config_id())
+    config, attr = adcm_config_attr(config_id=get_adcm_config_id())
 
-    if not adcm_config_attr.attr["ldap_integration"]["active"]:
+    if not config["ldap_integration"]["active"]:
         raise LDAPConfigurationError("LDAP integration is disabled")
 
-    ldap_config = adcm_config_attr.config["ldap_integration"]
+    ldap_config = attr["ldap_integration"]
     ldap_config["ldap_password"] = ansible_decrypt(msg=ldap_config["ldap_password"])
     ldap_config["group_dn_adcm_admin"] = [group_dn.lower() for group_dn in ldap_config["group_dn_adcm_admin"] or []]
 

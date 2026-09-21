@@ -11,16 +11,10 @@
 # limitations under the License.
 
 from functools import lru_cache
-from typing import NamedTuple
 
 from core.legacy.rbac.types import PasswordRequirements
 
 from cm.models import ADCM, ConfigLog
-
-
-class ConfigAttrPair(NamedTuple):
-    config: dict
-    attr: dict
 
 
 def get_adcm_config_id() -> int:
@@ -28,21 +22,22 @@ def get_adcm_config_id() -> int:
 
 
 @lru_cache(maxsize=2)
-def adcm_config(config_id: int) -> ConfigAttrPair:
-    return ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=config_id))
+def adcm_config_attr(config_id: int) -> tuple[dict, dict]:
+    record = ConfigLog.objects.values("config", "attr").get(id=config_id)
+    return record["config"], record["attr"]
 
 
 def retrieve_password_requirements() -> PasswordRequirements:
-    auth_policy = adcm_config(get_adcm_config_id()).config["auth_policy"]
+    auth_policy = adcm_config_attr(get_adcm_config_id())[0]["auth_policy"]
     return PasswordRequirements(
         min_length=auth_policy["min_password_length"], max_length=auth_policy["max_password_length"]
     )
 
 
 # todo replace return type with "core.config.Configuration"
-def get_adcm_configuration() -> ConfigAttrPair:
-    return adcm_config(get_adcm_config_id())
+def get_adcm_configuration() -> tuple[dict, dict]:
+    return adcm_config_attr(get_adcm_config_id())
 
 
-def get_verified_bundles_flag(configuration: ConfigAttrPair) -> bool:
-    return bool(configuration.config["global"]["accept_only_verified_bundles"])
+def get_verified_bundles_flag(configuration: dict) -> bool:
+    return bool(configuration["global"]["accept_only_verified_bundles"])

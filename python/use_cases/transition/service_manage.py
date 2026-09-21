@@ -25,6 +25,7 @@ from cm.legacy.services.mapping import (
 from cm.models import Cluster, ObjectType, Prototype, Service
 from core.action import ServiceManageServiceEntry, TaskMappingDelta, TaskOwner
 from core.cluster import ClusterService
+from core.config import ConfigRepoI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
 from core.types import BundleID, ClusterID, JobID, PrototypeID
@@ -49,6 +50,7 @@ class ManageClusterServices:
     add_services: CreateServicesFromPrototypes
     update_configuration_from_job: UpdateConfigurationFromJob
     cluster_service: ClusterService
+    config_repo: ConfigRepoI
 
     def add(
         self,
@@ -85,7 +87,7 @@ class ManageClusterServices:
 
             # Services and components are created while the job is running,
             # so job's related configs should be updated for new objects to be configurable below.
-            create_related_configs(job_id=job_id, owner=task_owner)
+            create_related_configs(job_id=job_id, owner=task_owner, config_repo=self.config_repo)
 
             topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
 

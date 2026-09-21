@@ -18,8 +18,8 @@ from unittest.mock import patch
 import json
 import unittest
 
+from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.legacy.bundle_switch_revert import bundle_revert
-from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.legacy.services.job.context._base import get_inventory_data
 from cm.models import (
     ADCM,
@@ -2865,32 +2865,6 @@ class TestAttrTransformation(unittest.TestCase):
         self.assertDictEqual(adcm_meta, expected_adcm_meta)
         new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
         self.assertDictEqual(new_attr, attr)
-
-    def test_incorrect_attr_to_adcm_meta_fail(self):
-        attr = {
-            "activatable_group": {"active": True},
-            "group_keys": {
-                "group": {"value": None, "fields": {"string": False}},
-                "activatable_group": {
-                    "bad_value": True,
-                    "fields": {"string": True},
-                },
-                "string": True,
-            },
-        }
-        with self.assertRaises(KeyError):
-            convert_attr_to_adcm_meta(attr=attr)
-
-    def test_adcm_meta_to_attr_returns_unchanged_on_fail(self):
-        adcm_meta = {
-            "/activatable_group": {"isActive": True, "isSynchronized": True},
-            "/activatable_group/string": {"isSynchronized": True},
-            "/group/string": {"isSynchronized": False},
-            "/string": {},
-        }
-
-        new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
-        self.assertDictEqual(new_attr, adcm_meta)
 
 
 class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):

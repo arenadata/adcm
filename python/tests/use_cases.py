@@ -17,9 +17,9 @@ from pathlib import Path
 import tarfile
 
 from cm.converters import orm_object_to_core_descriptor
+from cm.impl.config.convert import convert_attr_to_adcm_meta
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.config import convert_attr_to_adcm_meta
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.legacy.utils import deep_merge
 from cm.models import (

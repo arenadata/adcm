@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
-from collections.abc import Iterable
-from operator import attrgetter
 from typing import Literal, NamedTuple, TypeAlias
 
 from core.converters import named_mapping_from_topology
@@ -23,7 +20,7 @@ from core.legacy.concern.checks import (
     find_cluster_mapping_issues,
     find_unsatisfied_service_requirements,
 )
-from core.types import ClusterID, ConfigID, ObjectID
+from core.types import ClusterID
 from django.db.models import Q
 import core
 
@@ -31,14 +28,11 @@ from cm.converters import orm_object_to_core_descriptor
 from cm.errors import AdcmEx
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.config import retrieve_config_attr_pairs
-from cm.legacy.services.config.spec import FlatSpec
 from cm.models import (
     Cluster,
     ClusterBind,
     Component,
     Host,
-    ObjectConfig,
     PrototypeImport,
     Provider,
     Service,
@@ -91,41 +85,6 @@ def object_has_required_services_issue_orm_version(cluster: Cluster) -> HasIssue
     return cluster_has_required_services_issue(
         bundle_restrictions=bundle_restrictions, existing_services=existing_services
     )
-
-
-def filter_objects_with_configuration_issues(config_spec: FlatSpec, *objects: ObjectWithConfig) -> Iterable[ObjectID]:
-    required_fields = tuple(name for name, spec in config_spec.items() if spec.required and spec.type != "group")
-    if not required_fields:
-        return ()
-
-    object_config_log_map: dict[int, ConfigID] = dict(
-        ObjectConfig.objects.values_list("id", "current").filter(id__in=map(attrgetter("config_id"), objects))
-    )
-    config_pairs = retrieve_config_attr_pairs(configurations=object_config_log_map.values())
-
-    objects_with_issues: deque[ObjectID] = deque()
-    for object_ in objects:
-        config, attr = config_pairs[object_config_log_map[object_.config_id]]
-
-        for composite_name in required_fields:
-            group_name, field_name, *_ = composite_name.split("/")
-            if not field_name:
-                field_name = group_name
-                group_name = None
-
-            if group_name:
-                if not attr.get(group_name, {}).get("active", True):
-                    continue
-
-                if config[group_name][field_name] is None:
-                    objects_with_issues.append(object_.id)
-                    break
-
-            elif config[field_name] is None:
-                objects_with_issues.append(object_.id)
-                break
-
-    return objects_with_issues
 
 
 def service_requirements_has_issue(service: Service) -> HasIssue:

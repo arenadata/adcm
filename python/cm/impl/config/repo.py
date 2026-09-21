@@ -27,6 +27,8 @@ from core.types import (
     CoreObjectDescriptor,
     Descriptor,
     HostGroupDescriptor,
+    ObjectConfigID,
+    ObjectID,
     ObjectOrGroup,
     PrototypeID,
 )
@@ -223,6 +225,52 @@ class ConfigRepo(config.ConfigRepoI):
             )
             for group_id, values, attrs in records
         }
+
+    def retrieve_primary_configs(self, objects: dict[ADCMCoreType, set[ObjectID]]) -> list[config.RelatedConfigs]:
+        configs = []
+
+        for core_type, ids_set in objects.items():
+            for object_id, prototype_id, current_config in (
+                core_type_to_model(core_type)
+                .objects.filter(id__in=ids_set)
+                .values_list("id", "prototype_id", "config__current")
+            ):
+                if not current_config:
+                    continue
+                configs.append(
+                    config.RelatedConfigs(
+                        object_id=object_id,
+                        object_type=core_type.value,
+                        prototype_id=prototype_id,
+                        primary_config_id=current_config,
+                    )
+                )
+
+        return configs
+
+    def retrieve_configs_with_revision(
+        self, objects: dict[ADCMCoreType, set[ObjectID]]
+    ) -> dict[CoreObjectDescriptor, ConfigID]:
+        objconfig_obj_map: dict[ObjectConfigID, CoreObjectDescriptor] = {}
+        for core_type, ids in objects.items():
+            for object_id, objectconfig_id in (
+                core_type_to_model(core_type).objects.filter(id__in=ids).values_list("id", "config_id")
+            ):
+                if not objectconfig_id:
+                    continue
+                objconfig_obj_map[objectconfig_id] = CoreObjectDescriptor(id=object_id, type=core_type)
+
+        configs_with_revision: dict[CoreObjectDescriptor, ConfigID] = {}
+        configlogs_qs = ConfigLog.objects.filter(
+            obj_ref_id__in=objconfig_obj_map, configrevision__isnull=False
+        ).values_list("id", "obj_ref_id")
+        for config_id, objectconfig_id in configlogs_qs:
+            cod = objconfig_obj_map.get(objectconfig_id)
+            if not cod:
+                continue
+            configs_with_revision[cod] = config_id
+
+        return configs_with_revision
 
     # change
 

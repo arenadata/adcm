@@ -20,6 +20,7 @@ from core.action.job._termination import ExecutorTerminator
 from core.action.operations import flatten_execution_plan, to_rich_jobs
 from core.action.types import RichJob
 from core.cluster import ClusterService
+from core.config import ConfigRepoI
 from core.legacy.job.runners import (
     ExecutionTarget,
     ExternalSettings,
@@ -216,7 +217,9 @@ class JobSequenceRunner(TaskRunner):
 
     def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
-            create_related_configs(job_id=target.job.runtime.id, owner=task.owner)
+            create_related_configs(
+                job_id=target.job.runtime.id, owner=task.owner, config_repo=self._container.get(ConfigRepoI)
+            )
 
         target.executor.execute()
 

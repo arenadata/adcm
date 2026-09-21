@@ -55,6 +55,7 @@ from core.types import (
     Descriptor,
     HostDesc,
     HostGroupDescriptor,
+    ObjectID,
     ObjectOrGroup,
     PrototypeID,
     TaskDescriptor,
@@ -211,6 +212,11 @@ class ConfigService:
         self, owner: CoreObjectDescriptor
     ) -> dict[HostGroupDescriptor, Configuration]:
         return self.repo.find_host_group_configurations(owner=owner)
+
+    def retrieve_configs_with_revision(
+        self, objects: dict[ADCMCoreType, set[ObjectID]]
+    ) -> dict[CoreObjectDescriptor, ConfigID]:
+        return self.repo.retrieve_configs_with_revision(objects=objects)
 
     def prepare_revision_diffs(
         self,

@@ -44,6 +44,7 @@ from core.action.operations import flatten_execution_plan, to_rich_job, to_rich_
 from core.action.scheduler import ProcessStarter
 from core.action.types import RichJob
 from core.cluster import ClusterService
+from core.config import ConfigRepoI
 from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
 from core.result import Fail, Success
 from core.scenarios.concern import ConcernScenarios
@@ -122,6 +123,7 @@ class RunJob:
     target_factory: ExecutionTargetFactoryI
     cluster_service: ClusterService
     external_settings: ExternalSettings
+    config_repo: ConfigRepoI
 
     def do(
         self, task_id: TaskID, job_id: JobID, environment: RunnerEnvironment
@@ -149,7 +151,7 @@ class RunJob:
                     task=task, job=job, configuration=self.external_settings, cluster_service=self.cluster_service
                 )
 
-            create_related_configs(job_id=job_id, owner=task.owner)  # pyright: ignore[reportArgumentType]
+            create_related_configs(job_id=job_id, owner=task.owner, config_repo=self.config_repo)  # pyright: ignore[reportArgumentType]
 
             executor.execute()
 
