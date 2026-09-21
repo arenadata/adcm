@@ -103,7 +103,8 @@ class ConfigProvider(Provider):
     def validators(self) -> core.config.VariantValidators:
         return core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
 
-    repo = provide(ConfigRepo, provides=core.config.ConfigRepoI)
+    repo = provide(ConfigRepo)
+    repo_interface = alias(source=ConfigRepo, provides=core.config.ConfigRepoI)
     service = provide(core.config.ConfigService)
 
 

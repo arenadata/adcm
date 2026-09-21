@@ -14,14 +14,23 @@ from collections.abc import Iterable
 from typing import Literal, Protocol, TypeAlias, overload
 
 from core.config import spec
-from core.config._types import Configuration, ConfigurationExtraInfo, ConfigurationWithInfo, Defaults, EncryptFunc
+from core.config._types import (
+    Configuration,
+    ConfigurationExtraInfo,
+    ConfigurationWithInfo,
+    Defaults,
+    EncryptFunc,
+    RelatedConfigs,
+)
 from core.types import (
     ActionDescriptor,
+    ADCMCoreType,
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
     Descriptor,
     HostGroupDescriptor,
+    ObjectID,
     PrototypeID,
 )
 
@@ -115,6 +124,14 @@ class ConfigRepoI(Protocol):
 
     # todo: shouldn't be here, see service for more info
     def find_host_group_configurations(self, owner: CoreObjectDescriptor) -> dict[HostGroupDescriptor, Configuration]:
+        ...
+
+    def retrieve_primary_configs(self, objects: dict[ADCMCoreType, set[ObjectID]]) -> list[RelatedConfigs]:
+        ...
+
+    def retrieve_configs_with_revision(
+        self, objects: dict[ADCMCoreType, set[ObjectID]]
+    ) -> dict[CoreObjectDescriptor, ConfigID]:
         ...
 
     # change

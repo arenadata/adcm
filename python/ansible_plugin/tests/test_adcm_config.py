@@ -12,7 +12,6 @@
 
 from unittest import TestCase
 
-from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import ADCMEntity, Component, ConcernItem, ConfigLog, Service
 from cm.transition.ansible import ansible_decrypt
@@ -52,13 +51,16 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             entries=((cls.host_1, cls.component_1), (cls.host_1, cls.component_2), (cls.host_2, cls.component_1)),
         )
 
-    def get_config_attr(self, object_: ADCMEntity) -> ConfigAttrPair:
+    def get_config_attr(self, object_: ADCMEntity) -> tuple[dict, dict]:
         object_.refresh_from_db(fields=["config"])
-        return ConfigAttrPair(**ConfigLog.objects.values("config", "attr").get(id=object_.config.current))
+        record = ConfigLog.objects.values("config", "attr").get(id=object_.config.current)
+        return record["config"], record["attr"]
 
     def execute_plugin(self, task: Task, call_arguments: str | dict) -> CallResult:
         job, *_ = self.get_task_jobs(task.id)
-        create_related_configs(job_id=job.runtime.id, owner=task.owner)
+        create_related_configs(
+            job_id=job.runtime.id, owner=task.owner, config_repo=self.container.get(config.ConfigRepoI)
+        )
 
         executor = self.prepare_executor(
             executor_type=ADCMConfigPluginExecutor,
@@ -86,8 +88,8 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": changed_value})
 
         after = self.get_config_attr(self.cluster)
-        self.assertEqual(after.config["plain_s"], changed_value)
-        self.assertEqual(after.config["g1"]["plain_s"], in_group_value)
+        self.assertEqual(after[0]["plain_s"], changed_value)
+        self.assertEqual(after[0]["g1"]["plain_s"], in_group_value)
 
     def test_simple_change_not_allowed_arg_fail(self) -> None:
         result = self.execute_plugin(
@@ -110,7 +112,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             "g1/group_b": True,
             "ag1/kv_pairs": {"good": "in-every", "per": "son"},
         }
-        expected_config = self.get_config_attr(self.cluster).config
+        expected_config = self.get_config_attr(self.cluster)[0]
         expected_config["plain_i"] = values_to_change["plain_i"]
         expected_config["g1"]["records"] = values_to_change["g1/records"]
         expected_config["g1"]["group_b"] = values_to_change["g1/group_b"]
@@ -132,11 +134,11 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": values_to_change})
 
         after = self.get_config_attr(self.cluster)
-        self.assertTrue(after.attr["ag1"], {"active": True})
-        self.assertEqual(after.config, expected_config)
+        self.assertTrue(after[1]["ag1"], {"active": True})
+        self.assertEqual(after[0], expected_config)
 
     def test_no_change_call_on_provider_success(self) -> None:
-        expected_config = self.get_config_attr(self.provider).config
+        expected_config = self.get_config_attr(self.provider)[0]
         same_values = {"ip": expected_config["ip"], "inside/simple_secret": None}
         config_before = self.provider.config.current
 
@@ -153,7 +155,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": same_values})
 
         after = self.get_config_attr(self.provider)
-        self.assertEqual(after.config, expected_config)
+        self.assertEqual(after[0], expected_config)
 
         self.assertEqual(self.provider.config.current, config_before)
 
@@ -169,7 +171,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertTrue(result.changed)
         self.assertEqual(result.value, {"value": new_secretfile})
 
-        config = self.get_config_attr(self.provider).config
+        config = self.get_config_attr(self.provider)[0]
         self.assertEqual(ansible_decrypt(config["inside"]["complex_secret"]), new_secretfile)
 
     def test_change_only_active_success(self) -> None:
@@ -189,7 +191,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": {}})
 
         after = self.get_config_attr(object_)
-        self.assertTrue(after.attr["ag1"]["active"])
+        self.assertTrue(after[1]["ag1"]["active"])
 
     def test_change_de_activate_multiple_groups_success(self) -> None:
         object_ = self.component_1
@@ -207,8 +209,8 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": {}})
 
         after = self.get_config_attr(object_)
-        self.assertTrue(after.attr["ag1"]["active"])
-        self.assertFalse(after.attr["ag2"]["active"])
+        self.assertTrue(after[1]["ag1"]["active"])
+        self.assertFalse(after[1]["ag2"]["active"])
 
     def test_no_change_multiple_activatable_groups_success(self) -> None:
         object_ = self.component_1
@@ -226,8 +228,8 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         self.assertEqual(result.value, {"value": {}})
 
         after = self.get_config_attr(object_)
-        self.assertFalse(after.attr["ag1"]["active"])
-        self.assertTrue(after.attr["ag2"]["active"])
+        self.assertFalse(after[1]["ag1"]["active"])
+        self.assertTrue(after[1]["ag2"]["active"])
 
     def test_change_one_host_from_another_fail(self) -> None:
         result = self.execute_plugin(

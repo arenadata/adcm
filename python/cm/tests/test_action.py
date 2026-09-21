@@ -30,7 +30,7 @@ from core.action import (
 from core.action.job import JobShortFilter
 from core.action.operations import flatten_execution_plan, to_rich_jobs
 from core.cluster import ClusterService
-from core.config import ConfigService
+from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
@@ -515,7 +515,9 @@ class TestActionLogic(BaseTestCase, TaskTestMixin):
             self.assertEqual(Component.objects.filter(service=service).count(), 2)
             self.assertIsNotNone(service.config)
 
-        related_configs_mock.assert_called_once_with(job_id=job.runtime.id, owner=task.owner)
+        related_configs_mock.assert_called_once_with(
+            job_id=job.runtime.id, owner=task.owner, config_repo=self.uc.container.get(ConfigRepoI)
+        )
 
     def test_internal_service_manage_add_existing_service_success(self):
         task, job = self.get_dummy_service_manage_task_job(

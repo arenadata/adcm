@@ -51,6 +51,7 @@ from cm.models import (
 from cm.tests.scripts import retrieve_rich_jobs
 from cm.transition.ansible import ansible_decrypt
 from core.action.job import TaskPayloadDTO
+from core.config import ConfigRepoI
 from core.types import ActionTargetDescriptor
 from django.conf import settings
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
@@ -113,7 +114,7 @@ class TestAdcmConfigLookup(ParametrizedTestCase, _ADCMTestCase, django.test.Test
 
         job, *_ = retrieve_rich_jobs(task_id=task.id)
         # not a subject of these tests, but without this snapshot `update_config` fails to record its change
-        create_related_configs(job_id=job.runtime.id, owner=task.owner)
+        create_related_configs(job_id=job.runtime.id, owner=task.owner, config_repo=cls.container.get(ConfigRepoI))
 
         return job.runtime.id
 

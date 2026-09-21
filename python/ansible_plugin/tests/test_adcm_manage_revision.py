@@ -13,9 +13,9 @@
 from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_descriptor
-from cm.legacy.services.config import retrieve_primary_configs
 from cm.legacy.services.hierarchy import retrieve_object_hierarchy
 from cm.models import ADCMEntity, ConfigRevision
+from core.config import ConfigRepoI
 from tests.suites import ADCMPluginExecutorSuite
 
 from ansible_plugin.executors.manage_revision import ADCMManageRevisionPluginExecutor
@@ -36,7 +36,7 @@ class TestADCMManageRevisionPluginExecutor(ADCMPluginExecutorSuite):
 
     def get_related_configs(self, object_: ADCMEntity):
         hierarchy = retrieve_object_hierarchy(object_=orm_object_to_core_descriptor(object_))
-        return retrieve_primary_configs(objects=hierarchy)
+        return self.container.get(ConfigRepoI).retrieve_primary_configs(objects=hierarchy)
 
     @patch("use_cases.transition.config_revision._get_related_configs")
     def test_set_revisions_success(self, mock_get_related_configs):

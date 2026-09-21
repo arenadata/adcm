@@ -42,7 +42,7 @@ class ParseBundleFromRequest:
 
     @convert_bundle_errors_to_adcm_ex
     def do(self, archive: Path) -> BundleID:
-        adcm_configuration = adcm.get_adcm_configuration()
+        adcm_configuration = adcm.get_adcm_configuration()[0]
         verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
 
         with core.bundle.cleanup(on_exit=[archive]):

@@ -17,7 +17,7 @@ from typing import Any
 import tarfile
 
 from cm.legacy.bundle import _get_file_hashes
-from cm.legacy.services.adcm import adcm_config
+from cm.legacy.services.adcm import adcm_config_attr
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
 from cm.tests.scripts import read_plan_scripts
 from django.conf import settings
@@ -70,7 +70,7 @@ class TestBundle(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        adcm_config.cache_clear()
+        adcm_config_attr.cache_clear()
 
     def create_bundle_r(self, bundle_path: Path) -> Response:
         with open(bundle_path, encoding=settings.ENCODING_UTF_8) as bundle_file:

@@ -16,6 +16,7 @@ from typing import TypedDict
 from cm.legacy.services.job.run import create_related_configs
 from cm.models import Prototype, Provider
 from core.action import RelatedObjects, TaskOwner
+from core.config import ConfigRepoI
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db import IntegrityError
 from django.db.transaction import atomic
@@ -73,7 +74,9 @@ class ADCMAddHostPluginExecutor(ADCMAnsiblePluginExecutor[AddHostArguments, AddH
                 )
                 # In fact, we are not creating new related_configs, but updating them.
                 # Since hosts are created while jobs are running.
-                create_related_configs(job_id=runtime.vars.job.id, owner=task_owner)
+                create_related_configs(
+                    job_id=runtime.vars.job.id, owner=task_owner, config_repo=self._container.get(ConfigRepoI)
+                )
             except Provider.DoesNotExist:
                 return CallResult(
                     value=None,

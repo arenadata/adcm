@@ -64,7 +64,6 @@ from cm.errors import AdcmEx
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.types import ProcessStepState
 from cm.legacy.services.cluster import retrieve_cluster_topology
-from cm.legacy.services.config import ConfigAttrPair
 from cm.legacy.services.job import context as context_m
 from cm.legacy.services.job.run.executors import (
     AnsibleExecutorConfig,
@@ -513,30 +512,6 @@ def _extract_hc_apply_delta_for_process(process: Process) -> TaskMappingDelta:
         remove_mapping.setdefault(entry["component_id"], set()).add(entry["host_id"])
 
     return TaskMappingDelta(add=add_mapping, remove=remove_mapping)
-
-
-def _prepare_changes(parameters: list[dict], spec: dict) -> ConfigAttrPair:
-    changes = ConfigAttrPair(config={}, attr={})
-
-    for parameter in parameters:
-        key = parameter["key"]
-        value = parameter.get("value")
-
-        if "/" not in key:
-            key = f"{key}/"
-
-        param_spec = spec.get(key)
-        if not param_spec:
-            continue
-
-        if param_spec.type == "group" and param_spec.limits["activatable"]:
-            if not isinstance(value, bool):
-                raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=f"Value for {key} expected to be boolean")
-            changes.attr[key] = {"active": bool(value)}
-        else:
-            changes.config[key] = value
-
-    return changes
 
 
 def _extract_apply_config_target(task: Task, change: ConfigApplyChangeEntry) -> ADCM | CoreObject:
