@@ -1,3 +1,4 @@
+import type { AdcmContractVersion } from './bundle';
 import type { AdcmConcerns } from './concern';
 
 export interface AdcmHostProvider {
@@ -17,6 +18,7 @@ export interface AdcmHostProviderPrototype {
   name: string;
   displayName: string;
   version: string;
+  contractVersion?: AdcmContractVersion;
 }
 
 export interface AdcmHostProviderFilter {

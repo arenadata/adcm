@@ -1,14 +1,14 @@
 :global {
   body.theme-dark {
-    --bundle-version-cell-icon-color: var(--color-xdark-metal);
+    --entity-version-cell-icon-color: var(--color-xdark-metal);
   }
 
   body.theme-light {
-    --bundle-version-cell-icon-color: var(--color-adcmx);
+    --entity-version-cell-icon-color: var(--color-adcmx);
   }
 }
 
-.bundleVersionCell {
+.entityVersionCell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -17,7 +17,7 @@
 
   &__icon {
     flex-shrink: 0;
-    color: var(--bundle-version-cell-icon-color);
+    color: var(--entity-version-cell-icon-color);
     cursor: pointer;
   }
 }

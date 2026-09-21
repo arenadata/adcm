@@ -1,0 +1,21 @@
+.contractVersionWarning {
+  margin-bottom: 24px;
+  border-width: 2px;
+  background: var(--entity-contract-warning-bg);
+}
+
+:global {
+  body.theme-dark {
+    --entity-contract-version-color: var(--color-xwhite-off);
+    --entity-contract-warning-bg: var(--color-new-dark-50);
+  }
+
+  body.theme-light {
+    --entity-contract-version-color: var(--color-dark-1);
+    --entity-contract-warning-bg: var(--color-xwhite-off);
+  }
+}
+
+.version {
+  color: var(--entity-contract-version-color);
+}
