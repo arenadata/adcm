@@ -10,8 +10,8 @@ import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
 import {
-  attachContractVersionsToClusters,
-  getUniqueClusterPrototypeIds,
+  attachContractVersionsToEntities,
+  getUniqueEntityPrototypeIds,
   mergeClusterPreservingContractVersion,
 } from '@utils/contractVersionUtils';
 import { upsertConcern } from '@utils/concernStoreUtils';
@@ -27,7 +27,7 @@ const loadClusterFromBackend = createAsyncThunk(
   async (arg: number, thunkAPI) => {
     try {
       const cluster = await AdcmClustersApi.getCluster(arg);
-      const prototypeIds = getUniqueClusterPrototypeIds([cluster]);
+      const prototypeIds = getUniqueEntityPrototypeIds([cluster]);
       let prototypes: AdcmPrototype[] = [];
       if (prototypeIds.length) {
         try {
@@ -40,7 +40,7 @@ const loadClusterFromBackend = createAsyncThunk(
           prototypes = [];
         }
       }
-      const [enriched] = attachContractVersionsToClusters([cluster], prototypes);
+      const [enriched] = attachContractVersionsToEntities([cluster], prototypes) as AdcmCluster[];
       return enriched;
     } catch (error) {
       thunkAPI.dispatch(showError({ message: 'Cluster not found' }));

@@ -4,10 +4,10 @@ import ClusterDetailsPanelHeader from './ClusterDetailsPanelHeader';
 import ClusterDetailsPanelMetrics from './ClusterDetailsPanelMetrics';
 import ClusterDetailsPanelConcerns from './ClusterDetailsPanelConcerns';
 import ClusterDetailsPanelMaintenance from './ClusterDetailsPanelMaintenance';
-import ClusterContractVersionWarning from '@commonComponents/ClusterContractVersionWarning/ClusterContractVersionWarning';
 import { useClusterMaintenanceMode } from './useClusterMaintenanceMode';
 import { useRequestClusterMaintenanceMode } from './useRequestClusterMaintenanceMode';
 import s from './ClusterDetailsPanel.module.scss';
+import EntityContractVersionWarning from '@commonComponents/EntityContractVersionWarning/EntityContractVersionWarning';
 
 export interface ClusterDetailsPanelProps {
   cluster: AdcmCluster;
@@ -22,7 +22,7 @@ const ClusterDetailsPanel: React.FC<ClusterDetailsPanelProps> = ({ cluster, metr
     <aside className={s.clusterDetailsPanel} data-test="cluster-details-panel">
       <ClusterDetailsPanelHeader cluster={cluster} />
 
-      <ClusterContractVersionWarning cluster={cluster} className={s.clusterDetailsPanel__warning} />
+      <EntityContractVersionWarning entity={cluster} entityType="cluster" className={s.clusterDetailsPanel__warning} />
 
       <ClusterDetailsPanelMetrics metrics={metrics} />
 

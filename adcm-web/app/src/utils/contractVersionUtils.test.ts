@@ -1,9 +1,9 @@
 import { AdcmContractVersionStatus } from '@models/adcm/bundle';
 import type { AdcmCluster, AdcmPrototype } from '@models/adcm';
 import {
-  attachContractVersionsToClusters,
+  attachContractVersionsToEntities,
   getContractVersionBadgeStatus,
-  getUniqueClusterPrototypeIds,
+  getUniqueEntityPrototypeIds,
   mergeClusterPreservingContractVersion,
 } from './contractVersionUtils';
 
@@ -46,9 +46,7 @@ describe('contractVersionUtils', () => {
   });
 
   test('getUniqueClusterPrototypeIds returns unique prototype ids', () => {
-    expect(getUniqueClusterPrototypeIds([makeCluster(1, 10), makeCluster(2, 10), makeCluster(3, 20)])).toEqual([
-      10, 20,
-    ]);
+    expect(getUniqueEntityPrototypeIds([makeCluster(1, 10), makeCluster(2, 10), makeCluster(3, 20)])).toEqual([10, 20]);
   });
 
   test('attachContractVersionsToClusters maps contractVersion by prototype id', () => {
@@ -58,7 +56,7 @@ describe('contractVersionUtils', () => {
       makePrototype(20, AdcmContractVersionStatus.Unsupported, '0.9'),
     ];
 
-    const result = attachContractVersionsToClusters(clusters, prototypes);
+    const result = attachContractVersionsToEntities(clusters, prototypes);
 
     expect(result[0].prototype.contractVersion?.status).toBe(AdcmContractVersionStatus.Deprecated);
     expect(result[1].prototype.contractVersion?.status).toBe(AdcmContractVersionStatus.Deprecated);
@@ -67,7 +65,7 @@ describe('contractVersionUtils', () => {
 
   test('attachContractVersionsToClusters leaves clusters unchanged when prototypes are empty', () => {
     const clusters = [makeCluster(1, 10)];
-    const result = attachContractVersionsToClusters(clusters, []);
+    const result = attachContractVersionsToEntities(clusters, []);
     expect(result[0].prototype.contractVersion).toBeUndefined();
   });
 
