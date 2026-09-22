@@ -41,20 +41,18 @@ EntryT = TypeVar("EntryT")
 
 
 @dataclass(slots=True)
-class ScriptGroupBody(Generic[EntryT]):
-    type: ExecutionStyle
+class ScriptGroup(Generic[EntryT]):
+    # no default on `group`: entries are dumped with `exclude_defaults=True`,
+    # so a defaulted value would vanish from the dump and break discrimination on it
+    group: ExecutionStyle
     name: Name
     display_name: Annotated[str | None, Field(default=None)]
     scripts: Annotated[list[EntryT], Field(min_length=1)]
 
 
-@dataclass(slots=True)
-class ScriptGroup(Generic[EntryT]):
-    group: ScriptGroupBody[EntryT]
-
-
 def detect_entry_kind(value: Any) -> Literal["group", "script"]:
-    # called with raw data on validation and with parsed objects on dump
+    # called with raw data on validation and with parsed objects on dump;
+    # presence of `group` is the only marker, since script dataclasses don't forbid extra keys
     if isinstance(value, dict):
         return "group" if "group" in value else "script"
 

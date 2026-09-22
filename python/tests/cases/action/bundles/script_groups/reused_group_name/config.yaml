@@ -8,14 +8,12 @@
   actions:
     grouped:
       scripts:
-        - group:
-            type: parallel
-            name: twin
-            scripts:
-              - group:
-                  type: sequential
-                  name: twin
-                  scripts:
-                    - name: step
-                      script_type: ansible
-                      script: ./playbook.yaml
+        - group: parallel
+          name: twin
+          scripts:
+            - group: sequential
+              name: twin
+              scripts:
+                - name: step
+                  script_type: ansible
+                  script: ./playbook.yaml

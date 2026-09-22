@@ -11,10 +11,9 @@
         - name: step
           script_type: ansible
           script: ./playbook.yaml
-        - group:
-            type: parallel
-            name: "0"
-            scripts:
-              - name: step
-                script_type: ansible
-                script: ./playbook.yaml
+        - group: parallel
+          name: "0"
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml

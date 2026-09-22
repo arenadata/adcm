@@ -1,0 +1,17 @@
+# the shape groups had before ADCM-8467: `group` wrapping the whole body, replaced outright
+- type: cluster
+  name: script_groups_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      scripts:
+        - group:
+            type: parallel
+            name: shards
+            scripts:
+              - name: step
+                script_type: ansible
+                script: ./playbook.yaml
