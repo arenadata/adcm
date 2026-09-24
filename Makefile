@@ -6,7 +6,7 @@ SELENOID_PORT ?= 4444
 ADCM_VERSION = "3.1.0-dev"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: build unittests pretty lint version
+.PHONY: build unittests test-integrations pretty lint version
 
 define uv_sync
 uv sync --inexact --group $(1)
@@ -29,18 +29,30 @@ define pg_stop
 docker stop postgres
 endef
 
+TEST_ENV = DJANGO_SETTINGS_MODULE=adcm.settings_setups.test \
+	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres"
+
+# $(1): arguments of `manage.py test` (labels and options)
+define run_tests
+$(call uv_sync,unittests)
+$(pg_start)
+$(TEST_ENV) uv run python/manage.py test -v 2 --keepdb $(1); \
+TEST_EXIT=$$?; \
+$(pg_stop); \
+exit $$TEST_EXIT
+endef
+
 build:
 	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
-	$(pg_start)
-	$(call uv_sync,unittests)
-	DJANGO_SETTINGS_MODULE=adcm.settings_setups.test \
-	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
-	uv run python/manage.py test python -v 2 --parallel --keepdb; \
-	TEST_EXIT=$$?; \
-	$(pg_stop); \
-	exit $$TEST_EXIT
+	# celery_worker exclude is ignored, but it's a failsafe in case discovery is changed,
+	# since these tests may flak/fail in parallel run
+	$(call run_tests,python --parallel --exclude-tag celery_worker)
+
+test-integrations:
+	# `tests.integrations` has no `__init__.py`, so its test packages have to be pointed at directly
+	$(call run_tests,tests.integrations.celery)
 
 pretty:
 	$(call uv_sync,lint)

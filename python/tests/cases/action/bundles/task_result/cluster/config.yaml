@@ -1,0 +1,41 @@
+# Plan ends with parallel group, so its last job in plan order isn't the only one that may fail
+- type: cluster
+  name: task_result_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    with_parallel_tail:
+      # required for on_success/on_fail to be declared
+      masking:
+      on_success:
+        state: done
+        multi_state:
+          set: [succeeded]
+          unset: [failed]
+      on_fail:
+        state: task_failed
+        multi_state:
+          set: [failed]
+          unset: [succeeded]
+      scripts:
+        - name: prepare
+          script_type: ansible
+          script: ./playbook.yaml
+
+        - group: parallel
+          name: branches
+          scripts:
+            - name: with_on_fail
+              script_type: ansible
+              script: ./playbook.yaml
+              on_fail:
+                state: branch_failed
+                multi_state:
+                  set: [branch_failed_flag]
+                  unset: [succeeded]
+
+            - name: without_on_fail
+              script_type: ansible
+              script: ./playbook.yaml
