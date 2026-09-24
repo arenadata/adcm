@@ -71,14 +71,20 @@ class ExecutionStatus(str, Enum):
     TERMINATING = "terminating"
 
 
-# should be unified and distinct
-UNFINISHED_STATUSES = (
-    ExecutionStatus.CREATED,
-    ExecutionStatus.SCHEDULED,
-    ExecutionStatus.QUEUED,
-    ExecutionStatus.RUNNING,
-    ExecutionStatus.REVOKING,
-    ExecutionStatus.TERMINATING,
+# The only set of statuses that is defined and its on purpose:
+# other sets can be calculated based on this one and most operations can be performed on it alone.
+# When other subset of `ExecutionStatus`es is required, define local protected constant.
+# We've decided to go this way, because there are a lot of specific and unmergable cases of such subsets,
+# which can't be reused meaningfuly and without contraction with one another.
+UNFINISHED_STATUSES = frozenset(
+    {
+        ExecutionStatus.CREATED,
+        ExecutionStatus.SCHEDULED,
+        ExecutionStatus.QUEUED,
+        ExecutionStatus.RUNNING,
+        ExecutionStatus.REVOKING,
+        ExecutionStatus.TERMINATING,
+    }
 )
 
 

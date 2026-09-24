@@ -17,8 +17,9 @@ from audit.alt.core import NameHalfSplitter
 from core.action import CallingProcess, ExecutionStatus, Task, TaskOwner
 from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
 from core.action.job._termination import ExecutorTerminator
+from core.action.job.operations import calculate_owner_state_changes, calculate_task_final_status
 from core.action.operations import flatten_execution_plan, to_rich_jobs
-from core.action.types import RichJob
+from core.action.types import RichJob, StateChanges
 from core.cluster import ClusterService
 from core.config import ConfigRepoI
 from core.legacy.job.runners import (
@@ -120,7 +121,7 @@ class JobSequenceRunner(TaskRunner):
 
         self._runtime.status = ExecutionStatus.BROKEN
         try:
-            self._finish(task=self._repo.get_task(id=self._runtime.task_id), last_job=None)
+            self._finish(task=self._repo.get_task(id=self._runtime.task_id), state_changes=StateChanges())
         except:  # noqa: E722
             # force set task finish date if something goes wrong
             self._repo.update_task(
@@ -133,36 +134,38 @@ class JobSequenceRunner(TaskRunner):
             task, configured_jobs = self._configure(task_id=task_id)
             self._start(task_id=task_id)
 
-            last_processed_job = None
-            last_job_result = None
             for current_job in configured_jobs:
+                if self._is_revoked(job_id=current_job.job.runtime.id):
+                    # job revoked on its own is skipped, following ones are still executed
+                    continue
+
                 task = self._get_updated_task(task=task)
                 self._prepare_job_environment(task=task, target=current_job)
 
-                last_processed_job = current_job.job
-                last_job_result = self._execute_job(task=task, target=current_job)
+                job_result = self._execute_job(task=task, target=current_job)
 
-                if self._runtime.status != ExecutionStatus.ABORTED and last_job_result not in (
-                    ExecutionStatus.SUCCESS,
-                    ExecutionStatus.ABORTED,
-                ):
-                    self._runtime.status = ExecutionStatus.FAILED
-
-                if not self._should_proceed(last_job_result=last_job_result):
+                if not self._should_proceed(last_job_result=job_result):
                     break
 
-            if self._runtime.termination.is_requested or (
-                last_job_result == ExecutionStatus.ABORTED
-                and last_processed_job.runtime.id == configured_jobs[-1].job.runtime.id
-            ):
-                self._runtime.status = ExecutionStatus.ABORTED
-            elif self._runtime.status == ExecutionStatus.RUNNING:
-                if last_job_result in (ExecutionStatus.ABORTED, None):
-                    self._runtime.status = ExecutionStatus.SUCCESS
-                else:
-                    self._runtime.status = last_job_result
+            # statuses are re-read to be calculated from the same data celery runner uses
+            jobs = self._get_jobs_in_plan_order(task_id=task_id)
 
-            self._finish(task=task, last_job=last_processed_job)
+            final_status = calculate_task_final_status(
+                job_statuses=(job.runtime.status for job in jobs),
+                task_is_aborted=self._runtime.termination.is_requested,
+            )
+            if not final_status:
+                message = f"Failed to calculate final status of task {task_id}: {final_status.value}"
+                raise RuntimeError(message)
+
+            task_result = final_status.value
+            self._runtime.status = task_result
+
+            state_changes = calculate_owner_state_changes(
+                task_result=task_result, jobs=jobs, on_success=task.on_success, on_fail=task.on_fail
+            )
+
+            self._finish(task=task, state_changes=state_changes)
 
     def _configure(self, task_id: int) -> tuple[Task, tuple[ExecutionTarget, ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
@@ -173,18 +176,25 @@ class JobSequenceRunner(TaskRunner):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
-        plan = self._repo.get_execution_plan(task_id=task_id)
-        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
-        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
-
-        # the plan says both what to run and in which order, jobs only say how each run went
-        jobs_in_order = tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
+        jobs_in_order = self._get_jobs_in_plan_order(task_id=task_id)
 
         configured_jobs = tuple(
             self._job_processor.convert(task=task, jobs=jobs_in_order, configuration=self._settings)
         )
 
         return task, configured_jobs
+
+    def _get_jobs_in_plan_order(self, task_id: int) -> tuple[RichJob, ...]:
+        plan = self._repo.get_execution_plan(task_id=task_id)
+        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+
+        # the plan says both what to run and in which order, jobs only say how each run went
+        return tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
+
+    def _is_revoked(self, job_id: int) -> bool:
+        found_jobs = self._repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+        return next(iter(found_jobs)).status == ExecutionStatus.REVOKED
 
     def _start(self, task_id: int) -> None:
         self._repo.update_task(
@@ -290,7 +300,7 @@ class JobSequenceRunner(TaskRunner):
         # ABORTED means "skipped" here, so if it's skipped, we just continue
         return last_job_result == ExecutionStatus.ABORTED
 
-    def _finish(self, task: Task, last_job: RichJob | None):
+    def _finish(self, task: Task, state_changes: StateChanges):
         task_result = self._runtime.status
 
         if task.is_blocking:
@@ -313,7 +323,7 @@ class JobSequenceRunner(TaskRunner):
             self._update_owner_object(
                 owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
                 finished_task=finished_task,
-                last_job=last_job,
+                state_changes=state_changes,
             )
 
         if finished_task.target:
@@ -338,43 +348,29 @@ class JobSequenceRunner(TaskRunner):
         except:  # noqa: E722
             self._logger.exception("Error loading host-component map on task finish")
 
-    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, last_job: RichJob | None):
+    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, state_changes: StateChanges):
         """Task should be re-read before calling this method, because some flags need to be updated"""
-        if last_job:
-            self._update_owner_state(task=finished_task, job=last_job, owner=owner)
+        # aborted or broken task doesn't change owner's state
+        if self._runtime.status in (ExecutionStatus.SUCCESS, ExecutionStatus.FAILED):
+            self._update_owner_state(task=finished_task, owner=owner, state_changes=state_changes)
 
         if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
             cluster_service = self._container.get(ClusterService)
             set_hostcomponent(task=finished_task, cluster_service=cluster_service, logger=self._logger)
 
-    def _update_owner_state(self, task: Task, job: RichJob, owner: CoreObjectDescriptor) -> None:
-        if self._runtime.status == ExecutionStatus.SUCCESS:
-            multi_state_set = task.on_success.multi_state_set
-            multi_state_unset = task.on_success.multi_state_unset
-            state = task.on_success.state
-            if not state:
-                self._logger.warning('task for "%s" success state is not set', task.action.display_name)
-
-        elif self._runtime.status == ExecutionStatus.FAILED:
-            job_on_fail = job.spec.on_fail
-            task_on_fail = task.on_fail
-            state = job_on_fail.state or task_on_fail.state
-            multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set
-            multi_state_unset = job_on_fail.multi_state_unset or task_on_fail.multi_state_unset
-            if not state:
-                self._logger.warning('task for "%s" fail state is not set', task.action.display_name)
-
-        else:
-            if self._runtime.status != ExecutionStatus.ABORTED:
-                self._logger.error("unknown task status: %s", self._runtime.status)
-
-            return
+    def _update_owner_state(self, task: Task, owner: CoreObjectDescriptor, state_changes: StateChanges) -> None:
+        state = state_changes.state
+        if not state:
+            result_name = "success" if self._runtime.status == ExecutionStatus.SUCCESS else "fail"
+            self._logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
             self._repo.update_owner_state(owner=owner, state=state)
 
         self._repo.update_owner_multi_states(
-            owner=owner, add_multi_states=multi_state_set, remove_multi_states=multi_state_unset
+            owner=owner,
+            add_multi_states=state_changes.multi_state_set,
+            remove_multi_states=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:
