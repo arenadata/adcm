@@ -8,6 +8,7 @@ import ConfigurationFormContextProvider from '@commonComponents/configuration/Co
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import { useHostProviderConfigGroupConfigurationsCompare } from '@pages/HostProviderPage/HostProviderConfigurationGroupSingle/HostProviderConfigGroupConfiguration/useHostProviderConfigGroupConfigurationsCompare';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
 
 const HostProviderConfigGroupConfiguration: React.FC = () => {
@@ -55,7 +56,12 @@ const HostProviderConfigGroupConfiguration: React.FC = () => {
       />
 
       <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+        <ConfigurationSubHeader
+          onSave={onSave}
+          onRevert={onReset}
+          isViewDraft={selectedConfigId === 0}
+          canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+        />
         <ConfigurationMinimap>
           <ConfigurationMain
             isLoading={isConfigurationLoading}

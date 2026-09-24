@@ -5,6 +5,7 @@ import { setBreadcrumbs } from '@store/adcm/breadcrumbs/breadcrumbsSlice';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import { useClusterPrimaryConfigurationsCompare } from '@pages/cluster/ClusterConfiguration/ClusterPrimaryConfiguration/useClusterPrimaryConfigurationsCompare';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
 import ConfigurationEmptyState from '@commonComponents/configuration/ConfigurationEmptyState/ConfigurationEmptyState';
@@ -61,7 +62,12 @@ const ClusterPrimaryConfiguration: React.FC = () => {
           />
           <PermissionsChecker requestState={accessConfigCheckStatus}>
             <ConfigurationFormContextProvider>
-              <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+              <ConfigurationSubHeader
+                onSave={onSave}
+                onRevert={onReset}
+                isViewDraft={selectedConfigId === 0}
+                canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+              />
               <ConfigurationMinimap>
                 <ConfigurationMain
                   isLoading={isConfigurationLoading}
