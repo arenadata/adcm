@@ -167,7 +167,7 @@ class _ActionBase:
 
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
     masking: Masking
-    on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
+    on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
 
     config: ConfigAsListDictOrNoneNoDuplicates

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Final, cast
 from unittest import TestCase
 from unittest.mock import Mock, patch
+import re
 
 from pydantic import TypeAdapter, ValidationError
 import yaml
@@ -1203,6 +1204,29 @@ class TestBundleProcessingErrors(TestCase):
                     self.parse(bundle)
 
                 self.assertIn('uses "on_success/on_fail" states without "masking"', err.exception.message)
+
+    def test_adcm_8201_action_on_fail_as_string_forbidden(self):
+        bundle = f"""
+        - name: test
+          type: cluster
+          contract_version: "{CONTRACT_VERSION}"
+          venv: "{MAIN_VENV}"
+          version: 1
+          actions:
+            some:
+              scripts:
+                - name: first
+                  script: some.yaml
+                  script_type: ansible
+              masking: {{}}
+              on_fail: failed-state
+        """
+        expected_re = r"Errors found in definition of bundle entity.*actions.*some.*on_fail"
+
+        with self.assertRaises(BundleParsingError) as err:
+            self.parse(bundle)
+
+        self.assertRegex(err.exception.message, re.compile(expected_re, re.DOTALL))
 
     def test_script_path_correctness(self):
         bundle = f"""
