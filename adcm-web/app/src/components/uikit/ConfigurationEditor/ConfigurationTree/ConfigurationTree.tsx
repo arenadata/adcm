@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
 import FieldNodeContent from './NodeContent/FieldNodeContent';
 import AddItemNodeContent from './NodeContent/AddItemNodeContent';
@@ -21,6 +21,7 @@ import {
   getFailedNodeInfo,
   validate,
 } from './ConfigurationTree.utils';
+import { buildMetaKey, findOneOfByDiscriminator } from './ConfigurationTreeAttributes.utils';
 import type { ConfigurationAttributes, ConfigurationData, ConfigurationSchema } from '@models/adcm';
 import type {
   ChangeConfigurationNodeHandler,
@@ -31,8 +32,24 @@ import type {
 } from './ConfigurationTree.types';
 import s from './ConfigurationTree.module.scss';
 import cn from 'classnames';
-import { rootNodeKey, toggleAllNodesEventName } from './ConfigurationTree.constants';
+import { rootNodeKey, toggleAllNodesEventName, discriminatorFieldName } from './ConfigurationTree.constants';
 import { DEFAULT_JSON_SCHEMA_ENGINE, type JsonSchemaEngineId } from '@utils/jsonSchema/JsonSchemaValidationService';
+
+const getSelectableBranchChildKeys = (node: ConfigurationNodeView, selection: string): string[] => {
+  if (node.data.type !== 'selectableObject') {
+    return [];
+  }
+
+  const { fieldSchema, path } = node.data;
+  const branch = findOneOfByDiscriminator(fieldSchema.oneOf, selection);
+  if (!branch?.properties) {
+    return [];
+  }
+
+  return Object.keys(branch.properties)
+    .filter((name) => name !== discriminatorFieldName)
+    .map((name) => buildMetaKey([...path, name]));
+};
 
 export interface ConfigurationTreeProps {
   schema: ConfigurationSchema;
@@ -104,6 +121,8 @@ const ConfigurationTree = ({
   isReadOnly = false,
 }: ConfigurationTreeProps) => {
   const ref = useRef<HTMLDivElement>(null);
+  const isFirstExpandAllEffect = useRef(true);
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const configNode: ConfigurationNode = buildConfigurationNodes(
     schema,
     configuration,
@@ -119,16 +138,50 @@ const ConfigurationTree = ({
 
   const { isValid, configurationErrors } = validate(schema, configuration, attributes, validationEngine);
 
+  const handleExpandedChange = useCallback((nodeKey: string, isExpanded: boolean) => {
+    setExpandedNodes((prev) => {
+      if (prev[nodeKey] === isExpanded) {
+        return prev;
+      }
+      return { ...prev, [nodeKey]: isExpanded };
+    });
+  }, []);
+
   useEffect(() => {
     onChangeIsValid?.(isValid);
   }, [isValid, onChangeIsValid]);
 
   useEffect(() => {
+    // Skip mount: otherwise remount collapses every node via Expand all=false
+    if (isFirstExpandAllEffect.current) {
+      isFirstExpandAllEffect.current = false;
+      return;
+    }
     if (ref.current) {
       const eventData = { detail: areExpandedAll };
       ref.current.dispatchEvent(new CustomEvent(toggleAllNodesEventName, eventData));
     }
   }, [areExpandedAll]);
+
+  const handleSelectOneOfBranch: SelectOneOfBranchHandler = useCallback(
+    (node, selection) => {
+      const isGroupExpanded = expandedNodes[node.key] ?? areExpandedAll;
+
+      if (isGroupExpanded) {
+        const childKeys = getSelectableBranchChildKeys(node, selection);
+        setExpandedNodes((prev) => {
+          const next = { ...prev, [node.key]: true };
+          for (const childKey of childKeys) {
+            next[childKey] = true;
+          }
+          return next;
+        });
+      }
+
+      onSelectOneOfBranch(node, selection);
+    },
+    [areExpandedAll, expandedNodes, onSelectOneOfBranch],
+  );
 
   const handleClick: ChangeConfigurationNodeHandler = (node, nodeRef) => {
     onSelectNode(node.key);
@@ -210,7 +263,7 @@ const ConfigurationTree = ({
             onClear={onClear}
             onDelete={onDelete}
             onChange={onChange}
-            onSelectOneOfBranch={onSelectOneOfBranch}
+            onSelectOneOfBranch={handleSelectOneOfBranch}
             onExpand={onExpand}
             onFieldAttributeChange={onFieldAttributesChange}
             onDragStart={handleDragStart}
@@ -228,6 +281,8 @@ const ConfigurationTree = ({
         treeRef={ref}
         isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
         areExpandedAll={areExpandedAll}
+        expandedNodes={expandedNodes}
+        onExpandedChange={handleExpandedChange}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
       />

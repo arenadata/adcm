@@ -32,7 +32,7 @@ const mergeDefaults = (base: MetaDefaults | undefined, next: MetaDefaults): Meta
   ...next,
 });
 
-const findOneOfByDiscriminator = (
+export const findOneOfByDiscriminator = (
   oneOf: SchemaDefinition['oneOf'],
   disc: string | undefined,
 ): SchemaDefinition | undefined => {
