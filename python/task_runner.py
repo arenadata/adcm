@@ -19,7 +19,7 @@ import argparse
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from application.di.containers import get_main_providers
+from application.di.containers import get_task_runner_providers
 from core.legacy.job.runners import TaskRunner
 import dishka
 
@@ -31,7 +31,7 @@ def main():
     parser.add_argument("task_id", type=int)
     args = parser.parse_args()
 
-    container = dishka.make_container(*get_main_providers())
+    container = dishka.make_container(*get_task_runner_providers())
 
     with container():
         runner = container.get(TaskRunner)
