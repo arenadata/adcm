@@ -21,6 +21,7 @@ from core.action.types import (
     JobHierarchyLevel,
     JobShortInfo,
     JobSpecV1,
+    RuntimeDates,
     ScriptSpec,
     ScriptType,
     WorkerInfo,
@@ -92,7 +93,7 @@ def make_job(job_id: int, spec_key: str) -> JobShortInfo:
         id=job_id,
         task_id=1,
         spec_key=FullSpecKey(spec_key),
-        finish_date=None,
+        dates=RuntimeDates(),
         worker=WorkerInfo(),
         status=ExecutionStatus.CREATED,
     )

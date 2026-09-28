@@ -1432,6 +1432,10 @@ components:
         isTerminatable:
           type: boolean
           readOnly: true
+        group:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - id
       - name
@@ -1441,6 +1445,7 @@ components:
       - endTime
       - duration
       - isTerminatable
+      - group
     JobRetrieve:
       type: object
       properties:
@@ -1481,6 +1486,10 @@ components:
         isTerminatable:
           type: boolean
           readOnly: true
+        group:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - id
       - name
@@ -1492,6 +1501,7 @@ components:
       - duration
       - taskId
       - isTerminatable
+      - group
     JobStatusEnum:
       enum:
       - revoked

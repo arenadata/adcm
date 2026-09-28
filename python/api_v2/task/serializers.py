@@ -12,6 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.models import JobLog, JobStatus, TaskLog
+from core.spec.keys import ensure_full_key, full_key_to_level_keys
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
@@ -29,6 +30,21 @@ OBJECT_ORDER = {
 }
 
 
+def spec_key_to_group_name(spec_key: str) -> str | None:
+    """
+    Return the name of the group a job with given spec key belongs to (its direct parent level).
+
+    Root-level jobs and legacy jobs (empty spec key) don't belong to any group.
+    """
+
+    parent_levels = full_key_to_level_keys(ensure_full_key(spec_key))[:-1]
+
+    if not parent_levels:
+        return None
+
+    return parent_levels[-1]
+
+
 class TaskObjectsFieldSerializer(EmptySerializer):
     id = IntegerField()
     name = CharField()
@@ -37,6 +53,7 @@ class TaskObjectsFieldSerializer(EmptySerializer):
 
 class JobListSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
+    group = SerializerMethodField()
     start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
     end_time = DateTimeField(source="finish_date", allow_null=True, read_only=True)
 
@@ -51,11 +68,16 @@ class JobListSerializer(ModelSerializer):
             "end_time",
             "duration",
             "is_terminatable",
+            "group",
         )
 
     @staticmethod
     def get_is_terminatable(obj: JobLog) -> bool:
         return obj.allow_to_terminate
+
+    @staticmethod
+    def get_group(obj: JobLog) -> str | None:
+        return spec_key_to_group_name(obj.spec_key)
 
 
 class TaskSerializer(ModelSerializer):

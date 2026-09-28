@@ -25,9 +25,10 @@ from django.conf import settings
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
+from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 
-class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
+class TestJob(TaskTestMixin, ADCMDjangoAPISuite, ParametrizedTestCase):
     TRUNCATED_LOG_MESSAGE = settings.STDOUT_STDERR_TRUNCATED_LOG_MESSAGE
 
     def setUp(self) -> None:
@@ -61,6 +62,33 @@ class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], job.pk)
+
+    @parametrize(
+        ("spec_key", "expected_group"),
+        [
+            param("", None, id="legacy"),
+            param("/0", None, id="root"),
+            param("/some/2", "some", id="nested_once"),
+            param("/some/thing/4", "thing", id="nested_twice"),
+            param("/shards/shard_a/0", "shard_a", id="shard"),
+        ],
+    )
+    def test_job_group_success(self, spec_key: str, expected_group: str | None) -> None:
+        _, job = self.simulate_finished_task(object_=self.cluster_1, action=self.cluster_1_action)
+        JobLog.objects.filter(pk=job.pk).update(spec_key=spec_key)
+
+        response = (self.client.v2 / "jobs").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        (job_data,) = (entry for entry in response.json()["results"] if entry["id"] == job.pk)
+        self.assertIn("group", job_data)
+        self.assertEqual(job_data["group"], expected_group)
+
+        response = self.client.v2[job].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIn("group", response.json())
+        self.assertEqual(response.json()["group"], expected_group)
 
     def test_job_retrieve_not_found_fail(self):
         self.simulate_finished_task(object_=self.component, action=self.component_action)

@@ -1,0 +1,75 @@
+# For the internal execution-plan endpoint: one action shaped
+# `job, parallel(seq(a, b, c), seq(d, e, f)), job` and one flat action.
+- type: cluster
+  name: execution_plan_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      display_name: Grouped
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - name: pre_check
+          display_name: Pre-check
+          script_type: ansible
+          script: ./playbook.yaml
+
+        - group: parallel
+          name: shards
+          display_name: Shards
+          scripts:
+            - group: sequential
+              name: shard_a
+              display_name: Shard A
+              scripts:
+                - name: stop_a
+                  display_name: Stop A
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: reconfigure_a
+                  display_name: Reconfigure A
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: start_a
+                  display_name: Start A
+                  script_type: ansible
+                  script: ./playbook.yaml
+
+            - group: sequential
+              name: shard_b
+              display_name: Shard B
+              scripts:
+                - name: stop_b
+                  display_name: Stop B
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: reconfigure_b
+                  display_name: Reconfigure B
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: start_b
+                  display_name: Start B
+                  script_type: ansible
+                  script: ./playbook.yaml
+
+        - name: finalize
+          display_name: Finalize
+          script_type: ansible
+          script: ./playbook.yaml
+
+    flat:
+      display_name: Flat
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - name: first
+          display_name: First
+          script_type: ansible
+          script: ./playbook.yaml
+        - name: second
+          display_name: Second
+          script_type: ansible
+          script: ./playbook.yaml

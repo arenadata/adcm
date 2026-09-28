@@ -34,4 +34,5 @@ class JobRetrieveSerializer(JobListSerializer):
             "duration",
             "task_id",
             "is_terminatable",
+            "group",
         )

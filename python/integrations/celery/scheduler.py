@@ -133,12 +133,12 @@ class CeleryTaskMonitor(TaskMonitor):
         if task_related_celery_ids.intersection(celery_task_ids):
             return TaskLivenessStatus.ALIVE
 
-        # finish_dates will be missing for tasks with one or the first running job.
+        # finish dates will be missing for tasks with one or the first running job.
         # Meanwhile, the trust gap is needed to “give time” for the new job to start
         # (and therefore it will be displayed in the scheduled or active list)
-        # If none of the jobs have a finish_date assigned and they are not listed in the set above,
+        # If none of the jobs have a finish date assigned and they are not listed in the set above,
         # this most likely means that there’s no point in waiting for the trust gap in the hope that it will appear.
-        finish_dates = tuple(filter(None, map(attrgetter("finish_date"), jobs)))
+        finish_dates = tuple(job.dates.finish for job in jobs if job.dates.finish is not None)
 
         if finish_dates:
             latest_finished_job_date = max(finish_dates)
