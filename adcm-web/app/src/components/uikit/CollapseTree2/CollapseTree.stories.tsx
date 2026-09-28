@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import Icon from '@uikit/Icon/Icon';
 import CollapseNode from './CollapseNode';
 import type { Node } from './CollapseNode.types';
@@ -44,6 +45,7 @@ const getNodeClassName = (node: Node<SomeObject>) =>
   });
 
 const CollapseComponentWithHooks = () => {
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const tree: Node<SomeObject> = {
     key: 'root',
     index: 0,
@@ -83,7 +85,13 @@ const CollapseComponentWithHooks = () => {
 
   return (
     <>
-      <CollapseNode node={tree} renderNodeContent={renderNodeContent} getNodeClassName={getNodeClassName} />
+      <CollapseNode
+        node={tree}
+        expandedNodes={expandedNodes}
+        onExpandedChange={(nodeKey, isExpanded) => setExpandedNodes((prev) => ({ ...prev, [nodeKey]: isExpanded }))}
+        renderNodeContent={renderNodeContent}
+        getNodeClassName={getNodeClassName}
+      />
     </>
   );
 };

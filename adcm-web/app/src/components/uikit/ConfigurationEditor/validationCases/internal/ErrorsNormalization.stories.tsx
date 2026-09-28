@@ -49,6 +49,7 @@ const RequiredAtRootTree = () => {
   const ref = useRef<HTMLDivElement>(null);
   const filter: ConfigurationTreeFilter = { title: '', showAdvanced: true, showInvisible: true };
   const [treeState, _setTreeState] = useState<ConfigurationTreeState>({ dragNode: null });
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
 
   const schema: SchemaDefinition = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -149,6 +150,8 @@ const RequiredAtRootTree = () => {
           treeRef={ref}
           isInitiallyExpanded={viewConfigTree.key === rootNodeKey}
           areExpandedAll={false}
+          expandedNodes={expandedNodes}
+          onExpandedChange={(nodeKey, isExpanded) => setExpandedNodes((prev) => ({ ...prev, [nodeKey]: isExpanded }))}
           getNodeClassName={handleGetNodeClassName}
           renderNodeContent={handleRenderNodeContent}
         />
