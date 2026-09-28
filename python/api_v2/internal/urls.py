@@ -12,7 +12,11 @@
 
 from django.urls import path
 
-from api_v2.internal.views import StatusCheckerTokenViewSet, StatusServerUpdateView
+from api_v2.internal.views import (
+    StatusCheckerTokenViewSet,
+    StatusServerUpdateView,
+    TaskExecutionPlanViewSet,
+)
 
 urlpatterns = [
     path("unstable/status-server/sync/", StatusServerUpdateView.as_view({"post": "create"}), name="status-server-sync"),
@@ -20,5 +24,10 @@ urlpatterns = [
         "unstable/status-server/get-token/",
         StatusCheckerTokenViewSet.as_view({"get": "list"}),
         name="status-server-get-token",
+    ),
+    path(
+        "unstable/tasks/<int:pk>/execution-plan/",
+        TaskExecutionPlanViewSet.as_view({"get": "retrieve"}),
+        name="task-execution-plan",
     ),
 ]

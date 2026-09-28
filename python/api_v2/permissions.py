@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.permissions import DjangoObjectPermissions
+from adcm.permissions import VIEW_TASKLOG_PERMISSION
+from django.contrib.contenttypes.models import ContentType
+from guardian.mixins import PermissionListMixin
+from rest_framework.permissions import DjangoObjectPermissions, IsAuthenticated
 
 
 class TaskPermissions(DjangoObjectPermissions):
@@ -26,3 +29,20 @@ class TaskPermissions(DjangoObjectPermissions):
 
     def has_permission(self, request, view):  # noqa: ARG002
         return True
+
+
+class TaskVisibilityMixin(PermissionListMixin):
+    """
+    Restricts a `TaskLog`-based view's queryset to tasks the user may see:
+    view permission is required and ADCM-owned tasks are hidden from non-superusers.
+    """
+
+    permission_classes = [IsAuthenticated, TaskPermissions]
+    permission_required = [VIEW_TASKLOG_PERMISSION]
+
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if not self.request.user.is_superuser:
+            queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
+
+        return queryset

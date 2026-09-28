@@ -10,23 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import VIEW_TASKLOG_PERMISSION
 from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
 from cm.errors import AdcmEx
 from cm.models import ProcessStepInput, TaskLog
 from core.errors import NotFoundError
 from dishka import FromDishka
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import OuterRef, QuerySet, Subquery
 from django.db.transaction import atomic
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -42,8 +38,8 @@ from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
 )
+from api_v2.permissions import TaskVisibilityMixin
 from api_v2.task.filters import TaskFilter
-from api_v2.task.permissions import TaskPermissions
 from api_v2.task.serializers import TaskListSerializer
 from api_v2.utils.audit import detect_object_for_task, set_task_name
 from api_v2.views import ADCMGenericViewSet, inject
@@ -122,17 +118,13 @@ from api_v2.views import ADCMGenericViewSet, inject
         },
     ),
 )
-class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
+class TaskViewSet(TaskVisibilityMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
-    permission_classes = [IsAuthenticated, TaskPermissions]
-    permission_required = [VIEW_TASKLOG_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
-        if not self.request.user.is_superuser:
-            queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
 
         return self._annotate_queryset_with_step_display_names(queryset)
 

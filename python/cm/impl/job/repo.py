@@ -29,6 +29,7 @@ from core.action import (
     HostComponentChanges,
     JobShortInfo,
     RelatedObjects,
+    RuntimeDates,
     StateChanges,
     Task,
     TaskActionInfo,
@@ -193,6 +194,12 @@ class JobRepo(JobRepoI):
 
     def get_execution_plan(self, task_id: TaskID) -> JobSpecV1:
         stored = TaskLog.objects.values_list("execution_plan", flat=True).get(id=task_id)
+
+        if stored is None:
+            # legacy task, predating stored execution plans
+            message = f"Task identified by {task_id} has no stored execution plan"
+            raise NotFoundError(message)
+
         return parse_execution_plan(stored)
 
     # copied from cm.legacy.services.job.action._ActionLaunchObjects
@@ -258,7 +265,7 @@ class JobRepo(JobRepoI):
         query = (
             JobLog.objects.filter(**filter_kwargs)
             .order_by("id")
-            .values_list("id", "task_id", "spec_key", "finish_date", "executor", "pid", "status")
+            .values_list("id", "task_id", "spec_key", "start_date", "finish_date", "executor", "pid", "status")
         )
         return [_job_log_fields_to_short_info(fields) for fields in query]
 
@@ -485,19 +492,19 @@ def _created_job_to_short_info(job: JobLog) -> JobShortInfo:
         id=job.pk,
         task_id=job.task.pk,
         spec_key=job.spec_key,
-        finish_date=None,
+        dates=RuntimeDates(),
         worker=WorkerInfo(),
         status=ExecutionStatus(job.status),
     )
 
 
 def _job_log_fields_to_short_info(fields: tuple) -> JobShortInfo:
-    id_, task_id, spec_key, finish_date, executor, pid, status = fields
+    id_, task_id, spec_key, start_date, finish_date, executor, pid, status = fields
     return JobShortInfo(
         id=id_,
         task_id=task_id,
         spec_key=spec_key,
-        finish_date=finish_date,
+        dates=RuntimeDates(start=start_date, finish=finish_date),
         worker=_to_worker_info(executor=executor, pid=pid),
         status=ExecutionStatus(status.lower()),
     )

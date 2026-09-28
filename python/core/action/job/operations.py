@@ -18,11 +18,16 @@ from core.action.types import (
     UNFINISHED_STATUSES,
     ExecutionStatus,
     RichJob,
+    RuntimeDates,
     StateChanges,
 )
 from core.result import Fail, Success
 
 TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.ABORTED]
+
+# CREATED is the one unfinished status that says nothing is going on yet, so it's never "in progress"
+_IN_PROGRESS_STATUSES = frozenset(UNFINISHED_STATUSES).difference((ExecutionStatus.CREATED,))
+_FAILURE_STATUSES = frozenset((ExecutionStatus.FAILED, ExecutionStatus.BROKEN))
 
 
 _TERMINATION_FLOW_STATUSES = frozenset(
@@ -83,6 +88,55 @@ def calculate_owner_state_changes(
     )
 
     return StateChanges(state=state, multi_state_set=multi_state_set, multi_state_unset=multi_state_unset)
+
+
+def aggregate_group_status(children: Iterable[ExecutionStatus]) -> ExecutionStatus:
+    """
+    Derive a group's status from its children's statuses.
+
+    A subgroup counts as a single child with its own derived status.
+    """
+
+    statuses = set(children)
+
+    if statuses.intersection(_IN_PROGRESS_STATUSES):
+        return ExecutionStatus.RUNNING
+
+    if statuses.intersection(_FAILURE_STATUSES):
+        return ExecutionStatus.FAILED
+
+    if statuses == {ExecutionStatus.CREATED}:
+        return ExecutionStatus.CREATED
+
+    if ExecutionStatus.CREATED in statuses:
+        return ExecutionStatus.RUNNING
+
+    if statuses == {ExecutionStatus.SUCCESS}:
+        return ExecutionStatus.SUCCESS
+
+    if statuses == {ExecutionStatus.REVOKED}:
+        return ExecutionStatus.REVOKED
+
+    # what's left is a mix of SUCCESS, ABORTED and REVOKED
+    return ExecutionStatus.ABORTED
+
+
+def aggregate_group_dates(children: Sequence[RuntimeDates]) -> RuntimeDates:
+    """
+    Derive a group's dates from its children's dates.
+
+    A group is finished only when every child is: one child without a finish date
+    (not started yet, still running or never finished) leaves the group's finish unset.
+    """
+
+    start = min((dates.start for dates in children if dates.start is not None), default=None)
+
+    finishes = [dates.finish for dates in children if dates.finish is not None]
+
+    if len(finishes) < len(children):
+        return RuntimeDates(start=start, finish=None)
+
+    return RuntimeDates(start=start, finish=max(finishes, default=None))
 
 
 def is_terminatable_status(status: ExecutionStatus) -> bool:

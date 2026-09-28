@@ -348,13 +348,27 @@ class TaskShortInfo:
 
 
 @dataclass(slots=True, frozen=True)
+class RuntimeDates:
+    start: datetime | None = None
+    finish: datetime | None = None
+
+    @property
+    def duration(self) -> float | None:
+        """Seconds between start and finish, unknown until both happened"""
+        if self.start is None or self.finish is None:
+            return None
+
+        return (self.finish - self.start).total_seconds()
+
+
+@dataclass(slots=True, frozen=True)
 class JobShortInfo:
     """Everything about a job that isn't its spec: the spec is reachable by `spec_key` from the task's plan"""
 
     id: JobID
     task_id: TaskID
     spec_key: FullSpecKey
-    finish_date: datetime | None
+    dates: RuntimeDates
     worker: WorkerInfo
     status: ExecutionStatus
 

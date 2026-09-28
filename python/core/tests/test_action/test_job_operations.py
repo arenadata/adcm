@@ -19,6 +19,7 @@ from core.action.types import (
     ExecutionStatus,
     JobShortInfo,
     RichJob,
+    RuntimeDates,
     ScriptSpec,
     ScriptType,
     StateChanges,
@@ -41,7 +42,9 @@ def make_job(status: ExecutionStatus, on_fail: StateChanges | None = None, index
         script=AnsibleScript(type=ScriptType.ANSIBLE, path="a.yaml", params=AnsibleScriptParams()),
         on_fail=on_fail or StateChanges(),
     )
-    runtime = JobShortInfo(id=index + 1, task_id=1, spec_key=key, finish_date=None, worker=WorkerInfo(), status=status)
+    runtime = JobShortInfo(
+        id=index + 1, task_id=1, spec_key=key, dates=RuntimeDates(), worker=WorkerInfo(), status=status
+    )
     return RichJob(spec=spec, runtime=runtime)
 
 
