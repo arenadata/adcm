@@ -22,6 +22,7 @@ from core.action.types import (
     AssociatedProcess,
     CallingProcess,
     ExecutionStatus,
+    FullSpecKey,
     HostComponentChanges,
     JobShortInfo,
     JobSpecV1,
@@ -142,6 +143,7 @@ class JobShortFilter:
     ids: Iterable[JobID] | None = None
     task_ids: Iterable[TaskID] | None = None
     statuses: Iterable[ExecutionStatus] | None = None
+    spec_keys: Iterable[FullSpecKey] | None = None
 
 
 class JobRepoI(Protocol):
@@ -226,6 +228,14 @@ class JobRepoI(Protocol):
     ) -> ChangedAmount:
         """
         Change status of all jobs in task from `previous` to `new` returning amount of records changed
+        """
+        ...
+
+    def change_status_of_jobs(
+        self, ids: Iterable[JobID], previous: Iterable[ExecutionStatus], new: ExecutionStatus
+    ) -> ChangedAmount:
+        """
+        Change status of jobs identified by `ids` from `previous` to `new` returning amount of records changed
         """
         ...
 

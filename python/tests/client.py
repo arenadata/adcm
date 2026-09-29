@@ -76,7 +76,7 @@ class APINode:
         return self._client.get(path=self.path, data=query, **(headers or {}))
 
     def post(
-        self, *, data: dict | list[dict] | None = None, headers: dict | None = None, format_: str | None = None
+        self, *, data: dict | list | None = None, headers: dict | None = None, format_: str | None = None
     ) -> Response:
         return self._client.post(path=self.path, data=data, format=format_, **(headers or {}))
 

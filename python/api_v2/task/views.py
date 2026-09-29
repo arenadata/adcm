@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
+from audit.alt.hooks import adjust_denied_on_404_result
 from cm.errors import AdcmEx
 from cm.models import ProcessStepInput, TaskLog
 from core.errors import NotFoundError
@@ -27,6 +27,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -40,8 +41,12 @@ from api_v2.log_storage.utils import (
 )
 from api_v2.permissions import TaskVisibilityMixin
 from api_v2.task.filters import TaskFilter
-from api_v2.task.serializers import TaskListSerializer
-from api_v2.utils.audit import detect_object_for_task, set_task_name
+from api_v2.task.serializers import TaskGroupTerminateSerializer, TaskListSerializer
+from api_v2.utils.audit import (
+    detect_object_for_task,
+    set_task_termination_target_name,
+    task_termination_404_is_denial,
+)
 from api_v2.views import ADCMGenericViewSet, inject
 
 
@@ -88,10 +93,20 @@ from api_v2.views import ADCMGenericViewSet, inject
     ),
     terminate=extend_schema(
         operation_id="postTaskTerminate",
-        description="Terminate the execution of a specific task.",
+        description=(
+            "Terminate the execution of a specific task, "
+            "or of one of its script groups when the request body names one."
+        ),
         summary="POST task terminate",
+        request={"application/json": TaskGroupTerminateSerializer},
         responses=responses(
-            success=(HTTP_200_OK, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            success=(HTTP_200_OK, None),
+            errors=(
+                HTTP_400_BAD_REQUEST,
+                HTTP_403_FORBIDDEN,
+                HTTP_404_NOT_FOUND,
+                HTTP_409_CONFLICT,
+            ),
         ),
     ),
     retrieve=extend_schema(
@@ -136,20 +151,40 @@ class TaskViewSet(TaskVisibilityMixin, ListModelMixin, RetrieveModelMixin, ADCMG
 
         return qs.annotate(step_display_name=Subquery(inputs_qs.values("step__display_name")[:1]))
 
-    @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
-    @action(methods=["post"], detail=True, serializer_class=EmptySerializer)
+    @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(
+        pre_call=set_task_termination_target_name,
+        on_collect=adjust_denied_on_404_result(objects_exist=task_termination_404_is_denial),
+    )
+    @action(
+        methods=["post"],
+        detail=True,
+        serializer_class=TaskGroupTerminateSerializer,
+    )
     @inject
-    def terminate(self, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__) -> Response:
+    def terminate(
+        self, request: Request, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__
+    ) -> Response:
         # for pemission checks
         self.get_object()
 
+        task_id = int(pk)
+
+        group_name: str | None = None
+        if isinstance(request.data, dict) and request.data:
+            body = TaskGroupTerminateSerializer(data=request.data)
+            body.is_valid(raise_exception=True)
+            group_name = body.validated_data["group"]
+
         try:
             with atomic():
-                job_service.terminate_task(task_id=int(pk))
+                if group_name is not None:
+                    job_service.terminate_group(task_id=task_id, name=group_name)
+                else:
+                    job_service.terminate_task(task_id=task_id)
         except (core.action.job.errors.JobValidationError, core.action.job.errors.JobTerminationError) as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
-        except NotFoundError:
-            raise NotFound() from None
+        except NotFoundError as e:
+            raise NotFound(e.message) from None
 
         return Response(status=HTTP_200_OK)
 
