@@ -16,6 +16,8 @@ Before opening a new issue, please search existing issues to avoid duplicates. W
 * Steps to reproduce, expected behavior, and what actually happened.
 * Relevant logs, stack traces, or screenshots.
 
+Even if you already have a fix or improvement ready, it's still recommended to open an issue first describing what you want to change and why, then link your pull request to that issue. This isn't required, but it gives maintainers and other contributors context for the change before diving into the diff, and avoids duplicated effort on the same problem.
+
 ## Project structure
 
 ADCM is a monorepo with a few independently developed components — see the [README](README.md#structure) for the overview:
