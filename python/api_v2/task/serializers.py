@@ -51,6 +51,10 @@ class TaskObjectsFieldSerializer(EmptySerializer):
     type = ChoiceField(choices=tuple((v, v) for v in OBJECT_ORDER))
 
 
+class TaskGroupTerminateSerializer(EmptySerializer):
+    group = CharField(allow_blank=False, help_text="Internal name of group to terminate.")
+
+
 class JobListSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
     group = SerializerMethodField()

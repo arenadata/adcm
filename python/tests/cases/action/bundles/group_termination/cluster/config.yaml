@@ -1,0 +1,124 @@
+# Plan shape reused by `grouped` and `grouped_not_terminatable`, differing only in `allow_to_terminate`
+# (display names differ from internal names on purpose, audit records display ones):
+#   /0        prepare
+#   /a/0      group `a` (parallel, display name "Group A") own script
+#   /a/nested/0, /a/nested/1   sequential subgroup of `a` (display name "Nested Of A")
+#   /ab/0     group `ab` (sequential, display name "Group AB"), key shares the "a" prefix with `a` on purpose
+#   /3        finish
+#
+# `named_groups` holds groups with names/display names that are tricky for audit:
+#   /5/0       group `5` (numeric-looking name), display name "Group Five"
+#   /braced/0  group `braced`, display name with braces
+#   /long/0    group `long`, 3000-char display name (audit truncates it)
+- type: cluster
+  name: group_termination_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - name: prepare
+          script_type: ansible
+          script: ./playbook.yaml
+
+        - group: parallel
+          name: a
+          display_name: Group A
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+            - group: sequential
+              name: nested
+              display_name: Nested Of A
+              scripts:
+                - name: step
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: step
+                  script_type: ansible
+                  script: ./playbook.yaml
+
+        - group: sequential
+          name: ab
+          display_name: Group AB
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+        - name: finish
+          script_type: ansible
+          script: ./playbook.yaml
+
+    grouped_not_terminatable:
+      allow_to_terminate: false
+      masking:
+      scripts:
+        - name: prepare
+          script_type: ansible
+          script: ./playbook.yaml
+
+        - group: parallel
+          name: a
+          display_name: Group A
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+            - group: sequential
+              name: nested
+              display_name: Nested Of A
+              scripts:
+                - name: step
+                  script_type: ansible
+                  script: ./playbook.yaml
+                - name: step
+                  script_type: ansible
+                  script: ./playbook.yaml
+
+        - group: sequential
+          name: ab
+          display_name: Group AB
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+        - name: finish
+          script_type: ansible
+          script: ./playbook.yaml
+
+    named_groups:
+      allow_to_terminate: true
+      masking:
+      scripts:
+        - group: sequential
+          name: "5"
+          display_name: Group Five
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+        - group: sequential
+          name: braced
+          display_name: "Group {braced} {0}"
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml
+
+        - group: sequential
+          name: long
+          display_name: gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+          scripts:
+            - name: step
+              script_type: ansible
+              script: ./playbook.yaml

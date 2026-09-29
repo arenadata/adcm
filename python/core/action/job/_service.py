@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from dataclasses import dataclass
 
 from core.action.job._repo import (
@@ -23,6 +24,7 @@ from core.action.job.errors import JobTerminationError, JobValidationError, Task
 from core.action.job.operations import is_terminatable_status
 from core.action.operations import to_rich_job, to_rich_jobs
 from core.action.types import ExecutionStatus, JobSpecV1
+from core.spec.keys import is_part_of_group
 from core.types import ActionID, JobID, TaskID
 
 
@@ -72,6 +74,37 @@ class JobService:
         if not changed:
             message = f"Task #{task_id} termination failed due to status change, try again later"
             raise JobTerminationError(message)
+
+    def terminate_group(self, task_id: TaskID, name: str) -> None:
+        plan = self.repo.get_execution_plan(task_id=task_id)
+
+        group = next((candidate for candidate in plan.groups.values() if candidate.names.internal == name), None)
+        if group is None:
+            message = f'Group "{name}" of task #{task_id} doesn\'t exist in its execution plan'
+            raise JobTerminationError(message)
+
+        task = self.repo.get_task(task_id)
+        if not is_terminatable_status(task.status):
+            message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"
+            raise JobValidationError(message)
+
+        target_keys = tuple(key for key in plan.scripts if is_part_of_group(key, group.key))
+
+        found_jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task_id], spec_keys=target_keys))
+        terminatable_jobs = tuple(job for job in found_jobs if is_terminatable_status(job.status))
+
+        if not terminatable_jobs:
+            message = f'Group "{name}" of task #{task_id} has nothing to terminate'
+            raise JobTerminationError(message)
+
+        ids_by_status: dict[ExecutionStatus, list[JobID]] = defaultdict(list)
+        for job in terminatable_jobs:
+            ids_by_status[job.status].append(job.id)
+
+        for status, ids in ids_by_status.items():
+            # a job no longer in this exact status by the time of the update was changed concurrently
+            # (e.g. by the runner): its result wins, so it's skipped rather than treated as an error
+            self.repo.change_status_of_jobs(ids=ids, previous=(status,), new=_revoke_status_for(status))
 
     def terminate_job(self, job_id: JobID) -> None:
         found_jobs = self.repo.find_jobs_short(JobShortFilter(ids=[job_id]))

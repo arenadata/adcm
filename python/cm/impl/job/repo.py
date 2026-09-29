@@ -261,6 +261,8 @@ class JobRepo(JobRepoI):
             filter_kwargs["task_id__in"] = filter_.task_ids
         if filter_.statuses is not None:
             filter_kwargs["status__in"] = filter_.statuses
+        if filter_.spec_keys is not None:
+            filter_kwargs["spec_key__in"] = filter_.spec_keys
 
         query = (
             JobLog.objects.filter(**filter_kwargs)
@@ -400,6 +402,11 @@ class JobRepo(JobRepoI):
         self, task_id: TaskID, previous: Iterable[ExecutionStatus], new: ExecutionStatus
     ) -> int:
         return JobLog.objects.filter(task_id=task_id, status__in=previous).update(status=new)
+
+    def change_status_of_jobs(
+        self, ids: Iterable[JobID], previous: Iterable[ExecutionStatus], new: ExecutionStatus
+    ) -> int:
+        return JobLog.objects.filter(id__in=ids, status__in=previous).update(status=new)
 
     # misc
 
