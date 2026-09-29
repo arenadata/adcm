@@ -63,6 +63,7 @@ from use_cases.transition.config import (
     UpdateConfigurationFromJob,
     UpdateConfigurationOfHostGroup,
     UpdateConfigurationOfObject,
+    UpdateHostGroupConfigurationFromJob,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
 from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
@@ -277,6 +278,8 @@ class UseCaseProvider(Provider):
     update_configuration_of_object = provide(UpdateConfigurationOfObject)
     update_configuration_of_host_group = provide(UpdateConfigurationOfHostGroup)
     update_configuration_from_job = provide(UpdateConfigurationFromJob, scope=Scope.APP)
+    # APP scope is required to inject it into `ExecutionTargetFactory` (`host_group_manage`)
+    update_host_group_configuration_from_job = provide(UpdateHostGroupConfigurationFromJob, scope=Scope.APP)
     set_primary_config_revision = provide(SetPrimaryConfigRevision)
     find_primary_config_diff = provide(FindPrimaryConfigDiff)
 

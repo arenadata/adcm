@@ -28,12 +28,13 @@ from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob
+from use_cases.transition.config import UpdateConfigurationFromJob, UpdateHostGroupConfigurationFromJob
 from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.legacy.services.job.run.target_factories import ExecutionTargetFactory
+from cm.transition.status import StatusScenarios
 
 
 def do_nothing(*_, **__):
@@ -70,6 +71,8 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
+        status_scenarios: StatusScenarios,
+        update_host_group_configuration: UpdateHostGroupConfigurationFromJob,
         before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
@@ -82,6 +85,8 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
             before_upgrade_scenarios=before_upgrade_scenarios,
+            status_scenarios=status_scenarios,
+            update_host_group_configuration=update_host_group_configuration,
         )
 
         self._failed_job = failed_job
@@ -132,6 +137,8 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         manage_services: ManageClusterServices,
         config_scenarios: ConfigScenarios,
         cluster_service: ClusterService,
+        status_scenarios: StatusScenarios,
+        update_host_group_configuration: UpdateHostGroupConfigurationFromJob,
         before_upgrade_scenarios: BeforeUpgradeScenarios,
     ):
         super().__init__(
@@ -144,6 +151,8 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
             config_scenarios=config_scenarios,
             cluster_service=cluster_service,
             before_upgrade_scenarios=before_upgrade_scenarios,
+            status_scenarios=status_scenarios,
+            update_host_group_configuration=update_host_group_configuration,
         )
 
         self.imitators = change_jobs or {}
