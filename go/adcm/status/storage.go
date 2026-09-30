@@ -13,6 +13,8 @@
 package status
 
 import (
+	"maps"
+	"slices"
 	"sync"
 	"time"
 )
@@ -47,7 +49,7 @@ const (
 	cmdGet   = "get"
 	cmdGet1  = "get1"
 
-	statusTimeOut = 60 // seconds
+	statusTimeOut = 60 * time.Second
 )
 
 type dbStorage interface {
@@ -63,7 +65,7 @@ type Storage struct {
 	in      chan storageRequest
 	out     chan storageResponse
 	dbMap   dbStorage
-	timeout int
+	timeout time.Duration
 	label   string
 }
 
@@ -87,24 +89,15 @@ func newMMObjects() *MMObjects {
 }
 
 func (mm *MMObjects) IsHostInMM(hostID int) bool {
-	return intSliceContains(mm.data.Hosts, hostID)
+	return slices.Contains(mm.data.Hosts, hostID)
 }
 
 func (mm *MMObjects) IsServiceInMM(serviceID int) bool {
-	return intSliceContains(mm.data.Services, serviceID)
+	return slices.Contains(mm.data.Services, serviceID)
 }
 
 func (mm *MMObjects) IsComponentInMM(componentID int) bool {
-	return intSliceContains(mm.data.Components, componentID)
-}
-
-func intSliceContains(a []int, x int) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(mm.data.Components, componentID)
 }
 
 // Host Duplicates
@@ -115,15 +108,14 @@ type HostDuplicates struct {
 	// To get duplicate ids iterate over second level keys retrieved by original host ID.
 	//
 	// First key is Original Host ID,
-	// Second key is Duplicate Host ID,
-	// Value by duplicate id is meaningless integer.
-	duplicates map[int]map[int]int
-	mutex      sync.Mutex
+	// Second key is Duplicate Host ID.
+	duplicates map[int]map[int]struct{}
+	mutex      sync.RWMutex
 }
 
 func newHostDuplicates() *HostDuplicates {
 	return &HostDuplicates{
-		duplicates: make(map[int]map[int]int),
+		duplicates: make(map[int]map[int]struct{}),
 	}
 }
 
@@ -134,28 +126,20 @@ func (hd *HostDuplicates) Register(original int, duplicates []int) {
 	registeredDuplicates, exists := hd.duplicates[original]
 
 	if !exists {
-		registeredDuplicates = make(map[int]int, len(duplicates))
+		registeredDuplicates = make(map[int]struct{}, len(duplicates))
 		hd.duplicates[original] = registeredDuplicates
 	}
 
 	for _, id := range duplicates {
-		registeredDuplicates[id] = 0
+		registeredDuplicates[id] = struct{}{}
 	}
 }
 
 func (hd *HostDuplicates) GetForID(original int) []int {
-	duplicates, exists := hd.duplicates[original]
-	if !exists {
-		return []int{}
-	}
+	hd.mutex.RLock()
+	defer hd.mutex.RUnlock()
 
-	out := make([]int, 0, len(hd.duplicates))
-
-	for id := range duplicates {
-		out = append(out, id)
-	}
-
-	return out
+	return slices.Collect(maps.Keys(hd.duplicates[original]))
 }
 
 // Server
@@ -170,7 +154,7 @@ func newStorage(db dbStorage, label string) *Storage {
 	}
 }
 
-func (s *Storage) setTimeOut(timeout int) {
+func (s *Storage) setTimeOut(timeout time.Duration) {
 	s.timeout = timeout
 }
 
@@ -291,7 +275,7 @@ func (s *Storage) startTimer(db dbStorage, c storageRequest) {
 	c.counter = counter
 	c.command = cmdClear
 	go func(c storageRequest) {
-		time.Sleep(time.Duration(s.timeout) * time.Second)
+		time.Sleep(s.timeout)
 		s.in <- c
 	}(c)
 }
