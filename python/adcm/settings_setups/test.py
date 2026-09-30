@@ -16,12 +16,30 @@ import logging
 import pathlib
 import tempfile
 
+from ansible.parsing.vault import VaultAES256
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 from .shared.base import *  # noqa
 from .shared.constants import *  # noqa
 
 # Important overrides
 MIDDLEWARE.remove("api_v2.utils.di.DishkaMiddleware")  # noqa: F405
 MIDDLEWARE.insert(0, "tests.dependencies.DishkaMiddleware")  # noqa: F405
+
+# default PBKDF2 costs "a lot" per hash/check, which is paid on each user creation and login
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
+# same for ansible vault: its PBKDF2 (10k iterations) is paid on every secret encrypt/decrypt.
+# Ciphertexts become unreadable for real ansible, so tests running ansible-playbook on secrets won't work.
+def _cheap_vault_key(b_password: bytes, b_salt: bytes, key_length: int, iv_length: int) -> bytes:
+    return PBKDF2HMAC(algorithm=SHA256(), length=2 * key_length + iv_length, salt=b_salt, iterations=1).derive(
+        b_password
+    )
+
+
+VaultAES256._create_key_cryptography = staticmethod(_cheap_vault_key)
 
 logging.disable(logging.CRITICAL)
 

@@ -35,23 +35,22 @@ from tests.utils import assert_no_task_launched
 
 
 class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.uc.create_user(**self.test_user_credentials)
-        self.cluster_action = Action.objects.get(prototype=self.cluster_1.prototype, name="action")
-        self.service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_action = Action.objects.get(prototype=self.service.prototype, name="action")
-        host = self.uc.add_host(provider=self.provider, fqdn="host-1", cluster=self.cluster_1)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
+        cls.cluster_action = Action.objects.get(prototype=cls.cluster_1.prototype, name="action")
+        cls.service, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_action = Action.objects.get(prototype=cls.service.prototype, name="action")
+        host = cls.uc.add_host(provider=cls.provider, fqdn="host-1", cluster=cls.cluster_1)
         component_prototype = Prototype.objects.get(
-            bundle=self.bundle_1, type=ObjectType.COMPONENT, name="component_1", parent=self.service.prototype
+            bundle=cls.bundle_1, type=ObjectType.COMPONENT, name="component_1", parent=cls.service.prototype
         )
-        self.component = Component.objects.get(
-            cluster=self.cluster_1, service=self.service, prototype=component_prototype
-        )
-        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(host, self.component)])
-        self.component_action = Action.objects.get(prototype=self.component.prototype, name="action_1_comp_1")
+        cls.component = Component.objects.get(cluster=cls.cluster_1, service=cls.service, prototype=component_prototype)
+        cls.uc.set_hostcomponent(cluster=cls.cluster_1, entries=[(host, cls.component)])
+        cls.component_action = Action.objects.get(prototype=cls.component.prototype, name="action_1_comp_1")
 
     def test_run_action_success(self):
         response = (self.client.v2[self.cluster_1] / "actions" / self.cluster_action / "run").post(
