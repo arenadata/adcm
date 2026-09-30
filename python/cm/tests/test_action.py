@@ -44,9 +44,7 @@ from django.db.models import Model
 from django.urls import reverse
 from pydantic import TypeAdapter, ValidationError
 from rest_framework.status import HTTP_200_OK
-from tests.base import BaseTestCase
-from tests.deprecated import TaskTestMixin
-from tests.suites import ADCMDjangoAPISuite
+from tests.suites import ADCMDjangoAPISuite, GenericTestCase
 from use_cases.transition.config import UpdateConfigurationFromJob
 from use_cases.transition.service_manage import ManageClusterServices, _build_mapping_delta
 
@@ -269,25 +267,29 @@ class TestActionParams(ADCMDjangoAPISuite):
         self.assertDictEqual(config_json_content["job"]["params"], expected_job_params)
 
 
-class TestActionLogic(BaseTestCase, TaskTestMixin):
-    def setUp(self) -> None:
-        super().setUp()
-        bundles_dir = self.base_dir / "python" / "cm" / "tests" / "bundles"
+class TestActionLogic(GenericTestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        cluster_bundle = self.uc.upload_bundle(bundles_dir / "cluster_1")
-        provider_bundle = self.uc.upload_bundle(bundles_dir / "provider")
+        cls._initialize_roles_and_adcm()
 
-        self.provider = self.uc.add_provider(bundle=provider_bundle, name="Test provider")
-        self.cluster = self.uc.add_cluster(bundle=cluster_bundle, name="Test cluster")
+        bundles_dir = cls.base_dir / "python" / "cm" / "tests" / "bundles"
 
-        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="host1", cluster=self.cluster)
-        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="host2", cluster=self.cluster)
-        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="host3", cluster=self.cluster)
-        self.host_4 = self.uc.add_host(provider=self.provider, fqdn="host4", cluster=self.cluster)
+        cluster_bundle = cls.uc.upload_bundle(bundles_dir / "cluster_1")
+        provider_bundle = cls.uc.upload_bundle(bundles_dir / "provider")
 
-        self.service, *_ = self.uc.add_services_to_cluster(cluster=self.cluster, names=["service_two_components"])
-        self.component_1 = self.service.components.get(prototype__name="component_1")
-        self.component_2 = self.service.components.get(prototype__name="component_2")
+        cls.provider = cls.uc.add_provider(bundle=provider_bundle, name="Test provider")
+        cls.cluster = cls.uc.add_cluster(bundle=cluster_bundle, name="Test cluster")
+
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="host1", cluster=cls.cluster)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host2", cluster=cls.cluster)
+        cls.host_3 = cls.uc.add_host(provider=cls.provider, fqdn="host3", cluster=cls.cluster)
+        cls.host_4 = cls.uc.add_host(provider=cls.provider, fqdn="host4", cluster=cls.cluster)
+
+        cls.service, *_ = cls.uc.add_services_to_cluster(cluster=cls.cluster, names=["service_two_components"])
+        cls.component_1 = cls.service.components.get(prototype__name="component_1")
+        cls.component_2 = cls.service.components.get(prototype__name="component_2")
 
     def get_dummy_task_job(
         self, owner: Model | None, delta: TaskMappingDelta, rules: list[HcAclRule]

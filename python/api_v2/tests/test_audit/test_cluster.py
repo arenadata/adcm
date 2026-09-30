@@ -44,29 +44,26 @@ class TestClusterAudit(ADCMDjangoAPISuite):
         cls.required_import_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_with_required_import")
         cls.upgrade_bundle = cls.uc.upload_bundle(src=cls.test_bundles_dir / "cluster_one_upgrade")
 
-    def setUp(self) -> None:
-        super().setUp()
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.prototype = Prototype.objects.get(bundle=cls.bundle_1, type=ObjectType.CLUSTER)
 
-        self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="test_host")
+        cls.uc.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host_1)
 
-        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="test_host")
-        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="test_host2")
+        cls.host_3 = cls.uc.add_host(provider=cls.provider, fqdn="test_host3")
 
-        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="test_host2")
-        self.host_3 = self.uc.add_host(provider=self.provider, fqdn="test_host3")
-
-        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, prototype__bundle=self.bundle_1, prototype__name="component_1"
+        cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
+        cls.component_1 = Component.objects.get(
+            cluster=cls.cluster_1, prototype__bundle=cls.bundle_1, prototype__name="component_1"
         )
 
-        self.import_cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
+        cls.import_cluster = cls.uc.add_cluster(bundle=cls.required_import_bundle, name="required_import_cluster")
 
-        self.cluster_1_config_post_data = {
+        cls.cluster_1_config_post_data = {
             "config": {
                 "activatable_group": {"integer": 111},
                 "boolean": False,
@@ -78,18 +75,18 @@ class TestClusterAudit(ADCMDjangoAPISuite):
             "description": "new config",
         }
 
-        self.service_add_prototypes = Prototype.objects.filter(
-            bundle=self.cluster_1.prototype.bundle,
+        cls.service_add_prototypes = Prototype.objects.filter(
+            bundle=cls.cluster_1.prototype.bundle,
             type=ObjectType.SERVICE,
             name__in=["service_3_manual_add", "service_2"],
         ).order_by("pk")
 
-        self.cluster_action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
-        self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)
-        self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
-        self.host_action = Action.objects.get(name="cluster_on_host", prototype=self.cluster_1.prototype)
+        cls.cluster_action = Action.objects.get(name="action", prototype=cls.cluster_1.prototype)
+        cls.service_action = Action.objects.get(name="action", prototype=cls.service_1.prototype)
+        cls.component_action = Action.objects.get(name="action_1_comp_1", prototype=cls.component_1.prototype)
+        cls.host_action = Action.objects.get(name="cluster_on_host", prototype=cls.cluster_1.prototype)
 
-        self.cluster_upgrade = Upgrade.objects.get(bundle=self.upgrade_bundle, name="upgrade_via_action_simple")
+        cls.cluster_upgrade = Upgrade.objects.get(bundle=cls.upgrade_bundle, name="upgrade_via_action_simple")
 
     def test_create_success(self):
         response = (self.client.v2 / "clusters").post(

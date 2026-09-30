@@ -24,13 +24,14 @@ from tests.suites import ADCMDjangoAPISuite
 
 
 class TestServiceAudit(ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
-        self.config_post_data = {
+        cls.config_post_data = {
             "config": {
                 "group": {"password": "newpassword"},
                 "activatable_group": {"text": "new text"},
@@ -40,11 +41,11 @@ class TestServiceAudit(ADCMDjangoAPISuite):
             "description": "new config",
         }
 
-        self.export_service, *_ = self.uc.add_services_to_cluster(names=["service"], cluster=self.cluster_2)
-        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
+        cls.export_service, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster_2)
+        cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
 
-        self.service_action = Action.objects.get(name="action", prototype=self.service_1.prototype)
+        cls.service_action = Action.objects.get(name="action", prototype=cls.service_1.prototype)
 
     def test_update_config_success(self):
         response = self.client.v2[self.service_1, "configs"].post(data=self.config_post_data)

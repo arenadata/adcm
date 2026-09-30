@@ -24,35 +24,34 @@ from tests.suites import ADCMDjangoAPISuite
 
 
 class TestCHGAudit(ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
-        self.cluster_1_host_group = self.uc.add_config_host_group(owner=self.cluster_1, name="config_host_group")
-        self.host = self.uc.add_host(provider=self.provider, fqdn="host")
-        self.cluster_1_host_group.hosts.add(self.host)
-        self.new_host = self.uc.add_host(provider=self.provider, fqdn="new_host")
-        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.new_host)
+        cls.cluster_1_host_group = cls.uc.add_config_host_group(owner=cls.cluster_1, name="config_host_group")
+        cls.host = cls.uc.add_host(provider=cls.provider, fqdn="host")
+        cls.cluster_1_host_group.hosts.add(cls.host)
+        cls.new_host = cls.uc.add_host(provider=cls.provider, fqdn="new_host")
+        cls.uc.add_host_to_cluster(cluster=cls.cluster_1, host=cls.new_host)
 
-        self.service_1, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_1_host_group = self.uc.add_config_host_group(
-            owner=self.service_1, name="service_1_config_host_group"
+        cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_1_host_group = cls.uc.add_config_host_group(owner=cls.service_1, name="service_1_config_host_group")
+        cls.service_1_host_group.hosts.add(cls.host)
+        cls.host_for_service = cls.uc.add_host(provider=cls.provider, fqdn="host_for_service")
+        cls.uc.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host_for_service)
+
+        cls.component_1 = Component.objects.get(
+            cluster=cls.cluster_1, service=cls.service_1, prototype__name="component_1"
         )
-        self.service_1_host_group.hosts.add(self.host)
-        self.host_for_service = self.uc.add_host(provider=self.provider, fqdn="host_for_service")
-        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_for_service)
-
-        self.component_1 = Component.objects.get(
-            cluster=self.cluster_1, service=self.service_1, prototype__name="component_1"
+        cls.component_1_host_group = cls.uc.add_config_host_group(
+            owner=cls.component_1, name="component_1_config_host_group"
         )
-        self.component_1_host_group = self.uc.add_config_host_group(
-            owner=self.component_1, name="component_1_config_host_group"
-        )
-        self.provider_host_group = self.uc.add_config_host_group(owner=self.provider, name="config_host_group")
-        self.uc.set_hostcomponent(cluster=self.cluster_1, entries=[(self.host_for_service, self.component_1)])
-        self.cluster_config_data = {
+        cls.provider_host_group = cls.uc.add_config_host_group(owner=cls.provider, name="config_host_group")
+        cls.uc.set_hostcomponent(cluster=cls.cluster_1, entries=[(cls.host_for_service, cls.component_1)])
+        cls.cluster_config_data = {
             "config": {
                 "activatable_group": {"integer": 100},
                 "boolean": False,
@@ -70,7 +69,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
             },
             "description": "new config",
         }
-        self.service_config_data = {
+        cls.service_config_data = {
             "config": {
                 "group": {"password": "newpassword"},
                 "activatable_group": {"text": "new text"},
@@ -84,7 +83,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
             },
             "description": "new config",
         }
-        self.component_config_data = {
+        cls.component_config_data = {
             "config": {
                 "group": {"file": "new content"},
                 "activatable_group": {"secretfile": "new content"},
@@ -98,7 +97,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
             },
             "description": "new config",
         }
-        self.provider_config_data = {
+        cls.provider_config_data = {
             "config": {
                 "group": {"map": {"integer_key": "100", "string_key": "new string"}},
                 "activatable_group": {
