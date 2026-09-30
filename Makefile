@@ -6,10 +6,13 @@ SELENOID_PORT ?= 4444
 ADCM_VERSION = "3.0.1"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: build unittests pretty lint version
+.PHONY: build build-redos unittests pretty lint version
 
 build:
-	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+	@docker build --platform=linux/amd64 . -f Dockerfile -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+
+build-redos:
+	@docker build --platform=linux/amd64 . -f Dockerfile.redos -t $(APP_IMAGE):$(APP_TAG)-redos8 --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
 	time docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
