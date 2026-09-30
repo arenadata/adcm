@@ -77,7 +77,7 @@ type MMObjectsData struct {
 
 type MMObjects struct {
 	data  MMObjectsData
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 func newMMObjects() *MMObjects {
@@ -86,15 +86,38 @@ func newMMObjects() *MMObjects {
 	}
 }
 
+func (mm *MMObjects) setData(data MMObjectsData) {
+	mm.mutex.Lock()
+	defer mm.mutex.Unlock()
+
+	mm.data = data
+}
+
+func (mm *MMObjects) getData() MMObjectsData {
+	mm.mutex.RLock()
+	defer mm.mutex.RUnlock()
+
+	return mm.data
+}
+
 func (mm *MMObjects) IsHostInMM(hostID int) bool {
+	mm.mutex.RLock()
+	defer mm.mutex.RUnlock()
+
 	return intSliceContains(mm.data.Hosts, hostID)
 }
 
 func (mm *MMObjects) IsServiceInMM(serviceID int) bool {
+	mm.mutex.RLock()
+	defer mm.mutex.RUnlock()
+
 	return intSliceContains(mm.data.Services, serviceID)
 }
 
 func (mm *MMObjects) IsComponentInMM(componentID int) bool {
+	mm.mutex.RLock()
+	defer mm.mutex.RUnlock()
+
 	return intSliceContains(mm.data.Components, componentID)
 }
 
