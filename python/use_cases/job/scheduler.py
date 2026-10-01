@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Iterable
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import wraps
@@ -145,7 +144,7 @@ class Killer:
     claimer: Claimer
     registry: TerminatorRegistry
 
-    def do(self) -> None:
+    def do(self) -> Success[int]:
         jobs_to_terminate = [
             job.id for job in self.job_repo.find_jobs_short(JobShortFilter(statuses=[ExecutionStatus.REVOKING]))
         ]
@@ -199,6 +198,8 @@ class Killer:
                     status_changed,
                 )
 
+        return Success(len(jobs_to_terminate) + len(tasks_to_terminate))
+
 
 @dataclass(slots=True)
 class Monitor:
@@ -207,9 +208,11 @@ class Monitor:
     registry: TaskMonitorRegistry
     job_repo: JobRepoI
 
-    def do(self) -> None:
-        tasks_to_check: Iterable[TaskShortInfo] = self.job_repo.find_tasks_short(
-            TaskShortFilter(statuses=(ExecutionStatus.RUNNING, ExecutionStatus.TERMINATING, ExecutionStatus.QUEUED))
+    def do(self) -> Success[int]:
+        tasks_to_check: list[TaskShortInfo] = list(
+            self.job_repo.find_tasks_short(
+                TaskShortFilter(statuses=(ExecutionStatus.RUNNING, ExecutionStatus.TERMINATING, ExecutionStatus.QUEUED))
+            )
         )
 
         grouped_by_environment: dict[TaskRunnerEnvironment, list[TaskShortInfo]] = defaultdict(list)
@@ -232,6 +235,8 @@ class Monitor:
                     case Fail(msg):
                         monitor_logger.debug("Task id=%d set to broken failed: %s", dead_task.id, msg)
 
+        return Success(len(tasks_to_check))
+
 
 @dataclass(slots=True)
 class Launcher:
@@ -241,10 +246,10 @@ class Launcher:
     claimer: Claimer
     scheduler_repo: repo.SchedulerRepo
 
-    def do(self) -> None:
+    def do(self) -> Success[TaskID] | Fail[str]:
         with atomic(), self.claimer.claim_first_scheduled_or_created_task() as locked:
             if locked is None:
-                return
+                return Fail("No task to launch")
 
             task_id, task_status = locked
             launcher_logger.debug("Task id=%d locked in status=%s", task_id, task_status)
@@ -262,6 +267,9 @@ class Launcher:
                 case ExecutionStatus.SCHEDULED:
                     launcher_logger.debug("Queueing task id=%d", task_id)
                     queue_task(queuer=self.queuer, task_id=task_id, job_repo=self.job_repo)
+
+        # the task has moved on (scheduled, queued or failed), so the next pass may take the next step at once
+        return Success(task_id)
 
 
 # we don't set from_status for broken, because it should indicate the level or error even if it'll be overwritten
