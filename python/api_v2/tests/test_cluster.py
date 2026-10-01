@@ -601,7 +601,7 @@ class TestClusterActions(ADCMDjangoAPISuite):
         response = (self.client.v2[self.cluster_1] / "actions").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()), 4)
 
     def test_adcm_5271_adcm_user_has_no_action_perms(self):
         self.client.login(**self.test_user_credentials)

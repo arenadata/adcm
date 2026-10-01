@@ -107,6 +107,20 @@
         - name: with_hc
           script: ./playbook.yaml
           script_type: ansible
+    adcm_8475_add_services_scripts:
+      scripts:
+        - name: add services
+          script_type: internal
+          script: service_manage
+          params:
+            operation: add
+            services:
+              - name: service_1
+        - name: clean before upgrade
+          script_type: internal
+          script: before_upgrade_clean
+      states:
+        available: any
     cluster_on_host: &id003
       allow_for_action_host_group: false
       host_action: true
