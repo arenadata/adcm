@@ -14,9 +14,7 @@
 Real Django settings that aren't dependant on environment
 """
 
-from json import JSONDecodeError
 import os
-import json
 
 WSGI_APPLICATION = "adcm.wsgi.application"
 
@@ -64,33 +62,6 @@ MIDDLEWARE = [
 ]
 if not DEBUG:
     MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
-
-
-def get_db_options() -> dict:
-    db_options = os.getenv("DB_OPTIONS", "{}")
-    try:
-        parsed = json.loads(db_options)
-    except JSONDecodeError as json_error:
-        raise RuntimeError("Failed to decode DB_OPTIONS as JSON") from json_error
-    if not isinstance(parsed, dict):
-        raise RuntimeError("DB_OPTIONS should be dict")  # noqa: TRY004
-    return parsed
-
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASS"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
-        "CONN_HEALTH_CHECKS": True,  # Improves the reliability of connection reuse
-        # and prevents errors when the connection was closed by the database server.
-        "OPTIONS": get_db_options(),
-    }
-}
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 

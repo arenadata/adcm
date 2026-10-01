@@ -10,25 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from application.di.providers.environment import EnvironmentProvider
-from core.settings import Directories
-import dishka
+from application.environment import parse_db_settings_from_env
 
-from .shared.base import *  # noqa
-from .shared.constants import *  # noqa
+db_settings = parse_db_settings_from_env()
 
-# database isn't configured during image build, but Django requires `DATABASES` to be declared
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": None,
-        "USER": None,
-        "PASSWORD": None,
-        "HOST": None,
-        "PORT": None,
+        "NAME": db_settings.name,
+        "USER": db_settings.user,
+        "PASSWORD": db_settings.password.get_secret_value(),
+        "HOST": db_settings.host,
+        "PORT": db_settings.port,
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,  # Improves the reliability of connection reuse
+        # and prevents errors when the connection was closed by the database server.
+        "OPTIONS": db_settings.options,
     }
 }
-
-container = dishka.make_container(EnvironmentProvider())
-directories = container.get(Directories)
-STATIC_ROOT = directories.base / "wwwroot/static/"
