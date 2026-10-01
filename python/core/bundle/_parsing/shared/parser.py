@@ -38,6 +38,7 @@ from core.bundle._validate import (
     check_execution_hierarchy,
     check_no_bundle_changing_scripts_in_groups,
     check_no_bundle_switch,
+    check_no_on_fail_multi_states_in_groups,
 )
 from core.errors import localize_error
 
@@ -134,6 +135,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
 
         # rendered scripts never reach bundle validation, so the plan is checked right here
         check_no_bundle_changing_scripts_in_groups(spec=result)
+        check_no_on_fail_multi_states_in_groups(spec=result)
         check_execution_hierarchy(spec=result)
 
         match mode:

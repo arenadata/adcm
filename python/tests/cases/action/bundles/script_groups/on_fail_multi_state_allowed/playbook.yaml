@@ -1,0 +1,6 @@
+---
+- name: run
+  hosts: all
+  connection: local
+  gather_facts: no
+  tasks: []

@@ -50,6 +50,7 @@ UPGRADE_NAME: Final = "grouped_upgrade"
 
 # expected parts of messages, script name goes before this one
 BUNDLE_CHANGING_SCRIPT_IN_GROUP_ERROR: Final = "script isn't allowed inside groups"
+ON_FAIL_MULTI_STATE_IN_GROUP_ERROR: Final = "on_fail.multi_state isn't allowed for scripts inside groups"
 ALTERNATION_ERROR: Final = "Nested groups must alternate execution style"
 DEPTH_ERROR: Final = "levels of groups at most"
 # group key goes before this one, required amount after it
@@ -657,6 +658,68 @@ class TestScriptGroupsValidation(TestCase):
                 self.parse_and_validate(place, scripts)
 
             self.assertIn(f'"{script}" {BUNDLE_CHANGING_SCRIPT_IN_GROUP_ERROR}', err.exception.message)
+
+    def test_on_fail_multi_states_allowed_success(self) -> None:
+        simple = load(SIMPLE_SCRIPT)
+        state_only = load(SIMPLE_SCRIPT) | {"on_fail": {"state": "failed_in_group"}}
+        empty_lists = load(SIMPLE_SCRIPT) | {"on_fail": {"state": "failed", "multi_state": {"set": [], "unset": []}}}
+        with_multi_states = load(SIMPLE_SCRIPT) | {"on_fail": {"multi_state": {"set": ["flag"], "unset": ["other"]}}}
+
+        cases: tuple[tuple[str, list[dict]], ...] = (
+            ("grouped state only", [build_group(name="outer", scripts=[state_only, simple])]),
+            (
+                "nested grouped state only",
+                [
+                    build_group(
+                        name="outer",
+                        scripts=[build_group(name="inner", type_="sequential", scripts=[state_only]), simple],
+                    )
+                ],
+            ),
+            ("grouped empty lists", [build_group(name="outer", scripts=[empty_lists, simple])]),
+            (
+                "top-level multi-states",
+                [with_multi_states, build_group(name="outer", scripts=[simple, simple]), with_multi_states],
+            ),
+        )
+        places: tuple[Place, ...] = ("cluster action", "static upgrade", "rendered upgrade")
+
+        for place in places:
+            for case, scripts in cases:
+                with self.subTest(f"{place}: {case}"):
+                    self.parse_and_validate(place, scripts)
+
+    def test_on_fail_multi_states_inside_groups_fail(self) -> None:
+        simple = load(SIMPLE_SCRIPT)
+        with_set = load(SIMPLE_SCRIPT) | {"name": "setter", "on_fail": {"multi_state": {"set": ["flag"]}}}
+        with_unset = load(SIMPLE_SCRIPT) | {
+            "name": "unsetter",
+            "on_fail": {"state": "failed", "multi_state": {"unset": ["flag"]}},
+        }
+
+        cases: tuple[tuple[str, list[dict], str, str], ...] = (
+            ("grouped set", [build_group(name="outer", scripts=[with_set, simple])], "setter", "/outer/0"),
+            (
+                "nested grouped unset",
+                [
+                    build_group(
+                        name="outer",
+                        scripts=[simple, build_group(name="inner", type_="sequential", scripts=[simple, with_unset])],
+                    )
+                ],
+                "unsetter",
+                "/outer/inner/1",
+            ),
+        )
+        places: tuple[Place, ...] = ("cluster action", "static upgrade", "rendered upgrade")
+
+        for place in places:
+            for case, scripts, name, key in cases:
+                with self.subTest(f"{place}: {case}"), self.assertRaises(BundleValidationError) as err:
+                    self.parse_and_validate(place, scripts)
+
+                self.assertIn(f'"{name}" is declared at "{key}"', err.exception.message)
+                self.assertIn(ON_FAIL_MULTI_STATE_IN_GROUP_ERROR, err.exception.message)
 
     def test_parallel_group_with_one_entry_fail(self) -> None:
         # groups can't be empty in DSL, so it's parallel group only that may have too few entries

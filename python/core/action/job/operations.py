@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from collections.abc import Iterable, Sequence
-from itertools import chain
 from typing import Literal
 
 from core.action.types import (
@@ -66,7 +65,9 @@ def calculate_owner_state_changes(
     """
     Calculate what should be applied to task owner, aborted task changes nothing.
 
-    `jobs` are expected in `flatten_execution_plan` order, "first" is relative to it.
+    Failed task takes `on_fail` of the latest finished FAILED job that has one,
+    each field falls back to task's `on_fail` independently.
+    Jobs finished at the same time are resolved by greater id.
     """
 
     if task_result == ExecutionStatus.ABORTED:
@@ -75,19 +76,26 @@ def calculate_owner_state_changes(
     if task_result == ExecutionStatus.SUCCESS:
         return on_success
 
-    failed_on_fail = tuple(job.spec.on_fail for job in jobs if job.runtime.status == ExecutionStatus.FAILED)
-
-    state = next((changes.state for changes in failed_on_fail if changes.state), None) or on_fail.state
-    multi_state_set = (
-        tuple(set(chain.from_iterable(changes.multi_state_set for changes in failed_on_fail)))
-        or on_fail.multi_state_set
+    candidates = tuple(
+        job for job in jobs if job.runtime.status == ExecutionStatus.FAILED and not job.spec.on_fail.is_empty
     )
-    multi_state_unset = (
-        tuple(set(chain.from_iterable(changes.multi_state_unset for changes in failed_on_fail)))
-        or on_fail.multi_state_unset
-    )
+    if not candidates:
+        return on_fail
 
-    return StateChanges(state=state, multi_state_set=multi_state_set, multi_state_unset=multi_state_unset)
+    finished_candidates = tuple(job for job in candidates if job.runtime.dates.finish is not None)
+    if not finished_candidates:
+        ids = ", ".join(str(job.runtime.id) for job in candidates)
+        message = f"Failed jobs with on_fail have no finish date: {ids}"
+        raise RuntimeError(message)
+
+    latest_job = max(finished_candidates, key=lambda job: (job.runtime.dates.finish, job.runtime.id))
+    job_on_fail = latest_job.spec.on_fail
+
+    return StateChanges(
+        state=job_on_fail.state or on_fail.state,
+        multi_state_set=job_on_fail.multi_state_set or on_fail.multi_state_set,
+        multi_state_unset=job_on_fail.multi_state_unset or on_fail.multi_state_unset,
+    )
 
 
 def aggregate_group_status(children: Iterable[ExecutionStatus]) -> ExecutionStatus:

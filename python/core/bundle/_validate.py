@@ -34,7 +34,7 @@ from core.bundle._types import BundleDefinitionKey
 from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.errors import localize_error
 from core.result import Fail, Success
-from core.spec.keys import full_key_to_level_keys, level_keys_to_full_key
+from core.spec.keys import is_in_any_group, level_keys_to_full_key
 from core.spec.types import LevelSpecKey
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
@@ -280,6 +280,7 @@ def check_actions(
 
             if action_definition.scripts is not None:
                 check_no_bundle_changing_scripts_in_groups(spec=action_definition.scripts)
+                check_no_on_fail_multi_states_in_groups(spec=action_definition.scripts)
                 check_no_bundle_switch(scripts=action_definition.scripts)
                 check_action_scripts(
                     scripts=action_definition.scripts, hostcomponentmap=action_definition.hostcomponentmap
@@ -335,6 +336,7 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
             if upgrade.action.scripts is not None:
                 check_no_bundle_changing_scripts_in_groups(spec=upgrade.action.scripts)
+                check_no_on_fail_multi_states_in_groups(spec=upgrade.action.scripts)
                 check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
                 check_execution_hierarchy(spec=upgrade.action.scripts)
             elif upgrade.action.scripts_template is not None:
@@ -401,16 +403,27 @@ def check_no_bundle_switch(scripts: JobSpecV1) -> None:
 
 def check_no_bundle_changing_scripts_in_groups(spec: JobSpecV1) -> None:
     for script_spec in spec.scripts.values():
-        is_in_group = len(full_key_to_level_keys(script_spec.key)) > 1
         script = script_spec.script
 
         if (
-            is_in_group
+            is_in_any_group(script_spec.key)
             and script.type == action.ScriptType.INTERNAL
             and script.path in ("bundle_switch", "bundle_revert")
         ):
             message = (
                 f'"{script.path}" script isn\'t allowed inside groups: '
+                f'"{script_spec.names.internal}" is declared at "{script_spec.key}"'
+            )
+            raise BundleValidationError(message)
+
+
+def check_no_on_fail_multi_states_in_groups(spec: JobSpecV1) -> None:
+    for script_spec in spec.scripts.values():
+        on_fail = script_spec.on_fail
+
+        if is_in_any_group(script_spec.key) and (on_fail.multi_state_set or on_fail.multi_state_unset):
+            message = (
+                "on_fail.multi_state isn't allowed for scripts inside groups: "
                 f'"{script_spec.names.internal}" is declared at "{script_spec.key}"'
             )
             raise BundleValidationError(message)

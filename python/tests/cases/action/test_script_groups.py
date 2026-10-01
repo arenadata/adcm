@@ -17,7 +17,7 @@ from typing import Final
 from cm.errors import AdcmEx
 from cm.models import Action, JobLog, TaskLog
 from cm.tests.scripts import retrieve_rich_jobs
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
 from unittest_parametrize import param, parametrize
 
 from tests.suites import ADCMDjangoAPISuite
@@ -25,6 +25,8 @@ from tests.suites import ADCMDjangoAPISuite
 BUNDLES_DIR: Final = Path(__file__).parent / "bundles" / "script_groups"
 
 RUN_ACTION_PAYLOAD: Final = {"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
+
+ON_FAIL_MULTI_STATE_IN_GROUP_ERROR: Final = "on_fail.multi_state isn't allowed for scripts inside groups"
 
 # keys and names of jobs in the order execution plan defines,
 # the same for statically declared scripts and rendered ones
@@ -124,3 +126,48 @@ class TestScriptGroups(ADCMDjangoAPISuite):
         self.assertEqual(err.exception.code, "BUNDLE_DEFINITION_ERROR")
         for content in expected_content:
             self.assertIn(content, err.exception.msg)
+
+    @parametrize(
+        "bundle_name,expected_content",
+        [
+            param(
+                "on_fail_multi_state_in_group_action",
+                ('"flagging" is declared at "/branches/0"',),
+                id="action_grouped_set",
+            ),
+            param(
+                "on_fail_multi_state_in_nested_group_upgrade",
+                ('"unflagging" is declared at "/branches/inner/0"',),
+                id="upgrade_nested_grouped_unset",
+            ),
+        ],
+    )
+    def test_upload_on_fail_multi_states_inside_groups_fail(
+        self, bundle_name: str, expected_content: tuple[str, ...]
+    ) -> None:
+        with self.assertRaises(AdcmEx) as err:
+            self.uc.upload_bundle(BUNDLES_DIR / bundle_name)
+
+        self.assertEqual(err.exception.code, "BUNDLE_VALIDATION_ERROR")
+        self.assertIn(ON_FAIL_MULTI_STATE_IN_GROUP_ERROR, err.exception.msg)
+        for content in expected_content:
+            self.assertIn(content, err.exception.msg)
+
+    def test_run_action_rendering_on_fail_multi_states_inside_groups_fail(self) -> None:
+        bundle = self.uc.upload_bundle(BUNDLES_DIR / "on_fail_multi_state_in_group_rendered")
+        cluster = self.uc.add_cluster(bundle=bundle, name="With Rendered Multi-States")
+        action = Action.objects.get(prototype=cluster.prototype, name="grouped_rendered")
+
+        response = self.client.v2[cluster, "actions", action, "run"].post(data=RUN_ACTION_PAYLOAD)
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
+        self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
+        self.assertIn(ON_FAIL_MULTI_STATE_IN_GROUP_ERROR, response.json()["desc"])
+        self.assertIn('"flagging" is declared at "/branches/0"', response.json()["desc"])
+        self.assertFalse(TaskLog.objects.filter(action=action).exists())
+
+    def test_upload_on_fail_changes_allowed_for_groups_success(self) -> None:
+        bundle = self.uc.upload_bundle(BUNDLES_DIR / "on_fail_multi_state_allowed")
+
+        action = Action.objects.get(prototype__bundle=bundle, prototype__type="cluster", name="grouped")
+        self.assertCountEqual(action.scripts["scripts"], ["/0", "/branches/inner/0", "/branches/1"])

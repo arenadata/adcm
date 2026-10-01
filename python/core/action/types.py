@@ -123,6 +123,10 @@ class StateChanges(NamedTuple):
     multi_state_set: tuple[str, ...] = ()
     multi_state_unset: tuple[str, ...] = ()
 
+    @property
+    def is_empty(self) -> bool:
+        return not any(self)
+
 
 class HcAclRule(NamedTuple):
     component: str

@@ -101,7 +101,7 @@ def set_task_to_broken(
 @shared_task(name=GROUP_FINISHED_TASK_NAME)
 def log_group_finished(*args, group_key: FullSpecKey, **kwargs) -> None:
     # temporary callback of parallel group's chord, for debug purposes only
-    logger.info('Called for group with key "%s": args=%r kwargs=%r', group_key, args, kwargs)
+    logger.debug('Called for group with key "%s": args=%r kwargs=%r', group_key, args, kwargs)
 
 
 def prepare_execution_plan(task_id: TaskID, plan: JobSpecV1, jobs: Mapping[FullSpecKey, RichJob]) -> Signature:
