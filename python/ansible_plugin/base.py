@@ -28,7 +28,7 @@ except ImportError:
     from typing_extensions import Self
 
 from ansible.errors import AnsibleActionFail
-from ansible.module_utils._text import to_native
+from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.action import ActionBase
 from cm.converters import core_type_to_model
 from cm.models import Cluster, Component, Host, Provider, Service
