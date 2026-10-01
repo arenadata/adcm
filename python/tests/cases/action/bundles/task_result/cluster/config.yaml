@@ -30,11 +30,9 @@
             - name: with_on_fail
               script_type: ansible
               script: ./playbook.yaml
+              # multi-state changes aren't allowed for grouped scripts, so the task's ones are applied
               on_fail:
                 state: branch_failed
-                multi_state:
-                  set: [branch_failed_flag]
-                  unset: [succeeded]
 
             - name: without_on_fail
               script_type: ansible

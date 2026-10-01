@@ -79,3 +79,7 @@ def remove_group_from_key(key: FullSpecKey, group: FullSpecKey) -> FullSpecKey:
 
 def is_part_of_group(key: FullSpecKey, group: FullSpecKey) -> bool:
     return key.startswith(f"{group}{KEY_SEPARATOR}")
+
+
+def is_in_any_group(key: FullSpecKey) -> bool:
+    return len(full_key_to_level_keys(key)) > 1

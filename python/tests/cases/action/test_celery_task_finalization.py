@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import Final
 
 from cm.models import Action, JobLog, TaskLog
-from core.action import ExecutionStatus
+from core.action import UNFINISHED_STATUSES, ExecutionStatus
 from core.legacy.job.runners import RunnerEnvironment
 from core.types import TaskID
+from django.utils import timezone
 from rest_framework.status import HTTP_200_OK
 from use_cases.job.run import FinalizeTask, RunJob
 
@@ -66,7 +67,9 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
 
         TaskLog.objects.filter(id=task_id).update(status=task_status)
         for key, status in jobs.items():
-            JobLog.objects.filter(task_id=task_id, spec_key=key).update(status=status)
+            # jobs in a final status are finished ones, finalization relies on it to pick the latest failed job
+            finish_date = None if status in UNFINISHED_STATUSES else timezone.now()
+            JobLog.objects.filter(task_id=task_id, spec_key=key).update(status=status, finish_date=finish_date)
 
     def finalize(self, task_id: TaskID) -> None:
         self.container.get(FinalizeTask).do(task_id=task_id, environment=self.container.get(RunnerEnvironment))
@@ -121,7 +124,7 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         self.finalize(task_id)
 
         self.assert_task_status(task_id, FAILED)
-        self.assert_owner_state("branch_failed", ["branch_failed_flag"])
+        self.assert_owner_state("branch_failed", ["failed"])
 
     def test_both_branches_failed_applies_on_fail_of_the_one_having_it(self) -> None:
         task_id = self.run_action()
@@ -130,7 +133,7 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         self.finalize(task_id)
 
         self.assert_task_status(task_id, FAILED)
-        self.assert_owner_state("branch_failed", ["branch_failed_flag"])
+        self.assert_owner_state("branch_failed", ["failed"])
 
     def test_terminated_task_aborted_owner_unchanged(self) -> None:
         task_id = self.run_action()

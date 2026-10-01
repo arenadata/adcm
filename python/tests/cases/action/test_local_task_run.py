@@ -125,7 +125,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
         self.assert_jobs(
             task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (FAILED, True), WITHOUT_ON_FAIL: (CREATED, False)}
         )
-        self.assert_owner_state("branch_failed", ["branch_failed_flag"])
+        self.assert_owner_state("branch_failed", ["failed"])
 
     def test_last_job_aborted_success(self) -> None:
         task_id = self.run_action()

@@ -1,0 +1,12 @@
+- group: parallel
+  name: branches
+  scripts:
+    - name: flagging
+      script_type: ansible
+      script: ./playbook.yaml
+      on_fail:
+        multi_state:
+          set: [branch_failed_flag]
+    - name: plain
+      script_type: ansible
+      script: ./playbook.yaml
