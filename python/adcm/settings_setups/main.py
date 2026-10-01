@@ -13,3 +13,4 @@
 from .shared.base import *  # noqa
 from .shared.constants import *  # noqa
 from .shared.dependant import *  # noqa
+from .shared.database import *  # noqa

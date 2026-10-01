@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from .shared.base import *  # noqa
 from .shared.constants import *  # noqa
+from .shared.database import *  # noqa
 
 # Important overrides
 MIDDLEWARE.remove("api_v2.utils.di.DishkaMiddleware")  # noqa: F405
