@@ -520,7 +520,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
         self.client.login(**test_user_credentials)
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()
@@ -805,6 +805,27 @@ class TestAction(ADCMDjangoAPISuite):
             self.assertEqual(self.cluster_1.concerns.count(), 2)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
+
+    def test_adcm_8475_service_manage_script_params_serialization(self) -> None:
+        action = Action.objects.get(name="adcm_8475_add_services_scripts", prototype=self.cluster_1.prototype)
+
+        response = self.client.v2[self.cluster_1, "actions", action, "run"].post()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        task_id = response.json()["id"]
+
+        jobs = {job.name: job for job in JobLog.objects.filter(task_id=task_id)}
+        expected_params_add_services = {
+            "operation": "add",
+            "services": [{"name": "service_1", "config_changes": None, "hc_changes": None}],
+        }
+
+        self.assertDictEqual(jobs["add services"].params, expected_params_add_services)
+        self.assertDictEqual(jobs["clean before upgrade"].params, {})
+
+        self.task_runner().launch_task(task_id)
+
+        self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "success")
 
     def test_task_revoked_when_object_gets_locked_before_scheduling(self) -> None:
         action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)

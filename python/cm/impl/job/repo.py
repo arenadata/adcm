@@ -51,7 +51,7 @@ from core.action.job import (
 )
 from core.action.operations import flatten_execution_plan
 from core.action.scheduler import Claimer
-from core.action.types import JobSpecV1, ScriptSpec
+from core.action.types import JobSpecV1, Script, ScriptSpec
 from core.errors import NotFoundError
 from core.types import (
     ActionID,
@@ -69,7 +69,7 @@ from core.types import (
 from django.conf import settings
 from django.db import close_old_connections
 from django.db.models import F, ObjectDoesNotExist, Value
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 
 from cm.converters import (
     core_type_to_model,
@@ -117,6 +117,7 @@ _SELECTOR_FIELDS_MAP: Final = {
 
 TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 _RelatedWizardProcess = TypeAdapter(CallingProcess | AssociatedProcess)
+_Script = TypeAdapter(Script)
 
 
 class JobRepo(JobRepoI):
@@ -544,6 +545,8 @@ def _read_action_scripts(action_id: ActionID) -> JobSpecV1:
 
 
 def _script_spec_to_job_log(task_id: TaskID, script_spec: ScriptSpec) -> JobLog:
+    dumped_script = _Script.dump_python(script_spec.script, mode="json")
+
     return JobLog(
         task_id=task_id,
         status=ExecutionStatus.CREATED.value,
@@ -552,24 +555,12 @@ def _script_spec_to_job_log(task_id: TaskID, script_spec: ScriptSpec) -> JobLog:
         display_name=script_spec.names.display,
         script=script_spec.script.path,
         script_type=script_spec.script.type.value,
-        params=_script_params_to_db(script_spec),
+        params=dumped_script["params"] or {},
         allow_to_terminate=script_spec.details.terminatable,
         state_on_fail=script_spec.on_fail.state or "",
         multi_state_on_fail_set=list(script_spec.on_fail.multi_state_set),
         multi_state_on_fail_unset=list(script_spec.on_fail.multi_state_unset),
     )
-
-
-def _script_params_to_db(script_spec: ScriptSpec) -> dict:
-    params = script_spec.script.params
-
-    if params is None:
-        return {}
-
-    if isinstance(params, BaseModel):
-        return params.model_dump(mode="json")
-
-    return asdict(params)
 
 
 # utilities
