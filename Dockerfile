@@ -95,7 +95,6 @@ COPY --from=arenadata/ansible:2.16.4-python3.10 --chown=adcm:adcm /root/.ansible
 # Copy Ansible 2.21 venv
 COPY --from=hub.adsw.io/ansible/ansible:2.21.4-python3.12-release-2-0-0 --chown=adcm:adcm /venv/2.21 /venv/2.21
 COPY --from=python_builder --chown=adcm:adcm /venv/2.21 /venv/2.21
-COPY --from=hub.adsw.io/ansible/ansible:2.21.4-python3.12-release-2-0-0 --chown=adcm:adcm /root/.ansible/collections /venv/2.21/collections
 
 COPY --chown=adcm:adcm conf /adcm/conf
 COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
