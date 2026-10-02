@@ -38,8 +38,7 @@ logger = logging.getLogger("scheduler.main")
 
 
 class Iteration(Protocol):
-    def do(self) -> None:
-        ...
+    def do(self) -> None: ...
 
 
 @dataclass(slots=True)

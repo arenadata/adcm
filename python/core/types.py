@@ -64,8 +64,7 @@ MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], 
 T = TypeVar("T")
 
 
-class ADCMCoreError(Exception):
-    ...
+class ADCMCoreError(Exception): ...
 
 
 class ADCMMessageError(ADCMCoreError):
@@ -142,8 +141,7 @@ class Descriptor(Generic[T]):
 
 
 @dataclass(slots=True, frozen=True)
-class GeneralEntityDescriptor(Descriptor[str]):
-    ...
+class GeneralEntityDescriptor(Descriptor[str]): ...
 
 
 @dataclass(slots=True, frozen=True)

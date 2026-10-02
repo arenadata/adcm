@@ -215,7 +215,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.content)
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- names that could escape the display name lookup query: never match, nothing is touched --
@@ -239,7 +239,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assert_task_status(task_id, CREATED)
         self.assertListEqual(list(TaskLog.objects.order_by("id").values_list("id", "status")), tasks_before)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- group names/display names tricky for audit: numeric-looking name, braces and too long display name --
@@ -294,7 +294,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, CREATED)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- S4/S6: nothing to terminate (group finished, or already in a termination status) --
@@ -370,7 +370,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, SUCCESS)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- A8: action forbids task termination, group termination is still allowed --
@@ -401,7 +401,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST, response.content)
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, CREATED)
-        self.assert_audit(name=f'{self.action_display_name("grouped")} cancelled', result="fail", object_=self.cluster)
+        self.assert_audit(name=f"{self.action_display_name('grouped')} cancelled", result="fail", object_=self.cluster)
 
     # -- A6/A11: `group` present but invalid --
 
@@ -425,7 +425,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, CREATED)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- body variants that mean "no body": task termination, unchanged from today --
@@ -441,7 +441,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         # task-level termination only flips the task's own status, jobs are left for the runner
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} cancelled', result="success", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} cancelled", result="success", object_=self.cluster
         )
 
     def test_terminate_invalid_utf8_body_fail(self):
@@ -454,7 +454,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST, response.content)
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, CREATED)
-        self.assert_audit(name=f'{self.action_display_name("grouped")} cancelled', result="fail", object_=self.cluster)
+        self.assert_audit(name=f"{self.action_display_name('grouped')} cancelled", result="fail", object_=self.cluster)
 
     def test_terminate_lone_surrogate_in_group_fail(self):
         task_id = self.run_action("grouped")
@@ -467,7 +467,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
         self.assert_jobs(task_id, ALL_CREATED)
         self.assert_task_status(task_id, CREATED)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} group cancelled', result="fail", object_=self.cluster
+            name=f"{self.action_display_name('grouped')} group cancelled", result="fail", object_=self.cluster
         )
 
     # -- A5: forbidden --
@@ -516,7 +516,7 @@ class TestGroupTermination(ADCMDjangoAPISuiteNoBundles):
 
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND, response.content)
         self.assert_audit(
-            name=f'{self.action_display_name("grouped")} {audit_name_suffix}',
+            name=f"{self.action_display_name('grouped')} {audit_name_suffix}",
             result=audit_result,
             object_=self.cluster,
             username=test_user_credentials["username"],

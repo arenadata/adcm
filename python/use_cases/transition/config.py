@@ -30,15 +30,13 @@ T = TypeVar("T", contravariant=True)
 
 
 class InputConfigConverter(Protocol[T]):
-    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration:
-        ...
+    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration: ...
 
 
 class ChangesConverter(Protocol[T]):
     def __call__(
         self, configuration: T, specification: core.config.spec.FullSpec, /
-    ) -> list[core.config.ChangeRequest]:
-        ...
+    ) -> list[core.config.ChangeRequest]: ...
 
 
 HasChanged: TypeAlias = bool

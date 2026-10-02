@@ -106,7 +106,7 @@ class LocalProcessStarter(ProcessStarter):
             str(task_id),
         ]
         process_logger.debug("Task #%d run cmd: %s", task_id, " ".join(cmd))
-        proc = subprocess.Popen(  # noqa: SIM115
+        proc = subprocess.Popen(  # noqa: S603, SIM115
             args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=venv)
         )
 

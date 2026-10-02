@@ -35,13 +35,11 @@ from core.types import CoreObjectDescriptor
 
 
 class VariantValidator(Protocol):
-    def is_value_allowed(self, value: Any, parameter: spec.p.VariantParameter) -> bool:
-        ...
+    def is_value_allowed(self, value: Any, parameter: spec.p.VariantParameter) -> bool: ...
 
 
 class PatternValidator(Protocol):
-    def is_match(self, value: str, pattern: str) -> bool:
-        ...
+    def is_match(self, value: str, pattern: str) -> bool: ...
 
 
 class AlwaysPassValidator(VariantValidator, PatternValidator):
@@ -68,8 +66,7 @@ class MainConfigVariantResolver(ABC, VariantValidator):
     # todo rethink variant validator interface,
     #  maybe it'll actually work with `resolve` method and check in validation
     @abstractmethod
-    def resolve(self, parameter: spec.p.VariantParameter) -> tuple:
-        ...
+    def resolve(self, parameter: spec.p.VariantParameter) -> tuple: ...
 
 
 # Types & Constants

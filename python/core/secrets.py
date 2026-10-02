@@ -22,8 +22,7 @@ from core.result import Fail, Success
 # Errors
 
 
-class SecretBaseError(Exception):
-    ...
+class SecretBaseError(Exception): ...
 
 
 class ConfigurationError(SecretBaseError):

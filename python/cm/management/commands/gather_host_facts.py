@@ -61,11 +61,12 @@ class Command(BaseCommand):
         stdout_file = self._inventory_dir / "ansible.stdout"
         stderr_file = self._inventory_dir / "ansible.stderr"
 
-        with stdout_file.open(mode="w", encoding="utf-8") as stdout, stderr_file.open(
-            mode="w", encoding="utf-8"
-        ) as stderr:
-            ansible_process = subprocess.Popen(
-                ansible_command,  # noqa: S603
+        with (
+            stdout_file.open(mode="w", encoding="utf-8") as stdout,
+            stderr_file.open(mode="w", encoding="utf-8") as stderr,
+        ):
+            ansible_process = subprocess.Popen(  # noqa: S603
+                ansible_command,
                 env=get_environ(venv="2.16"),
                 stdout=stdout,
                 stderr=stderr,

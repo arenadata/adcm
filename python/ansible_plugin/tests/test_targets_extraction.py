@@ -27,8 +27,7 @@ from ansible_plugin.base import (
 from ansible_plugin.errors import PluginTargetDetectionError
 
 
-class EmptyArguments(BaseArgumentsWithTypedObjects):
-    ...
+class EmptyArguments(BaseArgumentsWithTypedObjects): ...
 
 
 class TestObjectsTargetsExtraction(ADCMPluginExecutorSuite):

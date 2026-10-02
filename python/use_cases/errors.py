@@ -31,8 +31,7 @@ from core.types import ADCMMessageError
 T = TypeVar("T", bound=Callable)
 
 
-class UseCaseError(ADCMMessageError):
-    ...
+class UseCaseError(ADCMMessageError): ...
 
 
 def convert_bundle_errors_to_adcm_ex(func: T) -> T:

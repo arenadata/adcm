@@ -50,20 +50,16 @@ ObjectT = TypeVar("ObjectT", bound=BundleModel)
 
 class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
     @abstractmethod
-    def _get_schema_mapping(self) -> dict[str, type[RootT]]:
-        ...
+    def _get_schema_mapping(self) -> dict[str, type[RootT]]: ...
 
     @abstractmethod
-    def _get_config_model(self) -> type[BundleModel]:
-        ...
+    def _get_config_model(self) -> type[BundleModel]: ...
 
     @abstractmethod
-    def _get_scripts_model(self, mode: Literal["action", "upgrade", "wizard"]) -> type[BundleModel]:
-        ...
+    def _get_scripts_model(self, mode: Literal["action", "upgrade", "wizard"]) -> type[BundleModel]: ...
 
     @abstractmethod
-    def _flatten_definitions(self, definition: RootT) -> Iterable[tuple[BundleDefinitionKey, ObjectT]]:
-        ...
+    def _flatten_definitions(self, definition: RootT) -> Iterable[tuple[BundleDefinitionKey, ObjectT]]: ...
 
     @abstractmethod
     def _convert_objects(
@@ -71,8 +67,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         definitions: dict[BundleDefinitionKey, ObjectT],
         relative_definition_paths: dict[BundleDefinitionKey, _RelativePath],
         bundle_root: Path,
-    ) -> DefinitionsMap:
-        ...
+    ) -> DefinitionsMap: ...
 
     # Implementation
 

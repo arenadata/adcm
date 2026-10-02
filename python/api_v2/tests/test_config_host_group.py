@@ -189,8 +189,7 @@ class TestClusterCHG(BaseClusterCHGTestCase):
             {
                 "code": "GROUP_CONFIG_HOST_ERROR",
                 "desc": (
-                    "host is not available for this object,"
-                    " or host already is a member of another group of this object"
+                    "host is not available for this object, or host already is a member of another group of this object"
                 ),
                 "level": "error",
             },

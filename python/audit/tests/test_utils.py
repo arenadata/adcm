@@ -58,8 +58,8 @@ class TestAuditUtils(ParametrizedTestCase, DjangoTestCase):
             ),
             (
                 "[{}] object(s) audited.",
-                (f"{'obj'*5}1", f"{'obj'*2}2", f"{'obj'*2}3"),
-                [f"[{'obj'*5}1] object(s) audited.", f"[{'obj'*2}2, {'obj'*2}3] object(s) audited."],
+                (f"{'obj' * 5}1", f"{'obj' * 2}2", f"{'obj' * 2}3"),
+                [f"[{'obj' * 5}1] object(s) audited.", f"[{'obj' * 2}2, {'obj' * 2}3] object(s) audited."],
                 None,
             ),
             (

@@ -31,8 +31,7 @@ class _BaseStep(_Names):
 
     @property
     @abstractmethod
-    def type(self) -> action.wizard.StepType:
-        ...
+    def type(self) -> action.wizard.StepType: ...
 
     @model_validator(mode="after")
     def validate_required_flag(self):

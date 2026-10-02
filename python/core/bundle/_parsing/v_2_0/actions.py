@@ -213,7 +213,7 @@ class ClusterObjectAction(_ActionBase, Generic[ScriptT]):
         specified = tuple(filter(None, (self.scripts, self.scripts_template)))
         if len(specified) != 1:
             raise ValueError(
-                'Exactly one of "scripts" or "scripts_template" must be provided, ' "not multiple nor neither."
+                'Exactly one of "scripts" or "scripts_template" must be provided, not multiple nor neither.'
             )
 
         return self

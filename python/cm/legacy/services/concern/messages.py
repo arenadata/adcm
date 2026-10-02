@@ -188,7 +188,7 @@ def build_concern_reason(
 
         entity = getattr(placeholder_objects, placeholder_name)
         if entity is None:
-            message = f"Concern message '{template.message}' requires `{placeholder_name}` " "to fill placeholders"
+            message = f"Concern message '{template.message}' requires `{placeholder_name}` to fill placeholders"
             raise RuntimeError(message)
 
         resolved_placeholders[placeholder_name] = placeholder.retrieve(entity)

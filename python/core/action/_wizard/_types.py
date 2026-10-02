@@ -95,18 +95,15 @@ StepT = TypeVar("StepT", bound=_Step)
 
 
 @dataclass(slots=True)
-class ConfigStep(_Step[Literal[StepType.CONFIGURATION], ConfigStepSpec]):
-    ...
+class ConfigStep(_Step[Literal[StepType.CONFIGURATION], ConfigStepSpec]): ...
 
 
 @dataclass(slots=True)
-class OperationStep(_Step[Literal[StepType.OPERATION], OperationStepSpec]):
-    ...
+class OperationStep(_Step[Literal[StepType.OPERATION], OperationStepSpec]): ...
 
 
 @dataclass(slots=True)
-class MappingStep(_Step[Literal[StepType.MAPPING], MappingStepSpec]):
-    ...
+class MappingStep(_Step[Literal[StepType.MAPPING], MappingStepSpec]): ...
 
 
 Step: TypeAlias = ConfigStep | OperationStep | MappingStep
@@ -150,18 +147,15 @@ class _StepDefinition(Generic[ST, M]):
 
 
 @dataclass(slots=True)
-class ConfigStepDefinition(_StepDefinition[StepType.CONFIGURATION, StepExtra]):
-    ...
+class ConfigStepDefinition(_StepDefinition[StepType.CONFIGURATION, StepExtra]): ...
 
 
 @dataclass(slots=True)
-class OperationStepDefinition(_StepDefinition[StepType.OPERATION, OperationStepExtra]):
-    ...
+class OperationStepDefinition(_StepDefinition[StepType.OPERATION, OperationStepExtra]): ...
 
 
 @dataclass(slots=True)
-class MappingStepDefinition(_StepDefinition[StepType.MAPPING, StepExtra]):
-    ...
+class MappingStepDefinition(_StepDefinition[StepType.MAPPING, StepExtra]): ...
 
 
 StepDefinition: TypeAlias = ConfigStepDefinition | OperationStepDefinition | MappingStepDefinition

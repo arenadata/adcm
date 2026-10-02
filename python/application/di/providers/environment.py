@@ -49,12 +49,10 @@ class ConsulSettings(BaseSettings):
     consul: consul.ClientSettings
 
 
-class VaultSecretsInitError(Exception):
-    ...
+class VaultSecretsInitError(Exception): ...
 
 
-class ConsulSettingsInitError(Exception):
-    ...
+class ConsulSettingsInitError(Exception): ...
 
 
 class EnvironmentProvider(Provider):

@@ -24,5 +24,4 @@ class StatusScenariosI(Protocol):
     of `StatusScenarios` gets called from core.
     """
 
-    def notify_about_new_concern(self, concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
-        ...
+    def notify_about_new_concern(self, concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None: ...

@@ -35,8 +35,7 @@ logger = logging.getLogger("adcm")
 class UploadedFileLike(Protocol):
     name: str
 
-    def chunks(self) -> Iterable[bytes]:
-        ...
+    def chunks(self) -> Iterable[bytes]: ...
 
 
 # Public

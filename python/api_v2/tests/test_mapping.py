@@ -1036,7 +1036,7 @@ class TestMappingConstraints(ADCMDjangoAPISuite):
                 "code": "SERVICE_CONFLICT",
                 "level": "error",
                 "desc": (
-                    f'No required service "service_required" for service ' f'"{service_requires_service.display_name}"'
+                    f'No required service "service_required" for service "{service_requires_service.display_name}"'
                 ),
             },
         )

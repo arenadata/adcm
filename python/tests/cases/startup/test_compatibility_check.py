@@ -140,7 +140,7 @@ class TestADCMStartIsAllowed(BaseTestCase):
             "contract_version: "
             f"1: {self.bundle_cl1.name} community 1.0 (contract: {self.unsupported_cv})\n"
             f"2: {self.bundle_pr1.name} community 1.0 (contract: {self.unsupported_cv})\n"
-            f"Upgrade products to bundles with supported contract versions: {", ".join(sv_tags)}\n"
+            f"Upgrade products to bundles with supported contract versions: {', '.join(sv_tags)}\n"
         )
 
         with self.assertRaises(CommandError) as error:

@@ -61,8 +61,7 @@ from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
 class PerformMappingChecks(Protocol):
     def __call__(
         self, bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 def check_nothing(

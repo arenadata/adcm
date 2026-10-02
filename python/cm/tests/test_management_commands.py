@@ -29,7 +29,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from rbac.models import Policy, Role, User
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 from tests.base import BaseTestCase
 from tests.suites import ADCMDjangoAPISuite
@@ -104,7 +104,7 @@ class TestSender(unittest.TestCase):
         )
 
         mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
-        mocked_requests.head = Mock(side_effect=ConnectionError)
+        mocked_requests.head = Mock(side_effect=RequestsConnectionError)
 
         with self.assertRaises(expected_exception=SenderConnectionError) as err_post:
             sender.send(targets=[Path("/some/path.file")])
@@ -114,7 +114,7 @@ class TestSender(unittest.TestCase):
     @patch("cm.collect_statistics.senders.requests")
     def test_retries_fail(self, mocked_requests, mocked_open):  # noqa: ARG002
         mocked_requests.head.return_value = MockResponse(status_code=HTTP_405_METHOD_NOT_ALLOWED)
-        mocked_requests.post = Mock(side_effect=ConnectionError)
+        mocked_requests.post = Mock(side_effect=RequestsConnectionError)
 
         sender = StatisticSender(settings=self.settings)
         with self.assertRaises(expected_exception=RetriesExceededError) as err_retries:
@@ -699,7 +699,7 @@ class TestEncoder(unittest.TestCase):
         self.assertEqual(str(error.exception), "The file name must end with '.enc'")
 
     def test_encode(self):
-        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)
+        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)  # noqa: SIM115
         path_file.write_text("content")
 
         encoder = TarFileEncoder(suffix=".enc")
@@ -711,7 +711,7 @@ class TestEncoder(unittest.TestCase):
         self.assertTrue(encoded_file.read_bytes() == b"dpoufou")
 
     def test_decode(self):
-        encoded_file = Path(NamedTemporaryFile(suffix=".tar.gz.enc").name)
+        encoded_file = Path(NamedTemporaryFile(suffix=".tar.gz.enc").name)  # noqa: SIM115
         encoded_file.write_bytes(b"dpoufou")
 
         encoder = TarFileEncoder(suffix=".enc")
@@ -723,7 +723,7 @@ class TestEncoder(unittest.TestCase):
         self.assertTrue(decoded_file.read_bytes() == b"content")
 
     def test_encode_decode(self):
-        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)
+        path_file = Path(NamedTemporaryFile(suffix=".tar.gz").name)  # noqa: SIM115
         path_file.write_text("content")
 
         encoder = TarFileEncoder(suffix=".enc")

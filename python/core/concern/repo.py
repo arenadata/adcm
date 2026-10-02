@@ -21,8 +21,7 @@ ConcernDistribution: TypeAlias = dict[ADCMCoreType, dict[ObjectID, set[ConcernID
 
 
 class ConcernRepoI(Protocol):
-    def create(self, draft: ConcernDraft) -> ConcernID:
-        ...
+    def create(self, draft: ConcernDraft) -> ConcernID: ...
 
     def link(self, *, concern_id: ConcernID, targets: ConcernRelatedObjects) -> None:
         """

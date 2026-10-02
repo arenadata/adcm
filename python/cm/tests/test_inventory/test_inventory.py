@@ -337,7 +337,7 @@ class TestInventoryAndMaintenanceMode(GenericTestCase):
             f".{HcAclAction.REMOVE.value}"
         )
         target_key_mm_service = (
-            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}." f"{MAINTENANCE_MODE_GROUP_SUFFIX}"
+            f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}.{MAINTENANCE_MODE_GROUP_SUFFIX}"
         )
         target_key_mm_service_component = (
             f"{Service.objects.get(pk=self.hc_c1_h3['service_id']).prototype.name}"

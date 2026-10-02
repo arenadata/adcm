@@ -17,5 +17,4 @@ class JobFilter(
     AdvancedFilterSet,
     char_fields=("status",),
     number_fields=("id", ("task", "task__id")),
-):
-    ...
+): ...

@@ -354,7 +354,7 @@ def get_variant(obj, conf, limits):
     value = None
     source = limits["source"]
     if source["type"] == "config":
-        name, subname, *_ = f'{source["name"]}/'.split("/")
+        name, subname, *_ = f"{source['name']}/".split("/")
         if not subname:
             if name in conf:
                 value = conf[name]

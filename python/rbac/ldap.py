@@ -74,9 +74,7 @@ def configure_tls(
 
 
 def is_tls(ldap_uri: str) -> bool:
-    if "ldaps://" in ldap_uri.lower():
-        return True
-    return False
+    return "ldaps://" in ldap_uri.lower()
 
 
 def get_ldap_config() -> dict | None:

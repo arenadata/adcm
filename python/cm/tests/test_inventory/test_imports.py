@@ -331,7 +331,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -366,7 +366,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -441,7 +441,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],

@@ -117,15 +117,17 @@ class Command(BaseCommand):
             }
 
             if target_configlog_ids or target_objectconfig_ids:
-                with audit_background_operation(
-                    name='"Objects configurations cleanup on schedule" job', type_=AuditLogOperationType.DELETE
-                ), transaction.atomic():
+                with (
+                    audit_background_operation(
+                        name='"Objects configurations cleanup on schedule" job', type_=AuditLogOperationType.DELETE
+                    ),
+                    transaction.atomic(),
+                ):
                     ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                     ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
 
                 self.__log(
-                    f"Deleted {len(target_configlog_ids)} ConfigLogs and "
-                    f"{len(target_objectconfig_ids)} ObjectConfigs",
+                    f"Deleted {len(target_configlog_ids)} ConfigLogs and {len(target_objectconfig_ids)} ObjectConfigs",
                     "info",
                 )
         except Exception as e:  # noqa: BLE001
@@ -134,22 +136,19 @@ class Command(BaseCommand):
 
     @staticmethod
     def __has_related_records(obj_conf: ObjectConfig) -> bool:
-        if (
-            sum(
-                [
-                    ADCM.objects.filter(config=obj_conf).count(),
-                    Cluster.objects.filter(config=obj_conf).count(),
-                    Service.objects.filter(config=obj_conf).count(),
-                    Host.objects.filter(config=obj_conf).count(),
-                    Provider.objects.filter(config=obj_conf).count(),
-                    Component.objects.filter(config=obj_conf).count(),
-                    ConfigHostGroup.objects.filter(config=obj_conf).count(),
-                ],
-            )
-            > 0
-        ):
-            return True
-        return False
+        related_records = sum(
+            [
+                ADCM.objects.filter(config=obj_conf).count(),
+                Cluster.objects.filter(config=obj_conf).count(),
+                Service.objects.filter(config=obj_conf).count(),
+                Host.objects.filter(config=obj_conf).count(),
+                Provider.objects.filter(config=obj_conf).count(),
+                Component.objects.filter(config=obj_conf).count(),
+                ConfigHostGroup.objects.filter(config=obj_conf).count(),
+            ],
+        )
+
+        return related_records > 0
 
     def __run_joblog_rotation(self):
         try:
@@ -167,7 +166,7 @@ class Command(BaseCommand):
             threshold_date_db = timezone.now() - timedelta(days=days_delta_db)
             threshold_date_fs = timezone.now() - timedelta(days=days_delta_fs)
             self.__log(
-                f"JobLog rotation started. Threshold dates: " f"db - {threshold_date_db}, fs - {threshold_date_fs}",
+                f"JobLog rotation started. Threshold dates: db - {threshold_date_db}, fs - {threshold_date_fs}",
                 "info",
             )
 
@@ -190,9 +189,8 @@ class Command(BaseCommand):
                 self.__log("db JobLog rotated", "info")
 
             if days_delta_fs > 0:
-                for name in os.listdir(settings.RUN_DIR):
-                    if not name.startswith("."):  # a line of code is used for development
-                        path = settings.RUN_DIR / name
+                for path in settings.RUN_DIR.iterdir():
+                    if not path.name.startswith("."):  # a line of code is used for development
                         try:
                             m_time = datetime.fromtimestamp(
                                 os.path.getmtime(path),  # noqa: PTH204

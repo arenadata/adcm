@@ -295,7 +295,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
         expected_schema_4 = {"root": {"match": "list", "item": "integer"}, "integer": {"match": "int"}}
 
         expected_config_defaults = {
-            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            **dict.fromkeys(("relative_plain", "full_plain", "relative_secret", "full_secret"), "nicename.txt"),
             "relative_inside_plain": "inside/common.txt",
             "full_inside_secret": "inside/common.txt",
         }
@@ -335,7 +335,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
         # definition outside of root
         expected_config_defaults = {
-            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            **dict.fromkeys(("relative_plain", "full_plain", "relative_secret", "full_secret"), "nicename.txt"),
             "relative_plain": "service_1/nicename.txt",
             "full_plain": "nicename.txt",
             "relative_secret": "service_1/nicename.txt",
@@ -370,18 +370,16 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
     def test_action_paths_are_made_relative_to_bundle_root_on_upload(self) -> None:
         expected_task_jinja_paths = {
-            **{key: "conf.j2" for key in ("as_job_relative", "as_job_full", "as_task_config_relative")},
-            **{
-                key: "inside/conf.j2"
-                for key in ("as_job_inner_relative", "as_job_inner_full", "as_task_config_inside_full")
-            },
+            **dict.fromkeys(("as_job_relative", "as_job_full", "as_task_config_relative"), "conf.j2"),
+            **dict.fromkeys(
+                ("as_job_inner_relative", "as_job_inner_full", "as_task_config_inside_full"), "inside/conf.j2"
+            ),
         }
         expected_scripts = {
-            **{key: "action.yaml" for key in ("as_job_relative", "as_job_full", "rel_1", "rel_2")},
-            **{
-                key: "inside/action.yaml"
-                for key in ("as_job_inner_relative", "as_job_inner_full", "full_one", "full_two")
-            },
+            **dict.fromkeys(("as_job_relative", "as_job_full", "rel_1", "rel_2"), "action.yaml"),
+            **dict.fromkeys(
+                ("as_job_inner_relative", "as_job_inner_full", "full_one", "full_two"), "inside/action.yaml"
+            ),
         }
 
         bundle = self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "cluster_paths_validation")

@@ -1092,7 +1092,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             "patterned_secrettext": None,
             "secretmap": None,
         }
-        data_empty = {k: "" for k in expected_initial}
+        data_empty = dict.fromkeys(expected_initial, "")
         data_empty["secretmap"] = {"key1": ""}
         expected_empty = data_empty
 
@@ -2087,9 +2087,9 @@ class TestProviderConfig(ADCMDjangoAPISuite):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
-            "integer_key"
-        ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"] = (
+            integer_key
+        )
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"
@@ -2458,9 +2458,9 @@ class TestProviderCHG(ADCMDjangoAPISuite):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
-            "integer_key"
-        ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"] = (
+            integer_key
+        )
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"

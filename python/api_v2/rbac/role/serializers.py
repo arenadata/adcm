@@ -87,8 +87,7 @@ class ObjectCandidateSerializer(EmptySerializer):
     name = CharField()
 
 
-class ClusterObjectCandidateSerializer(ObjectCandidateSerializer):
-    ...
+class ClusterObjectCandidateSerializer(ObjectCandidateSerializer): ...
 
 
 class ServiceObjectCandidateSerializer(EmptySerializer):
@@ -97,12 +96,10 @@ class ServiceObjectCandidateSerializer(EmptySerializer):
     clusters = ClusterObjectCandidateSerializer(many=True)
 
 
-class ProviderObjectCandidateSerializer(ObjectCandidateSerializer):
-    ...
+class ProviderObjectCandidateSerializer(ObjectCandidateSerializer): ...
 
 
-class HostObjectCandidateSerializer(ObjectCandidateSerializer):
-    ...
+class HostObjectCandidateSerializer(ObjectCandidateSerializer): ...
 
 
 class RoleObjectCandidatesSerializer(EmptySerializer):

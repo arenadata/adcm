@@ -48,7 +48,7 @@ class RetrieveStartImpossibleReason:
 
         match target_desc:
             case Descriptor(type=ADCMCoreType.PROVIDER):
-                return {id_: None for id_ in allowed_in_mm}
+                return dict.fromkeys(allowed_in_mm)
 
             case Descriptor(type=ADCMCoreType.ADCM):
                 adcm_config = self.config_service.retrieve_current_configuration(
@@ -60,7 +60,7 @@ class RetrieveStartImpossibleReason:
 
                 match result:
                     case Fail(value=(reason)):
-                        return {id_: reason.value for id_ in allowed_in_mm}
+                        return dict.fromkeys(allowed_in_mm, reason.value)
 
             case Descriptor(type=ADCMCoreType.HOST):
                 mm = self.provider_service.retrieve_own_maintenance_mode(target=cast(ProviderObjectDesc, target_desc))
@@ -80,7 +80,7 @@ class RetrieveStartImpossibleReason:
 
         match result:
             case Success():
-                return {action_id: None for action_id in allowed_in_mm}
+                return dict.fromkeys(allowed_in_mm)
 
             case Fail(value=(reason, type_)):
                 match reason:

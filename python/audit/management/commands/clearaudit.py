@@ -134,13 +134,13 @@ class Command(BaseCommand):
         if not os.path.exists(self.tarfile_cfg["read"]["name"]):
             return
         with TarFile.open(**self.tarfile_cfg["read"]) as tar:
-            tar.extractall(path=self.archive_tmp_dir)
+            tar.extractall(path=self.archive_tmp_dir, filter="data")
         os.remove(self.tarfile_cfg["read"]["name"])
 
     def __archive_tmp_dir(self):
         with TarFile.open(**self.tarfile_cfg["write"]) as tar:
-            for f in os.listdir(self.archive_tmp_dir):
-                tar.add(name=os.path.join(self.archive_tmp_dir, f), arcname=f)
+            for file_path in Path(self.archive_tmp_dir).iterdir():
+                tar.add(name=file_path, arcname=file_path.name)
         rmtree(self.archive_tmp_dir, ignore_errors=True)
 
     def __prepare_csvs(self, *querysets, base_dir):

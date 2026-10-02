@@ -286,9 +286,10 @@ class TestTask(ADCMDjangoAPISuite, ParametrizedTestCase):
         service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
         service_admin = self.create_user(**service_admin_credentials)
 
-        with self.grant_permissions(
-            to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator"
-        ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
+        with (
+            self.grant_permissions(to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator") as _,
+            self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _,
+        ):
             # run action as service admin (create all permissions we interested in)
             self.client.login(**service_admin_credentials)
             response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(

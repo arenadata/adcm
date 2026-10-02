@@ -174,35 +174,29 @@ class ProviderViewSet(PermissionListMixin, ConfigSchemaMixin, RetrieveModelMixin
 
 @document_config_host_group_viewset(object_type="hostprovider")
 @audit_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
-class ProviderCHGViewSet(CHGViewSet):
-    ...
+class ProviderCHGViewSet(CHGViewSet): ...
 
 
 @document_host_config_host_group_viewset(object_type="hostprovider")
 @audit_host_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
-class ProviderHostCHGViewSet(HostCHGViewSet):
-    ...
+class ProviderHostCHGViewSet(HostCHGViewSet): ...
 
 
 @document_config_viewset(object_type="hostprovider config group", operation_id_variant="HostProviderConfigGroup")
 @audit_config_config_host_group_viewset(retrieve_owner=parent_provider_from_lookup)
-class ProviderConfigCHGViewSet(ConfigLogViewSet):
-    ...
+class ProviderConfigCHGViewSet(ConfigLogViewSet): ...
 
 
 @document_action_viewset(object_type="hostprovider")
 @audit_action_viewset(retrieve_owner=parent_provider_from_lookup)
-class ProviderActionViewSet(ActionViewSet):
-    ...
+class ProviderActionViewSet(ActionViewSet): ...
 
 
 @document_config_viewset(object_type="hostprovider")
 @audit_config_viewset(type_in_name="Provider", retrieve_owner=parent_provider_from_lookup)
-class ProviderConfigViewSet(ConfigLogViewSet):
-    ...
+class ProviderConfigViewSet(ConfigLogViewSet): ...
 
 
 @document_upgrade_viewset(object_type="hostprovider")
 @audit_upgrade_viewset(retrieve_owner=parent_provider_from_lookup)
-class ProviderUpgradeViewSet(UpgradeViewSet):
-    ...
+class ProviderUpgradeViewSet(UpgradeViewSet): ...

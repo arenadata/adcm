@@ -380,14 +380,14 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         expected = {(h.id, h.fqdn) for h in hosts}
         self.assertTrue(
             expected.issubset(candidates),
-            msg=f"Not found entries: {', '.join(map(str, expected.difference( candidates)))}",
+            msg=f"Not found entries: {', '.join(map(str, expected.difference(candidates)))}",
         )
 
     def assert_hosts_not_in_candidates(self, *hosts: Host, candidates: list[tuple[HostID, HostName]]):
         expected = {(h.id, h.fqdn) for h in hosts}
         self.assertFalse(
             expected.intersection(candidates),
-            msg=f"Not expected entries: {', '.join(map(str, expected.difference( candidates)))}",
+            msg=f"Not expected entries: {', '.join(map(str, expected.difference(candidates)))}",
         )
 
     def test_list_success(self):

@@ -1025,8 +1025,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.provider_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.provider_host_group.name} configuration group",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.provider),
@@ -1072,8 +1071,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.provider_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.provider_host_group.name} configuration group",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.provider),
@@ -1088,8 +1086,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.provider_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.provider_host_group.name} configuration group",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.provider),
@@ -1174,8 +1171,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.cluster_1_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_host_group.name} configuration group",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -1210,8 +1206,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.cluster_1_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_host_group.name} configuration group",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=None),
@@ -1228,8 +1223,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.cluster_1_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_host_group.name} configuration group",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -1244,8 +1238,7 @@ class TestCHGAudit(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.new_host.fqdn} host added to "
-            f"{self.cluster_1_host_group.name} configuration group",
+            operation_name=f"{self.new_host.fqdn} host added to {self.cluster_1_host_group.name} configuration group",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),

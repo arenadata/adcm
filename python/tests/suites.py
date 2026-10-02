@@ -167,8 +167,7 @@ class _ADCMTestCase(TaskFlowMixin, django.test.SimpleTestCase, WithIndependentDi
 Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
 
 
-class GenericTestCase(_ADCMTestCase, django.test.TestCase):
-    ...
+class GenericTestCase(_ADCMTestCase, django.test.TestCase): ...
 
 
 class ADCMPluginExecutorSuite(

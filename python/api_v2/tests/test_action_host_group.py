@@ -1212,8 +1212,9 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
                             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_view_role_on_cluster_access(self) -> None:
-        with self.grant_permissions_to_run_actions(), self.grant_permissions(
-            to=self.user, on=self.cluster, role_name="View action host groups"
+        with (
+            self.grant_permissions_to_run_actions(),
+            self.grant_permissions(to=self.user, on=self.cluster, role_name="View action host groups"),
         ):
             for target, group in self.group_map.items():
                 action = Action.objects.get(prototype=target.prototype, name="allowed_in_group_1")
@@ -1368,8 +1369,9 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
             ].post()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
-        with self.grant_permissions(to=self.user, on=self.cluster, role_name="Cluster Administrator"), self.subTest(
-            "Cluster Admin"
+        with (
+            self.grant_permissions(to=self.user, on=self.cluster, role_name="Cluster Administrator"),
+            self.subTest("Cluster Admin"),
         ):
             response = self.user_client.v2[self.control_cluster, ACTION_HOST_GROUPS].get()
             self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
@@ -1389,8 +1391,9 @@ class TestActionHostGroupRBAC(ADCMDjangoAPISuite):
         ConcernItem.objects.all().delete()
         TaskLog.objects.all().delete()
 
-        with self.grant_permissions(to=self.user, on=self.service, role_name="Service Administrator"), self.subTest(
-            "Service Admin"
+        with (
+            self.grant_permissions(to=self.user, on=self.service, role_name="Service Administrator"),
+            self.subTest("Service Admin"),
         ):
             response = self.user_client.v2[self.cluster, ACTION_HOST_GROUPS].get()
             self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)

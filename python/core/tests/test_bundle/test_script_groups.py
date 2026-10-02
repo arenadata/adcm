@@ -745,9 +745,10 @@ class TestScriptGroupsValidation(TestCase):
             ("provider", hc_apply, "Input tag 'hc_apply' found using 'script' does not match any of the expected tags"),
             ("adcm", clean, "does not match any of the expected tags: 'ansible', 'python'"),
         ):
-            with self.subTest(f"{object_type} rejects {script['script']}"), self.assertRaises(
-                BundleParsingError
-            ) as err:
+            with (
+                self.subTest(f"{object_type} rejects {script['script']}"),
+                self.assertRaises(BundleParsingError) as err,
+            ):
                 self.parse_root_entry(object_type, [build_group(name="group", scripts=[script])])
 
             self.assertIn(error, err.exception.message)

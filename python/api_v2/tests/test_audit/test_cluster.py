@@ -987,9 +987,10 @@ class TestClusterAudit(ADCMDjangoAPISuite):
     def test_run_host_action_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        with self.grant_permissions(
-            to=self.test_user, on=self.host_1, role_name="View host configurations"
-        ), self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+        with (
+            self.grant_permissions(to=self.test_user, on=self.host_1, role_name="View host configurations"),
+            self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"),
+        ):
             response = (
                 self.client.v2
                 / "clusters"

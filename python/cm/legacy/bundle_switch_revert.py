@@ -332,16 +332,13 @@ class _BundleSwitch(ABC, Generic[OT, MT]):
         logger.info("upgrade %s OK to version %s", obj_ref(obj=self._target), new_prototype.version)
 
     @abstractmethod
-    def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None:
-        ...
+    def _upgrade_children(self, old_prototype: Prototype, new_prototype: Prototype) -> None: ...
 
     @abstractmethod
-    def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
-        ...
+    def _update_concerns(self) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]: ...
 
     @abstractmethod
-    def _get_objects_map_for_policy_update(self) -> dict[MT, ContentType]:
-        ...
+    def _get_objects_map_for_policy_update(self) -> dict[MT, ContentType]: ...
 
 
 class _ClusterBundleSwitch(_BundleSwitch[Cluster, Cluster | Service | Component]):
@@ -375,9 +372,9 @@ class _ClusterBundleSwitch(_BundleSwitch[Cluster, Cluster | Service | Component]
 
                 if before_upgrade_deleted_components:
                     update_before_upgrade_after_delete_service = True
-                    before_upgrade.service_deleted_components[
-                        service.prototype.name
-                    ] = before_upgrade_deleted_components
+                    before_upgrade.service_deleted_components[service.prototype.name] = (
+                        before_upgrade_deleted_components
+                    )
             except Prototype.DoesNotExist:
                 update_before_upgrade_after_delete_service = True
                 delete_service_before_upgrade = DeletedServiceBeforeUpgrade(

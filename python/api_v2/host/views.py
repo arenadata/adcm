@@ -399,8 +399,7 @@ class HostViewSet(
 
 @document_action_viewset(object_type="host")
 @audit_action_viewset(retrieve_owner=parent_host_from_lookup)
-class HostActionViewSet(ActionViewSet):
-    ...
+class HostActionViewSet(ActionViewSet): ...
 
 
 @document_config_viewset(object_type="host")

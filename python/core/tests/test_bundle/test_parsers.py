@@ -130,13 +130,11 @@ class _TestTemplate:
 
         @classmethod
         @abstractmethod
-        def build_cluster_entry(cls) -> dict:
-            ...
+        def build_cluster_entry(cls) -> dict: ...
 
         @classmethod
         @abstractmethod
-        def build_parser(cls) -> BundleParser:
-            ...
+        def build_parser(cls) -> BundleParser: ...
 
         def prepare_list_with_entry(self, data: dict, path: Path) -> list[RootEntry]:
             return [RootEntry(data=data, full_path_to_file=path)]
@@ -223,8 +221,7 @@ class _TestTemplate:
 
     class ParserExtraFields(ParserTestCase):
         @abstractmethod
-        def prepare_cluster_with_action(self, extra: dict) -> dict:
-            ...
+        def prepare_cluster_with_action(self, extra: dict) -> dict: ...
 
         def test_extra_field_in_config_of_root_object(self):
             data = {**self.cluster_entry, "config": [{"name": "a", "type": "string", "woo": "boo"}]}

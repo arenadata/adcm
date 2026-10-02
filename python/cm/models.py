@@ -142,7 +142,7 @@ class ADCMModel(models.Model):
                 if getattr(self, field_name) != self._loaded_values[field_name]:
                     raise AdcmEx(
                         "NOT_CHANGEABLE_FIELDS",
-                        f'{", ".join(not_changeable_fields)} fields cannot be changed',
+                        f"{', '.join(not_changeable_fields)} fields cannot be changed",
                     )
         super().save(*args, **kwargs)
 
