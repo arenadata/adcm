@@ -12,7 +12,7 @@
 
 from unittest import TestCase
 
-from core.action.types import JobSpecV1
+from core.action.types import JobSpecV1, StateChanges
 
 from cm.impl.common.execution_plan import (
     STORED_VERSION,
@@ -25,7 +25,9 @@ from cm.tests.scripts import build_script_spec
 
 class TestExecutionPlanStorage(TestCase):
     def setUp(self) -> None:
-        self.spec = JobSpecV1.from_entries(build_script_spec("/0", "first"), build_script_spec("/1", "second"))
+        self.spec = JobSpecV1.from_entries(
+            build_script_spec("/0-first", "first"), build_script_spec("/1-second", "second")
+        )
 
     def test_roundtrip_success(self):
         self.assertEqual(parse_execution_plan(dump_execution_plan(self.spec)), self.spec)
@@ -36,6 +38,18 @@ class TestExecutionPlanStorage(TestCase):
         self.assertEqual(stored["version"], STORED_VERSION)
         # the spec itself knows nothing about the envelope
         self.assertNotIn("version", JobSpecV1.model_fields)
+
+    def test_on_fail_is_stored_as_object(self):
+        script = build_script_spec("/0-failing", "failing")
+        script.on_fail = StateChanges(state="failed", multi_state_set=("broken",), multi_state_unset=("installed",))
+
+        stored = dump_execution_plan(JobSpecV1.from_entries(script))
+
+        self.assertEqual(
+            stored["scripts"]["/0-failing"]["on_fail"],
+            {"state": "failed", "multi_state_set": ["broken"], "multi_state_unset": ["installed"]},
+        )
+        self.assertEqual(parse_execution_plan(stored).scripts["/0-failing"].on_fail, script.on_fail)
 
     def test_unknown_version_fail(self):
         for case, stored in (

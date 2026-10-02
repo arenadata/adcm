@@ -67,10 +67,10 @@ class TestJob(TaskTestMixin, ADCMDjangoAPISuite, ParametrizedTestCase):
         ("spec_key", "expected_group"),
         [
             param("", None, id="legacy"),
-            param("/0", None, id="root"),
-            param("/some/2", "some", id="nested_once"),
-            param("/some/thing/4", "thing", id="nested_twice"),
-            param("/shards/shard_a/0", "shard_a", id="shard"),
+            param("/0-job", None, id="root"),
+            param("/some/2-job", "some", id="nested_once"),
+            param("/some/thing/4-job", "thing", id="nested_twice"),
+            param("/shards/shard_a/0-job", "shard_a", id="shard"),
         ],
     )
     def test_job_group_success(self, spec_key: str, expected_group: str | None) -> None:

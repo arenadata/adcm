@@ -125,8 +125,8 @@ class TaskLogLockTest(BaseTestCase):
             name="test_cluster_action",
         )
         action.scripts = build_plan(
-            build_script_spec("/0", "test_subaction_1", display_name="Test   Dis%#play   NAME!"),
-            build_script_spec("/1", "test_subaction_2"),
+            build_script_spec("/0-test_subaction_1", "test_subaction_1", display_name="Test   Dis%#play   NAME!"),
+            build_script_spec("/1-test_subaction_2", "test_subaction_2"),
         )
         action.save(update_fields=["scripts"])
         object_ = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)

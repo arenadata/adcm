@@ -182,7 +182,7 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
     )
 
 
-GENERATED_SPEC_KEY = "/0"
+GENERATED_SPEC_KEY = "/0-dummy"
 
 
 def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:

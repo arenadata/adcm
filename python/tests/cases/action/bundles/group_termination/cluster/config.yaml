@@ -1,15 +1,15 @@
 # Plan shape reused by `grouped` and `grouped_not_terminatable`, differing only in `allow_to_terminate`
 # (display names differ from internal names on purpose, audit records display ones):
-#   /0        prepare
-#   /a/0      group `a` (parallel, display name "Group A") own script
-#   /a/nested/0, /a/nested/1   sequential subgroup of `a` (display name "Nested Of A")
-#   /ab/0     group `ab` (sequential, display name "Group AB"), key shares the "a" prefix with `a` on purpose
-#   /3        finish
+#   /0-prepare        prepare
+#   /a/0-step      group `a` (parallel, display name "Group A") own script
+#   /a/nested/0-step, /a/nested/1-step   sequential subgroup of `a` (display name "Nested Of A")
+#   /ab/0-step     group `ab` (sequential, display name "Group AB"), key shares the "a" prefix with `a` on purpose
+#   /3-finish        finish
 #
 # `named_groups` holds groups with names/display names that are tricky for audit:
-#   /5/0       group `5` (numeric-looking name), display name "Group Five"
-#   /braced/0  group `braced`, display name with braces
-#   /long/0    group `long`, 3000-char display name (audit truncates it)
+#   /5/0-step       group `5` (numeric-looking name), display name "Group Five"
+#   /braced/0-step  group `braced`, display name with braces
+#   /long/0-step    group `long`, 3000-char display name (audit truncates it)
 - type: cluster
   name: group_termination_cluster
   version: "1"

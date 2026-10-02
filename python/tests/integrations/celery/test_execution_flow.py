@@ -120,7 +120,8 @@ def group_finished(key: str) -> tuple[str, str]:
 
 
 def make_script(key: str) -> ScriptSpec:
-    name = level_key_from_full_key(FullSpecKey(key))
+    # scripts are keyed as "<position>-<name>" within their level, the same way parsing does it
+    _, name = level_key_from_full_key(FullSpecKey(key)).split("-", maxsplit=1)
 
     return ScriptSpec(
         key=FullSpecKey(key),
@@ -371,149 +372,170 @@ class TestExecutionFlow(SimpleTestCase):
 
     def test_successful_plan_runs_all_jobs_and_finalizes_task_once(self) -> None:
         events = self.run_plan(
-            make_script("/0"),
+            make_script("/0-job"),
             make_group("/p", PARALLEL),
             make_group("/p/s", SEQUENTIAL),
-            make_script("/p/s/0"),
-            make_script("/p/s/1"),
-            make_script("/p/0"),
-            make_script("/1"),
+            make_script("/p/s/0-job"),
+            make_script("/p/s/1-job"),
+            make_script("/p/0-job"),
+            make_script("/1-job"),
         )
 
         self.assertCountEqual(
             events,
             [
-                start("/0"),
-                end("/0"),
-                start("/p/s/0"),
-                end("/p/s/0"),
-                start("/p/s/1"),
-                end("/p/s/1"),
-                start("/p/0"),
-                end("/p/0"),
+                start("/0-job"),
+                end("/0-job"),
+                start("/p/s/0-job"),
+                end("/p/s/0-job"),
+                start("/p/s/1-job"),
+                end("/p/s/1-job"),
+                start("/p/0-job"),
+                end("/p/0-job"),
                 group_finished("/p"),
-                start("/1"),
-                end("/1"),
+                start("/1-job"),
+                end("/1-job"),
                 FINALIZE,
             ],
         )
-        self.assertLess(events.index(end("/0")), events.index(start("/p/s/0")))
-        self.assertLess(events.index(end("/0")), events.index(start("/p/0")))
-        self.assertLess(events.index(end("/p/s/0")), events.index(start("/p/s/1")))
-        self.assertLess(events.index(end("/p/s/1")), events.index(group_finished("/p")))
-        self.assertLess(events.index(end("/p/0")), events.index(group_finished("/p")))
-        self.assertLess(events.index(group_finished("/p")), events.index(start("/1")))
+        self.assertLess(events.index(end("/0-job")), events.index(start("/p/s/0-job")))
+        self.assertLess(events.index(end("/0-job")), events.index(start("/p/0-job")))
+        self.assertLess(events.index(end("/p/s/0-job")), events.index(start("/p/s/1-job")))
+        self.assertLess(events.index(end("/p/s/1-job")), events.index(group_finished("/p")))
+        self.assertLess(events.index(end("/p/0-job")), events.index(group_finished("/p")))
+        self.assertLess(events.index(group_finished("/p")), events.index(start("/1-job")))
         self.assertEqual(events[-1], FINALIZE)
 
     def test_failed_sequential_job_stops_plan(self) -> None:
-        events = self.run_plan(make_script("/0"), make_script("/1"), failing={"/0"})
+        events = self.run_plan(make_script("/0-job"), make_script("/1-job"), failing={"/0-job"})
 
-        self.assertEqual(events, [start("/0"), fail("/0"), FINALIZE])
+        self.assertEqual(events, [start("/0-job"), fail("/0-job"), FINALIZE])
 
     def test_revoked_sequential_job_is_skipped_and_plan_continues(self) -> None:
-        events = self.run_plan(make_script("/0"), make_script("/1"), make_script("/2"), revoked={"/1"})
+        events = self.run_plan(make_script("/0-job"), make_script("/1-job"), make_script("/2-job"), revoked={"/1-job"})
 
-        self.assertEqual(events, [start("/0"), end("/0"), skip("/1"), start("/2"), end("/2"), FINALIZE])
+        self.assertEqual(
+            events, [start("/0-job"), end("/0-job"), skip("/1-job"), start("/2-job"), end("/2-job"), FINALIZE]
+        )
 
     def test_revoked_branch_job_is_skipped_and_plan_continues(self) -> None:
         events = self.run_plan(
             make_group("/p", PARALLEL),
-            make_script("/p/0"),
-            make_script("/p/1"),
-            make_script("/0"),
-            revoked={"/p/0"},
-        )
-
-        self.assertCountEqual(
-            events, [skip("/p/0"), start("/p/1"), end("/p/1"), group_finished("/p"), start("/0"), end("/0"), FINALIZE]
-        )
-        self.assertEqual(events[-4:], [group_finished("/p"), start("/0"), end("/0"), FINALIZE])
-
-    def test_failed_branch_stops_only_itself_and_task_is_finalized_after_other_branches(self) -> None:
-        events = self.run_plan(
-            make_script("/0"),
-            make_group("/p", PARALLEL),
-            make_group("/p/s", SEQUENTIAL),
-            make_script("/p/s/0"),
-            make_script("/p/s/1"),
-            make_script("/p/0"),
-            make_script("/1"),
-            failing={"/p/s/0"},
-            slow={"/p/0"},
+            make_script("/p/0-job"),
+            make_script("/p/1-job"),
+            make_script("/0-job"),
+            revoked={"/p/0-job"},
         )
 
         self.assertCountEqual(
             events,
             [
-                start("/0"),
-                end("/0"),
-                start("/p/s/0"),
-                fail("/p/s/0"),
-                start("/p/0"),
-                end("/p/0"),
+                skip("/p/0-job"),
+                start("/p/1-job"),
+                end("/p/1-job"),
+                group_finished("/p"),
+                start("/0-job"),
+                end("/0-job"),
                 FINALIZE,
             ],
         )
-        self.assertLess(events.index(end("/p/0")), events.index(FINALIZE))
+        self.assertEqual(events[-4:], [group_finished("/p"), start("/0-job"), end("/0-job"), FINALIZE])
 
-    def test_failed_branch_of_last_group_finalizes_task_after_other_branches(self) -> None:
+    def test_failed_branch_stops_only_itself_and_task_is_finalized_after_other_branches(self) -> None:
         events = self.run_plan(
-            make_script("/0"),
+            make_script("/0-job"),
             make_group("/p", PARALLEL),
-            make_script("/p/0"),
-            make_script("/p/1"),
-            failing={"/p/0"},
-            slow={"/p/1"},
+            make_group("/p/s", SEQUENTIAL),
+            make_script("/p/s/0-job"),
+            make_script("/p/s/1-job"),
+            make_script("/p/0-job"),
+            make_script("/1-job"),
+            failing={"/p/s/0-job"},
+            slow={"/p/0-job"},
         )
 
         self.assertCountEqual(
             events,
-            [start("/0"), end("/0"), start("/p/0"), fail("/p/0"), start("/p/1"), end("/p/1"), FINALIZE],
+            [
+                start("/0-job"),
+                end("/0-job"),
+                start("/p/s/0-job"),
+                fail("/p/s/0-job"),
+                start("/p/0-job"),
+                end("/p/0-job"),
+                FINALIZE,
+            ],
         )
-        self.assertLess(events.index(end("/p/1")), events.index(FINALIZE))
+        self.assertLess(events.index(end("/p/0-job")), events.index(FINALIZE))
+
+    def test_failed_branch_of_last_group_finalizes_task_after_other_branches(self) -> None:
+        events = self.run_plan(
+            make_script("/0-job"),
+            make_group("/p", PARALLEL),
+            make_script("/p/0-job"),
+            make_script("/p/1-job"),
+            failing={"/p/0-job"},
+            slow={"/p/1-job"},
+        )
+
+        self.assertCountEqual(
+            events,
+            [
+                start("/0-job"),
+                end("/0-job"),
+                start("/p/0-job"),
+                fail("/p/0-job"),
+                start("/p/1-job"),
+                end("/p/1-job"),
+                FINALIZE,
+            ],
+        )
+        self.assertLess(events.index(end("/p/1-job")), events.index(FINALIZE))
 
     def test_failed_job_after_parallel_group_stops_plan(self) -> None:
         # job right after parallel group is moved by celery into chord's body
         events = self.run_plan(
             make_group("/p", PARALLEL),
-            make_script("/p/0"),
-            make_script("/p/1"),
-            make_script("/0"),
-            make_script("/1"),
-            failing={"/0"},
+            make_script("/p/0-job"),
+            make_script("/p/1-job"),
+            make_script("/0-job"),
+            make_script("/1-job"),
+            failing={"/0-job"},
         )
 
         self.assertCountEqual(
             events,
             [
-                start("/p/0"),
-                end("/p/0"),
-                start("/p/1"),
-                end("/p/1"),
+                start("/p/0-job"),
+                end("/p/0-job"),
+                start("/p/1-job"),
+                end("/p/1-job"),
                 group_finished("/p"),
-                start("/0"),
-                fail("/0"),
+                start("/0-job"),
+                fail("/0-job"),
                 FINALIZE,
             ],
         )
-        self.assertEqual(events[-4:], [group_finished("/p"), start("/0"), fail("/0"), FINALIZE])
+        self.assertEqual(events[-4:], [group_finished("/p"), start("/0-job"), fail("/0-job"), FINALIZE])
 
     def test_failed_parallel_group_stops_following_parallel_group(self) -> None:
         events = self.run_plan(
             make_group("/a", PARALLEL),
-            make_script("/a/0"),
-            make_script("/a/1"),
+            make_script("/a/0-job"),
+            make_script("/a/1-job"),
             make_group("/b", PARALLEL),
-            make_script("/b/0"),
-            make_script("/b/1"),
-            failing={"/a/0"},
-            slow={"/a/1"},
+            make_script("/b/0-job"),
+            make_script("/b/1-job"),
+            failing={"/a/0-job"},
+            slow={"/a/1-job"},
         )
 
-        self.assertCountEqual(events, [start("/a/0"), fail("/a/0"), start("/a/1"), end("/a/1"), FINALIZE])
-        self.assertLess(events.index(end("/a/1")), events.index(FINALIZE))
+        self.assertCountEqual(
+            events, [start("/a/0-job"), fail("/a/0-job"), start("/a/1-job"), end("/a/1-job"), FINALIZE]
+        )
+        self.assertLess(events.index(end("/a/1-job")), events.index(FINALIZE))
 
     def test_failed_finalization_marks_task_broken_without_finalizing_again(self) -> None:
-        events = self.run_plan(make_script("/0"), fail_finalization=True)
+        events = self.run_plan(make_script("/0-job"), fail_finalization=True)
 
-        self.assertEqual(events, [start("/0"), end("/0"), FINALIZE, BROKEN])
+        self.assertEqual(events, [start("/0-job"), end("/0-job"), FINALIZE, BROKEN])

@@ -52,7 +52,8 @@ ON_SUCCESS = "finalize-on-success"
 
 
 def make_script(key: str) -> ScriptSpec:
-    name = level_key_from_full_key(FullSpecKey(key))
+    # scripts are keyed as "<position>-<name>" within their level, the same way parsing does it
+    _, name = level_key_from_full_key(FullSpecKey(key)).split("-", maxsplit=1)
 
     return ScriptSpec(
         key=FullSpecKey(key),
@@ -128,7 +129,7 @@ def describe_canvas(sig: Signature) -> tuple:
 
 class TestPrepareExecutionPlan(TestCase):
     def test_finalizer_is_marked_broken_on_error(self) -> None:
-        plan = JobSpecV1.from_entries(make_script("/0"))
+        plan = JobSpecV1.from_entries(make_script("/0-job"))
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
 
@@ -141,7 +142,7 @@ class TestPrepareExecutionPlan(TestCase):
         )
 
     def test_root_scripts(self) -> None:
-        plan = JobSpecV1.from_entries(make_script("/0"), make_script("/1"))
+        plan = JobSpecV1.from_entries(make_script("/0-job"), make_script("/1-job"))
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
 
@@ -152,7 +153,7 @@ class TestPrepareExecutionPlan(TestCase):
 
     def test_sequential_group_is_merged_into_root(self) -> None:
         plan = JobSpecV1.from_entries(
-            make_script("/0"), make_group("/s", SEQUENTIAL), make_script("/s/0"), make_script("/s/1")
+            make_script("/0-job"), make_group("/s", SEQUENTIAL), make_script("/s/0-job"), make_script("/s/1-job")
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
@@ -167,7 +168,7 @@ class TestPrepareExecutionPlan(TestCase):
         )
 
     def test_single_sequential_group_is_merged_into_root(self) -> None:
-        plan = JobSpecV1.from_entries(make_group("/s", SEQUENTIAL), make_script("/s/0"), make_script("/s/1"))
+        plan = JobSpecV1.from_entries(make_group("/s", SEQUENTIAL), make_script("/s/0-job"), make_script("/s/1-job"))
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
 
@@ -178,7 +179,7 @@ class TestPrepareExecutionPlan(TestCase):
 
     def test_last_parallel_group_finalizes_task_from_body(self) -> None:
         plan = JobSpecV1.from_entries(
-            make_script("/0"), make_group("/p", PARALLEL), make_script("/p/0"), make_script("/p/1")
+            make_script("/0-job"), make_group("/p", PARALLEL), make_script("/p/0-job"), make_script("/p/1-job")
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
@@ -203,11 +204,11 @@ class TestPrepareExecutionPlan(TestCase):
     def test_steps_after_parallel_group_are_merged_into_its_body(self) -> None:
         plan = JobSpecV1.from_entries(
             make_group("/p", PARALLEL),
-            make_script("/p/0"),
-            make_script("/p/1"),
+            make_script("/p/0-job"),
+            make_script("/p/1-job"),
             make_group("/s", SEQUENTIAL),
-            make_script("/s/0"),
-            make_script("/s/1"),
+            make_script("/s/0-job"),
+            make_script("/s/1-job"),
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
@@ -236,11 +237,11 @@ class TestPrepareExecutionPlan(TestCase):
     def test_parallel_groups_in_a_row_are_separate_steps(self) -> None:
         plan = JobSpecV1.from_entries(
             make_group("/p1", PARALLEL),
-            make_script("/p1/0"),
-            make_script("/p1/1"),
+            make_script("/p1/0-job"),
+            make_script("/p1/1-job"),
             make_group("/p2", PARALLEL),
-            make_script("/p2/0"),
-            make_script("/p2/1"),
+            make_script("/p2/0-job"),
+            make_script("/p2/1-job"),
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
@@ -271,10 +272,10 @@ class TestPrepareExecutionPlan(TestCase):
         plan = JobSpecV1.from_entries(
             make_group("/p", PARALLEL),
             make_group("/p/s", SEQUENTIAL),
-            make_script("/p/s/0"),
-            make_script("/p/s/1"),
-            make_script("/p/0"),
-            make_script("/0"),
+            make_script("/p/s/0-job"),
+            make_script("/p/s/1-job"),
+            make_script("/p/0-job"),
+            make_script("/0-job"),
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))
@@ -297,12 +298,12 @@ class TestPrepareExecutionPlan(TestCase):
 
     def test_parallel_group_within_sequential_one_is_merged_into_root(self) -> None:
         plan = JobSpecV1.from_entries(
-            make_script("/0"),
+            make_script("/0-job"),
             make_group("/s", SEQUENTIAL),
             make_group("/s/p", PARALLEL),
-            make_script("/s/p/0"),
-            make_script("/s/p/1"),
-            make_script("/s/0"),
+            make_script("/s/p/0-job"),
+            make_script("/s/p/1-job"),
+            make_script("/s/0-job"),
         )
 
         result = prepare_execution_plan(task_id=TASK_ID, plan=plan, jobs=make_jobs(plan))

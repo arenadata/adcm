@@ -106,7 +106,7 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
             ],
             "step_3_operation": build_plan(
                 build_script_spec(
-                    "/0",
+                    "/0-sleep_script",
                     "sleep_script",
                     display_name="Sleep",
                     path="wizard_jinja/scripts/sleep.yaml",
