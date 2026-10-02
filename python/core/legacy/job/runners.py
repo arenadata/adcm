@@ -52,8 +52,7 @@ class ExternalSettings(NamedTuple):
 
 
 class JobFinalizer(Protocol):
-    def __call__(self, job: RichJob) -> None:
-        ...
+    def __call__(self, job: RichJob) -> None: ...
 
 
 class JobEnvironmentBuilder(Protocol):
@@ -63,8 +62,7 @@ class JobEnvironmentBuilder(Protocol):
         job: RichJob,
         configuration: ExternalSettings,
         cluster_service: ClusterService,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class ExecutionTarget(NamedTuple):
@@ -78,8 +76,7 @@ class ExecutionTarget(NamedTuple):
 class ExecutionTargetFactoryI(Protocol):
     def __call__(
         self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
-    ) -> Iterable[ExecutionTarget]:
-        ...
+    ) -> Iterable[ExecutionTarget]: ...
 
 
 @dataclass(slots=True)
@@ -90,8 +87,7 @@ class JobProcessor:
 class RunnerEnvironment(Protocol):
     pid: int
 
-    def now(self) -> datetime:
-        ...
+    def now(self) -> datetime: ...
 
 
 @dataclass(slots=True)

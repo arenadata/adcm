@@ -11,5 +11,4 @@
 # limitations under the License.
 
 
-def main(_):
-    ...
+def main(_): ...

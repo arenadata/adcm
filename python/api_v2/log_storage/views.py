@@ -68,7 +68,7 @@ from api_v2.views import ADCMGenericViewSet
         responses={
             (HTTP_200_OK, "text/plain"): {"type": "string", "format": "binary"},
             (HTTP_200_OK, "application/json"): {"type": "string", "format": "binary"},
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+            **dict.fromkeys((HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND), ErrorSerializer),
         },
     ),
 )

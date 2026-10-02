@@ -19,8 +19,7 @@ import pydantic
 _EnvSettingsT = TypeVar("_EnvSettingsT", bound=BaseSettings)
 
 
-class SettingsReadError(Exception):
-    ...
+class SettingsReadError(Exception): ...
 
 
 def parse_settings_from_env(settings_cls: type[_EnvSettingsT], name: str) -> _EnvSettingsT:

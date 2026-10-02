@@ -22,5 +22,4 @@ class DefaultFileMissingError(FileNotFoundError):
         self.parameter = parameter
 
 
-class ConfigOperationError(OperationError):
-    ...
+class ConfigOperationError(OperationError): ...

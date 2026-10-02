@@ -49,8 +49,7 @@ from cm.models import (
 from cm.transition.action import RetrieveStartImpossibleReason
 
 
-class DifferentBundleError(Exception):
-    ...
+class DifferentBundleError(Exception): ...
 
 
 def check_upgrade(

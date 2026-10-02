@@ -222,8 +222,7 @@ def _check_config_definition(
                     dependency_name = config.names.ensure_full_name(source["name"])
                     if not is_parameter_present_in_config(dependency_name):
                         message = (
-                            f"variant parameter is dependant on {dependency_name}, "
-                            "but it is missing in configuration"
+                            f"variant parameter is dependant on {dependency_name}, but it is missing in configuration"
                         )
                         raise BundleValidationError(message)
 
@@ -521,7 +520,6 @@ def check_import_defaults_exist_in_config(imports: Iterable[ImportDefinition], c
         for default_name in entry.default or ():
             if default_name not in group_names_in_config:
                 message = (
-                    f"Group specified as default for import {entry.name} "
-                    f"is missing in configuration: {default_name}"
+                    f"Group specified as default for import {entry.name} is missing in configuration: {default_name}"
                 )
                 raise BundleValidationError(message)

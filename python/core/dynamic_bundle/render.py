@@ -21,8 +21,7 @@ from core.types import CoreObjectDescriptor
 
 
 class SecretsDecryptor(Protocol):
-    def __call__(self, /, data: dict) -> dict:
-        ...
+    def __call__(self, /, data: dict) -> dict: ...
 
 
 CtxAT = TypeVar("CtxAT")

@@ -64,8 +64,9 @@ class Command(BaseCommand):
             logger.debug("Ldap sync launched in %s", timezone.now())
 
         container = make_container(*get_main_providers())
-        with container() as container, audit_background_operation(
-            name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE
+        with (
+            container() as container,
+            audit_background_operation(name='"User sync on schedule" job', type_=AuditLogOperationType.UPDATE),
         ):
             schedule_task = container.get(ScheduleTask)
             schedule_task.do(action_orm=action, target=adcm_object, payload=RunActionDTO())

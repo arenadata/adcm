@@ -129,7 +129,7 @@ from api_v2.views import ADCMGenericViewSet, inject
         ],
         responses={
             (HTTP_200_OK, "application/tar+gzip"): {"type": "string", "format": "binary"},
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+            **dict.fromkeys((HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND), ErrorSerializer),
         },
     ),
 )

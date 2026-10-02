@@ -114,11 +114,9 @@ class TaskSerializer(ModelSerializer):
     @staticmethod
     def get_is_terminatable(obj: TaskLog) -> bool:
         allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
+        is_active_status = obj.status in {JobStatus.CREATED, JobStatus.RUNNING}
 
-        if allow_to_terminate and obj.status in {JobStatus.CREATED, JobStatus.RUNNING}:
-            return True
-
-        return False
+        return allow_to_terminate and is_active_status
 
     @staticmethod
     @extend_schema_field(field=TaskObjectsFieldSerializer(many=True), component_name="TaskObjectsField")

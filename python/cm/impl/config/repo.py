@@ -91,8 +91,7 @@ class ConfigRepo(config.ConfigRepoI):
         *,
         defaults: Literal[False],
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
-    ) -> config.spec.FullSpec:
-        ...
+    ) -> config.spec.FullSpec: ...
 
     @overload
     def get_spec(
@@ -101,8 +100,7 @@ class ConfigRepo(config.ConfigRepoI):
         *,
         defaults: config.EncryptFunc,
         only_for: Iterable[type[config.spec.p.SimpleParameter] | type[config.spec.p.ParameterGroup]] | None = None,
-    ) -> tuple[config.spec.FullSpec, config.Defaults]:
-        ...
+    ) -> tuple[config.spec.FullSpec, config.Defaults]: ...
 
     def get_spec(
         self,
@@ -145,14 +143,12 @@ class ConfigRepo(config.ConfigRepoI):
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[False], encrypt: None = None
-    ) -> dict[PrototypeID, config.spec.FullSpec]:
-        ...
+    ) -> dict[PrototypeID, config.spec.FullSpec]: ...
 
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[True], encrypt: config.EncryptFunc
-    ) -> dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]:
-        ...
+    ) -> dict[PrototypeID, tuple[config.spec.FullSpec, config.Defaults]]: ...
 
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: bool, encrypt: config.EncryptFunc | None = None

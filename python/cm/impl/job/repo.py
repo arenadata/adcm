@@ -362,7 +362,7 @@ class JobRepo(JobRepoI):
             core_type_to_model(core_type=owner.type).objects.values_list("_multi_state", flat=True).get(id=owner.id)
         )
 
-        current_multi_state |= {state: 1 for state in add_multi_states}
+        current_multi_state |= dict.fromkeys(add_multi_states, 1)
         for remove_key in remove_multi_states:
             current_multi_state.pop(remove_key, None)
 

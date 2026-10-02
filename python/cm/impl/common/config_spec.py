@@ -101,11 +101,9 @@ def build_defaults(
                 if is_secret:
                     default = config.secrets.encrypt_if_possible(value=default, encryptor=encrypt)
 
-            case (
-                config.spec.p.ListParameter()
-                | config.spec.p.JSONParameter()
-                | config.spec.p.StructureParameter()
-            ) if default:
+            case config.spec.p.ListParameter() | config.spec.p.JSONParameter() | config.spec.p.StructureParameter() if (
+                default
+            ):
                 default = json.loads(default)
 
             case config.spec.p.OptionParameter():

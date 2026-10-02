@@ -66,8 +66,7 @@ def license_is_correct_path(license_: str | None) -> str | None:
 def validate_name(name: str) -> str:
     if NAME_REGEX.fullmatch(name) is None:
         raise ValueError(
-            "Name is incorrect. Only latin characters, digits, "
-            "dots (.), dashes (-), and underscores (_) are allowed.",
+            "Name is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed.",
         )
 
     return name
@@ -138,7 +137,7 @@ def forbidden_mm_actions(actions: Any) -> Any:
     for name, data in actions.items():
         if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(data.keys()):
             raise ValueError(
-                "Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+                f'Maintenance mode actions shouldn\'t have "{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
 
     return actions

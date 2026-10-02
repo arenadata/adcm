@@ -34,8 +34,7 @@ ObjectName: TypeAlias = str
 OperationName: TypeAlias = str
 
 
-class AuditConfigurationError(Exception):
-    ...
+class AuditConfigurationError(Exception): ...
 
 
 @dataclass(slots=True, frozen=True)
@@ -154,8 +153,7 @@ class AuditHookFunc(Protocol):
         call_arguments: AuditedCallArguments,
         result: Result | None,
         exception: Exception | None,
-    ):
-        ...
+    ): ...
 
 
 class RetrieveAuditObjectFunc(Protocol):
@@ -166,8 +164,7 @@ class RetrieveAuditObjectFunc(Protocol):
         call_arguments: AuditedCallArguments,
         result: Result | None,
         exception: Exception | None,
-    ) -> AuditObject | None:
-        ...
+    ) -> AuditObject | None: ...
 
 
 @dataclass(slots=True, frozen=True)

@@ -76,12 +76,10 @@ class ProcessContext:
         )
 
     @overload
-    def cluster_relative_object(self, as_descriptor: Literal[True]) -> CoreObjectDescriptor:
-        ...
+    def cluster_relative_object(self, as_descriptor: Literal[True]) -> CoreObjectDescriptor: ...
 
     @overload
-    def cluster_relative_object(self, as_descriptor: Literal[False] = False) -> ClusterRelativeObjectORM:
-        ...
+    def cluster_relative_object(self, as_descriptor: Literal[False] = False) -> ClusterRelativeObjectORM: ...
 
     def cluster_relative_object(self, as_descriptor: bool = False) -> ClusterRelativeObjectORM | CoreObjectDescriptor:
         if self.target.type == ExtraActionTargetType.ACTION_HOST_GROUP:

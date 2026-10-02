@@ -166,8 +166,7 @@ class TargetDetector(Protocol):
         context_owner: CoreObjectDescriptor,
         context: VarsContextSection,
         parsed_arguments: Any,
-    ) -> tuple[CoreObjectDescriptor, ...]:
-        ...
+    ) -> tuple[CoreObjectDescriptor, ...]: ...
 
 
 def from_objects(
@@ -337,8 +336,7 @@ class CallResult(Generic[ReturnValue]):
 
 
 class ArgumentsValidator(Protocol[CallArguments]):
-    def __call__(self, arguments: CallArguments) -> PluginValidationError | None:
-        ...
+    def __call__(self, arguments: CallArguments) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,8 +349,7 @@ class ArgumentsConfig(Generic[CallArguments]):
 class TargetValidator(Protocol):
     def __call__(
         self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
-    ) -> PluginValidationError | None:
-        ...
+    ) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -381,8 +378,7 @@ class TargetConfig:
 class ContextValidator(Protocol):
     def __call__(
         self, context_owner: CoreObjectDescriptor, context: VarsContextSection
-    ) -> PluginValidationError | None:
-        ...
+    ) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)

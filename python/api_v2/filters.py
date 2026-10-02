@@ -89,12 +89,10 @@ FILTER_MAP = {
 }
 
 
-class CharInFilter(BaseInFilter, CharFilter):
-    ...
+class CharInFilter(BaseInFilter, CharFilter): ...
 
 
-class NumberInFilter(BaseInFilter, NumberFilter):
-    ...
+class NumberInFilter(BaseInFilter, NumberFilter): ...
 
 
 def _prepare_filter_fields(fields: tuple[str | tuple[str, ...], ...]) -> Generator[tuple[str, str], None, None]:

@@ -209,8 +209,7 @@ def _create_user_groups(group_dns: list[DistinguishedName], cn_pattern: Pattern)
 
     if created:
         sys.stdout.write(
-            f"Create group(s):{os.linesep}"
-            f"{os.linesep.join([f' - {group_name}' for group_name in created])}{os.linesep}"
+            f"Create group(s):{os.linesep}{os.linesep.join([f' - {group_name}' for group_name in created])}{os.linesep}"
         )
 
     if errors:

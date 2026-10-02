@@ -143,10 +143,10 @@ class TestBundle(ADCMDjangoAPISuite):
             )
 
         with self.subTest("Empty archive is uploaded"):
-            temp_tar = NamedTemporaryFile(suffix=".tar")
+            temp_tar = NamedTemporaryFile(suffix=".tar")  # noqa: SIM115
             temp_tar.close()
 
-            tar = tarfile.open(name=temp_tar.name, mode="w")
+            tar = tarfile.open(name=temp_tar.name, mode="w")  # noqa: SIM115
             tar.close()
 
             response = self.create_bundle_r(Path(temp_tar.name))

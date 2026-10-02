@@ -96,8 +96,7 @@ class AsyncAPINode(APINode):
 
 class RootNode(APINode, ABC):
     @abstractmethod
-    def __getitem__(self, item) -> APINode:
-        ...
+    def __getitem__(self, item) -> APINode: ...
 
 
 class V2RootNode(RootNode):

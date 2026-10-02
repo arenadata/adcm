@@ -33,8 +33,7 @@ def ignore_object_search(
 
 
 class ExtractAuditObjectIDFunc(Protocol):
-    def __call__(self, call_arguments: AuditedCallArguments, result: Result | None) -> str | int | None:
-        ...
+    def __call__(self, call_arguments: AuditedCallArguments, result: Result | None) -> str | int | None: ...
 
 
 @dataclass(slots=True)

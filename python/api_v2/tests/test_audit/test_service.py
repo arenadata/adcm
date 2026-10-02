@@ -294,9 +294,10 @@ class TestServiceAudit(ADCMDjangoAPISuite):
     def test_create_import_view_perm_denied(self):
         self.client.login(**self.test_user_credentials)
 
-        with self.grant_permissions(
-            to=self.test_user, on=self.service_1, role_name="View service configurations"
-        ), self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"):
+        with (
+            self.grant_permissions(to=self.test_user, on=self.service_1, role_name="View service configurations"),
+            self.grant_permissions(to=self.test_user, on=self.cluster_1, role_name="View cluster configurations"),
+        ):
             response = self.client.v2[self.service_1, "imports"].post(
                 data=[{"source": {"id": self.export_service.pk, "type": ObjectType.SERVICE}}],
             )

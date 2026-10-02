@@ -451,7 +451,7 @@ def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataFo
         if not is_version_suitable(version=export_obj.prototype.version, versions_object=prototype_import):
             raise_adcm_ex(
                 "BIND_ERROR",
-                f'Import "{export_obj.prototype.name}" of { proto_ref(prototype=prototype_import.prototype)} '
+                f'Import "{export_obj.prototype.name}" of {proto_ref(prototype=prototype_import.prototype)} '
                 f"versions ({prototype_import.min_version}, {prototype_import.max_version}) does not match export "
                 f"version: {export_obj.prototype.version} ({obj_ref(obj=export_obj)})",
             )

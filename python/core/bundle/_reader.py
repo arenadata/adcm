@@ -39,7 +39,7 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node, deep: bool = False) -> dict[Hashable, Any]:
         if not isinstance(node, yaml.MappingNode):
             raise yaml.constructor.ConstructorError(
-                None, None, "expected a mapping node, but found %s" % node.id, node.start_mark
+                None, None, f"expected a mapping node, but found {node.id}", node.start_mark
             )
 
         self.flatten_mapping(node)
@@ -77,7 +77,7 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
                             raise yaml.constructor.ConstructorError(
                                 "while constructing a mapping",
                                 node.start_mark,
-                                "expected a mapping for merging, but found %s" % subnode.id,
+                                f"expected a mapping for merging, but found {subnode.id}",
                                 subnode.start_mark,
                             )
                         self.flatten_mapping(subnode)
@@ -89,7 +89,7 @@ class FirstExplicitKeyLoader(yaml.SafeLoader):
                     raise yaml.constructor.ConstructorError(
                         "while constructing a mapping",
                         node.start_mark,
-                        "expected a mapping or list of mappings for merging, but found %s" % value_node.id,
+                        f"expected a mapping or list of mappings for merging, but found {value_node.id}",
                         value_node.start_mark,
                     )
             elif key_node.tag == "tag:yaml.org,2002:value":

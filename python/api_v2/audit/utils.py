@@ -16,8 +16,8 @@ from django.db.models import QuerySet
 
 
 def filter_objects_within_time_range(queryset: QuerySet, query_params: dict) -> QuerySet:
-    time_from = query_params.get("time_from", None)
-    time_to = query_params.get("time_to", None)
+    time_from = query_params.get("time_from")
+    time_to = query_params.get("time_to")
     time_range_parameters = {
         AuditLog.__name__: AuditLog.operation_time.field.attname,
         AuditSession.__name__: AuditSession.login_time.field.attname,

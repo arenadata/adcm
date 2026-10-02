@@ -84,14 +84,14 @@ def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
             if directory.is_dir():
                 files = [item for item in Path(settings.RUN_DIR, str(job.pk)).iterdir() if item.is_file()]
                 for log_file in files:
-                    tarinfo = tarfile.TarInfo(f'{f"{job.pk}-{dir_name_suffix}".strip("-")}/{log_file.name}')
+                    tarinfo = tarfile.TarInfo(f"{f'{job.pk}-{dir_name_suffix}'.strip('-')}/{log_file.name}")
                     tarinfo.size = log_file.stat().st_size
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
             else:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
+                        f"{f'{job.pk}-{dir_name_suffix}'.strip('-')}/{log_storage.name}-{log_storage.type}.txt",
                     )
                     # using `or ""` here to avoid passing None to `bytes`
                     body = io.BytesIO(bytes(log_storage.body or "", settings.ENCODING_UTF_8))

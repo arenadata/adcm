@@ -1057,10 +1057,7 @@ def config_is_ro(obj: ADCMEntity | Action, key: str, limits: dict) -> bool:
     if writeable == "any":
         return False
 
-    if writeable and obj.state not in writeable:
-        return True
-
-    return False
+    return bool(writeable and obj.state not in writeable)
 
 
 def key_is_required(obj: ADCMEntity | Action, key: str, subkey: str, spec: dict) -> bool:
@@ -1339,11 +1336,11 @@ def check_config_type(
     if spec["type"] == "integer" or spec["type"] == "float":
         limits = spec["limits"]
         if "min" in limits and value < limits["min"]:
-            msg = f'should be more than {limits["min"]}'
+            msg = f"should be more than {limits['min']}"
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
         if "max" in limits and value > limits["max"]:
-            msg = f'should be less than {limits["max"]}'
+            msg = f"should be less than {limits['max']}"
             raise AdcmEx(code="CONFIG_VALUE_ERROR", msg=tmpl2.format(msg))
 
     if spec["type"] == "option":
