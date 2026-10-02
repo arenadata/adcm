@@ -47,9 +47,9 @@ GROUP_BY_SPEC_KEY_PARAMS = (
     ("spec_key", "expected_group"),
     [
         param("", None, id="legacy"),
-        param("/0", None, id="root"),
-        param("/some/2", "some", id="nested_once"),
-        param("/some/thing/4", "thing", id="nested_twice"),
+        param("/0-job", None, id="root"),
+        param("/some/2-job", "some", id="nested_once"),
+        param("/some/thing/4-job", "thing", id="nested_twice"),
     ],
 )
 

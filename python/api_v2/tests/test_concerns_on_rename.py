@@ -110,6 +110,7 @@ class TestConcernsOnRename(GenericTestCase):
 
     def create_task_concern(self, owner: Cluster, *, blocking: bool) -> ConcernItem:
         owner_descriptor = orm_object_to_core_descriptor(owner)
+        spec_key = f"/0-{self.ACTION_NAME}"
         task_orm = TaskLog.objects.create(
             action=Action.objects.get(prototype=owner.prototype, name=self.ACTION_NAME),
             object_id=owner.pk,
@@ -123,12 +124,12 @@ class TestConcernsOnRename(GenericTestCase):
             name=self.ACTION_NAME,
             display_name="Dummy",
             # job is named as its owner on purpose: `job` placeholder must not be renamed
-            execution_plan=build_plan(build_script_spec("/0", self.ACTION_NAME, display_name=owner.name)),
+            execution_plan=build_plan(build_script_spec(spec_key, self.ACTION_NAME, display_name=owner.name)),
         )
         job_orm = JobLog.objects.create(
             task=task_orm,
             status="running",
-            spec_key="/0",
+            spec_key=spec_key,
             script_type=ScriptType.ANSIBLE.value,
             script="main.yaml",
             name=self.ACTION_NAME,

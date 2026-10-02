@@ -246,23 +246,23 @@ def build_expected_spec(*, terminatable: bool = False, with_bundle_switch: bool 
         return GroupSpec(key=FullSpecKey(key), names=Names(internal=name, display=display_name), type=type_)
 
     entries: list[ScriptSpec | GroupSpec] = [
-        ansible("/0", "pre_check", "ansible/pre_check.yaml", "Pre-check"),
+        ansible("/0-pre_check", "pre_check", "ansible/pre_check.yaml", "Pre-check"),
         group("/shards", "shards", "Shards", ExecutionStyle.PARALLEL),
         group("/shards/shard_a", "shard_a", "Shard A", ExecutionStyle.SEQUENTIAL),
-        ansible("/shards/shard_a/0", "stop_a", "ansible/stop.yaml"),
-        ansible("/shards/shard_a/1", "reconfigure_a", "ansible/cfg.yaml"),
-        ansible("/shards/shard_a/2", "start_a", "ansible/start.yaml"),
+        ansible("/shards/shard_a/0-stop_a", "stop_a", "ansible/stop.yaml"),
+        ansible("/shards/shard_a/1-reconfigure_a", "reconfigure_a", "ansible/cfg.yaml"),
+        ansible("/shards/shard_a/2-start_a", "start_a", "ansible/start.yaml"),
         group("/shards/shard_b", "shard_b", "Shard B", ExecutionStyle.SEQUENTIAL),
-        ansible("/shards/shard_b/0", "stop_b", "ansible/stop.yaml"),
-        ansible("/shards/shard_b/1", "reconfigure_b", "ansible/cfg.yaml"),
-        ansible("/shards/shard_b/2", "start_b", "ansible/start.yaml"),
-        ansible("/2", "finalize", "ansible/finalize.yaml", "Finalize"),
+        ansible("/shards/shard_b/0-stop_b", "stop_b", "ansible/stop.yaml"),
+        ansible("/shards/shard_b/1-reconfigure_b", "reconfigure_b", "ansible/cfg.yaml"),
+        ansible("/shards/shard_b/2-start_b", "start_b", "ansible/start.yaml"),
+        ansible("/2-finalize", "finalize", "ansible/finalize.yaml", "Finalize"),
     ]
 
     if with_bundle_switch:
         entries.append(
             ScriptSpec(
-                key=FullSpecKey("/3"),
+                key=FullSpecKey("/3-switch"),
                 names=Names(internal="switch", display="switch"),
                 script=SimpleInternalScript(type=ScriptType.INTERNAL, path="bundle_switch", params=None),
                 # internal scripts are never terminatable
@@ -323,8 +323,8 @@ class TestEntryKindDiscrimination(TestCase):
                 "script",
             ),
             (
-                "group named after a sibling script's position",
-                build_group(name="0", scripts=[load(SIMPLE_SCRIPT)]),
+                "group named after a sibling script's key",
+                build_group(name="0-simple", scripts=[load(SIMPLE_SCRIPT)]),
                 "group",
             ),
         )
@@ -401,7 +401,7 @@ class TestScriptGroupsParsing(TestCase):
 
     def test_script_keys_keep_positions_among_groups_success(self) -> None:
         # a group takes its position among entries of its level too,
-        # so keys of scripts declared around it skip that position
+        # so keys of scripts declared around it skip that position (a script is keyed as "<position>-<name>")
         scripts = [
             load(SIMPLE_SCRIPT),
             build_group(
@@ -417,9 +417,25 @@ class TestScriptGroupsParsing(TestCase):
 
         spec = self.parse_action_scripts(scripts)
 
-        self.assertEqual(list(spec.scripts), ["/0", "/outer/0", "/outer/inner/0", "/outer/2", "/2"])
-        self.assertEqual(spec.hierarchy.fields, ["0", "outer", "2"])
-        self.assertEqual(spec.hierarchy.child_groups["outer"].fields, ["0", "inner", "2"])
+        self.assertEqual(
+            list(spec.scripts),
+            ["/0-simple", "/outer/0-simple", "/outer/inner/0-simple", "/outer/2-simple", "/2-simple"],
+        )
+        self.assertEqual(spec.hierarchy.fields, ["0-simple", "outer", "2-simple"])
+        self.assertEqual(spec.hierarchy.child_groups["outer"].fields, ["0-simple", "inner", "2-simple"])
+
+    def test_script_key_escapes_separator_in_name_success(self) -> None:
+        # key separator in a name is replaced in the key only, the name itself is kept as is
+        spec = self.parse_action_scripts([load(SIMPLE_SCRIPT) | {"name": "a/b"}])
+
+        self.assertEqual(list(spec.scripts), ["/0-a_b"])
+        self.assertEqual(spec.hierarchy.fields, ["0-a_b"])
+        self.assertEqual(spec.scripts[FullSpecKey("/0-a_b")].names, Names(internal="a/b", display="a/b"))
+
+    def test_script_keys_of_repeated_names_differ_by_position_success(self) -> None:
+        spec = self.parse_action_scripts([load(SIMPLE_SCRIPT) | {"name": "step"} for _ in range(2)])
+
+        self.assertEqual(list(spec.scripts), ["/0-step", "/1-step"])
 
     def test_group_display_name_defaults_to_its_name_success(self) -> None:
         spec = self.parse_action_scripts(
@@ -469,15 +485,15 @@ class TestScriptGroupsParsing(TestCase):
             self.assertIn("Jobs are defined incorrectly: Entries of execution plan conflict", err.exception.message)
             self.assertIn(conflict, err.exception.message)
 
-    def test_group_named_after_script_position_fail(self) -> None:
-        # the script takes key "0" by its position, the group takes the same one by its name
-        scripts = [load(SIMPLE_SCRIPT), build_group(name="0", scripts=[load(SIMPLE_SCRIPT)])]
+    def test_group_named_after_script_key_fail(self) -> None:
+        # the script takes key "0-simple" by its position and name, the group takes the same one by its name
+        scripts = [load(SIMPLE_SCRIPT), build_group(name="0-simple", scripts=[load(SIMPLE_SCRIPT)])]
 
         with self.assertRaises(BundleParsingError) as err:
             self.parse_action_scripts(scripts)
 
         self.assertIn("Jobs are defined incorrectly", err.exception.message)
-        self.assertIn('"/0" is declared more than once: as script, then as group', err.exception.message)
+        self.assertIn('"/0-simple" is declared more than once: as script, then as group', err.exception.message)
 
 
 class TestScriptGroupsValidation(TestCase):
@@ -698,7 +714,7 @@ class TestScriptGroupsValidation(TestCase):
         }
 
         cases: tuple[tuple[str, list[dict], str, str], ...] = (
-            ("grouped set", [build_group(name="outer", scripts=[with_set, simple])], "setter", "/outer/0"),
+            ("grouped set", [build_group(name="outer", scripts=[with_set, simple])], "setter", "/outer/0-setter"),
             (
                 "nested grouped unset",
                 [
@@ -708,7 +724,7 @@ class TestScriptGroupsValidation(TestCase):
                     )
                 ],
                 "unsetter",
-                "/outer/inner/1",
+                "/outer/inner/1-unsetter",
             ),
         )
         places: tuple[Place, ...] = ("cluster action", "static upgrade", "rendered upgrade")

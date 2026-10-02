@@ -118,14 +118,15 @@ class TaskMappingDelta:
         return not any(host_sets)
 
 
-class StateChanges(NamedTuple):
+@dataclass(slots=True, frozen=True)
+class StateChanges:
     state: str | None = None
     multi_state_set: tuple[str, ...] = ()
     multi_state_unset: tuple[str, ...] = ()
 
     @property
     def is_empty(self) -> bool:
-        return not any(self)
+        return not any((self.state, self.multi_state_set, self.multi_state_unset))
 
 
 class HcAclRule(NamedTuple):
@@ -171,6 +172,10 @@ class AnsibleScriptParams(BaseModel):
     ansible_tags: str = ""
 
 
+# "No rules" of `hc_apply` has two forms: `None` and empty `rules`.
+# 3.0.0 read empty stored params as `None`, and migration 0156 stores them as `null` the same way.
+# At runtime both forms currently fall back to the action's `hc_acl`,
+# so be careful when changing how either of them is handled.
 @dataclass(slots=True)
 class HcApplyScriptParams:
     rules: list[HcAclRule] = field(default_factory=list)

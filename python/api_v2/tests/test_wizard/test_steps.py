@@ -94,7 +94,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
         process_step = ProcessStep.objects.get(id=operation_step_id)
         expected_spec = build_plan(
             build_script_spec(
-                "/0",
+                "/0-sleep_script",
                 "sleep_script",
                 display_name="Sleep",
                 path="wizard_jinja/scripts/sleep.yaml",

@@ -53,7 +53,9 @@ def ran(start: int, finish: int | None = None) -> RuntimeDates:
 
 
 def make_script(key: str, display: str = "", terminatable: bool = True) -> ScriptSpec:
-    *_, name = key.split("/")
+    # scripts are keyed as "<position>-<name>" within their level, the same way parsing does it
+    *_, level = key.split("/")
+    _, name = level.split("-", maxsplit=1)
 
     return ScriptSpec(
         key=FullSpecKey(key),
@@ -102,17 +104,17 @@ def make_example_plan() -> JobSpecV1:
     """`job, parallel(seq(a, b, c), seq(d, e, f)), job`: a job, two parallel shards of three jobs each, a job"""
 
     return JobSpecV1.from_entries(
-        make_script("/pre_check", display="Pre-check"),
+        make_script("/0-pre_check", display="Pre-check"),
         make_group("/shards", PARALLEL, display="Shards"),
         make_group("/shards/shard_a", SEQUENTIAL, display="Shard A"),
-        make_script("/shards/shard_a/stop_a", display="Stop A"),
-        make_script("/shards/shard_a/reconfigure_a", display="Reconfigure A"),
-        make_script("/shards/shard_a/start_a", display="Start A"),
+        make_script("/shards/shard_a/0-stop_a", display="Stop A"),
+        make_script("/shards/shard_a/1-reconfigure_a", display="Reconfigure A"),
+        make_script("/shards/shard_a/2-start_a", display="Start A"),
         make_group("/shards/shard_b", SEQUENTIAL, display="Shard B"),
-        make_script("/shards/shard_b/stop_b", display="Stop B"),
-        make_script("/shards/shard_b/reconfigure_b", display="Reconfigure B"),
-        make_script("/shards/shard_b/start_b", display="Start B"),
-        make_script("/finalize", display="Finalize"),
+        make_script("/shards/shard_b/0-stop_b", display="Stop B"),
+        make_script("/shards/shard_b/1-reconfigure_b", display="Reconfigure B"),
+        make_script("/shards/shard_b/2-start_b", display="Start B"),
+        make_script("/2-finalize", display="Finalize"),
     )
 
 
@@ -120,28 +122,28 @@ def make_example_jobs() -> list[JobShortInfo]:
     """Pre-check and the first shard succeeded, the second shard is halfway through, finalize hasn't started"""
 
     return [
-        make_job(101, "/pre_check", SUCCESS, ran(0, 12)),
-        make_job(102, "/shards/shard_a/stop_a", SUCCESS, ran(12, 30)),
-        make_job(103, "/shards/shard_a/reconfigure_a", SUCCESS, ran(30, 60)),
-        make_job(104, "/shards/shard_a/start_a", SUCCESS, ran(60, 77)),
-        make_job(105, "/shards/shard_b/stop_b", SUCCESS, ran(14, 40)),
-        make_job(106, "/shards/shard_b/reconfigure_b", RUNNING, ran(40)),
-        make_job(107, "/shards/shard_b/start_b"),
-        make_job(108, "/finalize"),
+        make_job(101, "/0-pre_check", SUCCESS, ran(0, 12)),
+        make_job(102, "/shards/shard_a/0-stop_a", SUCCESS, ran(12, 30)),
+        make_job(103, "/shards/shard_a/1-reconfigure_a", SUCCESS, ran(30, 60)),
+        make_job(104, "/shards/shard_a/2-start_a", SUCCESS, ran(60, 77)),
+        make_job(105, "/shards/shard_b/0-stop_b", SUCCESS, ran(14, 40)),
+        make_job(106, "/shards/shard_b/1-reconfigure_b", RUNNING, ran(40)),
+        make_job(107, "/shards/shard_b/2-start_b"),
+        make_job(108, "/2-finalize"),
     ]
 
 
 class TestRepresentExecutionPlan(TestCase):
     def test_flat_plan_is_job_nodes_in_declaration_order(self) -> None:
         spec = JobSpecV1.from_entries(
-            make_script("/zeta", display="Zeta"),
-            make_script("/alpha", display="Alpha", terminatable=False),
-            make_script("/mid"),
+            make_script("/0-zeta", display="Zeta"),
+            make_script("/1-alpha", display="Alpha", terminatable=False),
+            make_script("/2-mid"),
         )
         jobs = [
-            make_job(1, "/zeta", SUCCESS, ran(0, 10)),
-            make_job(2, "/alpha", RUNNING, ran(10)),
-            make_job(3, "/mid"),
+            make_job(1, "/0-zeta", SUCCESS, ran(0, 10)),
+            make_job(2, "/1-alpha", RUNNING, ran(10)),
+            make_job(3, "/2-mid"),
         ]
 
         plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
@@ -239,16 +241,16 @@ class TestRepresentExecutionPlan(TestCase):
     def test_inner_group_status_propagates_to_parents(self) -> None:
         spec = JobSpecV1.from_entries(
             make_group("/outer", SEQUENTIAL),
-            make_script("/outer/first"),
+            make_script("/outer/0-first"),
             make_group("/outer/middle", PARALLEL),
-            make_script("/outer/middle/side"),
+            make_script("/outer/middle/0-side"),
             make_group("/outer/middle/inner", SEQUENTIAL),
-            make_script("/outer/middle/inner/breaks"),
+            make_script("/outer/middle/inner/0-breaks"),
         )
         jobs = [
-            make_job(1, "/outer/first", SUCCESS, ran(0, 5)),
-            make_job(2, "/outer/middle/side", SUCCESS, ran(5, 8)),
-            make_job(3, "/outer/middle/inner/breaks", FAILED, ran(5, 20)),
+            make_job(1, "/outer/0-first", SUCCESS, ran(0, 5)),
+            make_job(2, "/outer/middle/0-side", SUCCESS, ran(5, 8)),
+            make_job(3, "/outer/middle/inner/0-breaks", FAILED, ran(5, 20)),
         ]
 
         plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
@@ -268,10 +270,10 @@ class TestRepresentExecutionPlan(TestCase):
         spec = JobSpecV1.from_entries(
             make_group("/outer", SEQUENTIAL),
             make_group("/outer/inner", SEQUENTIAL),
-            make_script("/outer/inner/done"),
-            make_script("/outer/inner/never"),
+            make_script("/outer/inner/0-done"),
+            make_script("/outer/inner/1-never"),
         )
-        jobs = [make_job(1, "/outer/inner/done", SUCCESS, ran(0, 10)), make_job(2, "/outer/inner/never")]
+        jobs = [make_job(1, "/outer/inner/0-done", SUCCESS, ran(0, 10)), make_job(2, "/outer/inner/1-never")]
 
         plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
 
@@ -286,10 +288,10 @@ class TestRepresentExecutionPlan(TestCase):
     def test_group_is_terminatable_even_if_its_jobs_are_not(self) -> None:
         spec = JobSpecV1.from_entries(
             make_group("/group", SEQUENTIAL),
-            make_script("/group/one", terminatable=False),
-            make_script("/group/two", terminatable=False),
+            make_script("/group/0-one", terminatable=False),
+            make_script("/group/1-two", terminatable=False),
         )
-        jobs = [make_job(1, "/group/one"), make_job(2, "/group/two")]
+        jobs = [make_job(1, "/group/0-one"), make_job(2, "/group/1-two")]
 
         plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
 
@@ -300,10 +302,10 @@ class TestRepresentExecutionPlan(TestCase):
     def test_partly_run_group_is_running(self) -> None:
         spec = JobSpecV1.from_entries(
             make_group("/group", SEQUENTIAL),
-            make_script("/group/done"),
-            make_script("/group/never"),
+            make_script("/group/0-done"),
+            make_script("/group/1-never"),
         )
-        jobs = [make_job(1, "/group/done", SUCCESS, ran(0, 10)), make_job(2, "/group/never")]
+        jobs = [make_job(1, "/group/0-done", SUCCESS, ran(0, 10)), make_job(2, "/group/1-never")]
 
         plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
 
@@ -312,8 +314,8 @@ class TestRepresentExecutionPlan(TestCase):
         self.assertEqual((group.start_time, group.end_time), (at(0), None))
 
     def test_job_of_a_node_the_plan_lacks_fails(self) -> None:
-        spec = JobSpecV1.from_entries(make_script("/one"))
-        jobs = [make_job(1, "/one"), make_job(2, "/gone")]
+        spec = JobSpecV1.from_entries(make_script("/0-one"))
+        jobs = [make_job(1, "/0-one"), make_job(2, "/gone")]
 
         with self.assertRaises(KeyError) as err:
             represent_execution_plan(spec=spec, jobs=jobs, version=1)
@@ -321,23 +323,25 @@ class TestRepresentExecutionPlan(TestCase):
         self.assertIn("/gone", str(err.exception))
 
     def test_script_without_a_job_fails(self) -> None:
-        spec = JobSpecV1.from_entries(make_script("/one"), make_group("/group", PARALLEL), make_script("/group/lonely"))
-        jobs = [make_job(1, "/one")]
+        spec = JobSpecV1.from_entries(
+            make_script("/0-one"), make_group("/group", PARALLEL), make_script("/group/0-lonely")
+        )
+        jobs = [make_job(1, "/0-one")]
 
         with self.assertRaises(KeyError) as err:
             represent_execution_plan(spec=spec, jobs=jobs, version=1)
 
-        self.assertIn("/group/lonely", str(err.exception))
+        self.assertIn("/group/0-lonely", str(err.exception))
 
     def test_order_follows_declaration_not_job_ids(self) -> None:
         spec = JobSpecV1.from_entries(
-            make_script("/first"),
+            make_script("/0-first"),
             make_group("/group", PARALLEL),
-            make_script("/group/a"),
-            make_script("/group/b"),
-            make_script("/last"),
+            make_script("/group/0-a"),
+            make_script("/group/1-b"),
+            make_script("/2-last"),
         )
-        jobs = [make_job(4, "/first"), make_job(3, "/group/a"), make_job(2, "/group/b"), make_job(1, "/last")]
+        jobs = [make_job(4, "/0-first"), make_job(3, "/group/0-a"), make_job(2, "/group/1-b"), make_job(1, "/2-last")]
 
         plan = represent_execution_plan(spec=spec, jobs=reversed(jobs), version=1)
 

@@ -32,9 +32,9 @@ BUNDLES_DIR: Final = Path(__file__).parent / "bundles" / "task_result"
 
 RUN_ACTION_PAYLOAD: Final = {"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False}
 
-PREPARE: Final = "/0"
-WITH_ON_FAIL: Final = "/branches/0"
-WITHOUT_ON_FAIL: Final = "/branches/1"
+PREPARE: Final = "/0-prepare"
+WITH_ON_FAIL: Final = "/branches/0-with_on_fail"
+WITHOUT_ON_FAIL: Final = "/branches/1-without_on_fail"
 
 SUCCESS: Final = ExecutionStatus.SUCCESS
 FAILED: Final = ExecutionStatus.FAILED

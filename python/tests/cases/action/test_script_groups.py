@@ -31,12 +31,12 @@ ON_FAIL_MULTI_STATE_IN_GROUP_ERROR: Final = "on_fail.multi_state isn't allowed f
 # keys and names of jobs in the order execution plan defines,
 # the same for statically declared scripts and rendered ones
 EXPECTED_PLAN: Final = [
-    ("/0", "prepare"),
-    ("/shards/shard_a/0", "step"),
-    ("/shards/shard_a/1", "step"),
-    ("/shards/shard_a/2", "finish"),
-    ("/shards/shard_b/0", "step"),
-    ("/2", "finish"),
+    ("/0-prepare", "prepare"),
+    ("/shards/shard_a/0-step", "step"),
+    ("/shards/shard_a/1-step", "step"),
+    ("/shards/shard_a/2-finish", "finish"),
+    ("/shards/shard_b/0-step", "step"),
+    ("/2-finish", "finish"),
 ]
 
 
@@ -109,7 +109,7 @@ class TestScriptGroups(ADCMDjangoAPISuite):
             ),
             param(
                 "group_named_after_script_position",
-                ("Jobs are defined incorrectly", '"/0" is declared more than once', "as script, then as group"),
+                ("Jobs are defined incorrectly", '"/0-step" is declared more than once', "as script, then as group"),
                 id="group_named_after_script_position",
             ),
             param(
@@ -132,12 +132,12 @@ class TestScriptGroups(ADCMDjangoAPISuite):
         [
             param(
                 "on_fail_multi_state_in_group_action",
-                ('"flagging" is declared at "/branches/0"',),
+                ('"flagging" is declared at "/branches/0-flagging"',),
                 id="action_grouped_set",
             ),
             param(
                 "on_fail_multi_state_in_nested_group_upgrade",
-                ('"unflagging" is declared at "/branches/inner/0"',),
+                ('"unflagging" is declared at "/branches/inner/0-unflagging"',),
                 id="upgrade_nested_grouped_unset",
             ),
         ],
@@ -163,11 +163,13 @@ class TestScriptGroups(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.json())
         self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
         self.assertIn(ON_FAIL_MULTI_STATE_IN_GROUP_ERROR, response.json()["desc"])
-        self.assertIn('"flagging" is declared at "/branches/0"', response.json()["desc"])
+        self.assertIn('"flagging" is declared at "/branches/0-flagging"', response.json()["desc"])
         self.assertFalse(TaskLog.objects.filter(action=action).exists())
 
     def test_upload_on_fail_changes_allowed_for_groups_success(self) -> None:
         bundle = self.uc.upload_bundle(BUNDLES_DIR / "on_fail_multi_state_allowed")
 
         action = Action.objects.get(prototype__bundle=bundle, prototype__type="cluster", name="grouped")
-        self.assertCountEqual(action.scripts["scripts"], ["/0", "/branches/inner/0", "/branches/1"])
+        self.assertCountEqual(
+            action.scripts["scripts"], ["/0-top_level", "/branches/inner/0-state_only", "/branches/1-empty_lists"]
+        )

@@ -48,7 +48,7 @@ def make_job(
     index: int = 0,
     finish: datetime | None = None,
 ) -> RichJob:
-    key = FullSpecKey(f"/job{index}")
+    key = FullSpecKey(f"/{index}-job{index}")
     spec = ScriptSpec(
         key=key,
         names=Names(internal=f"job{index}"),

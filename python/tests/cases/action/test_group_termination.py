@@ -48,12 +48,12 @@ RUN_ACTION_PAYLOAD: Final = {"hostComponentMap": [], "config": {}, "adcmMeta": {
 # spec keys of `grouped`/`grouped_not_terminatable`, both built from the same plan shape:
 # prepare, group `a` (parallel, display "Group A") with its own script and sequential
 # subgroup `nested` (display "Nested Of A", 2 scripts), group `ab` (sequential, display "Group AB", 1 script), finish
-PREPARE: Final = "/0"
-A_OWN: Final = "/a/0"
-NESTED_0: Final = "/a/nested/0"
-NESTED_1: Final = "/a/nested/1"
-AB_0: Final = "/ab/0"
-FINISH: Final = "/3"
+PREPARE: Final = "/0-prepare"
+A_OWN: Final = "/a/0-step"
+NESTED_0: Final = "/a/nested/0-step"
+NESTED_1: Final = "/a/nested/1-step"
+AB_0: Final = "/ab/0-step"
+FINISH: Final = "/3-finish"
 
 ALL_KEYS: Final = (PREPARE, A_OWN, NESTED_0, NESTED_1, AB_0, FINISH)
 
@@ -71,9 +71,9 @@ ALL_CREATED: Final = dict.fromkeys(ALL_KEYS, CREATED)
 GROUP_DISPLAY_NAMES: Final = {"a": "Group A", "nested": "Nested Of A", "ab": "Group AB"}
 
 # spec keys of `named_groups`: one script in each of groups `5`, `braced`, `long`
-FIVE_0: Final = "/5/0"
-BRACED_0: Final = "/braced/0"
-LONG_0: Final = "/long/0"
+FIVE_0: Final = "/5/0-step"
+BRACED_0: Final = "/braced/0-step"
+LONG_0: Final = "/long/0-step"
 
 NAMED_GROUPS_ALL_CREATED: Final = dict.fromkeys((FIVE_0, BRACED_0, LONG_0), CREATED)
 

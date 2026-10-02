@@ -104,17 +104,18 @@ def make_scripts_spec(*scripts: dict) -> JobSpecV1:
     """
     Build an execution plan out of short script descriptions, one sequential level deep.
 
-    Positions in the given order become node keys, the same way parsing assigns them.
+    Positions in the given order and names become node keys, the same way parsing assigns them.
     """
 
     return JobSpecV1.from_entries(
         *(
             ScriptSpec(
-                key=FullSpecKey(f"/{position}"),
-                names=Names(internal=script.get("name", "aaa")),
+                key=FullSpecKey(f"/{position}-{name}"),
+                names=Names(internal=name),
                 script=_make_script(script),
             )
             for position, script in enumerate(scripts)
+            for name in (script.get("name", "aaa"),)
         )
     )
 

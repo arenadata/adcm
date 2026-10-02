@@ -38,7 +38,7 @@ from core.bundle._definitions import (
 from core.bundle._errors import BundleParsingError
 from core.spec.errors import DuplicateSpecEntryError
 from core.spec.keys import level_keys_to_full_key
-from core.spec.types import FullSpecKey, LevelSpecKey
+from core.spec.types import KEY_SEPARATOR, FullSpecKey, LevelSpecKey
 from core.templates import Template, parse_template
 from core.types import Names
 
@@ -240,8 +240,10 @@ def _extract_scripts(entity: dict, context: dict) -> JobSpecV1 | None:
 def _to_spec_entries(
     entries: list[dict], group_levels: tuple[LevelSpecKey, ...], context: dict
 ) -> Iterator[ScriptSpec | GroupSpec]:
-    # groups are keyed by their names, while scripts are by their positions among entries of the same level,
-    # so a group named after a position of a script takes the same key (it's reported by plan building, not here);
+    # groups are keyed by their names, while scripts are by "<position>-<name>", where position is the index
+    # among entries of the same level (it keeps keys unique for repeated names) and every key separator in the name
+    # is replaced with "_" (in the key only, internal name stays as is),
+    # so a group named after a key of a script takes the same key (it's reported by plan building, not here);
     # entries are yielded in declaration order with a group coming before its own entries
     for position, entry in enumerate(entries):
         if (style := entry.get("group")) is not None:
@@ -256,7 +258,8 @@ def _to_spec_entries(
             yield from _to_spec_entries(entries=entry["scripts"], group_levels=own_levels, context=context)
             continue
 
-        key = level_keys_to_full_key((*group_levels, LevelSpecKey(str(position))))
+        level_key = LevelSpecKey(f"{position}-{entry['name'].replace(KEY_SEPARATOR, '_')}")
+        key = level_keys_to_full_key((*group_levels, level_key))
         yield _to_script_spec(key=key, script=entry, context=context)
 
 

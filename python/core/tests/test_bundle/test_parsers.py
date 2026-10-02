@@ -217,7 +217,7 @@ class _TestTemplate:
                         action_allow_to_terminate=False,
                     )
 
-                    self.assertEqual(result.scripts["/0"].script.path, str(expected_path))
+                    self.assertEqual(result.scripts["/0-s1"].script.path, str(expected_path))
 
     class ParserExtraFields(ParserTestCase):
         @abstractmethod
@@ -506,7 +506,7 @@ class TestServiceManage(TestCase):
                 result = parser.parse_scripts(
                     scripts, template_path=Path(), action_allow_to_terminate=False, mode="action"
                 )
-                script_spec = result.scripts["/0"]
+                script_spec = result.scripts["/0-lookalike_ansible"]
                 params = script_spec.script.params
 
                 # extra params of an ansible script are kept as they are, no matter their names
@@ -548,7 +548,7 @@ class TestScriptsConversion(TestCase):
         self.assertEqual(specs[0], specs[1])
         self.assertEqual(specs[0], specs[2])
         # they mean "no params of our own", which for ansible is its own defaults
-        self.assertEqual(specs[0].scripts["/0"].script.params.ansible_tags, "")
+        self.assertEqual(specs[0].scripts["/0-s"].script.params.ansible_tags, "")
 
     def test_scripts_without_params_get_none(self):
         # neither python nor simple internal scripts accept `params` in the DSL at all
@@ -563,8 +563,8 @@ class TestScriptsConversion(TestCase):
             """
         )
 
-        self.assertIsNone(spec.scripts["/0"].script.params)
-        self.assertIsNone(spec.scripts["/1"].script.params)
+        self.assertIsNone(spec.scripts["/0-py"].script.params)
+        self.assertIsNone(spec.scripts["/1-clean"].script.params)
 
     def test_keys_follow_declaration_order(self):
         spec = self.parse(
@@ -578,9 +578,9 @@ class TestScriptsConversion(TestCase):
             """
         )
 
-        self.assertEqual(list(spec.scripts), ["/0", "/1"])
-        self.assertEqual([script.key for script in spec.scripts.values()], ["/0", "/1"])
-        self.assertEqual(spec.hierarchy.fields, ["0", "1"])
+        self.assertEqual(list(spec.scripts), ["/0-first", "/1-second"])
+        self.assertEqual([script.key for script in spec.scripts.values()], ["/0-first", "/1-second"])
+        self.assertEqual(spec.hierarchy.fields, ["0-first", "1-second"])
         self.assertEqual(spec.hierarchy.rule, ExecutionStyle.SEQUENTIAL)
 
     def test_bundle_switch_in_rendered_action_fail(self):
@@ -622,8 +622,8 @@ class TestScriptsConversion(TestCase):
             """
         )
 
-        self.assertFalse(spec.scripts["/0"].details.terminatable)
-        self.assertTrue(spec.scripts["/1"].details.terminatable)
+        self.assertFalse(spec.scripts["/0-silent"].details.terminatable)
+        self.assertTrue(spec.scripts["/1-loud"].details.terminatable)
 
     def test_internal_scripts_are_never_terminatable(self):
         spec = self.parse(
@@ -635,7 +635,7 @@ class TestScriptsConversion(TestCase):
             """
         )
 
-        self.assertFalse(spec.scripts["/0"].details.terminatable)
+        self.assertFalse(spec.scripts["/0-clean"].details.terminatable)
 
     def test_action_level_terminate_propagates_to_scripts(self):
         _, parser = get_parsers()[-1]
@@ -652,9 +652,9 @@ class TestScriptsConversion(TestCase):
             yaml.safe_load(as_yaml), template_path=Path(), action_allow_to_terminate=True, mode="upgrade"
         )
 
-        self.assertTrue(spec.scripts["/0"].details.terminatable)
+        self.assertTrue(spec.scripts["/0-ansible"].details.terminatable)
         # ... except internal ones, which have no process to terminate
-        self.assertFalse(spec.scripts["/1"].details.terminatable)
+        self.assertFalse(spec.scripts["/1-switch"].details.terminatable)
 
     def test_action_level_terminate_propagates_to_root_entry_scripts(self):
         entry = V2Implementation.build_cluster_entry() | {
@@ -678,9 +678,9 @@ class TestScriptsConversion(TestCase):
 
                 (action,) = definitions[("cluster",)].actions
                 self.assertIsNotNone(action.scripts)
-                self.assertTrue(action.scripts.scripts["/0"].details.terminatable)
+                self.assertTrue(action.scripts.scripts["/0-inherits"].details.terminatable)
                 # explicit `false` is kept as is, only unset values are inherited
-                self.assertFalse(action.scripts.scripts["/1"].details.terminatable)
+                self.assertFalse(action.scripts.scripts["/1-own"].details.terminatable)
 
 
 class TestUpgradeScripts(TestCase):
@@ -1825,7 +1825,7 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="simple_job",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0", "simple_job", ansible_script("wow.yaml")),
+                    build_script_spec("/0-simple_job", "simple_job", ansible_script("wow.yaml")),
                 ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
@@ -1834,8 +1834,8 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="Awesome ma I",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0", "first", ansible_script("inner/root.yaml")),
-                    build_script_spec("/1", "second", ansible_script("another.yaml"), display_name="Special"),
+                    build_script_spec("/0-first", "first", ansible_script("inner/root.yaml")),
+                    build_script_spec("/1-second", "second", ansible_script("another.yaml"), display_name="Special"),
                 ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
@@ -1844,7 +1844,7 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="not_full_states",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0", "not_full_states", python_script("x.py")),
+                    build_script_spec("/0-not_full_states", "not_full_states", python_script("x.py")),
                 ),
                 available_at=ActionAvailability(states="any", multi_states="any"),
             ),
@@ -1853,7 +1853,7 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="not_full_masking",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0", "not_full_masking", python_script("x.py")),
+                    build_script_spec("/0-not_full_masking", "not_full_masking", python_script("x.py")),
                 ),
                 unavailable_at=ActionAvailability(states=["o"], multi_states=[]),
             ),
@@ -2025,9 +2025,9 @@ class TestBundleDefinitionConversion(TestCase):
                     venv=MAIN_VENV,
                     available_at=ActionAvailability(states="any", multi_states="any"),
                     scripts=JobSpecV1.from_entries(
-                        build_script_spec("/0", "first", ansible_script("root.yaml")),
+                        build_script_spec("/0-first", "first", ansible_script("root.yaml")),
                         build_script_spec(
-                            "/1", "second", simple_internal_script("bundle_switch"), display_name="Special"
+                            "/1-second", "second", simple_internal_script("bundle_switch"), display_name="Special"
                         ),
                     ),
                 ),

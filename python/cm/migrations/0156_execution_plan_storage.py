@@ -14,6 +14,162 @@
 
 from django.db import migrations, models
 
+# 3.0.0 data -> stored `JobSpecV1` (see `cm.impl.common.execution_plan`), pure SQL, so no app code is involved.
+# Only rows that have no target data yet are touched.
+# Plans are laid out exactly as `dump_execution_plan` writes them:
+# `version: 1` envelope, script keys `/<position>-<internal name>` (`/0-prepare`, `/1-install`, ...,
+# every `/` of the name is `_` in the key), no groups, `on_fail` as an object.
+CONVERT_TO_EXECUTION_PLANS = (
+    # node of a script, keyless (the key is given by the plan), built from
+    # `SubAction`/`JobLog` columns or from keys of an old `JobSpec` dict, they are named the same
+    """
+    CREATE OR REPLACE FUNCTION pg_temp.script_node_0156(
+        name text,
+        display_name text,
+        script text,
+        script_type text,
+        params jsonb,
+        state_on_fail text,
+        multi_state_on_fail_set jsonb,
+        multi_state_on_fail_unset jsonb,
+        allow_to_terminate boolean
+    ) RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
+        SELECT jsonb_build_object(
+            'names', jsonb_build_object('internal', name, 'display', display_name),
+            'script', jsonb_build_object(
+                'type', script_type,
+                'path', script,
+                -- params move as-is, only those the reader rejects or a fresh upload doesn't have are replaced:
+                -- ansible has `{}` for none, internal scripts have `null` for empty (whatever the script),
+                -- python has no params (SQL NULL is stored as JSON `null`)
+                'params', CASE
+                    WHEN script_type = 'ansible' THEN COALESCE(NULLIF(params, 'null'::jsonb), '{}'::jsonb)
+                    WHEN script_type = 'internal' THEN NULLIF(NULLIF(params, '{}'::jsonb), 'null'::jsonb)
+                    ELSE 'null'::jsonb
+                END
+            ),
+            'on_fail', jsonb_build_object(
+                'state', NULLIF(state_on_fail, ''),
+                'multi_state_set', multi_state_on_fail_set,
+                'multi_state_unset', multi_state_on_fail_unset
+            ),
+            'details', jsonb_build_object('terminatable', script_type <> 'internal' AND allow_to_terminate)
+        )
+    $$;
+    """,
+    # key of a script within its level, without the leading `/`: `<position>-<internal name>` with every `/`
+    # of the name replaced by `_` (the rule of bundle parsing); plan nodes and job `spec_key`s both use it
+    """
+    CREATE OR REPLACE FUNCTION pg_temp.script_key_0156(pos bigint, name text) RETURNS text
+    LANGUAGE sql IMMUTABLE AS $$
+        SELECT pos || '-' || replace(name, '/', '_')
+    $$;
+    """,
+    # plan of the given nodes in execution order, keyed `/` + `pg_temp.script_key_0156`,
+    # `fields` are the same keys without the leading `/`; no nodes give the empty plan
+    """
+    CREATE OR REPLACE FUNCTION pg_temp.execution_plan_0156(nodes jsonb) RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
+        SELECT jsonb_build_object(
+            'version', 1,
+            'hierarchy', jsonb_build_object(
+                'rule', 'sequential',
+                'fields', COALESCE(jsonb_agg(level_key ORDER BY ordinal), '[]'::jsonb),
+                'child_groups', '{}'::jsonb
+            ),
+            'groups', '{}'::jsonb,
+            'scripts', COALESCE(
+                jsonb_object_agg('/' || level_key, jsonb_build_object('key', '/' || level_key) || node),
+                '{}'::jsonb
+            )
+        )
+        FROM jsonb_array_elements(COALESCE(nodes, '[]'::jsonb)) WITH ORDINALITY AS entry(node, ordinal)
+        CROSS JOIN LATERAL (
+            SELECT pg_temp.script_key_0156(ordinal - 1, node -> 'names' ->> 'internal') AS level_key
+        ) AS keyed
+    $$;
+    """,
+    # `SubAction` rows of an action -> `Action.scripts`, actions without them keep NULL
+    """
+    UPDATE cm_action
+    SET scripts = pg_temp.execution_plan_0156(converted.nodes)
+    FROM (
+        SELECT
+            action_id,
+            jsonb_agg(
+                pg_temp.script_node_0156(
+                    name, display_name, script, script_type, params, state_on_fail,
+                    multi_state_on_fail_set, multi_state_on_fail_unset, allow_to_terminate
+                )
+                ORDER BY id
+            ) AS nodes
+        FROM cm_subaction
+        GROUP BY action_id
+    ) AS converted
+    WHERE cm_action.id = converted.action_id AND cm_action.scripts IS NULL;
+    """,
+    # `JobLog` rows of a task -> `TaskLog.execution_plan`, a task without jobs gets the empty plan
+    """
+    UPDATE cm_tasklog
+    SET execution_plan = pg_temp.execution_plan_0156(
+        (
+            SELECT jsonb_agg(
+                pg_temp.script_node_0156(
+                    name, display_name, script, script_type, params, state_on_fail,
+                    multi_state_on_fail_set, multi_state_on_fail_unset, allow_to_terminate
+                )
+                ORDER BY id
+            )
+            FROM cm_joblog
+            WHERE cm_joblog.task_id = cm_tasklog.id
+        )
+    )
+    WHERE execution_plan IS NULL;
+    """,
+    # each job of a task gets the key of its node in the task's plan: same `id` order, same positions,
+    # same name (the node's internal name is the job's `name`), same key helper
+    """
+    UPDATE cm_joblog
+    SET spec_key = positioned.spec_key
+    FROM (
+        SELECT
+            id,
+            '/' || pg_temp.script_key_0156(row_number() OVER (PARTITION BY task_id ORDER BY id) - 1, name) AS spec_key
+        FROM cm_joblog
+        WHERE task_id IS NOT NULL
+    ) AS positioned
+    WHERE cm_joblog.id = positioned.id AND cm_joblog.spec_key = '';
+    """,
+    # list of old `JobSpec` dicts in `step_spec` of a wizard operation step -> the plan, in list order;
+    # NULL (not rendered yet) and already converted specs aren't arrays, so they are left as they are
+    """
+    UPDATE cm_processstep
+    SET step_spec = pg_temp.execution_plan_0156(
+        (
+            SELECT jsonb_agg(
+                pg_temp.script_node_0156(
+                    job_spec ->> 'name',
+                    job_spec ->> 'display_name',
+                    job_spec ->> 'script',
+                    job_spec ->> 'script_type',
+                    job_spec -> 'params',
+                    job_spec ->> 'state_on_fail',
+                    job_spec -> 'multi_state_on_fail_set',
+                    job_spec -> 'multi_state_on_fail_unset',
+                    (job_spec ->> 'allow_to_terminate')::boolean
+                )
+                ORDER BY ordinal
+            )
+            FROM jsonb_array_elements(step_spec) WITH ORDINALITY AS entry(job_spec, ordinal)
+        )
+    )
+    WHERE type = 'operation' AND jsonb_typeof(step_spec) = 'array';
+    """,
+    # helpers aren't needed past this migration, don't leave them in the session
+    "DROP FUNCTION pg_temp.execution_plan_0156(jsonb);",
+    "DROP FUNCTION pg_temp.script_key_0156(bigint, text);",
+    "DROP FUNCTION pg_temp.script_node_0156(text, text, text, text, jsonb, text, jsonb, jsonb, boolean);",
+)
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -36,6 +192,7 @@ class Migration(migrations.Migration):
             name="execution_plan",
             field=models.JSONField(default=None, null=True),
         ),
+        migrations.RunSQL(sql=CONVERT_TO_EXECUTION_PLANS, reverse_sql=migrations.RunSQL.noop),
         migrations.DeleteModel(
             name="SubAction",
         ),

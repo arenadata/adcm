@@ -1,4 +1,4 @@
-# script takes key "0" by its position, group takes the same key by its name
+# script takes key "0-step" by its position and name, group takes the same key by its name
 - type: cluster
   name: script_groups_cluster
   version: "1"
@@ -12,7 +12,7 @@
           script_type: ansible
           script: ./playbook.yaml
         - group: parallel
-          name: "0"
+          name: "0-step"
           scripts:
             - name: step
               script_type: ansible
