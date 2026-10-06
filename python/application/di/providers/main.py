@@ -28,6 +28,7 @@ from cm.impl.logs.repo import LogsRepo
 from cm.impl.metrics.repo import ClusterMetricsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
+from cm.impl.scenarios.bundle_switch import BundleSwitch
 from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
@@ -55,6 +56,7 @@ from rbac.scenarios import RBACScenarios
 from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.internal_scripts.bundle_revert import RevertUpgrade
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
@@ -71,7 +73,6 @@ from use_cases.transition.job.schedule import (
     ScheduleMMChangingTask,
     ScheduleTask,
 )
-from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
@@ -220,6 +221,7 @@ class ScenariosProvider(Provider):
     config_scenarios = provide(ConfigScenarios)
     concern_scenarios = provide(ConcernScenarios)
     before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
+    bundle_switch = provide(BundleSwitch)
 
 
 class LogsServiceProvider(Provider):
@@ -250,9 +252,8 @@ class UseCaseProvider(Provider):
     create_provider = provide(CreateHostprovider)
     create_host = provide(CreateHost)
 
-    # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
+    # APP scope is required to inject it into the `service_manage` internal script
     add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)
-    manage_cluster_services = provide(ManageClusterServices, scope=Scope.APP)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
 
@@ -263,6 +264,8 @@ class UseCaseProvider(Provider):
     )
 
     upgrade_object = provide(UpgradeObject)
+    # APP scope is required to inject it into the `bundle_revert` internal script
+    revert_upgrade = provide(RevertUpgrade, scope=Scope.APP)
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,
         ResetBeforeUpgradeProvider,

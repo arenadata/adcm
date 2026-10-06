@@ -35,6 +35,12 @@ from core.settings import Directories
 from dishka import Provider, Scope, provide, provide_all
 from django.utils import timezone
 from integrations.local.scheduler import LocalProcessStarter
+from use_cases.internal_scripts.before_upgrade_clean import BeforeUpgradeCleanInternalScript
+from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
+from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
+from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
+from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
+from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
 from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask
 
 
@@ -83,6 +89,14 @@ class TaskRunnerProvider(Provider):
     def status_server(self) -> StatusServerInteractor:
         return notify
 
+    internal_scripts = provide_all(
+        BundleSwitchInternalScript,
+        BundleRevertInternalScript,
+        HcApplyInternalScript,
+        ConfigApplyInternalScript,
+        ServiceManageInternalScript,
+        BeforeUpgradeCleanInternalScript,
+    )
     job_factory = provide(ExecutionTargetFactory, provides=ExecutionTargetFactoryI)
     job_processor = provide(JobProcessor)
 

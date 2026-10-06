@@ -16,7 +16,7 @@ from adcm_version import compare_prototype_versions
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
 from core.types import ADCMCoreType, BundleID, ConfigID, CoreObjectDescriptor
 
-from cm.legacy.bundle_switch_revert import switch_config
+from cm.impl.scenarios.bundle_switch import switch_config
 from cm.models import ADCM, ConfigLog, ObjectConfig, Prototype
 
 logger = logging.getLogger("adcm")

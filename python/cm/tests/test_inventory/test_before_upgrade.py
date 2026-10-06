@@ -12,16 +12,14 @@
 
 
 from core.cluster import ClusterService
-from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from rbac.scenarios import RBACScenarios
 import core
 
-from cm.legacy.bundle_switch_revert import bundle_switch
+from cm.impl.scenarios.bundle_switch import BundleSwitch
 from cm.legacy.services.job.context import get_inventory_data
 from cm.legacy.upgrade import update_before_upgrade
-from cm.models import Action, Component, Service, Upgrade
+from cm.models import Action, Cluster, Component, Provider, Service, Upgrade
 from cm.tests.test_inventory.base import BaseInventoryTestCase
 
 
@@ -49,24 +47,9 @@ class TestBeforeUpgrade(BaseInventoryTestCase):
             bundle=cls.cluster_upgrade_bundle, name="upgrade_via_action_simple"
         )
 
-    def bundle_switch(self, obj, upgrade):
-        from use_cases.legacy.upgrade import build_switch_revert_callbacks
-
+    def bundle_switch(self, obj: Cluster | Provider, upgrade: Upgrade) -> None:
         with self.container() as container:
-            config_service = container.get(core.config.ConfigService)
-            config_scenarios = container.get(ConfigScenarios)
-            callbacks = build_switch_revert_callbacks(
-                config_service=config_service,
-                rbac_scenarios=RBACScenarios(),
-                cluster_service=self.uc.container.get(ClusterService),
-            )
-            bundle_switch(
-                obj=obj,
-                upgrade=upgrade,
-                callbacks=callbacks,
-                config_service=config_service,
-                config_scenarios=config_scenarios,
-            )
+            container.get(BundleSwitch).do(target=obj, upgrade=upgrade)
 
     def update_before_upgrade(self, obj):
         with self.container() as container:

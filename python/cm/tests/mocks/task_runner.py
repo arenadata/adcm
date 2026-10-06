@@ -17,19 +17,18 @@ from typing import Any, NamedTuple
 
 from core.action import ScriptType, Task
 from core.action.types import RichJob
-from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
 from core.legacy.job.runners import ExecutionTarget, ExternalSettings
 from core.logs import LogsService
-from core.scenarios.cluster import BeforeUpgradeScenarios
-from core.scenarios.config import ConfigScenarios
 from django.utils import timezone
-from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
-from use_cases.cluster.update import ResetBeforeUpgradeCluster
-from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob
-from use_cases.transition.service_manage import ManageClusterServices
+from use_cases.internal_scripts.before_upgrade_clean import BeforeUpgradeCleanInternalScript
+from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
+from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
+from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
+from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
+from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
 
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.job.run.executors import InternalScriptResult
@@ -62,26 +61,24 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
         self,
         *,
         failed_job: FailedJobInfo | None = None,
+        bundle_switch: BundleSwitchInternalScript,
+        bundle_revert: BundleRevertInternalScript,
+        hc_apply: HcApplyInternalScript,
+        config_apply: ConfigApplyInternalScript,
+        service_manage: ServiceManageInternalScript,
+        before_upgrade_clean: BeforeUpgradeCleanInternalScript,
         logs_service: LogsService,
-        rbac_scenarios: RBACScenarios,
-        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
-        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
-        update_configuration_from_job: UpdateConfigurationFromJob,
-        manage_services: ManageClusterServices,
-        config_scenarios: ConfigScenarios,
-        cluster_service: ClusterService,
-        before_upgrade_scenarios: BeforeUpgradeScenarios,
+        config_service: ConfigService,
     ):
         super().__init__(
+            bundle_switch=bundle_switch,
+            bundle_revert=bundle_revert,
+            hc_apply=hc_apply,
+            config_apply=config_apply,
+            service_manage=service_manage,
+            before_upgrade_clean=before_upgrade_clean,
             logs_service=logs_service,
-            rbac_scenarios=rbac_scenarios,
-            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
-            reset_provider_before_upgrade=reset_provider_before_upgrade,
-            update_configuration_from_job=update_configuration_from_job,
-            manage_services=manage_services,
-            config_scenarios=config_scenarios,
-            cluster_service=cluster_service,
-            before_upgrade_scenarios=before_upgrade_scenarios,
+            config_service=config_service,
         )
 
         self._failed_job = failed_job
@@ -95,8 +92,7 @@ class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
             script_spec = job.spec.script
 
             if script_spec.type == ScriptType.INTERNAL:
-                internal_script_func = self._supported_internal_scripts[script_spec.path]
-                script = partial(internal_script_func, task=task, job=job)
+                script = partial(self._internal_script(job).do, task=task, job=job)
                 executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
 
             else:
@@ -124,26 +120,24 @@ class ETFMockWithEnvPreparation(ExecutionTargetFactory):
         self,
         *,
         change_jobs: dict[int, JobImitator] | None = None,
+        bundle_switch: BundleSwitchInternalScript,
+        bundle_revert: BundleRevertInternalScript,
+        hc_apply: HcApplyInternalScript,
+        config_apply: ConfigApplyInternalScript,
+        service_manage: ServiceManageInternalScript,
+        before_upgrade_clean: BeforeUpgradeCleanInternalScript,
         logs_service: LogsService,
-        rbac_scenarios: RBACScenarios,
-        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
-        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
-        update_configuration_from_job: UpdateConfigurationFromJob,
-        manage_services: ManageClusterServices,
-        config_scenarios: ConfigScenarios,
-        cluster_service: ClusterService,
-        before_upgrade_scenarios: BeforeUpgradeScenarios,
+        config_service: ConfigService,
     ):
         super().__init__(
+            bundle_switch=bundle_switch,
+            bundle_revert=bundle_revert,
+            hc_apply=hc_apply,
+            config_apply=config_apply,
+            service_manage=service_manage,
+            before_upgrade_clean=before_upgrade_clean,
             logs_service=logs_service,
-            rbac_scenarios=rbac_scenarios,
-            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
-            reset_provider_before_upgrade=reset_provider_before_upgrade,
-            update_configuration_from_job=update_configuration_from_job,
-            manage_services=manage_services,
-            config_scenarios=config_scenarios,
-            cluster_service=cluster_service,
-            before_upgrade_scenarios=before_upgrade_scenarios,
+            config_service=config_service,
         )
 
         self.imitators = change_jobs or {}
