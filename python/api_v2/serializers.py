@@ -33,6 +33,7 @@ from core.status import (
     convert_to_host_component_status,
     convert_to_service_status,
 )
+from django.db.models import F
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -119,10 +120,10 @@ class DependOnDict(TypedDict):
 
 
 def get_main_info(obj: ADCMEntity | None) -> str | None:
-    if obj is None or obj.config is None:
+    if obj is None or obj.config_id is None:
         return None
 
-    config_log = ConfigLog.objects.filter(id=obj.config.current).first()
+    config_log = ConfigLog.objects.filter(id=F("obj_ref__current"), obj_ref_id=obj.config_id).first()
     if not config_log:
         return None
 
