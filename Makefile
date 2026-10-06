@@ -22,6 +22,9 @@ unittests:
 	time uv run python/manage.py test python -v 2 --parallel --keepdb
 	docker stop postgres
 
+test-integrations:
+	@echo "This is a placeholder; the actual launch is in develop."
+
 pretty:
 	uv sync --inexact --group lint
 	uv run ruff format $(PY_FILES)
