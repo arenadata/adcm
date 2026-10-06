@@ -17,20 +17,23 @@ from typing import NamedTuple, cast
 from cm.errors import AdcmEx
 from cm.legacy.services.job._utils import construct_delta_for_task
 from cm.legacy.services.job.run._config import create_related_configs
+from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.legacy.services.mapping import (
     change_host_component_mapping_no_lock,
     check_for_action_mapping,
     lock_cluster_mapping,
 )
 from cm.models import Cluster, ObjectType, Prototype, Service
-from core.action import ServiceManageServiceEntry, TaskMappingDelta, TaskOwner
+from core.action import ServiceManageServiceEntry, Task, TaskMappingDelta, TaskOwner
+from core.action.types import RichJob, ServiceManageScript
 from core.cluster import ClusterService
 from core.config import ConfigRepoI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.types import BundleID, ClusterID, JobID, PrototypeID
+from core.types import ADCMCoreType, BundleID, ClusterID, PrototypeID
 from django.db.transaction import atomic
 
+from use_cases.internal_scripts.common import build_result_message
 from use_cases.transition.cluster.create import CreateServicesFromPrototypes
 from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
 
@@ -46,21 +49,17 @@ class ServiceManageOutcome(NamedTuple):
 
 
 @dataclass(slots=True)
-class ManageClusterServices:
+class ServiceManageInternalScript:
     add_services: CreateServicesFromPrototypes
     update_configuration_from_job: UpdateConfigurationFromJob
     cluster_service: ClusterService
     config_repo: ConfigRepoI
 
-    def add(
-        self,
-        *,
-        cluster_id: ClusterID,
-        entries: Sequence[ServiceManageServiceEntry],
-        job_id: JobID,
-        task_owner: TaskOwner,
-        changes_description: str,
-    ) -> ServiceManageOutcome:
+    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
+        owner, cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
+        job_id = job.runtime.id
+        changes_description = f"{task.display_name} process update"
+
         configs_changed = False
         mapping_changed = False
 
@@ -74,7 +73,10 @@ class ManageClusterServices:
             entries_to_add = tuple(entry for entry in entries if entry.name not in present_services)
             if not entries_to_add:
                 # In ADCM-8316 it was decided that only newly added services should have their mapping/config changed
-                return ServiceManageOutcome(added_services=(), configs_changed=False, mapping_changed=False)
+                return _build_result(
+                    entries=entries,
+                    outcome=ServiceManageOutcome(added_services=(), configs_changed=False, mapping_changed=False),
+                )
 
             mapping_is_requested = any(entry.hc_changes for entry in entries_to_add)
             if mapping_is_requested:
@@ -87,7 +89,7 @@ class ManageClusterServices:
 
             # Services and components are created while the job is running,
             # so job's related configs should be updated for new objects to be configurable below.
-            create_related_configs(job_id=job_id, owner=task_owner, config_repo=self.config_repo)
+            create_related_configs(job_id=job_id, owner=owner, config_repo=self.config_repo)
 
             topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))
 
@@ -116,9 +118,46 @@ class ManageClusterServices:
                 )
                 mapping_changed = True
 
-        return ServiceManageOutcome(
-            added_services=tuple(names_to_add), configs_changed=configs_changed, mapping_changed=mapping_changed
+        return _build_result(
+            entries=entries,
+            outcome=ServiceManageOutcome(
+                added_services=tuple(names_to_add), configs_changed=configs_changed, mapping_changed=mapping_changed
+            ),
         )
+
+
+def _parse_service_manage_arguments(
+    task: Task, job: RichJob
+) -> tuple[TaskOwner, ClusterID, tuple[ServiceManageServiceEntry, ...]]:
+    owner = task.owner
+    if owner is None:
+        raise RuntimeError("misconfigured task runner: no owner")
+
+    if owner.type == ADCMCoreType.CLUSTER:
+        cluster_id = owner.id
+    else:
+        cluster = owner.related_objects.cluster
+        if cluster is None:
+            raise RuntimeError("Task owner's cluster: was given None, expected an object")
+
+        cluster_id = cluster.id
+
+    script = job.spec.script
+    if not isinstance(script, ServiceManageScript):
+        message = f"Job script: was given {type(script).__name__}, expected {ServiceManageScript.__name__}"
+        raise RuntimeError(message)  # noqa: TRY004
+
+    return owner, cluster_id, tuple(script.params.services or ())
+
+
+def _build_result(entries: Sequence[ServiceManageServiceEntry], outcome: ServiceManageOutcome) -> InternalScriptResult:
+    result_message = build_result_message(
+        script_name="service_manage",
+        full_complete_message=f"services are in place: {', '.join(entry.name for entry in entries)}",
+        without_updates_message="the requested services were already in place",
+        with_updates=outcome.with_updates,
+    )
+    return InternalScriptResult(code=0, message=result_message)
 
 
 def _build_mapping_delta(topology: ClusterTopology, entries: Sequence[ServiceManageServiceEntry]) -> TaskMappingDelta:

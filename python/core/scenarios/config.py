@@ -11,9 +11,23 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from functools import partial
 
 from core import config
+from core.config import (
+    ConfigOperationError,
+    Configuration,
+    ConfigurationExtraInfo,
+    Defaults,
+    ObjectWithoutConfigError,
+    operations,
+    spec,
+)
+from core.config.constants import SYSTEM_CONFIG_CREATOR
+from core.result import Fail
 from core.types import ConfigID, CoreObjectDescriptor, HostGroupDescriptor
+
+SpecWithDefaults = tuple[spec.FullSpec, Defaults]
 
 
 @dataclass(slots=True)
@@ -76,3 +90,60 @@ class ConfigScenarios:
             )
 
         return config_id
+
+    def switch_configuration(
+        self, *, owner: CoreObjectDescriptor, old: SpecWithDefaults, new: SpecWithDefaults
+    ) -> None:
+        """
+        Adapts current configuration of owner and its host groups from `old` specification to `new` one.
+        If owner has no configuration, initial one is created (only when `new` defaults aren't empty).
+        """
+
+        old_spec, old_defaults = old
+        new_spec, new_defaults = new
+
+        # empty configuration (spec) may be received in order to "work correctly"
+        # when configuration is removed from object
+        try:
+            configuration = self.config_service.retrieve_current_configuration(owner=owner)
+        except ObjectWithoutConfigError:
+            # no current config
+            if new_defaults:
+                # assume it's non-empty config
+                self.config_service.create_initial_configuration(
+                    owner=owner, specification=new_spec, defaults=new_defaults
+                )
+
+            return
+
+        update_for_new_spec = partial(
+            operations.adapt_configuration_for_new_specification,
+            specification=old_spec,
+            defaults=old_defaults,
+            new_specification=new_spec,
+            new_defaults=new_defaults,
+        )
+
+        update_result = update_for_new_spec(configuration=configuration, include_synchronization=False)
+        if isinstance(update_result, Fail):
+            raise ConfigOperationError(f"Failed to adapt config: {str(update_result.value)}")
+
+        configs_of_host_groups = self.config_service.retrieve_host_group_configurations(owner=owner)
+        adaptation_results = {
+            group: update_for_new_spec(configuration=config_of_group, include_synchronization=True)
+            for group, config_of_group in configs_of_host_groups.items()
+        }
+        adapted_configs_of_host_groups: dict[HostGroupDescriptor, Configuration] = {}
+        for group, result in adaptation_results.items():
+            if isinstance(result, Fail):
+                raise ConfigOperationError(f"Failed to adapt config of host group: {str(result.value)}")
+
+            adapted_configs_of_host_groups[group] = result.value
+
+        self.save_encrypted_config_with_host_groups(
+            owner=owner,
+            encrypted_main_config=update_result.value,
+            specification=new_spec,
+            config_extra_info=ConfigurationExtraInfo(description="upgrade", created_by=SYSTEM_CONFIG_CREATOR),
+            host_group_configs=adapted_configs_of_host_groups,
+        )

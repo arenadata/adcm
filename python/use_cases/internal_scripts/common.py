@@ -10,6 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Legacy (non refactored) functionality supporting modules
-"""
+
+def build_result_message(
+    script_name: str,
+    full_complete_message: str,
+    with_updates: bool,
+    without_updates_message: str | None = None,
+) -> str:
+    base_template = "The script `{script_name}` completed successfully, {completed_info}."
+
+    if with_updates or without_updates_message is None:
+        complete_info = full_complete_message
+    else:
+        complete_info = f"but {without_updates_message} earlier"
+
+    return base_template.format(script_name=script_name, completed_info=complete_info)

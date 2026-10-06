@@ -1,0 +1,16 @@
+---
+- type: adcm
+  name: ADCM
+  version: "999.0"  # higher than any real ADCM bundle version
+  contract_version: "2.1"
+  venv: "2.21"
+
+  config:
+    - name: "global"
+      type: "group"
+      subs:
+        - name: "adcm_url"
+          type: string
+        - name: "added"
+          type: string
+          default: "added-default"

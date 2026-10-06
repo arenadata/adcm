@@ -19,7 +19,6 @@ import json
 import unittest
 
 from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
-from cm.legacy.bundle_switch_revert import bundle_revert
 from cm.legacy.services.job.context._base import get_inventory_data
 from cm.models import (
     ADCM,
@@ -37,11 +36,8 @@ from cm.models import (
 from cm.transition.ansible import ansible_decrypt, ansible_encrypt_and_format
 from core.cluster import ClusterService
 from core.config._types import ChangeRequest
-from core.scenarios.cluster import BeforeUpgradeScenarios
-from core.scenarios.config import ConfigScenarios
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -53,7 +49,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
-from use_cases.legacy.upgrade import build_switch_revert_callbacks
+from use_cases.internal_scripts.bundle_revert import RevertUpgrade
 from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
@@ -3463,21 +3459,7 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
 
         # revert upgrade
-        config_service = self.container.get(core.config.ConfigService)
-        cluster_service = self.container.get(core.cluster.ClusterService)
-        before_upgrade_scensrios = self.container.get(BeforeUpgradeScenarios)
-        config_scenarios = ConfigScenarios(config_service=config_service)
-        callbacks = build_switch_revert_callbacks(
-            config_service=config_service, rbac_scenarios=RBACScenarios(), cluster_service=cluster_service
-        )
-        bundle_revert(
-            obj=self.cluster,
-            callbacks=callbacks,
-            config_service=config_service,
-            cluster_service=cluster_service,
-            config_scenarios=config_scenarios,
-            before_upgrade_scenarios=before_upgrade_scensrios,
-        )
+        self.container.get(RevertUpgrade).do(target=self.cluster)
 
         # CHGs must be restored
         chg_hosts_map = {
