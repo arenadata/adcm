@@ -129,6 +129,11 @@ RUN mkdir -p /adcm/data/log /adcm/run && \
 RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput && \
     chown -R adcm:adcm /adcm/wwwroot/static
 
+# Remove *.whl files for ensurepip module
+# This fix is relevant only for 3.0; in 3.1, there is no module ensurepip
+RUN rm /usr/local/lib/python3.10/ensurepip/_bundled/setuptools-79.0.1-py3-none-any.whl && \
+    rm /usr/local/lib/python3.10/ensurepip/_bundled/pip-23.0.1-py3-none-any.whl
+
 ENV PYTHONPATH=/adcm/python
 ENV HOME=/home/adcm
 # Everything ansible writes under ~/.ansible by default is rebased onto /tmp,
