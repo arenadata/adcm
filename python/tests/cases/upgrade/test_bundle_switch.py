@@ -439,8 +439,7 @@ class TestProviderBundleSwitch(ADCMDjangoAPISuiteNoBundles):
                 host.concerns.filter(type=ConcernType.ISSUE, cause=ConcernCause.CONFIG), [provider_issue, host_issue]
             )
 
-    @parametrize("path", BY_PATH)
-    def test_config_issue_of_host_in_cluster_fails_switch(self, path: str) -> None:
+    def test_config_issue_of_host_in_cluster_fails_api_switch(self) -> None:
         # Pins legacy `KeyError` in provider's concern merge: `removed` map is a plain dict,
         # so redistribution in host's cluster that removes concerns breaks the switch.
         # Deferred to its own fix.
@@ -451,10 +450,30 @@ class TestProviderBundleSwitch(ADCMDjangoAPISuiteNoBundles):
         self.uc.set_hostcomponent(cluster=cluster, entries=[(self.host_1, component)])
         initial_prototype = self.provider.prototype
 
-        # API request / task launch don't handle this error, so it gets out of them
+        # API request doesn't handle this error, so it gets out of it
         with self.assertRaises(KeyError):
-            run_upgrade(self, target=self.provider, upgrade=self.upgrades_to_required_param[path])
+            run_upgrade(self, target=self.provider, upgrade=self.upgrades_to_required_param["api"])
 
+        self.provider.refresh_from_db(fields=["prototype"])
+        self.assertEqual(self.provider.prototype, initial_prototype)
+
+    def test_config_issue_of_host_in_cluster_fails_task_switch(self) -> None:
+        # Pins the same legacy `KeyError` bug as on API path (deferred to its own fix),
+        # but internal script's executor catches it, so the job fails
+        cluster = self.uc.add_cluster(bundle=self.cluster_bundle, name="Hosts Consumer")
+        service, *_ = self.uc.add_services_to_cluster(names=["service_kept"], cluster=cluster)
+        component = Component.objects.get(service=service, prototype__name="component_kept")
+        self.uc.add_host_to_cluster(cluster=cluster, host=self.host_1)
+        self.uc.set_hostcomponent(cluster=cluster, entries=[(self.host_1, component)])
+        initial_prototype = self.provider.prototype
+
+        response = self.client.v2[self.provider, "upgrades", self.upgrades_to_required_param["task"], "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+        task_id = response.json()["id"]
+
+        self.task_runner().launch_task(task_id)
+
+        self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "failed")
         self.provider.refresh_from_db(fields=["prototype"])
         self.assertEqual(self.provider.prototype, initial_prototype)
 

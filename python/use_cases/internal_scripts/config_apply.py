@@ -18,7 +18,8 @@ from cm.legacy.services.job import context as context_m
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.models import ADCM
 from core.action import ConfigApplyChangeEntry, Task
-from core.action.types import ConfigApplyScript, RichJob
+from core.action.types import ConfigApplyScript
+from core.types import JobID
 
 from use_cases.internal_scripts.common import build_result_message
 from use_cases.transition.config import UpdateConfigurationFromJob, apply_config_changes
@@ -28,18 +29,13 @@ from use_cases.transition.config import UpdateConfigurationFromJob, apply_config
 class ConfigApplyInternalScript:
     update_configuration_from_job: UpdateConfigurationFromJob
 
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
-        script = job.spec.script
-        if not isinstance(script, ConfigApplyScript):
-            message = f"Job script: was given {type(script).__name__}, expected {ConfigApplyScript.__name__}"
-            raise RuntimeError(message)  # noqa: TRY004
-
+    def do(self, task: Task, script: ConfigApplyScript, job_id: JobID) -> InternalScriptResult:
         with_updates = False
         # are we going to allow to change one component from context of another?
         for change in script.params.changes:
             changing_object = _extract_apply_config_target(task=task, change=change)
             has_changed = apply_config_changes(
-                job_id=job.runtime.id,
+                job_id=job_id,
                 db_object=changing_object,
                 parameters=[asdict(parameter) for parameter in change.parameters],
                 changes_description=f"{task.display_name} process update",

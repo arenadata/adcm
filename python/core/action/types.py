@@ -433,12 +433,12 @@ class ConfigApplyScript(_InternalScript[Literal["config_apply"], ConfigApplyScri
 class ServiceManageScript(_InternalScript[Literal["service_manage"], ServiceManageScriptParams]): ...
 
 
-_InternalScriptVariants = Annotated[
+InternalScript = Annotated[
     SimpleInternalScript | HcApplyScript | ConfigApplyScript | ServiceManageScript,
     Field(discriminator="path"),
 ]
 
-Script: TypeAlias = Annotated[AnsibleScript | PythonScript | _InternalScriptVariants, Field(discriminator="type")]
+Script: TypeAlias = Annotated[AnsibleScript | PythonScript | InternalScript, Field(discriminator="type")]
 """
 Any script that can be a node of an execution plan.
 

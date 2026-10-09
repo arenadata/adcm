@@ -16,17 +16,23 @@ import logging
 
 from cm.legacy import status_api
 from cm.legacy.services.job.run.runners import EventNotifier, JobSequenceRunner, StatusServerInteractor
-from cm.legacy.services.job.run.target_factories import ExecutionTargetFactory
+from cm.legacy.services.job.run.target_factories import (
+    AnsibleTargetBuilder,
+    InternalTargetBuilder,
+    PythonTargetBuilder,
+)
 from cm.legacy.services.status import notify
 from core.action.scheduler import ProcessStarter
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
+    AnsibleTargetBuilderI,
     ConsulSettings,
-    ExecutionTargetFactoryI,
+    ExecutionTargetFactory,
     ExternalSettings,
     IntegrationsSettings,
-    JobProcessor,
+    InternalTargetBuilderI,
+    PythonTargetBuilderI,
     RunnerEnvironment,
     TaskRunner,
 )
@@ -97,8 +103,10 @@ class TaskRunnerProvider(Provider):
         ServiceManageInternalScript,
         BeforeUpgradeCleanInternalScript,
     )
-    job_factory = provide(ExecutionTargetFactory, provides=ExecutionTargetFactoryI)
-    job_processor = provide(JobProcessor)
+    ansible_builder = provide(AnsibleTargetBuilder, provides=AnsibleTargetBuilderI)
+    python_builder = provide(PythonTargetBuilder, provides=PythonTargetBuilderI)
+    internal_builder = provide(InternalTargetBuilder, provides=InternalTargetBuilderI)
+    target_factory = provide(ExecutionTargetFactory)
 
     environment = provide(SubprocessRunnerEnvironment, provides=RunnerEnvironment)
 

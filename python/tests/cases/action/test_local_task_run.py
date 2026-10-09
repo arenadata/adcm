@@ -38,11 +38,6 @@ PREPARE: Final = "/0-prepare"
 WITH_ON_FAIL: Final = "/branches/0-with_on_fail"
 WITHOUT_ON_FAIL: Final = "/branches/1-without_on_fail"
 
-# positions of jobs in plan order, as `MockWithEnvProvider` expects them
-PREPARE_POSITION: Final = 0
-WITH_ON_FAIL_POSITION: Final = 1
-WITHOUT_ON_FAIL_POSITION: Final = 2
-
 SUCCESS: Final = ExecutionStatus.SUCCESS
 FAILED: Final = ExecutionStatus.FAILED
 CREATED: Final = ExecutionStatus.CREATED
@@ -106,7 +101,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
     def test_first_job_failed_stops_plan_applies_task_on_fail(self) -> None:
         task_id = self.run_action()
 
-        container = make_overridden_container(MockWithEnvProvider(change_jobs={PREPARE_POSITION: FAILING}))
+        container = make_overridden_container(MockWithEnvProvider(change_jobs={PREPARE: FAILING}))
         self.execute_locally(task_id, container)
 
         self.assert_task_status(task_id, FAILED)
@@ -118,7 +113,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
     def test_job_with_on_fail_failed_stops_plan_applies_its_on_fail(self) -> None:
         task_id = self.run_action()
 
-        container = make_overridden_container(MockWithEnvProvider(change_jobs={WITH_ON_FAIL_POSITION: FAILING}))
+        container = make_overridden_container(MockWithEnvProvider(change_jobs={WITH_ON_FAIL: FAILING}))
         self.execute_locally(task_id, container)
 
         self.assert_task_status(task_id, FAILED)
@@ -130,7 +125,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
     def test_last_job_aborted_success(self) -> None:
         task_id = self.run_action()
 
-        container = make_overridden_container(MockWithEnvProvider(change_jobs={WITHOUT_ON_FAIL_POSITION: TERMINATED}))
+        container = make_overridden_container(MockWithEnvProvider(change_jobs={WITHOUT_ON_FAIL: TERMINATED}))
         self.execute_locally(task_id, container)
 
         self.assert_task_status(task_id, SUCCESS)
@@ -145,9 +140,9 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
         container = make_overridden_container(
             MockWithEnvProvider(
                 change_jobs={
-                    PREPARE_POSITION: TERMINATED,
-                    WITH_ON_FAIL_POSITION: TERMINATED,
-                    WITHOUT_ON_FAIL_POSITION: TERMINATED,
+                    PREPARE: TERMINATED,
+                    WITH_ON_FAIL: TERMINATED,
+                    WITHOUT_ON_FAIL: TERMINATED,
                 }
             )
         )
@@ -168,9 +163,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
             return TERMINATED_CODE
 
         container = make_overridden_container(
-            MockWithEnvProvider(
-                change_jobs={PREPARE_POSITION: JobImitator(call=terminate_task, use_call_return_code=True)}
-            )
+            MockWithEnvProvider(change_jobs={PREPARE: JobImitator(call=terminate_task, use_call_return_code=True)})
         )
         self.execute_locally(task_id, container)
 
@@ -191,9 +184,9 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
         container = make_overridden_container(
             MockWithEnvProvider(
                 change_jobs={
-                    PREPARE_POSITION: JobImitator(call=revoke_next_job, use_call_return_code=True),
+                    PREPARE: JobImitator(call=revoke_next_job, use_call_return_code=True),
                     # would fail the task if executed
-                    WITH_ON_FAIL_POSITION: FAILING,
+                    WITH_ON_FAIL: FAILING,
                 }
             )
         )

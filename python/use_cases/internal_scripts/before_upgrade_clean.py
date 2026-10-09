@@ -17,8 +17,8 @@ from typing import cast
 
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from core.action import Task
-from core.action.types import RichJob
-from core.types import ADCMCoreType, ClusterObjectDesc, ProviderObjectDesc
+from core.action.types import SimpleInternalScript
+from core.types import ADCMCoreType, ClusterObjectDesc, JobID, ProviderObjectDesc
 
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
 from use_cases.internal_scripts.common import build_result_message
@@ -30,8 +30,8 @@ class BeforeUpgradeCleanInternalScript:
     reset_cluster_before_upgrade: ResetBeforeUpgradeCluster
     reset_provider_before_upgrade: ResetBeforeUpgradeProvider
 
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
-        _ = job
+    def do(self, task: Task, script: SimpleInternalScript, job_id: JobID) -> InternalScriptResult:
+        _ = script, job_id
 
         if not task.owner:
             raise RuntimeError("misconfigured task runner: no owner")

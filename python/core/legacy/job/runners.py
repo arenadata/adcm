@@ -19,8 +19,19 @@ from typing import NamedTuple, Protocol
 
 from core.action import ExecutionStatus, Task
 from core.action.job import JobRepoI
-from core.action.types import RichJob
+from core.action.types import (
+    AnsibleScript,
+    ConfigApplyScript,
+    HcApplyScript,
+    InternalScript,
+    JobShortInfo,
+    PythonScript,
+    RichJob,
+    ServiceManageScript,
+    SimpleInternalScript,
+)
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.executors import Executor
 
 
@@ -62,26 +73,53 @@ class JobEnvironmentBuilder(Protocol):
         job: RichJob,
         configuration: ExternalSettings,
         cluster_service: ClusterService,
+        config_service: ConfigService,
     ) -> None: ...
 
 
-class ExecutionTarget(NamedTuple):
-    job: RichJob
+@dataclass(slots=True)
+class ExecutionTarget:
     executor: Executor
     environment_builders: Iterable[JobEnvironmentBuilder]
     # stuff like `finish_check` should go to finalizers
     finalizers: Iterable[JobFinalizer]
 
 
-class ExecutionTargetFactoryI(Protocol):
+class AnsibleTargetBuilderI(Protocol):
     def __call__(
-        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
-    ) -> Iterable[ExecutionTarget]: ...
+        self, script: AnsibleScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
+
+
+class PythonTargetBuilderI(Protocol):
+    def __call__(
+        self, script: PythonScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
+
+
+class InternalTargetBuilderI(Protocol):
+    def __call__(
+        self, script: InternalScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
 
 
 @dataclass(slots=True)
-class JobProcessor:
-    convert: ExecutionTargetFactoryI
+class ExecutionTargetFactory:
+    ansible: AnsibleTargetBuilderI
+    python: PythonTargetBuilderI
+    internal: InternalTargetBuilderI
+
+    def __call__(self, task: Task, job: RichJob, configuration: ExternalSettings) -> ExecutionTarget:
+        match job.spec.script:
+            case AnsibleScript() as script:
+                return self.ansible(script=script, task=task, job=job.runtime, configuration=configuration)
+            case PythonScript() as script:
+                return self.python(script=script, task=task, job=job.runtime, configuration=configuration)
+            case (SimpleInternalScript() | HcApplyScript() | ConfigApplyScript() | ServiceManageScript()) as script:
+                return self.internal(script=script, task=task, job=job.runtime, configuration=configuration)
+            case _:
+                message = f"Can't convert job of type {job.spec.script.type}"
+                raise NotImplementedError(message)
 
 
 class RunnerEnvironment(Protocol):
@@ -103,7 +141,7 @@ class RunnerRuntime:
 
 
 class TaskRunner(ABC):
-    _job_processor: JobProcessor
+    _target_factory: ExecutionTargetFactory
     _settings: ExternalSettings
 
     # external dependencies
@@ -115,12 +153,12 @@ class TaskRunner(ABC):
     def __init__(
         self,
         *,
-        job_processor: JobProcessor,
+        target_factory: ExecutionTargetFactory,
         settings: ExternalSettings,
         repo: JobRepoI,
         environment: RunnerEnvironment,
     ):
-        self._job_processor = job_processor
+        self._target_factory = target_factory
         self._settings = settings
         self._repo = repo
         self._environment = environment

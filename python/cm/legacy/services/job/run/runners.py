@@ -21,11 +21,11 @@ from core.action.job.operations import calculate_owner_state_changes, calculate_
 from core.action.operations import flatten_execution_plan, to_rich_jobs
 from core.action.types import RichJob, StateChanges
 from core.cluster import ClusterService
-from core.config import ConfigRepoI
+from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import (
     ExecutionTarget,
+    ExecutionTargetFactory,
     ExternalSettings,
-    JobProcessor,
     RunnerEnvironment,
     RunnerRuntime,
     TaskRunner,
@@ -80,13 +80,13 @@ class JobSequenceRunner(TaskRunner):
         status_server: StatusServerInteractor,
         logger: Logger,
         container: dishka.Container,
-        job_processor: JobProcessor,
+        target_factory: ExecutionTargetFactory,
         settings: ExternalSettings,
         repo: JobRepoI,
         executor_terminator: ExecutorTerminator,
         environment: RunnerEnvironment,
     ):
-        super().__init__(job_processor=job_processor, settings=settings, repo=repo, environment=environment)
+        super().__init__(target_factory=target_factory, settings=settings, repo=repo, environment=environment)
 
         self._notifier = notifier
         self._status_server = status_server
@@ -129,15 +129,15 @@ class JobSequenceRunner(TaskRunner):
             task, configured_jobs = self._configure(task_id=task_id)
             self._start(task_id=task_id)
 
-            for current_job in configured_jobs:
-                if self._is_revoked(job_id=current_job.job.runtime.id):
+            for job, target in configured_jobs:
+                if self._is_revoked(job_id=job.runtime.id):
                     # job revoked on its own is skipped, following ones are still executed
                     continue
 
                 task = self._get_updated_task(task=task)
-                self._prepare_job_environment(task=task, target=current_job)
+                self._prepare_job_environment(task=task, job=job, target=target)
 
-                job_result = self._execute_job(task=task, target=current_job)
+                job_result = self._execute_job(task=task, job=job, target=target)
 
                 if not self._should_proceed(last_job_result=job_result):
                     break
@@ -162,7 +162,7 @@ class JobSequenceRunner(TaskRunner):
 
             self._finish(task=task, state_changes=state_changes)
 
-    def _configure(self, task_id: int) -> tuple[Task, tuple[ExecutionTarget, ...]]:
+    def _configure(self, task_id: int) -> tuple[Task, tuple[tuple[RichJob, ExecutionTarget], ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
 
         task = self._repo.get_task(id=task_id)
@@ -174,7 +174,7 @@ class JobSequenceRunner(TaskRunner):
         jobs_in_order = self._get_jobs_in_plan_order(task_id=task_id)
 
         configured_jobs = tuple(
-            self._job_processor.convert(task=task, jobs=jobs_in_order, configuration=self._settings)
+            (job, self._target_factory(task=task, job=job, configuration=self._settings)) for job in jobs_in_order
         )
 
         return task, configured_jobs
@@ -211,19 +211,24 @@ class JobSequenceRunner(TaskRunner):
 
         return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
-    def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
-        (self._settings.adcm.run_dir / str(target.job.runtime.id) / "tmp").mkdir(parents=True, exist_ok=True)
+    def _prepare_job_environment(self, task: Task, job: RichJob, target: ExecutionTarget) -> None:
+        (self._settings.adcm.run_dir / str(job.runtime.id) / "tmp").mkdir(parents=True, exist_ok=True)
 
         cluster_service = self._container.get(ClusterService)
+        config_service = self._container.get(ConfigService)
         for prepare_environment in target.environment_builders:
             prepare_environment(
-                task=task, job=target.job, configuration=self._settings, cluster_service=cluster_service
+                task=task,
+                job=job,
+                configuration=self._settings,
+                cluster_service=cluster_service,
+                config_service=config_service,
             )
 
-    def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
+    def _execute_job(self, task: Task, job: RichJob, target: ExecutionTarget) -> ExecutionStatus:
         if task.owner:
             create_related_configs(
-                job_id=target.job.runtime.id, owner=task.owner, config_repo=self._container.get(ConfigRepoI)
+                job_id=job.runtime.id, owner=task.owner, config_repo=self._container.get(ConfigRepoI)
             )
 
         target.executor.execute()
@@ -231,7 +236,7 @@ class JobSequenceRunner(TaskRunner):
         pid = getattr(target.executor.process, "pid", NO_PROCESS_PID)
 
         self._repo.update_job(
-            id=target.job.runtime.id,
+            id=job.runtime.id,
             data=JobUpdateDTO(
                 pid=pid,
                 status=ExecutionStatus.RUNNING,
@@ -243,9 +248,9 @@ class JobSequenceRunner(TaskRunner):
         # it's enough to detect the function once (as the delete one),
         # but implementation of such a thing is better be done with thoughfull concerns refactoring
         if task.is_blocking:
-            update_task_lock_concern(job_id=target.job.runtime.id)
+            update_task_lock_concern(job_id=job.runtime.id)
         else:
-            update_task_flag_concern(job_id=target.job.runtime.id)
+            update_task_flag_concern(job_id=job.runtime.id)
 
         result = target.executor.wait_finished().result
         # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,
@@ -260,7 +265,7 @@ class JobSequenceRunner(TaskRunner):
             job_status = ExecutionStatus.FAILED
 
         self._repo.update_job(
-            id=target.job.runtime.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
+            id=job.runtime.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
         )
 
         # There a some approaches to implement finalizers:
@@ -274,7 +279,7 @@ class JobSequenceRunner(TaskRunner):
         exception_to_raise = None
         for finalizer in target.finalizers:
             try:
-                finalizer(job=target.job)
+                finalizer(job=job)
             except Exception as err:
                 exception_to_raise = err
                 message = "Unhandled exception occurred during after-job finalization"

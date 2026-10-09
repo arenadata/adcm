@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Generator, Iterable
 from configparser import ConfigParser
+from dataclasses import dataclass
 from functools import partial
 from logging import getLogger
 from pathlib import Path
@@ -23,6 +23,8 @@ from core.action.types import (
     AnsibleScript,
     ConfigApplyScript,
     HcApplyScript,
+    InternalScript,
+    JobShortInfo,
     PythonScript,
     RichJob,
     ServiceManageScript,
@@ -32,9 +34,9 @@ from core.cluster import ClusterService
 from core.config import ConfigService
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.job.executors import ExecutorConfig
-from core.legacy.job.runners import ExecutionTarget, ExecutionTargetFactoryI, ExternalSettings
+from core.legacy.job.runners import ExecutionTarget, ExternalSettings, JobFinalizer
 from core.logs import LogsService
-from core.types import ADCMCoreType
+from core.types import ADCMCoreType, JobID
 from django.contrib.contenttypes.models import ContentType
 from use_cases.internal_scripts.before_upgrade_clean import BeforeUpgradeCleanInternalScript
 from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
@@ -74,97 +76,101 @@ from cm.models import (
 
 logger = getLogger("adcm")
 
-_InternalScript = (
-    BundleSwitchInternalScript
-    | BundleRevertInternalScript
-    | HcApplyInternalScript
-    | ConfigApplyInternalScript
-    | ServiceManageInternalScript
-    | BeforeUpgradeCleanInternalScript
-)
 
-
-class ExecutionTargetFactory(ExecutionTargetFactoryI):
-    def __init__(
-        self,
-        bundle_switch: BundleSwitchInternalScript,
-        bundle_revert: BundleRevertInternalScript,
-        hc_apply: HcApplyInternalScript,
-        config_apply: ConfigApplyInternalScript,
-        service_manage: ServiceManageInternalScript,
-        before_upgrade_clean: BeforeUpgradeCleanInternalScript,
-        logs_service: LogsService,
-        config_service: ConfigService,
-    ):
-        self._default_ansible_finalizers = (
-            lambda job: logs_service.finish_updating_check_logs_for_job(job_id=job.runtime.id),
-        )
-        self._config_service = config_service
-        self._supported_internal_scripts: dict[str, _InternalScript] = {
-            "bundle_switch": bundle_switch,
-            "bundle_revert": bundle_revert,
-            "hc_apply": hc_apply,
-            "config_apply": config_apply,
-            "service_manage": service_manage,
-            "before_upgrade_clean": before_upgrade_clean,
-        }
+@dataclass(slots=True)
+class AnsibleTargetBuilder:
+    logs_service: LogsService
 
     def __call__(
-        self, task: Task, jobs: Iterable[RichJob], configuration: ExternalSettings
-    ) -> Generator[ExecutionTarget, None, None]:
-        for job_info in jobs:
-            work_dir = configuration.adcm.run_dir / str(job_info.runtime.id)
-            finalizers = (
-                partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stderr"),
-                partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stdout"),
+        self, script: AnsibleScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget:
+        work_dir, finalizers = _prepare_work_dir_and_log_finalizers(job_id=job.id, configuration=configuration)
+        executor = AnsibleProcessExecutor(
+            config=AnsibleExecutorConfig(
+                job_script=script.path,
+                work_dir=work_dir,
+                bundle=task.bundle,
+                tags=script.params.ansible_tags,
+                verbose=task.verbose,
+                venv=task.action.venv,
+                ansible_secret_script=configuration.ansible.ansible_secret_script,
             )
-            # the script's own type is what tells one executor from another,
-            # and it narrows the params each internal script is handed along the way
-            match job_info.spec.script:
-                case AnsibleScript() as script_spec:
-                    executor = AnsibleProcessExecutor(
-                        config=AnsibleExecutorConfig(
-                            job_script=script_spec.path,
-                            work_dir=work_dir,
-                            bundle=task.bundle,
-                            tags=script_spec.params.ansible_tags,
-                            verbose=task.verbose,
-                            venv=task.action.venv,
-                            ansible_secret_script=configuration.ansible.ansible_secret_script,
-                        )
-                    )
-                    finalizers = (*self._default_ansible_finalizers, *finalizers)
-                    environment_builders = (partial(prepare_ansible_environment, config_service=self._config_service),)
-                case PythonScript() as script_spec:
-                    executor = PythonProcessExecutor(
-                        config=PythonExecutorConfig(
-                            job_script=script_spec.path,
-                            work_dir=work_dir,
-                            bundle=task.bundle,
-                            venv=task.action.venv,
-                        )
-                    )
-                    environment_builders = ()
-                case SimpleInternalScript() | HcApplyScript() | ConfigApplyScript() | ServiceManageScript():
-                    script = partial(self._internal_script(job_info).do, task=task, job=job_info)
-                    executor = InternalExecutor(config=ExecutorConfig(work_dir=work_dir), script=script)
-                    environment_builders = ()
-                case _:
-                    message = f"Can't convert job of type {job_info.spec.script.type}"
-                    raise NotImplementedError(message)
+        )
+        finalizers = (self._finish_check_logs, *finalizers)
+        environment_builders = (prepare_ansible_environment,)
 
-            yield ExecutionTarget(
-                job=job_info, executor=executor, environment_builders=environment_builders, finalizers=finalizers
+        return ExecutionTarget(executor=executor, environment_builders=environment_builders, finalizers=finalizers)
+
+    def _finish_check_logs(self, job: RichJob) -> None:
+        self.logs_service.finish_updating_check_logs_for_job(job_id=job.runtime.id)
+
+
+@dataclass(slots=True)
+class PythonTargetBuilder:
+    def __call__(
+        self, script: PythonScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget:
+        work_dir, finalizers = _prepare_work_dir_and_log_finalizers(job_id=job.id, configuration=configuration)
+        executor = PythonProcessExecutor(
+            config=PythonExecutorConfig(
+                job_script=script.path,
+                work_dir=work_dir,
+                bundle=task.bundle,
+                venv=task.action.venv,
             )
+        )
 
-    def _internal_script(self, job: RichJob) -> _InternalScript:
-        script_name = job.spec.script.path
+        return ExecutionTarget(executor=executor, environment_builders=(), finalizers=finalizers)
 
-        try:
-            return self._supported_internal_scripts[script_name]
-        except KeyError as err:
-            message = f"Unknown internal script {script_name}, can't build runner for it"
-            raise NotImplementedError(message) from err
+
+@dataclass(slots=True)
+class InternalTargetBuilder:
+    bundle_switch: BundleSwitchInternalScript
+    bundle_revert: BundleRevertInternalScript
+    hc_apply: HcApplyInternalScript
+    config_apply: ConfigApplyInternalScript
+    service_manage: ServiceManageInternalScript
+    before_upgrade_clean: BeforeUpgradeCleanInternalScript
+
+    def __call__(
+        self, script: InternalScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget:
+        work_dir, finalizers = _prepare_work_dir_and_log_finalizers(job_id=job.id, configuration=configuration)
+
+        match script:
+            case SimpleInternalScript(path="bundle_switch") as script_:
+                script_func = self.bundle_switch
+            case SimpleInternalScript(path="bundle_revert") as script_:
+                script_func = self.bundle_revert
+            case SimpleInternalScript(path="before_upgrade_clean") as script_:
+                script_func = self.before_upgrade_clean
+            case HcApplyScript() as script_:
+                script_func = self.hc_apply
+            case ConfigApplyScript() as script_:
+                script_func = self.config_apply
+            case ServiceManageScript() as script_:
+                script_func = self.service_manage
+            case _:
+                message = f"Unknown internal script {script.path}, can't build runner for it"
+                raise NotImplementedError(message)
+
+        executor = InternalExecutor(
+            config=ExecutorConfig(work_dir=work_dir),
+            script=partial(script_func.do, task=task, script=script_, job_id=job.id),
+        )
+
+        return ExecutionTarget(executor=executor, environment_builders=(), finalizers=finalizers)
+
+
+def _prepare_work_dir_and_log_finalizers(
+    job_id: JobID, configuration: ExternalSettings
+) -> tuple[Path, tuple[JobFinalizer, ...]]:
+    work_dir = configuration.adcm.run_dir / str(job_id)
+    finalizers: tuple[JobFinalizer, ...] = (
+        partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stderr"),
+        partial(save_fs_logs_to_db, work_dir=work_dir, log_type="stdout"),
+    )
+    return work_dir, finalizers
 
 
 # ENVIRONMENT BUILDERS

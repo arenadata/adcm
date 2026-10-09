@@ -91,7 +91,9 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
             user__username="admin",
         )
 
-        container = make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)))
+        container = make_overridden_container(
+            TaskRunnerOverride(failed_job=FailedJobInfo(spec_key="/0-action", return_code=1))
+        )
         self.task_runner(container).launch_task(response.json()["id"])
 
         self.check_last_audit_record(
