@@ -1,0 +1,18 @@
+guardian_groupobjectpermission:
+  added:
+  - G-renamed | cm.view_configlog | configlog:host:h-multi@rev1
+  - G-renamed | cm.view_host | host:h-multi
+  - G-renamed | cm.view_objectconfig | config:host:h-multi
+  removed:
+  - G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev1
+  - G-solo-view-host-config | cm.view_host | host:h-multi
+  - G-solo-view-host-config | cm.view_objectconfig | config:host:h-multi
+rbac_policy_group_object_perm:
+  added:
+  - P-solo-view-host-config | G-renamed | cm.view_configlog | configlog:host:h-multi@rev1
+  - P-solo-view-host-config | G-renamed | cm.view_host | host:h-multi
+  - P-solo-view-host-config | G-renamed | cm.view_objectconfig | config:host:h-multi
+  removed:
+  - P-solo-view-host-config | G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev1
+  - P-solo-view-host-config | G-solo-view-host-config | cm.view_host | host:h-multi
+  - P-solo-view-host-config | G-solo-view-host-config | cm.view_objectconfig | config:host:h-multi

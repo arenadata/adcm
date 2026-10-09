@@ -1,0 +1,267 @@
+auth_user_groups:
+  added:
+  - U-none | G-solo-cluster-admin
+  removed: []
+effective_object_perm:
+  added:
+  - U-none | cm.add_service_to_cluster | cluster:A1
+  - U-none | cm.change_ansible_config_of_cluster | cluster:A1
+  - U-none | cm.change_cluster | cluster:A1
+  - U-none | cm.change_config_of_cluster | cluster:A1
+  - U-none | cm.change_config_of_component | component:A1/svc_1/comp_1
+  - U-none | cm.change_config_of_component | component:A1/svc_1/comp_2
+  - U-none | cm.change_config_of_component | component:A1/svc_2/comp_1
+  - U-none | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - U-none | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - U-none | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - U-none | cm.change_config_of_host | host:h-multi
+  - U-none | cm.change_config_of_host | host:h-one
+  - U-none | cm.change_config_of_host | host:h-unmapped
+  - U-none | cm.change_config_of_service | service:A1/svc_1
+  - U-none | cm.change_config_of_service | service:A1/svc_2
+  - U-none | cm.change_config_of_service | service:A1/svc_3
+  - U-none | cm.change_import_of_cluster | cluster:A1
+  - U-none | cm.change_import_of_service | service:A1/svc_1
+  - U-none | cm.change_import_of_service | service:A1/svc_2
+  - U-none | cm.change_import_of_service | service:A1/svc_3
+  - U-none | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-none | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-none | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-none | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-none | cm.change_joblog | job:host:h-one:common#1/1
+  - U-none | cm.change_joblog | job:host:h-one:on_host#1/1
+  - U-none | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_1/comp_1
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_1/comp_2
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_2/comp_1
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - U-none | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - U-none | cm.change_maintenance_mode_host | host:h-multi
+  - U-none | cm.change_maintenance_mode_host | host:h-one
+  - U-none | cm.change_maintenance_mode_host | host:h-unmapped
+  - U-none | cm.change_maintenance_mode_service | service:A1/svc_1
+  - U-none | cm.change_maintenance_mode_service | service:A1/svc_2
+  - U-none | cm.change_maintenance_mode_service | service:A1/svc_3
+  - U-none | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-none | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-none | cm.change_tasklog | task:cluster:A1:common#2
+  - U-none | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-none | cm.change_tasklog | task:host:h-one:common#1
+  - U-none | cm.change_tasklog | task:host:h-one:on_host#1
+  - U-none | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-none | cm.delete_host | host:h-multi
+  - U-none | cm.delete_host | host:h-one
+  - U-none | cm.delete_host | host:h-unmapped
+  - U-none | cm.delete_service | service:A1/svc_1
+  - U-none | cm.delete_service | service:A1/svc_2
+  - U-none | cm.delete_service | service:A1/svc_3
+  - U-none | cm.do_upgrade_of_cluster | cluster:A1
+  - U-none | cm.edit_action_host_group_cluster | cluster:A1
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_1/comp_1
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_1/comp_2
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_2/comp_1
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - U-none | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - U-none | cm.edit_action_host_group_service | service:A1/svc_1
+  - U-none | cm.edit_action_host_group_service | service:A1/svc_2
+  - U-none | cm.edit_action_host_group_service | service:A1/svc_3
+  - U-none | cm.edit_host_components_of_cluster | cluster:A1
+  - U-none | cm.map_host_to_cluster | cluster:A1
+  - U-none | cm.remove_host | host:h-multi
+  - U-none | cm.remove_host | host:h-one
+  - U-none | cm.remove_host | host:h-unmapped
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | cluster:A1
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_1/comp_1
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_1/comp_2
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_1
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
+  - U-none | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - U-none | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - U-none | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
+  - U-none | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
+  - U-none | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+  - U-none | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-multi
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-one
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-unmapped
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
+  - U-none | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - U-none | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - U-none | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - U-none | cm.unmap_host_from_cluster | cluster:A1
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - U-none | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - U-none | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - U-none | cm.view_action_host_group_cluster | cluster:A1
+  - U-none | cm.view_action_host_group_component | component:A1/svc_1/comp_1
+  - U-none | cm.view_action_host_group_component | component:A1/svc_1/comp_2
+  - U-none | cm.view_action_host_group_component | component:A1/svc_2/comp_1
+  - U-none | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - U-none | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - U-none | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - U-none | cm.view_action_host_group_service | service:A1/svc_1
+  - U-none | cm.view_action_host_group_service | service:A1/svc_2
+  - U-none | cm.view_action_host_group_service | service:A1/svc_3
+  - U-none | cm.view_ansible_config_of_cluster | cluster:A1
+  - U-none | cm.view_cluster | cluster:A1
+  - U-none | cm.view_component | component:A1/svc_1/comp_1
+  - U-none | cm.view_component | component:A1/svc_1/comp_2
+  - U-none | cm.view_component | component:A1/svc_2/comp_1
+  - U-none | cm.view_component | component:A1/svc_2/comp_2
+  - U-none | cm.view_component | component:A1/svc_3/comp_1
+  - U-none | cm.view_component | component:A1/svc_3/comp_2
+  - U-none | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - U-none | cm.view_confighostgroup | chg:component:A1/svc_1/comp_1/chg-component
+  - U-none | cm.view_confighostgroup | chg:service:A1/svc_1/chg-service
+  - U-none | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - U-none | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - U-none | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - U-none | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev1
+  - U-none | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev2
+  - U-none | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev3
+  - U-none | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev1
+  - U-none | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev2
+  - U-none | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev3
+  - U-none | cm.view_configlog | configlog:cluster:A1@rev1
+  - U-none | cm.view_configlog | configlog:cluster:A1@rev2
+  - U-none | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev1
+  - U-none | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev2
+  - U-none | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev1
+  - U-none | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev1
+  - U-none | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - U-none | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - U-none | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - U-none | cm.view_configlog | configlog:host:h-multi@rev1
+  - U-none | cm.view_configlog | configlog:host:h-one@rev1
+  - U-none | cm.view_configlog | configlog:host:h-one@rev2
+  - U-none | cm.view_configlog | configlog:host:h-unmapped@rev1
+  - U-none | cm.view_configlog | configlog:service:A1/svc_1@rev1
+  - U-none | cm.view_configlog | configlog:service:A1/svc_1@rev2
+  - U-none | cm.view_configlog | configlog:service:A1/svc_2@rev1
+  - U-none | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - U-none | cm.view_host | host:h-multi
+  - U-none | cm.view_host | host:h-one
+  - U-none | cm.view_host | host:h-unmapped
+  - U-none | cm.view_host_components_of_cluster | cluster:A1
+  - U-none | cm.view_import_of_cluster | cluster:A1
+  - U-none | cm.view_import_of_service | service:A1/svc_1
+  - U-none | cm.view_import_of_service | service:A1/svc_2
+  - U-none | cm.view_import_of_service | service:A1/svc_3
+  - U-none | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-none | cm.view_joblog | cluster:A1
+  - U-none | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-none | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-none | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-none | cm.view_joblog | job:host:h-one:common#1/1
+  - U-none | cm.view_joblog | job:host:h-one:on_host#1/1
+  - U-none | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-none | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-none | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-none | cm.view_logstorage | cluster:A1
+  - U-none | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-none | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-none | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-none | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-none | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - U-none | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - U-none | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - U-none | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-none | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-none | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - U-none | cm.view_objectconfig | config:chg:component:A1/svc_1/comp_1/chg-component
+  - U-none | cm.view_objectconfig | config:chg:service:A1/svc_1/chg-service
+  - U-none | cm.view_objectconfig | config:cluster:A1
+  - U-none | cm.view_objectconfig | config:component:A1/svc_1/comp_1
+  - U-none | cm.view_objectconfig | config:component:A1/svc_1/comp_2
+  - U-none | cm.view_objectconfig | config:component:A1/svc_2/comp_1
+  - U-none | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - U-none | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - U-none | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - U-none | cm.view_objectconfig | config:host:h-multi
+  - U-none | cm.view_objectconfig | config:host:h-one
+  - U-none | cm.view_objectconfig | config:host:h-unmapped
+  - U-none | cm.view_objectconfig | config:service:A1/svc_1
+  - U-none | cm.view_objectconfig | config:service:A1/svc_2
+  - U-none | cm.view_objectconfig | config:service:A1/svc_3
+  - U-none | cm.view_service | service:A1/svc_1
+  - U-none | cm.view_service | service:A1/svc_2
+  - U-none | cm.view_service | service:A1/svc_3
+  - U-none | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-none | cm.view_tasklog | cluster:A1
+  - U-none | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-none | cm.view_tasklog | task:cluster:A1:common#2
+  - U-none | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-none | cm.view_tasklog | task:host:h-one:common#1
+  - U-none | cm.view_tasklog | task:host:h-one:on_host#1
+  - U-none | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - U-none | cm.view_upgrade_of_cluster | cluster:A1
+  removed: []
+effective_model_perm:
+  added:
+  - U-none | cm.add_bundle
+  - U-none | cm.add_confighostgroup
+  - U-none | cm.add_configlog
+  - U-none | cm.add_host
+  - U-none | cm.add_prototype
+  - U-none | cm.add_service
+  - U-none | cm.change_bundle
+  - U-none | cm.change_confighostgroup
+  - U-none | cm.change_configlog
+  - U-none | cm.change_objectconfig
+  - U-none | cm.delete_bundle
+  - U-none | cm.delete_concernitem
+  - U-none | cm.delete_confighostgroup
+  - U-none | cm.view_concernitem
+  - U-none | cm.view_host
+  removed: []

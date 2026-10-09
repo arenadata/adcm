@@ -1,0 +1,19 @@
+guardian_groupobjectpermission:
+  added:
+  - G-overlap | cm.change_config_of_cluster | cluster:A2
+  - G-overlap | cm.view_cluster | cluster:A2
+  - G-overlap | cm.view_configlog | configlog:cluster:A2@rev1
+  - G-overlap | cm.view_objectconfig | config:cluster:A2
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-overlap-edit-config | G-overlap | cm.change_config_of_cluster | cluster:A2
+  - P-overlap-edit-config | G-overlap | cm.view_cluster | cluster:A2
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A2@rev1
+  - P-overlap-edit-config | G-overlap | cm.view_objectconfig | config:cluster:A2
+  removed: []
+rbac_policy_object:
+  added:
+  - P-overlap-edit-config | cluster:A2
+  removed:
+  - P-overlap-edit-config | cluster:A1

@@ -104,6 +104,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
     - S-J5: custom and check log on the A1 task launched after the policies
     - S-J7: second `common` on A1/svc_1, rotated (TaskLog and orphan JobLogs deleted as logrotate does)
     - S-R1..S-R8, G-*, U-*: see `build_rbac`
+    - custom role `Custom Unused Role` (one business child) in no policy, can be deleted (G2.05)
     """
 
     suite_setup = SETUP_WITH_RBAC
@@ -317,6 +318,13 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         if custom_role is None:
             message = "Custom role wasn't created"
             raise RuntimeError(message)
+
+        # G2.05: custom role in no policy, can be deleted
+        role_create(
+            display_name="Custom Unused Role",
+            description="Custom role in no policy",
+            child=[cls.role("View host configurations")],
+        )
 
         policies: Iterable[tuple[str, Role, list[str], list[Cluster | Service | Component | Provider | Host]]] = (
             ("P-solo-cluster-admin", cls.role("Cluster Administrator"), ["G-solo-cluster-admin"], [cls.cluster_a1]),

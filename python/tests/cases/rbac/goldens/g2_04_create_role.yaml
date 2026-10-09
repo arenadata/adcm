@@ -1,0 +1,9 @@
+rbac_role:
+  added:
+  - G2 Role | role
+  removed: []
+rbac_role_child:
+  added:
+  - 'G2 Role | Cluster Action: Common Action'
+  - G2 Role | View cluster configurations
+  removed: []

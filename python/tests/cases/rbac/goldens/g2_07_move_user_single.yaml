@@ -1,0 +1,58 @@
+auth_user_groups:
+  added:
+  - U-single | G-idle
+  removed:
+  - U-single | G-solo-custom
+effective_object_perm:
+  added: []
+  removed:
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.change_tasklog | task:cluster:A1:common#2
+  - U-single | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - U-single | cm.view_cluster | cluster:A1
+  - U-single | cm.view_component | component:A1/svc_1/comp_1
+  - U-single | cm.view_component | component:A1/svc_1/comp_2
+  - U-single | cm.view_component | component:A1/svc_2/comp_1
+  - U-single | cm.view_component | component:A1/svc_2/comp_2
+  - U-single | cm.view_component | component:A1/svc_3/comp_1
+  - U-single | cm.view_component | component:A1/svc_3/comp_2
+  - U-single | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev1
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev2
+  - U-single | cm.view_host | host:h-multi
+  - U-single | cm.view_host | host:h-one
+  - U-single | cm.view_host | host:h-unmapped
+  - U-single | cm.view_host_components_of_cluster | cluster:A1
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-single | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - U-single | cm.view_objectconfig | config:cluster:A1
+  - U-single | cm.view_service | service:A1/svc_1
+  - U-single | cm.view_service | service:A1/svc_2
+  - U-single | cm.view_service | service:A1/svc_3
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.view_tasklog | task:cluster:A1:common#2
+  - U-single | cm.view_tasklog | task:service:A1/svc_1:common#1

@@ -1,0 +1,19 @@
+auth_user_groups:
+  added: []
+  removed:
+  - U-mixed | G-cross
+effective_object_perm:
+  added: []
+  removed:
+  - U-mixed | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.change_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-mixed | cm.view_cluster | cluster:A2
+  - U-mixed | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-mixed | cm.view_tasklog | task:cluster:A1:common#2

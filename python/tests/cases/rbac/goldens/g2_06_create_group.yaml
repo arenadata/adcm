@@ -1,0 +1,4 @@
+auth_user_groups:
+  added:
+  - U-none | G-new
+  removed: []

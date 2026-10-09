@@ -1,0 +1,173 @@
+auth_user_groups:
+  added: []
+  removed:
+  - U-mixed | G-cross
+  - U-mixed | G-solo-provider-admin
+  - U-mixed | G-solo-service-admin
+effective_object_perm:
+  added: []
+  removed:
+  - U-mixed | cm.add_host_to_provider | provider:P1
+  - U-mixed | cm.change_config_of_component | component:A1/svc_1/comp_1
+  - U-mixed | cm.change_config_of_component | component:A1/svc_1/comp_2
+  - U-mixed | cm.change_config_of_host | host:h-free
+  - U-mixed | cm.change_config_of_host | host:h-free~dup#1
+  - U-mixed | cm.change_config_of_host | host:h-multi
+  - U-mixed | cm.change_config_of_host | host:h-one
+  - U-mixed | cm.change_config_of_host | host:h-unmapped
+  - U-mixed | cm.change_config_of_provider | provider:P1
+  - U-mixed | cm.change_config_of_service | service:A1/svc_1
+  - U-mixed | cm.change_import_of_service | service:A1/svc_1
+  - U-mixed | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-mixed | cm.change_joblog | job:host:h-one:common#1/1
+  - U-mixed | cm.change_joblog | job:provider:P1:common#1/1
+  - U-mixed | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-mixed | cm.change_maintenance_mode_component | component:A1/svc_1/comp_1
+  - U-mixed | cm.change_maintenance_mode_component | component:A1/svc_1/comp_2
+  - U-mixed | cm.change_maintenance_mode_service | service:A1/svc_1
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-mixed | cm.change_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-mixed | cm.change_tasklog | task:host:h-one:common#1
+  - U-mixed | cm.change_tasklog | task:provider:P1:common#1
+  - U-mixed | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-mixed | cm.delete_host | host:h-free
+  - U-mixed | cm.delete_host | host:h-free~dup#1
+  - U-mixed | cm.delete_host | host:h-multi
+  - U-mixed | cm.delete_host | host:h-one
+  - U-mixed | cm.delete_host | host:h-unmapped
+  - U-mixed | cm.do_upgrade_of_provider | provider:P1
+  - U-mixed | cm.edit_action_host_group_component | component:A1/svc_1/comp_1
+  - U-mixed | cm.edit_action_host_group_component | component:A1/svc_1/comp_2
+  - U-mixed | cm.edit_action_host_group_service | service:A1/svc_1
+  - U-mixed | cm.remove_host | host:h-free
+  - U-mixed | cm.remove_host | host:h-free~dup#1
+  - U-mixed | cm.remove_host | host:h-multi
+  - U-mixed | cm.remove_host | host:h-one
+  - U-mixed | cm.remove_host | host:h-unmapped
+  - U-mixed | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_1/comp_1
+  - U-mixed | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_1/comp_2
+  - U-mixed | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
+  - U-mixed | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
+  - U-mixed | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free~dup#1
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-multi
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-one
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-unmapped
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P1
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - U-mixed | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - U-mixed | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+  - U-mixed | cm.view_action_host_group_component | component:A1/svc_1/comp_1
+  - U-mixed | cm.view_action_host_group_component | component:A1/svc_1/comp_2
+  - U-mixed | cm.view_action_host_group_service | service:A1/svc_1
+  - U-mixed | cm.view_cluster | cluster:A1
+  - U-mixed | cm.view_cluster | cluster:A2
+  - U-mixed | cm.view_component | component:A1/svc_1/comp_1
+  - U-mixed | cm.view_component | component:A1/svc_1/comp_2
+  - U-mixed | cm.view_confighostgroup | chg:component:A1/svc_1/comp_1/chg-component
+  - U-mixed | cm.view_confighostgroup | chg:provider:P1/chg-provider
+  - U-mixed | cm.view_confighostgroup | chg:service:A1/svc_1/chg-service
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev1
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev2
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev3
+  - U-mixed | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev1
+  - U-mixed | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev2
+  - U-mixed | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev3
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev1
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev2
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev3
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev1
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev2
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev1
+  - U-mixed | cm.view_configlog | configlog:host:h-free@rev1
+  - U-mixed | cm.view_configlog | configlog:host:h-multi@rev1
+  - U-mixed | cm.view_configlog | configlog:host:h-one@rev1
+  - U-mixed | cm.view_configlog | configlog:host:h-one@rev2
+  - U-mixed | cm.view_configlog | configlog:host:h-unmapped@rev1
+  - U-mixed | cm.view_configlog | configlog:provider:P1@rev1
+  - U-mixed | cm.view_configlog | configlog:provider:P1@rev2
+  - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev1
+  - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev2
+  - U-mixed | cm.view_host | host:h-free
+  - U-mixed | cm.view_host | host:h-free~dup#1
+  - U-mixed | cm.view_host | host:h-multi
+  - U-mixed | cm.view_host | host:h-one
+  - U-mixed | cm.view_host | host:h-unmapped
+  - U-mixed | cm.view_import_of_service | service:A1/svc_1
+  - U-mixed | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-mixed | cm.view_joblog | job:host:h-one:common#1/1
+  - U-mixed | cm.view_joblog | job:provider:P1:common#1/1
+  - U-mixed | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-mixed | cm.view_joblog | provider:P1
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-mixed | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | provider:P1
+  - U-mixed | cm.view_objectconfig | config:chg:component:A1/svc_1/comp_1/chg-component
+  - U-mixed | cm.view_objectconfig | config:chg:provider:P1/chg-provider
+  - U-mixed | cm.view_objectconfig | config:chg:service:A1/svc_1/chg-service
+  - U-mixed | cm.view_objectconfig | config:component:A1/svc_1/comp_1
+  - U-mixed | cm.view_objectconfig | config:component:A1/svc_1/comp_2
+  - U-mixed | cm.view_objectconfig | config:host:h-free
+  - U-mixed | cm.view_objectconfig | config:host:h-multi
+  - U-mixed | cm.view_objectconfig | config:host:h-one
+  - U-mixed | cm.view_objectconfig | config:host:h-unmapped
+  - U-mixed | cm.view_objectconfig | config:provider:P1
+  - U-mixed | cm.view_objectconfig | config:service:A1/svc_1
+  - U-mixed | cm.view_provider | provider:P1
+  - U-mixed | cm.view_service | service:A1/svc_1
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-mixed | cm.view_tasklog | provider:P1
+  - U-mixed | cm.view_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-mixed | cm.view_tasklog | task:host:h-one:common#1
+  - U-mixed | cm.view_tasklog | task:provider:P1:common#1
+  - U-mixed | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - U-mixed | cm.view_upgrade_of_provider | provider:P1
+effective_model_perm:
+  added: []
+  removed:
+  - U-mixed | cm.add_bundle
+  - U-mixed | cm.add_confighostgroup
+  - U-mixed | cm.add_configlog
+  - U-mixed | cm.add_host
+  - U-mixed | cm.add_prototype
+  - U-mixed | cm.change_bundle
+  - U-mixed | cm.change_confighostgroup
+  - U-mixed | cm.change_configlog
+  - U-mixed | cm.change_objectconfig
+  - U-mixed | cm.delete_bundle
+  - U-mixed | cm.delete_concernitem
+  - U-mixed | cm.delete_confighostgroup
+  - U-mixed | cm.view_concernitem

@@ -15,6 +15,7 @@ Scenarios of the RBAC write-side equivalence suite (ADCM-8502).
 
 All scenarios live in one suite, so the shared setup is built once.
 G1: non-RBAC triggers of the RBAC write side.
+G2: changes of RBAC objects (policy, role, group, user membership) through `api/v2/rbac/*`.
 """
 
 from datetime import timedelta
@@ -49,7 +50,8 @@ from cm.models import (
 from core.config import ConfigRepoI
 from django.core.management import call_command
 from django.utils import timezone
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from rbac.models import Group, Policy, Role, User
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
 
 from tests.cases.rbac.setup import A1_MAPPING, BUNDLES_DIR, RBACWriteSideSuite
 from tests.dependencies import RBACScenariosOverride, get_default_overridden_providers
@@ -546,3 +548,337 @@ class TestRBACWriteSide(RBACWriteSideSuite):
             self.assertRaisesRegex(TypeError, "cluster_service"),
         ):
             load(data=payload, report=lambda _: None)
+
+    # G2.01
+
+    def test_g2_01_create_policy_cluster_admin(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("Cluster Administrator").pk},
+            "objects": [{"id": self.cluster_a2.pk, "type": "cluster"}],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_service_admin(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("Service Administrator").pk},
+            "objects": [{"id": self.service("A2", "svc_2").pk, "type": "service"}],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_provider_admin(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("Provider Administrator").pk},
+            "objects": [{"id": self.provider_p2.pk, "type": "provider"}],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_model_role(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("ADCM User").pk},
+            "objects": [],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_custom_role(self) -> None:
+        # business roles can't be used in a policy through API, they get there through the custom role
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": Role.objects.get(display_name="Custom Cluster Operator").pk},
+            "objects": [{"id": self.cluster_a2.pk, "type": "cluster"}],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_multi_object(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("Cluster Administrator").pk},
+            "objects": [
+                {"id": self.cluster_a2.pk, "type": "cluster"},
+                {"id": self.cluster_b1.pk, "type": "cluster"},
+            ],
+            "groups": [Group.objects.get(display_name="G-idle").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_01_create_policy_multi_group(self) -> None:
+        payload = {
+            "name": "P-g2-01",
+            "role": {"id": self.role("Cluster Administrator").pk},
+            "objects": [{"id": self.cluster_a2.pk, "type": "cluster"}],
+            "groups": [
+                Group.objects.get(display_name="G-idle").pk,
+                Group.objects.get(display_name="G-empty").pk,
+            ],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "policies").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    # G2.02
+
+    def test_g2_02_update_policy_role(self) -> None:
+        # A1 tasks (S-J1) are re-granted through the new role
+        policy = Policy.objects.get(name="P-solo-cluster-admin")
+        payload = {"role": {"id": Role.objects.get(display_name="Custom Cluster Operator").pk}}
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_02_update_policy_objects_add(self) -> None:
+        policy = Policy.objects.get(name="P-solo-cluster-admin")
+        payload = {
+            "objects": [
+                {"id": self.cluster_a1.pk, "type": "cluster"},
+                {"id": self.cluster_a2.pk, "type": "cluster"},
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_02_update_policy_objects_remove(self) -> None:
+        policy = Policy.objects.get(name="P-multi-group")
+        payload = {"objects": [{"id": self.service("A1", "svc_2").pk, "type": "service"}]}
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_02_update_policy_objects_overlap(self) -> None:
+        # S-R6: `P-overlap-admin` still grants A1 to `G-overlap`
+        policy = Policy.objects.get(name="P-overlap-edit-config")
+        payload = {"objects": [{"id": self.cluster_a2.pk, "type": "cluster"}]}
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_02_update_policy_groups_add(self) -> None:
+        policy = Policy.objects.get(name="P-solo-cluster-admin")
+        payload = {
+            "groups": [
+                Group.objects.get(display_name="G-solo-cluster-admin").pk,
+                Group.objects.get(display_name="G-idle").pk,
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_02_update_policy_groups_remove(self) -> None:
+        # S-R8
+        policy = Policy.objects.get(name="P-multi-group")
+        payload = {"groups": [Group.objects.get(display_name="G-multi-a").pk]}
+
+        with self.act():
+            response = self.client.v2[policy].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    # G2.03
+
+    def test_g2_03_delete_policy_overlapping(self) -> None:
+        # S-R6: `P-overlap-admin` grants the same rows to `G-overlap`
+        policy = Policy.objects.get(name="P-overlap-edit-config")
+
+        with self.act():
+            response = self.client.v2[policy].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
+
+    # G2.04
+
+    def test_g2_04_create_role(self) -> None:
+        payload = {
+            "displayName": "G2 Role",
+            "children": [
+                self.role("View cluster configurations").pk,
+                self.role("Cluster Action: Common Action").pk,
+            ],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "roles").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_04_update_role_children_add(self) -> None:
+        role = Role.objects.get(display_name="Custom Cluster Operator")
+        # role's children also hold TaskRoles (D7): payload carries its business roles only, as UI does
+        payload = {
+            "children": [
+                self.role(name).pk
+                for name in (
+                    "View cluster configurations",
+                    "Cluster Action: Common Action",
+                    "Service Action: Common Action",
+                    "View host-components",
+                    "Component Action: Common Action",
+                )
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[role].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_04_update_role_children_remove(self) -> None:
+        role = Role.objects.get(display_name="Custom Cluster Operator")
+        payload = {
+            "children": [
+                self.role(name).pk
+                for name in ("View cluster configurations", "Service Action: Common Action", "View host-components")
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[role].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    # G2.05
+
+    def test_g2_05_delete_role_unused(self) -> None:
+        role = Role.objects.get(display_name="Custom Unused Role")
+
+        with self.act():
+            response = self.client.v2[role].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
+
+    def test_g2_05_delete_role_in_use(self) -> None:
+        role = Role.objects.get(display_name="Custom Cluster Operator")
+
+        with self.act():
+            response = self.client.v2[role].delete()
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.content)
+            self.assertEqual(response.json()["code"], "ROLE_DELETE_ERROR")
+
+    # G2.06
+
+    def test_g2_06_create_group(self) -> None:
+        payload = {"displayName": "G-new", "users": [User.objects.get(username="U-none").pk]}
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "groups").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_06_rename_group(self) -> None:
+        group = Group.objects.get(display_name="G-solo-view-host-config")
+
+        with self.act():
+            response = self.client.v2[group].patch(data={"displayName": "G-renamed"})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_06_delete_group(self) -> None:
+        group = Group.objects.get(display_name="G-idle")
+
+        with self.act():
+            response = self.client.v2[group].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
+
+    def test_g2_06_delete_group_in_policy(self) -> None:
+        # GOP / policy link cascade isn't reachable through API: a group in a policy can't be deleted
+        group = Group.objects.get(display_name="G-empty")
+
+        with self.act():
+            response = self.client.v2[group].delete()
+            self.assertEqual(response.status_code, HTTP_409_CONFLICT, response.content)
+            self.assertEqual(response.json()["code"], "GROUP_DELETE_ERROR")
+
+    # G2.07
+
+    def test_g2_07_add_user_to_group(self) -> None:
+        group = Group.objects.get(display_name="G-solo-cluster-admin")
+        payload = {
+            "users": [
+                *group.user_set.values_list("pk", flat=True),
+                User.objects.get(username="U-none").pk,
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[group].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_07_remove_user_overlap(self) -> None:
+        user = User.objects.get(username="U-overlap")
+        payload = {"groups": [Group.objects.get(display_name="G-solo-cluster-admin").pk]}
+
+        with self.act():
+            response = self.client.v2[user].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_07_remove_user_mixed(self) -> None:
+        user = User.objects.get(username="U-mixed")
+        payload = {
+            "groups": [
+                Group.objects.get(display_name="G-solo-service-admin").pk,
+                Group.objects.get(display_name="G-solo-provider-admin").pk,
+            ]
+        }
+
+        with self.act():
+            response = self.client.v2[user].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_07_remove_user_multi(self) -> None:
+        user = User.objects.get(username="U-multi")
+        payload = {"groups": [Group.objects.get(display_name="G-multi-a").pk]}
+
+        with self.act():
+            response = self.client.v2[user].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_07_move_user_single(self) -> None:
+        # `U-single` loses everything: `G-idle` is in no policy
+        user = User.objects.get(username="U-single")
+        payload = {"groups": [Group.objects.get(display_name="G-idle").pk]}
+
+        with self.act():
+            response = self.client.v2[user].patch(data=payload)
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g2_07_create_user(self) -> None:
+        payload = {
+            "username": "U-new",
+            "password": "U-new-password",
+            "groups": [Group.objects.get(display_name="G-solo-cluster-admin").pk],
+        }
+
+        with self.act():
+            response = (self.client.v2 / "rbac" / "users").post(data=payload)
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g2_07_delete_user(self) -> None:
+        user = User.objects.get(username="U-mixed")
+
+        with self.act():
+            response = self.client.v2[user].delete()
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)

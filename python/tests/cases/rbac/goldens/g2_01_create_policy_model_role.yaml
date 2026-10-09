@@ -1,0 +1,66 @@
+auth_group_permissions:
+  added:
+  - G-idle | cm.view_action_host_group_cluster
+  - G-idle | cm.view_action_host_group_component
+  - G-idle | cm.view_action_host_group_service
+  - G-idle | cm.view_ansible_config_of_cluster
+  - G-idle | cm.view_cluster
+  - G-idle | cm.view_clusterbind
+  - G-idle | cm.view_component
+  - G-idle | cm.view_confighostgroup
+  - G-idle | cm.view_configlog
+  - G-idle | cm.view_host
+  - G-idle | cm.view_hostcomponent
+  - G-idle | cm.view_joblog
+  - G-idle | cm.view_logstorage
+  - G-idle | cm.view_objectconfig
+  - G-idle | cm.view_provider
+  - G-idle | cm.view_service
+  - G-idle | cm.view_tasklog
+  - G-idle | cm.view_upgrade_of_cluster
+  - G-idle | cm.view_upgrade_of_provider
+  removed: []
+rbac_policypermission:
+  added:
+  - P-g2-01 | group:G-idle | cm.view_action_host_group_cluster
+  - P-g2-01 | group:G-idle | cm.view_action_host_group_component
+  - P-g2-01 | group:G-idle | cm.view_action_host_group_service
+  - P-g2-01 | group:G-idle | cm.view_ansible_config_of_cluster
+  - P-g2-01 | group:G-idle | cm.view_cluster
+  - P-g2-01 | group:G-idle | cm.view_clusterbind
+  - P-g2-01 | group:G-idle | cm.view_component
+  - P-g2-01 | group:G-idle | cm.view_confighostgroup
+  - P-g2-01 | group:G-idle | cm.view_configlog
+  - P-g2-01 | group:G-idle | cm.view_host
+  - P-g2-01 | group:G-idle | cm.view_hostcomponent
+  - P-g2-01 | group:G-idle | cm.view_joblog
+  - P-g2-01 | group:G-idle | cm.view_logstorage
+  - P-g2-01 | group:G-idle | cm.view_objectconfig
+  - P-g2-01 | group:G-idle | cm.view_provider
+  - P-g2-01 | group:G-idle | cm.view_service
+  - P-g2-01 | group:G-idle | cm.view_tasklog
+  - P-g2-01 | group:G-idle | cm.view_upgrade_of_cluster
+  - P-g2-01 | group:G-idle | cm.view_upgrade_of_provider
+  removed: []
+effective_model_perm:
+  added:
+  - U-idle | cm.view_action_host_group_cluster
+  - U-idle | cm.view_action_host_group_component
+  - U-idle | cm.view_action_host_group_service
+  - U-idle | cm.view_ansible_config_of_cluster
+  - U-idle | cm.view_cluster
+  - U-idle | cm.view_clusterbind
+  - U-idle | cm.view_component
+  - U-idle | cm.view_confighostgroup
+  - U-idle | cm.view_configlog
+  - U-idle | cm.view_host
+  - U-idle | cm.view_hostcomponent
+  - U-idle | cm.view_joblog
+  - U-idle | cm.view_logstorage
+  - U-idle | cm.view_objectconfig
+  - U-idle | cm.view_provider
+  - U-idle | cm.view_service
+  - U-idle | cm.view_tasklog
+  - U-idle | cm.view_upgrade_of_cluster
+  - U-idle | cm.view_upgrade_of_provider
+  removed: []

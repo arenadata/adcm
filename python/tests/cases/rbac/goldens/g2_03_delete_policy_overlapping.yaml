@@ -1,0 +1,26 @@
+rbac_policy_group_object_perm:
+  added: []
+  removed:
+  - P-overlap-edit-config | G-overlap | cm.change_config_of_cluster | cluster:A1
+  - P-overlap-edit-config | G-overlap | cm.view_cluster | cluster:A1
+  - P-overlap-edit-config | G-overlap | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev1
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev2
+  - P-overlap-edit-config | G-overlap | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - P-overlap-edit-config | G-overlap | cm.view_objectconfig | config:cluster:A1
+rbac_policypermission:
+  added: []
+  removed:
+  - P-overlap-edit-config | group:G-overlap | cm.add_confighostgroup
+  - P-overlap-edit-config | group:G-overlap | cm.add_configlog
+  - P-overlap-edit-config | group:G-overlap | cm.change_confighostgroup
+  - P-overlap-edit-config | group:G-overlap | cm.change_configlog
+  - P-overlap-edit-config | group:G-overlap | cm.change_objectconfig
+  - P-overlap-edit-config | group:G-overlap | cm.delete_confighostgroup
+rbac_policy_object:
+  added: []
+  removed:
+  - P-overlap-edit-config | cluster:A1

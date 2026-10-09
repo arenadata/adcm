@@ -2279,6 +2279,7 @@ rbac_role:
 - Create service | hidden
 - Create user | business
 - Custom Cluster Operator | role
+- Custom Unused Role | role
 - Delete host | hidden
 - Edit ADCM settings | business
 - Edit action host groups of cluster | hidden
@@ -2611,6 +2612,7 @@ rbac_role_child:
 - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
 - Custom Cluster Operator | task-role:task:cluster:A1:common#2
 - Custom Cluster Operator | task-role:task:service:A1/svc_1:common#1
+- Custom Unused Role | View host configurations
 - Edit cluster configurations | Edit cluster config
 - Edit cluster configurations | Edit config
 - Edit cluster configurations | Get cluster object

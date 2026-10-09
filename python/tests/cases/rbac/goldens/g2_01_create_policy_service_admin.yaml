@@ -1,0 +1,173 @@
+guardian_groupobjectpermission:
+  added:
+  - G-idle | cm.change_config_of_component | component:A2/svc_2/comp_1
+  - G-idle | cm.change_config_of_component | component:A2/svc_2/comp_2
+  - G-idle | cm.change_config_of_service | service:A2/svc_2
+  - G-idle | cm.change_import_of_service | service:A2/svc_2
+  - G-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_1
+  - G-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_2
+  - G-idle | cm.change_maintenance_mode_service | service:A2/svc_2
+  - G-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_1
+  - G-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_2
+  - G-idle | cm.edit_action_host_group_service | service:A2/svc_2
+  - G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_1
+  - G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_2
+  - G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_2
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_1
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_2
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_2
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - G-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_1
+  - G-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_2
+  - G-idle | cm.view_action_host_group_service | service:A2/svc_2
+  - G-idle | cm.view_cluster | cluster:A2
+  - G-idle | cm.view_component | component:A2/svc_2/comp_1
+  - G-idle | cm.view_component | component:A2/svc_2/comp_2
+  - G-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_1@rev1
+  - G-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_2@rev1
+  - G-idle | cm.view_configlog | configlog:service:A2/svc_2@rev1
+  - G-idle | cm.view_import_of_service | service:A2/svc_2
+  - G-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_1
+  - G-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_2
+  - G-idle | cm.view_objectconfig | config:service:A2/svc_2
+  - G-idle | cm.view_service | service:A2/svc_2
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-g2-01 | G-idle | cm.change_config_of_component | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.change_config_of_component | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.change_config_of_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.change_import_of_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.change_maintenance_mode_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.edit_action_host_group_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - P-g2-01 | G-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.view_action_host_group_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.view_cluster | cluster:A2
+  - P-g2-01 | G-idle | cm.view_component | component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.view_component | component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_1@rev1
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_2@rev1
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:service:A2/svc_2@rev1
+  - P-g2-01 | G-idle | cm.view_import_of_service | service:A2/svc_2
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_1
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_2
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:service:A2/svc_2
+  - P-g2-01 | G-idle | cm.view_service | service:A2/svc_2
+  removed: []
+auth_group_permissions:
+  added:
+  - G-idle | cm.add_confighostgroup
+  - G-idle | cm.add_configlog
+  - G-idle | cm.change_confighostgroup
+  - G-idle | cm.change_configlog
+  - G-idle | cm.change_objectconfig
+  - G-idle | cm.delete_concernitem
+  - G-idle | cm.delete_confighostgroup
+  - G-idle | cm.view_concernitem
+  removed: []
+rbac_policypermission:
+  added:
+  - P-g2-01 | group:G-idle | cm.add_confighostgroup
+  - P-g2-01 | group:G-idle | cm.add_configlog
+  - P-g2-01 | group:G-idle | cm.change_confighostgroup
+  - P-g2-01 | group:G-idle | cm.change_configlog
+  - P-g2-01 | group:G-idle | cm.change_objectconfig
+  - P-g2-01 | group:G-idle | cm.delete_concernitem
+  - P-g2-01 | group:G-idle | cm.delete_confighostgroup
+  - P-g2-01 | group:G-idle | cm.view_concernitem
+  removed: []
+rbac_role:
+  added: []
+  removed:
+  - task-role:<dangling:tasklog:service:A1/svc_1:common#2> | hidden
+rbac_role_child:
+  added: []
+  removed:
+  - Cluster Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Service Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+rbac_policy_object:
+  added:
+  - P-g2-01 | service:A2/svc_2
+  removed: []
+effective_object_perm:
+  added:
+  - U-idle | cm.change_config_of_component | component:A2/svc_2/comp_1
+  - U-idle | cm.change_config_of_component | component:A2/svc_2/comp_2
+  - U-idle | cm.change_config_of_service | service:A2/svc_2
+  - U-idle | cm.change_import_of_service | service:A2/svc_2
+  - U-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_1
+  - U-idle | cm.change_maintenance_mode_component | component:A2/svc_2/comp_2
+  - U-idle | cm.change_maintenance_mode_service | service:A2/svc_2
+  - U-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_1
+  - U-idle | cm.edit_action_host_group_component | component:A2/svc_2/comp_2
+  - U-idle | cm.edit_action_host_group_service | service:A2/svc_2
+  - U-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_1
+  - U-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_2/comp_2
+  - U-idle | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_2
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_1
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_2/comp_2
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_2
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - U-idle | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - U-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_1
+  - U-idle | cm.view_action_host_group_component | component:A2/svc_2/comp_2
+  - U-idle | cm.view_action_host_group_service | service:A2/svc_2
+  - U-idle | cm.view_cluster | cluster:A2
+  - U-idle | cm.view_component | component:A2/svc_2/comp_1
+  - U-idle | cm.view_component | component:A2/svc_2/comp_2
+  - U-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_1@rev1
+  - U-idle | cm.view_configlog | configlog:component:A2/svc_2/comp_2@rev1
+  - U-idle | cm.view_configlog | configlog:service:A2/svc_2@rev1
+  - U-idle | cm.view_import_of_service | service:A2/svc_2
+  - U-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_1
+  - U-idle | cm.view_objectconfig | config:component:A2/svc_2/comp_2
+  - U-idle | cm.view_objectconfig | config:service:A2/svc_2
+  - U-idle | cm.view_service | service:A2/svc_2
+  removed: []
+effective_model_perm:
+  added:
+  - U-idle | cm.add_confighostgroup
+  - U-idle | cm.add_configlog
+  - U-idle | cm.change_confighostgroup
+  - U-idle | cm.change_configlog
+  - U-idle | cm.change_objectconfig
+  - U-idle | cm.delete_concernitem
+  - U-idle | cm.delete_confighostgroup
+  - U-idle | cm.view_concernitem
+  removed: []

@@ -1,0 +1,163 @@
+guardian_groupobjectpermission:
+  added:
+  - G-idle | cm.add_host_to_provider | provider:P2
+  - G-idle | cm.change_config_of_host | host:h-a2
+  - G-idle | cm.change_config_of_host | host:h-b1
+  - G-idle | cm.change_config_of_host | host:h-free-p2
+  - G-idle | cm.change_config_of_provider | provider:P2
+  - G-idle | cm.delete_host | host:h-a2
+  - G-idle | cm.delete_host | host:h-b1
+  - G-idle | cm.delete_host | host:h-free-p2
+  - G-idle | cm.do_upgrade_of_provider | provider:P2
+  - G-idle | cm.remove_host | host:h-a2
+  - G-idle | cm.remove_host | host:h-b1
+  - G-idle | cm.remove_host | host:h-free-p2
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-a2
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-b1
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P2
+  - G-idle | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - G-idle | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+  - G-idle | cm.view_configlog | configlog:host:h-a2@rev1
+  - G-idle | cm.view_configlog | configlog:host:h-b1@rev1
+  - G-idle | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - G-idle | cm.view_configlog | configlog:provider:P2@rev1
+  - G-idle | cm.view_host | host:h-a2
+  - G-idle | cm.view_host | host:h-b1
+  - G-idle | cm.view_host | host:h-free-p2
+  - G-idle | cm.view_joblog | provider:P2
+  - G-idle | cm.view_logstorage | provider:P2
+  - G-idle | cm.view_objectconfig | config:host:h-a2
+  - G-idle | cm.view_objectconfig | config:host:h-b1
+  - G-idle | cm.view_objectconfig | config:host:h-free-p2
+  - G-idle | cm.view_objectconfig | config:provider:P2
+  - G-idle | cm.view_provider | provider:P2
+  - G-idle | cm.view_tasklog | provider:P2
+  - G-idle | cm.view_upgrade_of_provider | provider:P2
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-g2-01 | G-idle | cm.add_host_to_provider | provider:P2
+  - P-g2-01 | G-idle | cm.change_config_of_host | host:h-a2
+  - P-g2-01 | G-idle | cm.change_config_of_host | host:h-b1
+  - P-g2-01 | G-idle | cm.change_config_of_host | host:h-free-p2
+  - P-g2-01 | G-idle | cm.change_config_of_provider | provider:P2
+  - P-g2-01 | G-idle | cm.delete_host | host:h-a2
+  - P-g2-01 | G-idle | cm.delete_host | host:h-b1
+  - P-g2-01 | G-idle | cm.delete_host | host:h-free-p2
+  - P-g2-01 | G-idle | cm.do_upgrade_of_provider | provider:P2
+  - P-g2-01 | G-idle | cm.remove_host | host:h-a2
+  - P-g2-01 | G-idle | cm.remove_host | host:h-b1
+  - P-g2-01 | G-idle | cm.remove_host | host:h-free-p2
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-a2
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-b1
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - P-g2-01 | G-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P2
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - P-g2-01 | G-idle | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:host:h-a2@rev1
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:host:h-b1@rev1
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - P-g2-01 | G-idle | cm.view_configlog | configlog:provider:P2@rev1
+  - P-g2-01 | G-idle | cm.view_host | host:h-a2
+  - P-g2-01 | G-idle | cm.view_host | host:h-b1
+  - P-g2-01 | G-idle | cm.view_host | host:h-free-p2
+  - P-g2-01 | G-idle | cm.view_joblog | provider:P2
+  - P-g2-01 | G-idle | cm.view_logstorage | provider:P2
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:host:h-a2
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:host:h-b1
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:host:h-free-p2
+  - P-g2-01 | G-idle | cm.view_objectconfig | config:provider:P2
+  - P-g2-01 | G-idle | cm.view_provider | provider:P2
+  - P-g2-01 | G-idle | cm.view_tasklog | provider:P2
+  - P-g2-01 | G-idle | cm.view_upgrade_of_provider | provider:P2
+  removed: []
+auth_group_permissions:
+  added:
+  - G-idle | cm.add_bundle
+  - G-idle | cm.add_confighostgroup
+  - G-idle | cm.add_configlog
+  - G-idle | cm.add_host
+  - G-idle | cm.add_prototype
+  - G-idle | cm.change_bundle
+  - G-idle | cm.change_confighostgroup
+  - G-idle | cm.change_configlog
+  - G-idle | cm.change_objectconfig
+  - G-idle | cm.delete_bundle
+  - G-idle | cm.delete_concernitem
+  - G-idle | cm.delete_confighostgroup
+  - G-idle | cm.view_concernitem
+  removed: []
+rbac_policypermission:
+  added:
+  - P-g2-01 | group:G-idle | cm.add_bundle
+  - P-g2-01 | group:G-idle | cm.add_confighostgroup
+  - P-g2-01 | group:G-idle | cm.add_configlog
+  - P-g2-01 | group:G-idle | cm.add_host
+  - P-g2-01 | group:G-idle | cm.add_prototype
+  - P-g2-01 | group:G-idle | cm.change_bundle
+  - P-g2-01 | group:G-idle | cm.change_confighostgroup
+  - P-g2-01 | group:G-idle | cm.change_configlog
+  - P-g2-01 | group:G-idle | cm.change_objectconfig
+  - P-g2-01 | group:G-idle | cm.delete_bundle
+  - P-g2-01 | group:G-idle | cm.delete_concernitem
+  - P-g2-01 | group:G-idle | cm.delete_confighostgroup
+  - P-g2-01 | group:G-idle | cm.view_concernitem
+  removed: []
+rbac_policy_object:
+  added:
+  - P-g2-01 | provider:P2
+  removed: []
+effective_object_perm:
+  added:
+  - U-idle | cm.add_host_to_provider | provider:P2
+  - U-idle | cm.change_config_of_host | host:h-a2
+  - U-idle | cm.change_config_of_host | host:h-b1
+  - U-idle | cm.change_config_of_host | host:h-free-p2
+  - U-idle | cm.change_config_of_provider | provider:P2
+  - U-idle | cm.delete_host | host:h-a2
+  - U-idle | cm.delete_host | host:h-b1
+  - U-idle | cm.delete_host | host:h-free-p2
+  - U-idle | cm.do_upgrade_of_provider | provider:P2
+  - U-idle | cm.remove_host | host:h-a2
+  - U-idle | cm.remove_host | host:h-b1
+  - U-idle | cm.remove_host | host:h-free-p2
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-a2
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-b1
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - U-idle | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P2
+  - U-idle | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - U-idle | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+  - U-idle | cm.view_configlog | configlog:host:h-a2@rev1
+  - U-idle | cm.view_configlog | configlog:host:h-b1@rev1
+  - U-idle | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - U-idle | cm.view_configlog | configlog:provider:P2@rev1
+  - U-idle | cm.view_host | host:h-a2
+  - U-idle | cm.view_host | host:h-b1
+  - U-idle | cm.view_host | host:h-free-p2
+  - U-idle | cm.view_joblog | provider:P2
+  - U-idle | cm.view_logstorage | provider:P2
+  - U-idle | cm.view_objectconfig | config:host:h-a2
+  - U-idle | cm.view_objectconfig | config:host:h-b1
+  - U-idle | cm.view_objectconfig | config:host:h-free-p2
+  - U-idle | cm.view_objectconfig | config:provider:P2
+  - U-idle | cm.view_provider | provider:P2
+  - U-idle | cm.view_tasklog | provider:P2
+  - U-idle | cm.view_upgrade_of_provider | provider:P2
+  removed: []
+effective_model_perm:
+  added:
+  - U-idle | cm.add_bundle
+  - U-idle | cm.add_confighostgroup
+  - U-idle | cm.add_configlog
+  - U-idle | cm.add_host
+  - U-idle | cm.add_prototype
+  - U-idle | cm.change_bundle
+  - U-idle | cm.change_confighostgroup
+  - U-idle | cm.change_configlog
+  - U-idle | cm.change_objectconfig
+  - U-idle | cm.delete_bundle
+  - U-idle | cm.delete_concernitem
+  - U-idle | cm.delete_confighostgroup
+  - U-idle | cm.view_concernitem
+  removed: []

@@ -1,0 +1,8 @@
+rbac_role:
+  added: []
+  removed:
+  - Custom Unused Role | role
+rbac_role_child:
+  added: []
+  removed:
+  - Custom Unused Role | View host configurations

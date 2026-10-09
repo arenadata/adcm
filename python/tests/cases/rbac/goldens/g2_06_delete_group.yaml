@@ -1,0 +1,4 @@
+auth_user_groups:
+  added: []
+  removed:
+  - U-idle | G-idle

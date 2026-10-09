@@ -1,0 +1,82 @@
+guardian_groupobjectpermission:
+  added: []
+  removed:
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-solo-custom | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-custom | cm.change_tasklog | task:cluster:A1:common#2
+  - G-solo-custom | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-custom | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-solo-custom | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-custom | cm.view_tasklog | task:cluster:A1:common#2
+  - G-solo-custom | cm.view_tasklog | task:service:A1/svc_1:common#1
+rbac_policy_group_object_perm:
+  added: []
+  removed:
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-solo-custom | G-solo-custom | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | task:cluster:A1:common#2
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-custom | G-solo-custom | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-solo-custom | G-solo-custom | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | task:cluster:A1:common#2
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | task:service:A1/svc_1:common#1
+rbac_role_child:
+  added: []
+  removed:
+  - 'Custom Cluster Operator | Cluster Action: Common Action'
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Custom Cluster Operator | task-role:task:cluster:A1:common#2
+  - Custom Cluster Operator | task-role:task:service:A1/svc_1:common#1
+effective_object_perm:
+  added: []
+  removed:
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.change_tasklog | task:cluster:A1:common#2
+  - U-single | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.view_tasklog | task:cluster:A1:common#2
+  - U-single | cm.view_tasklog | task:service:A1/svc_1:common#1
