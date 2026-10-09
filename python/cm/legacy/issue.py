@@ -12,10 +12,8 @@
 
 from functools import partial
 
-from api_v2.concern.serializers import ConcernSerializer
 from core.types import CoreObjectDescriptor
 from django.db.transaction import on_commit
-from djangorestframework_camel_case.util import camelize
 import core
 
 from cm.converters import orm_object_to_core_type
@@ -28,7 +26,7 @@ from cm.legacy.services.concern.checks import (
     object_imports_has_issue,
     service_requirements_has_issue,
 )
-from cm.legacy.status_api import send_concern_creation_event, send_concern_delete_event
+from cm.legacy.status_api import notify_about_new_concern, send_concern_delete_event
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -127,8 +125,13 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
 
     object_.concerns.add(concern)
 
-    concern_data = camelize(data=ConcernSerializer(instance=concern).data)
-    on_commit(func=partial(send_concern_creation_event, object_=object_, concern=concern_data))
+    on_commit(
+        func=partial(
+            notify_about_new_concern,
+            concern_id=concern.id,
+            related_objects={orm_object_to_core_type(object_): {object_.id}},
+        )
+    )
 
 
 def unlink_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:

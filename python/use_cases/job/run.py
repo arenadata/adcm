@@ -95,7 +95,7 @@ class StartTask:
         self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
 
         return self.process_starter.start(
-            task_id=task_id, venv=task.action.venv, code_dir=self.directories.code, log_dir=self.directories.logs
+            task_id=task_id, code_dir=self.directories.code, log_dir=self.directories.logs
         )
 
 

@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
-from api_v2.concern.serializers import ConcernSerializer
+from core.tools import convert_keys_to_camel_case
 from core.types import (
     ADCMCoreType,
     ClusterID,
@@ -23,18 +23,15 @@ from core.types import (
     ObjectID,
 )
 from django.conf import settings
-from djangorestframework_camel_case.util import camelize
 from requests import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
 
 from cm.converters import core_type_to_model
+from cm.errors import HTTP_200_OK, HTTP_201_CREATED
+from cm.impl.concern.repo import ConcernRepo
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
 from cm.logger import logger
-from cm.models import (
-    ADCMEntity,
-    ConcernItem,
-)
+from cm.models import ADCMEntity
 
 
 class EventTypes:
@@ -118,14 +115,6 @@ def fix_object_type(type_: str) -> str:
         return "hostprovider"
 
     return type_
-
-
-def send_concern_creation_event(object_: ADCMEntity, concern: dict) -> None:
-    post_event(
-        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
-        changes=concern,
-    )
 
 
 def send_concern_delete_event(object_id: int, object_type: str, concern_id: int) -> None:
@@ -218,11 +207,25 @@ def notify_about_redistributed_concerns(
     removed: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
 ) -> None:
     added_concerns = tuple(added)
+    # get repo directly cause we want to avoid unexpected imports
+    # need to remove notify_*_concerns functions to StatusService ( ADCM-8508 )
+    concern_repo = ConcernRepo()
+
     serialized_concerns = {
-        concern.id: camelize(data=ConcernSerializer(instance=concern).data)
-        for concern in ConcernItem.objects.filter(id__in=(id_ for _, _, id_ in added_concerns)).prefetch_related(
-            "owner"
+        concern.id: convert_keys_to_camel_case(
+            value={
+                "id": concern.id,
+                "type": concern.type.value,
+                "reason": concern.reason,
+                "is_blocking": concern.blocking,
+                "cause": concern.cause.value if concern.cause else None,
+                "owner": {
+                    "id": concern.owner.id,
+                    "type": concern.owner.type.value,
+                },
+            }
         )
+        for concern in concern_repo.get_concerns_info(concern_ids={concern_id for _, _, concern_id in added_concerns})
     }
 
     for core_type, object_id, concern_id in removed:
@@ -236,11 +239,16 @@ def notify_about_redistributed_concerns(
         concern = serialized_concerns.get(concern_id)
         if concern:
             post_event(
-                event=f"create_{fix_object_type(type_=core_type.value)}_concern", object_id=object_id, changes=concern
+                event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=core_type.value)),
+                object_id=object_id,
+                changes=concern,
             )
 
 
-def notify_about_new_concern(concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
+def notify_about_new_concern(
+    concern_id: ConcernID,
+    related_objects: ConcernRelatedObjects,
+) -> None:
     notify_about_redistributed_concerns(
         added=(
             (core_type, object_id, concern_id)

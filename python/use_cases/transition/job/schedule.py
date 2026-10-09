@@ -20,7 +20,7 @@ from cm.converters import (
     orm_object_to_core_descriptor,
     orm_object_to_core_type,
 )
-from cm.errors import AdcmEx
+from cm.errors import HTTP_409_CONFLICT, AdcmEx
 from cm.impl.bundle.context import (
     ActionArgs,
     TaskArgs,
@@ -71,7 +71,6 @@ from core.types import (
 from django.conf import settings
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
-from rest_framework.status import HTTP_409_CONFLICT
 import core
 import core.bundle
 

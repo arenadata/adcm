@@ -213,7 +213,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
             raise RuntimeError(message)
 
         container = make_overridden_container(
-            MockWithEnvProvider(change_jobs={WITH_ON_FAIL_POSITION: JobImitator(call=break_runner)})
+            MockWithEnvProvider(change_jobs={WITH_ON_FAIL: JobImitator(call=break_runner)})
         )
         with self.assertRaisesRegex(RuntimeError, "Runner failure"):
             self.execute_locally(task_id, container)

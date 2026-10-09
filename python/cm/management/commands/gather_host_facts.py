@@ -90,5 +90,6 @@ def get_environ(venv: str) -> MutableMapping[str, str]:
     # This needs to be fixed.
     env = os.environ.copy()
     env["PATH"] = f"/venv/{venv}/bin:{env['PATH']}"
+    env["DJANGO_SETTINGS_MODULE"] = "adcm.settings_setups.plugin"
     env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{venv}/collections"
     return env

@@ -15,19 +15,25 @@ from collections.abc import Collection
 from typing import Final
 
 from core.concern.repo import ConcernDistribution, ConcernRepoI
-from core.concern.types import ConcernDraft, ConcernRelatedObjects
-from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc
+from core.concern.types import (
+    ConcernCause,
+    ConcernDraft,
+    ConcernInfo,
+    ConcernRelatedObjects,
+    ConcernType,
+)
+from core.types import ADCMCoreType, ClusterDesc, ConcernID, CoreObjectDescriptor, HostDesc
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 
-from cm.converters import core_type_to_model
-from cm.models import ConcernItem, ConcernType
+from cm.converters import core_type_to_model, model_name_to_core_type
+from cm.models import ConcernItem
 
 # Name of an object may be stored only in the placeholder describing concern's own owner:
 # all the other placeholders point at a prototype, an action or a job,
 # so they are named after those and are unaffected by rename of an object.
 # Owner is described by `source` in every concern but a lock, where it is described by `target`.
-_OWNER_PLACEHOLDER: Final = f"(CASE WHEN concern.type = '{ConcernType.LOCK}' THEN 'target' ELSE 'source' END)"
+_OWNER_PLACEHOLDER: Final = f"(CASE WHEN concern.type = '{ConcernType.LOCK.value}' THEN 'target' ELSE 'source' END)"
 
 _RENAME_OWNER_IN_PLACEHOLDERS: Final = f"""
 UPDATE {ConcernItem._meta.db_table} AS concern
@@ -105,3 +111,21 @@ class ConcernRepo(ConcernRepoI):
                 distribution[core_type][object_id].add(concern_id)
 
         return distribution
+
+    def get_concerns_info(self, concern_ids: Collection[ConcernID]) -> tuple[ConcernInfo, ...]:
+        concerns = ConcernItem.objects.filter(id__in=concern_ids).select_related("owner_type")
+
+        return tuple(
+            ConcernInfo(
+                id=concern.pk,
+                type=ConcernType(concern.type),
+                reason=concern.reason,
+                blocking=concern.blocking,
+                cause=ConcernCause(concern.cause) if concern.cause is not None else None,
+                owner=CoreObjectDescriptor(
+                    id=concern.owner_id,
+                    type=model_name_to_core_type(model_name=concern.owner_type.model),
+                ),
+            )
+            for concern in concerns
+        )

@@ -64,7 +64,7 @@ _PYTHON_DIR = Path(__file__).parent.parent
 class FakeProcessStarter(ProcessStarter):
     pid: PID = -1
 
-    def start(self, task_id: TaskID, venv: str, code_dir: Path, log_dir: Path) -> PID:  # noqa: ARG002
+    def start(self, task_id: TaskID, code_dir: Path, log_dir: Path) -> PID:  # noqa: ARG002
         return self.pid
 
 

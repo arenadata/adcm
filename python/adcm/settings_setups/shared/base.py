@@ -24,27 +24,32 @@ DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 
 ALLOWED_HOSTS = ["*"]
-INSTALLED_APPS = [
+COMMON_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
-    "django_filters",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
-    "rest_framework.authtoken",
     "social_django",
     "guardian",
     "cm.apps.CmConfig",
     "audit",
+    "application",
+]
+
+API_APPS = [
+    "django_filters",
+    "rest_framework",
+    "rest_framework.authtoken",
     "api_v2",
     "corsheaders",
     "drf_spectacular",
     "drf_spectacular_sidecar",
-    "application",
     "health",
 ]
+
+INSTALLED_APPS = [*COMMON_APPS, *API_APPS]
 
 MIDDLEWARE = [
     "api_v2.utils.di.DishkaMiddleware",
@@ -86,7 +91,7 @@ REST_FRAMEWORK = {
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
     ],
-    "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
+    "EXCEPTION_HANDLER": "api_v2.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
     "DEFAULT_VERSION": "v2",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
