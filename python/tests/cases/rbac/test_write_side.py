@@ -10,26 +10,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""G1: non-RBAC triggers of the RBAC write side: topology, object lifecycle, upgrade, bundles, import"""
+"""
+Scenarios of the RBAC write-side equivalence suite (ADCM-8502).
 
+All scenarios live in one suite, so the shared setup is built once.
+G1: non-RBAC triggers of the RBAC write side.
+"""
+
+from datetime import timedelta
+from typing import Final
 from unittest.mock import patch
 
+from ansible_collections.arenadata.adcm.plugins.lookup.adcm_config import PluginResult, call_adcm_config_lookup
 from ansible_plugin.executors.add_host import ADCMAddHostPluginExecutor
 from ansible_plugin.executors.add_host_to_cluster import ADCMAddHostToClusterPluginExecutor
+from ansible_plugin.executors.check import ADCMCheckPluginExecutor
+from ansible_plugin.executors.config import ADCMConfigPluginExecutor
+from ansible_plugin.executors.custom_log import ADCMCustomLogPluginExecutor
 from ansible_plugin.executors.delete_service import ADCMDeleteServicePluginExecutor
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 from ansible_plugin.executors.remove_host_from_cluster import ADCMRemoveHostFromClusterPluginExecutor
+from cm.impl.job.repo import JobRepo
+from cm.legacy.services.action_process.schema_validation import ProcessOperationType
+from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.transition.dump import dump
 from cm.legacy.services.transition.load import load
-from cm.models import Bundle, ConfigHostGroup, ObjectType, Prototype, Upgrade
-from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from cm.models import (
+    ADCM,
+    Action,
+    ActionHostGroup,
+    Bundle,
+    ConfigHostGroup,
+    ObjectType,
+    Process,
+    Prototype,
+    Upgrade,
+)
+from core.config import ConfigRepoI
+from django.core.management import call_command
+from django.utils import timezone
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from tests.cases.rbac.setup import A1_MAPPING, BUNDLES_DIR, RBACWriteSideSuite
 from tests.dependencies import RBACScenariosOverride, get_default_overridden_providers
 from tests.use_cases import prepare_bundle_file
 
+CUSTOM_LOG_EXECUTOR: Final = ADCMCustomLogPluginExecutor[lambda _, path: str(path)]
 
-class TestG1Topology(RBACWriteSideSuite):
+
+class TestRBACWriteSide(RBACWriteSideSuite):
     # G1.01
 
     def test_g1_01_create_host_free(self) -> None:
@@ -236,6 +265,212 @@ class TestG1Topology(RBACWriteSideSuite):
             response = self.client.v2[self.provider_p1, "upgrades", upgrade, "run"].post()
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
 
+    # G1.11
+
+    def test_g1_11_upgrade_switch(self) -> None:
+        upgrade = Upgrade.objects.get(bundle__name="rbac_cluster_a", bundle__version="2.0", name="switch")
+
+        with self.act():
+            self.run_upgrade_via_api(owner=self.cluster_a1, upgrade=upgrade)
+
+    def test_g1_11_upgrade_revert(self) -> None:
+        upgrade = Upgrade.objects.get(bundle__name="rbac_cluster_a", bundle__version="2.0", name="plain")
+
+        with self.act():
+            self.run_upgrade_via_api(owner=self.cluster_a1, upgrade=upgrade)
+            self.cluster_a1.refresh_from_db(fields=["prototype"])
+            self.run_action_via_api(owner=self.cluster_a1, action_name="revert_upgrade", payload={})
+
+    # G1.12
+
+    def test_g1_12_config_cluster(self) -> None:
+        with self.act():
+            response = self.client.v2[self.cluster_a1, "configs"].post(
+                data={"config": {"value": "g1-12"}, "adcmMeta": {}, "description": "g1-12"}
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g1_12_config_host(self) -> None:
+        with self.act():
+            response = self.client.v2[self.hosts["h-one"], "configs"].post(
+                data={"config": {"value": "g1-12"}, "adcmMeta": {}, "description": "g1-12"}
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g1_12_config_chg(self) -> None:
+        config_host_group = ConfigHostGroup.objects.get(name="chg-cluster")
+
+        with self.act():
+            response = self.client.v2[config_host_group, "configs"].post(
+                data={
+                    "config": {"value": "g1-12"},
+                    "adcmMeta": {"/value": {"isSynchronized": False}},
+                    "description": "g1-12",
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+
+    def test_g1_12_config_plugin(self) -> None:
+        task = JobRepo().get_task(id=self.a1_job.task_id)  # pyright: ignore[reportAttributeAccessIssue]
+
+        with self.act():
+            create_related_configs(job_id=self.a1_job.pk, owner=task.owner, config_repo=self.container.get(ConfigRepoI))
+            self.run_plugin(
+                executor_type=ADCMConfigPluginExecutor,
+                arguments={"type": "cluster", "key": "value", "value": "g1-12"},
+                job=self.a1_job,
+            )
+
+    def test_g1_12_config_lookup(self) -> None:
+        task = JobRepo().get_task(id=self.a1_job.task_id)  # pyright: ignore[reportAttributeAccessIssue]
+        variables = {"job": {"id": self.a1_job.pk, "action": "common"}, "cluster": {"id": self.cluster_a1.pk}}
+
+        with self.act():
+            create_related_configs(job_id=self.a1_job.pk, owner=task.owner, config_repo=self.container.get(ConfigRepoI))
+            result = call_adcm_config_lookup(terms=["cluster", "value", "g1-12"], variables=variables, kwargs={})
+            self.assertEqual(result, PluginResult("g1-12", True))
+
+    # G1.13
+
+    def test_g1_13_launch_cluster(self) -> None:
+        action = Action.objects.get(prototype=self.cluster_a1.prototype, name="common")
+
+        with self.act():
+            response = self.client.v2[self.cluster_a1, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_13_launch_service(self) -> None:
+        service = self.service("A1", "svc_1")
+        action = Action.objects.get(prototype=service.prototype, name="common")
+
+        with self.act():
+            response = self.client.v2[service, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_13_launch_component(self) -> None:
+        component = self.component("A1", "svc_1", "comp_1")
+        action = Action.objects.get(prototype=component.prototype, name="common")
+
+        with self.act():
+            response = self.client.v2[component, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_13_launch_provider(self) -> None:
+        action = Action.objects.get(prototype=self.provider_p1.prototype, name="common")
+
+        with self.act():
+            response = self.client.v2[self.provider_p1, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_13_launch_host(self) -> None:
+        host = self.hosts["h-one"]
+        action = Action.objects.get(prototype=host.prototype, name="common")
+
+        with self.act():
+            response = self.client.v2[host, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    # G1.14
+
+    def test_g1_14_host_action_cluster(self) -> None:
+        action = Action.objects.get(prototype=self.cluster_a1.prototype, name="on_host")
+
+        with self.act():
+            response = self.client.v2[self.hosts["h-one"], "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_host_action_service(self) -> None:
+        action = Action.objects.get(prototype=self.service("A1", "svc_1").prototype, name="on_host")
+
+        with self.act():
+            response = self.client.v2[self.hosts["h-one"], "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_host_action_component(self) -> None:
+        action = Action.objects.get(prototype=self.component("A1", "svc_1", "comp_1").prototype, name="on_host")
+
+        with self.act():
+            response = self.client.v2[self.hosts["h-one"], "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_ahg_cluster(self) -> None:
+        group = ActionHostGroup.objects.get(name="ahg-cluster")
+        action = Action.objects.get(prototype=self.cluster_a1.prototype, name="in_ahg")
+
+        with self.act():
+            response = self.client.v2[group, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_ahg_service(self) -> None:
+        group = ActionHostGroup.objects.get(name="ahg-service")
+        action = Action.objects.get(prototype=self.service("A1", "svc_1").prototype, name="in_ahg")
+
+        with self.act():
+            response = self.client.v2[group, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_ahg_component(self) -> None:
+        group = ActionHostGroup.objects.get(name="ahg-component")
+        action = Action.objects.get(prototype=self.component("A1", "svc_1", "comp_1").prototype, name="in_ahg")
+
+        with self.act():
+            response = self.client.v2[group, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    def test_g1_14_adcm_action(self) -> None:
+        # C9: ADCM-owned task gets no E4 grant
+        adcm = ADCM.objects.get()
+        action = Action.objects.get(prototype=adcm.prototype, name="test_ldap_connection")
+
+        with self.act():
+            response = self.client.v2[adcm, "actions", action, "run"].post(data={})
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    # G1.15
+
+    def test_g1_15_wizard(self) -> None:
+        action = Action.objects.get(prototype=self.cluster_w1.prototype, name="wizard")
+
+        with self.act():
+            response = self.client.v2[self.cluster_w1, "actions", action, "processes"].post(data={})
+            self.assertEqual(response.status_code, HTTP_201_CREATED, response.content)
+            process = Process.objects.get(id=response.json()["id"])
+
+            response = self.client.v2[self.cluster_w1, "actions", action, "processes", process, "operation"].post(
+                data={
+                    "method": ProcessOperationType.SUBMIT,
+                    "params": {"processSyncKey": process.sync_key, "stepId": process.current_step.pk},
+                }
+            )
+            self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+
+    # G1.16
+
+    def test_g1_16_custom_log(self) -> None:
+        with self.act():
+            self.run_plugin(
+                executor_type=CUSTOM_LOG_EXECUTOR,
+                arguments={"name": "g1-16", "format": "txt", "content": "g1-16"},
+                job=self.a1_job,
+            )
+
+    def test_g1_16_check_log_first(self) -> None:
+        with self.act():
+            self.run_plugin(
+                executor_type=ADCMCheckPluginExecutor,
+                arguments={"title": "g1-16", "result": True, "success_msg": "ok", "fail_msg": "fail"},
+                job=self.p1_job,
+            )
+
+    def test_g1_16_check_log_next(self) -> None:
+        # `a1_job` already has a check log
+        with self.act():
+            self.run_plugin(
+                executor_type=ADCMCheckPluginExecutor,
+                arguments={"title": "g1-16", "result": True, "success_msg": "ok", "fail_msg": "fail"},
+                job=self.a1_job,
+            )
+
     # G1.17
 
     def test_g1_17_upload_bundle(self) -> None:
@@ -268,6 +503,15 @@ class TestG1Topology(RBACWriteSideSuite):
         with self.act():
             response = self.client.v2[self.hosts["h-free"]].delete()
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
+
+    # G1.19
+
+    def test_g1_19_logrotate(self) -> None:
+        # every finished setup task is older than the default threshold (365 days)
+        later = timezone.now() + timedelta(days=366)
+
+        with self.act(), patch("django.utils.timezone.now", return_value=later):
+            call_command("logrotate", "--target=all")
 
     # G1.20
 

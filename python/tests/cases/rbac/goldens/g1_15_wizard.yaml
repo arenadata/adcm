@@ -1,0 +1,26 @@
+guardian_groupobjectpermission:
+  added:
+  - G-wizard | cm.change_joblog | job:cluster:W1:wizard#1/1
+  - G-wizard | cm.change_tasklog | task:cluster:W1:wizard#1
+  - G-wizard | cm.view_joblog | job:cluster:W1:wizard#1/1
+  - G-wizard | cm.view_logstorage | log:cluster:W1:wizard#1/1/ansible:stderr
+  - G-wizard | cm.view_logstorage | log:cluster:W1:wizard#1/1/ansible:stdout
+  - G-wizard | cm.view_tasklog | task:cluster:W1:wizard#1
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-wizard | G-wizard | cm.change_joblog | job:cluster:W1:wizard#1/1
+  - P-wizard | G-wizard | cm.change_tasklog | task:cluster:W1:wizard#1
+  - P-wizard | G-wizard | cm.view_joblog | job:cluster:W1:wizard#1/1
+  - P-wizard | G-wizard | cm.view_logstorage | log:cluster:W1:wizard#1/1/ansible:stderr
+  - P-wizard | G-wizard | cm.view_logstorage | log:cluster:W1:wizard#1/1/ansible:stdout
+  - P-wizard | G-wizard | cm.view_tasklog | task:cluster:W1:wizard#1
+  removed: []
+rbac_role:
+  added:
+  - task-role:task:cluster:W1:wizard#1 | hidden
+  removed: []
+rbac_role_child:
+  added:
+  - Cluster Administrator | task-role:task:cluster:W1:wizard#1
+  removed: []

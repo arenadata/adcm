@@ -957,6 +957,29 @@ guardian_groupobjectpermission:
 - G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev1
 - G-solo-view-host-config | cm.view_host | host:h-multi
 - G-solo-view-host-config | cm.view_objectconfig | config:host:h-multi
+- G-wizard | cm.add_service_to_cluster | cluster:W1
+- G-wizard | cm.change_ansible_config_of_cluster | cluster:W1
+- G-wizard | cm.change_cluster | cluster:W1
+- G-wizard | cm.change_config_of_cluster | cluster:W1
+- G-wizard | cm.change_import_of_cluster | cluster:W1
+- G-wizard | cm.do_upgrade_of_cluster | cluster:W1
+- G-wizard | cm.edit_action_host_group_cluster | cluster:W1
+- G-wizard | cm.edit_host_components_of_cluster | cluster:W1
+- G-wizard | cm.map_host_to_cluster | cluster:W1
+- G-wizard | cm.run_action_67a7d5777fedda6f582329a7f1199a6fcafd40da7d6b29e29271d8d97b4233ee | cluster:W1
+- G-wizard | cm.unmap_host_from_cluster | cluster:W1
+- G-wizard | cm.view_action | action:rbac_cluster_w-1.0/cluster/rbac_cluster_w:wizard
+- G-wizard | cm.view_action_host_group_cluster | cluster:W1
+- G-wizard | cm.view_ansible_config_of_cluster | cluster:W1
+- G-wizard | cm.view_cluster | cluster:W1
+- G-wizard | cm.view_host_components_of_cluster | cluster:W1
+- G-wizard | cm.view_import_of_cluster | cluster:W1
+- G-wizard | cm.view_joblog | cluster:W1
+- G-wizard | cm.view_logstorage | cluster:W1
+- G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+- G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+- G-wizard | cm.view_tasklog | cluster:W1
+- G-wizard | cm.view_upgrade_of_cluster | cluster:W1
 rbac_policy_group_object_perm:
 - P-cross-a1 | G-cross | cm.change_joblog | job:cluster:A1:common#2/1
 - P-cross-a1 | G-cross | cm.change_tasklog | task:cluster:A1:common#2
@@ -1931,6 +1954,29 @@ rbac_policy_group_object_perm:
 - P-solo-view-host-config | G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev1
 - P-solo-view-host-config | G-solo-view-host-config | cm.view_host | host:h-multi
 - P-solo-view-host-config | G-solo-view-host-config | cm.view_objectconfig | config:host:h-multi
+- P-wizard | G-wizard | cm.add_service_to_cluster | cluster:W1
+- P-wizard | G-wizard | cm.change_ansible_config_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.change_cluster | cluster:W1
+- P-wizard | G-wizard | cm.change_config_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.change_import_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.do_upgrade_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.edit_action_host_group_cluster | cluster:W1
+- P-wizard | G-wizard | cm.edit_host_components_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.map_host_to_cluster | cluster:W1
+- P-wizard | G-wizard | cm.run_action_67a7d5777fedda6f582329a7f1199a6fcafd40da7d6b29e29271d8d97b4233ee | cluster:W1
+- P-wizard | G-wizard | cm.unmap_host_from_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_action | action:rbac_cluster_w-1.0/cluster/rbac_cluster_w:wizard
+- P-wizard | G-wizard | cm.view_action_host_group_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_ansible_config_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_host_components_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_import_of_cluster | cluster:W1
+- P-wizard | G-wizard | cm.view_joblog | cluster:W1
+- P-wizard | G-wizard | cm.view_logstorage | cluster:W1
+- P-wizard | G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+- P-wizard | G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+- P-wizard | G-wizard | cm.view_tasklog | cluster:W1
+- P-wizard | G-wizard | cm.view_upgrade_of_cluster | cluster:W1
 auth_group_permissions:
 - G-empty | cm.add_bundle
 - G-empty | cm.add_confighostgroup
@@ -2041,6 +2087,21 @@ auth_group_permissions:
 - G-solo-service-admin | cm.delete_concernitem
 - G-solo-service-admin | cm.delete_confighostgroup
 - G-solo-service-admin | cm.view_concernitem
+- G-wizard | cm.add_bundle
+- G-wizard | cm.add_confighostgroup
+- G-wizard | cm.add_configlog
+- G-wizard | cm.add_host
+- G-wizard | cm.add_prototype
+- G-wizard | cm.add_service
+- G-wizard | cm.change_bundle
+- G-wizard | cm.change_confighostgroup
+- G-wizard | cm.change_configlog
+- G-wizard | cm.change_objectconfig
+- G-wizard | cm.delete_bundle
+- G-wizard | cm.delete_concernitem
+- G-wizard | cm.delete_confighostgroup
+- G-wizard | cm.view_concernitem
+- G-wizard | cm.view_host
 rbac_policypermission:
 - P-empty-hosts | group:G-empty | cm.add_confighostgroup
 - P-empty-hosts | group:G-empty | cm.add_configlog
@@ -2169,6 +2230,21 @@ rbac_policypermission:
 - P-solo-service-admin | group:G-solo-service-admin | cm.delete_concernitem
 - P-solo-service-admin | group:G-solo-service-admin | cm.delete_confighostgroup
 - P-solo-service-admin | group:G-solo-service-admin | cm.view_concernitem
+- P-wizard | group:G-wizard | cm.add_bundle
+- P-wizard | group:G-wizard | cm.add_confighostgroup
+- P-wizard | group:G-wizard | cm.add_configlog
+- P-wizard | group:G-wizard | cm.add_host
+- P-wizard | group:G-wizard | cm.add_prototype
+- P-wizard | group:G-wizard | cm.add_service
+- P-wizard | group:G-wizard | cm.change_bundle
+- P-wizard | group:G-wizard | cm.change_confighostgroup
+- P-wizard | group:G-wizard | cm.change_configlog
+- P-wizard | group:G-wizard | cm.change_objectconfig
+- P-wizard | group:G-wizard | cm.delete_bundle
+- P-wizard | group:G-wizard | cm.delete_concernitem
+- P-wizard | group:G-wizard | cm.delete_confighostgroup
+- P-wizard | group:G-wizard | cm.view_concernitem
+- P-wizard | group:G-wizard | cm.view_host
 rbac_role:
 - ADCM Auditor | role
 - ADCM User | role
@@ -2186,8 +2262,10 @@ rbac_role:
 - 'Cluster Action: HC Apply | business'
 - 'Cluster Action: HC Finalize | business'
 - 'Cluster Action: Removed Action | business'
+- 'Cluster Action: Revert Upgrade | business'
 - 'Cluster Action: Run On Host | business'
 - 'Cluster Action: Upgrade: switch | business'
+- 'Cluster Action: Wizard Action | business'
 - Cluster Administrator | role
 - 'Component Action: AHG Action | business'
 - 'Component Action: Common Action | business'
@@ -2343,6 +2421,7 @@ rbac_role:
 - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_in_ahg | hidden
 - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_on_host | hidden
 - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success- | hidden
+- rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_revert_upgrade | hidden
 - rbac_cluster_a_2.0_community_service_svc_1_common | hidden
 - rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_common | hidden
 - rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_in_ahg | hidden
@@ -2370,6 +2449,7 @@ rbac_role:
 - rbac_cluster_b_1.0_community_cluster_rbac_cluster_b_common | hidden
 - rbac_cluster_b_1.0_community_service_svc_b1_common | hidden
 - rbac_cluster_e_1.0_community_cluster_rbac_cluster_e_e_action | hidden
+- rbac_cluster_w_1.0_community_cluster_rbac_cluster_w_wizard | hidden
 - rbac_provider_1.0_community_host_rbac_host_common | hidden
 - rbac_provider_1.0_community_provider_rbac_provider_common | hidden
 - rbac_provider_2.0_community_host_rbac_host_common | hidden
@@ -2414,9 +2494,11 @@ rbac_role_child:
 - 'Cluster Action: HC Apply | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_apply'
 - 'Cluster Action: HC Finalize | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_finalize'
 - 'Cluster Action: Removed Action | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_removed'
+- 'Cluster Action: Revert Upgrade | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_revert_upgrade'
 - 'Cluster Action: Run On Host | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_on_host'
 - 'Cluster Action: Run On Host | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_on_host'
 - 'Cluster Action: Upgrade: switch | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-'
+- 'Cluster Action: Wizard Action | rbac_cluster_w_1.0_community_cluster_rbac_cluster_w_wizard'
 - Cluster Administrator | Accept license
 - Cluster Administrator | Add bundle
 - Cluster Administrator | Add host
@@ -2430,8 +2512,10 @@ rbac_role_child:
 - 'Cluster Administrator | Cluster Action: HC Apply'
 - 'Cluster Administrator | Cluster Action: HC Finalize'
 - 'Cluster Administrator | Cluster Action: Removed Action'
+- 'Cluster Administrator | Cluster Action: Revert Upgrade'
 - 'Cluster Administrator | Cluster Action: Run On Host'
 - 'Cluster Administrator | Cluster Action: Upgrade: switch'
+- 'Cluster Administrator | Cluster Action: Wizard Action'
 - 'Cluster Administrator | Component Action: AHG Action'
 - 'Cluster Administrator | Component Action: Common Action'
 - 'Cluster Administrator | Component Action: Run On Host'
@@ -2698,6 +2782,7 @@ rbac_policy_object:
 - P-solo-service-admin | service:A1/svc_1
 - P-solo-view-cluster-config | cluster:A1
 - P-solo-view-host-config | host:h-multi
+- P-wizard | cluster:W1
 auth_user_groups:
 - U-idle | G-idle
 - U-launch | G-launch-only

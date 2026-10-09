@@ -1,0 +1,21 @@
+guardian_groupobjectpermission:
+  added:
+  - G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  removed: []
+effective_object_perm:
+  added:
+  - U-multi | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev3
+  removed: []

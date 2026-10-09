@@ -1,0 +1,85 @@
+guardian_groupobjectpermission:
+  added:
+  - G-overlap | cm.change_joblog | job:host:h-one:on_host#2/1
+  - G-overlap | cm.change_tasklog | task:host:h-one:on_host#2
+  - G-overlap | cm.view_joblog | job:host:h-one:on_host#2/1
+  - G-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - G-overlap | cm.view_tasklog | task:host:h-one:on_host#2
+  - G-solo-cluster-admin | cm.change_joblog | job:host:h-one:on_host#2/1
+  - G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:on_host#2
+  - G-solo-cluster-admin | cm.view_joblog | job:host:h-one:on_host#2/1
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:on_host#2
+  - G-solo-component-host-action | cm.change_joblog | job:host:h-one:on_host#2/1
+  - G-solo-component-host-action | cm.change_tasklog | task:host:h-one:on_host#2
+  - G-solo-component-host-action | cm.view_joblog | job:host:h-one:on_host#2/1
+  - G-solo-component-host-action | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - G-solo-component-host-action | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - G-solo-component-host-action | cm.view_tasklog | task:host:h-one:on_host#2
+  - G-solo-service-admin | cm.change_joblog | job:host:h-one:on_host#2/1
+  - G-solo-service-admin | cm.change_tasklog | task:host:h-one:on_host#2
+  - G-solo-service-admin | cm.view_joblog | job:host:h-one:on_host#2/1
+  - G-solo-service-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - G-solo-service-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - G-solo-service-admin | cm.view_tasklog | task:host:h-one:on_host#2
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:host:h-one:on_host#2/1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:host:h-one:on_host#2
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:host:h-one:on_host#2/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:host:h-one:on_host#2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:host:h-one:on_host#2/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:on_host#2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:host:h-one:on_host#2/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:on_host#2
+  - P-solo-component-host-action | G-solo-component-host-action | cm.change_joblog | job:host:h-one:on_host#2/1
+  - P-solo-component-host-action | G-solo-component-host-action | cm.change_tasklog | task:host:h-one:on_host#2
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_joblog | job:host:h-one:on_host#2/1
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_tasklog | task:host:h-one:on_host#2
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | job:host:h-one:on_host#2/1
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | task:host:h-one:on_host#2
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | job:host:h-one:on_host#2/1
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | task:host:h-one:on_host#2
+  removed: []
+rbac_role:
+  added:
+  - task-role:task:host:h-one:on_host#2 | hidden
+  removed: []
+rbac_role_child:
+  added:
+  - Cluster Administrator | task-role:task:host:h-one:on_host#2
+  - 'Component Action: Run On Host | task-role:task:host:h-one:on_host#2'
+  - Service Administrator | task-role:task:host:h-one:on_host#2
+  removed: []
+effective_object_perm:
+  added:
+  - U-mixed | cm.change_joblog | job:host:h-one:on_host#2/1
+  - U-mixed | cm.change_tasklog | task:host:h-one:on_host#2
+  - U-mixed | cm.view_joblog | job:host:h-one:on_host#2/1
+  - U-mixed | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - U-mixed | cm.view_tasklog | task:host:h-one:on_host#2
+  - U-multi | cm.change_joblog | job:host:h-one:on_host#2/1
+  - U-multi | cm.change_tasklog | task:host:h-one:on_host#2
+  - U-multi | cm.view_joblog | job:host:h-one:on_host#2/1
+  - U-multi | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - U-multi | cm.view_tasklog | task:host:h-one:on_host#2
+  - U-overlap | cm.change_joblog | job:host:h-one:on_host#2/1
+  - U-overlap | cm.change_tasklog | task:host:h-one:on_host#2
+  - U-overlap | cm.view_joblog | job:host:h-one:on_host#2/1
+  - U-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:host:h-one:on_host#2/1/ansible:stdout
+  - U-overlap | cm.view_tasklog | task:host:h-one:on_host#2
+  removed: []

@@ -1,0 +1,22 @@
+guardian_groupobjectpermission:
+  added:
+  - G-empty | cm.view_configlog | configlog:host:h-one@rev3
+  - G-overlap | cm.view_configlog | configlog:host:h-one@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - G-solo-service-admin | cm.view_configlog | configlog:host:h-one@rev3
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-empty-hosts | G-empty | cm.view_configlog | configlog:host:h-one@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:host:h-one@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:host:h-one@rev3
+  removed: []
+effective_object_perm:
+  added:
+  - U-mixed | cm.view_configlog | configlog:host:h-one@rev3
+  - U-multi | cm.view_configlog | configlog:host:h-one@rev3
+  - U-overlap | cm.view_configlog | configlog:host:h-one@rev3
+  removed: []

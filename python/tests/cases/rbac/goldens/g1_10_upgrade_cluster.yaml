@@ -19,11 +19,13 @@ guardian_groupobjectpermission:
   - G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
   - G-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - G-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - G-overlap | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
@@ -51,11 +53,13 @@ guardian_groupobjectpermission:
   - G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - G-solo-cluster-admin | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - G-solo-cluster-admin | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - G-solo-cluster-admin | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
@@ -377,11 +381,13 @@ rbac_policy_group_object_perm:
   - P-multi-group | G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
   - P-overlap-admin | G-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - P-overlap-admin | G-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
@@ -411,11 +417,13 @@ rbac_policy_group_object_perm:
   - P-solo-cluster-action | G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
@@ -746,11 +754,13 @@ effective_object_perm:
   - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev3
   - U-multi | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - U-multi | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - U-multi | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
@@ -777,11 +787,13 @@ effective_object_perm:
   - U-multi | cm.view_configlog | configlog:service:A1/svc_2@rev2
   - U-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
   - U-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - U-overlap | cm.run_action_f75329b633fa6ddf707bdb79686446fd43d64469a9ae2c152aec37719f71a35b | cluster:A1
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:revert_upgrade
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
   - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host

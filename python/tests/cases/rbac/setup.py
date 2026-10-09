@@ -39,6 +39,7 @@ from cm.models import (
     Provider,
     Service,
     TaskLog,
+    Upgrade,
 )
 from cm.transition.status import StatusScenarios
 from core.config import ConfigService
@@ -51,7 +52,7 @@ from rbac.roles import assign_view_logstorage_permissions_by_job
 from rbac.scenarios import RBACScenarios
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 from use_cases.dto import RunActionDTO
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.transition.host.duplicate import create_duplicate
@@ -89,6 +90,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
 
     - S-B1/S-B3: bundles A v1/v2; S-B2: bundle B; S-B4: provider P v1/v2
     - S-B5: bundle E, cluster E1, policy on its action role
+    - bundle W (wizard action), cluster W1 in policy `P-wizard`
     - S-T1: clusters A1, A2 (A v1), B1; S-T2: providers P1, P2, P3 (no hosts), hosts `h-free`, `h-unmapped` (in A1),
       `h-one` (A1 svc_1/comp_1), `h-multi` (A1 svc_1/comp_1, svc_1/comp_2, svc_2/comp_1), `h-a2`, `h-b1`, `h-free-p2`
     - S-T3: duplicate of `h-free` without cluster
@@ -114,6 +116,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
     cluster_a2: Cluster
     cluster_b1: Cluster
     cluster_e1: Cluster
+    cluster_w1: Cluster
     provider_p1: Provider
     provider_p2: Provider
     provider_p3: Provider
@@ -180,6 +183,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         cls.uc.upload_bundle(BUNDLES_DIR / "cluster_a_v2")
         bundle_b = cls.uc.upload_bundle(BUNDLES_DIR / "cluster_b")
         bundle_e = cls.uc.upload_bundle(BUNDLES_DIR / "cluster_e")
+        bundle_w = cls.uc.upload_bundle(BUNDLES_DIR / "cluster_w")
         bundle_p = cls.uc.upload_bundle(BUNDLES_DIR / "provider_v1")
         cls.uc.upload_bundle(BUNDLES_DIR / "provider_v2")
 
@@ -187,6 +191,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         cls.cluster_a2 = cls.add_cluster_with_services(bundle=bundle_a, name="A2", services=["svc_1", "svc_2", "svc_3"])
         cls.cluster_b1 = cls.add_cluster_with_services(bundle=bundle_b, name="B1", services=["svc_b1"])
         cls.cluster_e1 = cls.uc.add_cluster(bundle=bundle_e, name="E1")
+        cls.cluster_w1 = cls.uc.add_cluster(bundle=bundle_w, name="W1")
 
         cls.provider_p1 = cls.uc.add_provider(bundle=bundle_p, name="P1")
         cls.provider_p2 = cls.uc.add_provider(bundle=bundle_p, name="P2")
@@ -295,6 +300,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
                 "G-launch-only",
                 "G-empty",
                 "G-idle",
+                "G-wizard",
             )
         }
 
@@ -385,6 +391,8 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
             ),
             # provider without hosts, can be deleted
             ("P-empty-provider", cls.role("Provider Administrator"), ["G-empty"], [cls.provider_p3]),
+            # wizard action's task, group without users
+            ("P-wizard", cls.role("Cluster Administrator"), ["G-wizard"], [cls.cluster_w1]),
         )
 
         for name, role, group_names, objects in policies:
@@ -475,6 +483,22 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         action = Action.objects.get(prototype=owner.prototype, name=action_name)
 
         response = self.client.v2[owner, "actions", action, "run"].post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+        task_id = response.json()["id"]
+
+        self.task_runner().launch_task(task_id)
+
+        self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), JobStatus.SUCCESS)
+
+    def run_upgrade_via_api(self, owner: Cluster | Provider, upgrade: Upgrade) -> None:
+        """Run upgrade via API: without scripts it's done in the request, otherwise its task is executed and succeeds"""
+
+        response = self.client.v2[owner, "upgrades", upgrade, "run"].post()
+
+        if upgrade.action_id is None:  # pyright: ignore[reportAttributeAccessIssue]
+            self.assertEqual(response.status_code, HTTP_204_NO_CONTENT, response.content)
+            return
+
         self.assertEqual(response.status_code, HTTP_200_OK, response.content)
         task_id = response.json()["id"]
 

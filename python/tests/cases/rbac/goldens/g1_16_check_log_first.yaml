@@ -1,0 +1,14 @@
+guardian_groupobjectpermission:
+  added:
+  - G-empty | cm.view_logstorage | log:provider:P1:common#1/1/ansible:check
+  - G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:check
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-empty-provider | G-empty | cm.view_logstorage | log:provider:P1:common#1/1/ansible:check
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:check
+  removed: []
+effective_object_perm:
+  added:
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#1/1/ansible:check
+  removed: []

@@ -1,0 +1,377 @@
+guardian_groupobjectpermission:
+  added:
+  - G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - G-overlap | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - G-overlap | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-overlap | cm.view_configlog | configlog:cluster:A1@rev4
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - G-overlap | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - G-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - G-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - G-overlap | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - G-solo-cluster-admin | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - G-solo-cluster-admin | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - G-solo-cluster-admin | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - G-solo-cluster-admin | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev4
+  - G-solo-edit-component-config | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev4
+  removed:
+  - G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_policy_group_object_perm:
+  added:
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:cluster:A1@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev4
+  - P-solo-edit-component-config | G-solo-edit-component-config | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev4
+  removed:
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_role:
+  added:
+  - task-role:task:cluster:A1:revert_upgrade#1 | hidden
+  removed:
+  - task-role:<dangling:tasklog:service:A1/svc_1:common#2> | hidden
+rbac_role_child:
+  added:
+  - Cluster Administrator | task-role:task:cluster:A1:revert_upgrade#1
+  removed:
+  - Cluster Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Service Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+effective_object_perm:
+  added:
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - U-multi | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - U-multi | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - U-multi | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-multi | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - U-multi | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-multi | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - U-multi | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-multi | cm.view_configlog | configlog:cluster:A1@rev4
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - U-multi | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - U-multi | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - U-multi | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - U-multi | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - U-overlap | cm.change_joblog | job:cluster:A1:revert_upgrade#1/1
+  - U-overlap | cm.change_tasklog | task:cluster:A1:revert_upgrade#1
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - U-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev5
+  - U-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev5
+  - U-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-overlap | cm.view_configlog | configlog:cluster:A1@rev4
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev4
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev3
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev3
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev2
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev4
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev3
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev2
+  - U-overlap | cm.view_joblog | job:cluster:A1:revert_upgrade#1/1
+  - U-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stderr
+  - U-overlap | cm.view_logstorage | log:cluster:A1:revert_upgrade#1/1/internal:stdout
+  - U-overlap | cm.view_tasklog | task:cluster:A1:revert_upgrade#1
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev5
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev4
+  removed:
+  - U-mixed | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-mixed | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-multi | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-multi | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>

@@ -1,0 +1,859 @@
+guardian_groupobjectpermission:
+  added:
+  - G-cross | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-cross | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-cross | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-cross | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-launch-only | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-launch-only | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-overlap | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - G-overlap | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-overlap | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-overlap | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-overlap | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-cluster-action | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-cluster-action | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-cluster-action | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-solo-cluster-action | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-provider-admin | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-solo-provider-admin | cm.change_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - G-solo-provider-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-solo-provider-admin | cm.change_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - G-solo-provider-admin | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - G-solo-provider-admin | cm.view_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stderr>
+  - G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stdout>
+  - G-solo-provider-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - G-solo-provider-admin | cm.view_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - G-solo-service-admin | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-solo-service-admin | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - G-wizard | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - G-wizard | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  removed:
+  - G-cross | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-cross | cm.change_tasklog | task:cluster:A1:common#2
+  - G-cross | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-cross | cm.view_tasklog | task:cluster:A1:common#2
+  - G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-overlap | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-overlap | cm.change_joblog | job:host:h-one:common#1/1
+  - G-overlap | cm.change_joblog | job:host:h-one:on_host#1/1
+  - G-overlap | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-overlap | cm.change_tasklog | task:cluster:A1:common#2
+  - G-overlap | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-overlap | cm.change_tasklog | task:host:h-one:common#1
+  - G-overlap | cm.change_tasklog | task:host:h-one:on_host#1
+  - G-overlap | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-overlap | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-overlap | cm.view_joblog | job:host:h-one:common#1/1
+  - G-overlap | cm.view_joblog | job:host:h-one:on_host#1/1
+  - G-overlap | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - G-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - G-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - G-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-overlap | cm.view_tasklog | task:cluster:A1:common#2
+  - G-overlap | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-overlap | cm.view_tasklog | task:host:h-one:common#1
+  - G-overlap | cm.view_tasklog | task:host:h-one:on_host#1
+  - G-overlap | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-cluster-action | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-solo-cluster-action | cm.change_tasklog | task:cluster:A1:common#2
+  - G-solo-cluster-action | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-solo-cluster-action | cm.view_tasklog | task:cluster:A1:common#2
+  - G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-solo-cluster-admin | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-solo-cluster-admin | cm.change_joblog | job:host:h-one:common#1/1
+  - G-solo-cluster-admin | cm.change_joblog | job:host:h-one:on_host#1/1
+  - G-solo-cluster-admin | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.change_tasklog | task:cluster:A1:common#2
+  - G-solo-cluster-admin | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:common#1
+  - G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:on_host#1
+  - G-solo-cluster-admin | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-solo-cluster-admin | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-solo-cluster-admin | cm.view_joblog | job:host:h-one:common#1/1
+  - G-solo-cluster-admin | cm.view_joblog | job:host:h-one:on_host#1/1
+  - G-solo-cluster-admin | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-solo-cluster-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.view_tasklog | task:cluster:A1:common#2
+  - G-solo-cluster-admin | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:common#1
+  - G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:on_host#1
+  - G-solo-cluster-admin | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-custom | cm.change_joblog | job:cluster:A1:common#2/1
+  - G-solo-custom | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-custom | cm.change_tasklog | task:cluster:A1:common#2
+  - G-solo-custom | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-custom | cm.view_joblog | job:cluster:A1:common#2/1
+  - G-solo-custom | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - G-solo-custom | cm.view_tasklog | task:cluster:A1:common#2
+  - G-solo-custom | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-provider-admin | cm.change_joblog | job:host:h-one:common#1/1
+  - G-solo-provider-admin | cm.change_joblog | job:provider:P1:common#1/1
+  - G-solo-provider-admin | cm.change_tasklog | task:host:h-one:common#1
+  - G-solo-provider-admin | cm.change_tasklog | task:provider:P1:common#1
+  - G-solo-provider-admin | cm.view_joblog | job:host:h-one:common#1/1
+  - G-solo-provider-admin | cm.view_joblog | job:provider:P1:common#1/1
+  - G-solo-provider-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - G-solo-provider-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stderr
+  - G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stdout
+  - G-solo-provider-admin | cm.view_tasklog | task:host:h-one:common#1
+  - G-solo-provider-admin | cm.view_tasklog | task:provider:P1:common#1
+  - G-solo-service-admin | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-solo-service-admin | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-service-admin | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-solo-service-admin | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - G-solo-service-admin | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - G-solo-service-admin | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - G-solo-service-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - G-solo-service-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - G-solo-service-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - G-solo-service-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - G-solo-service-admin | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - G-solo-service-admin | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+rbac_policy_group_object_perm:
+  added:
+  - P-cross-a1 | G-cross | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-cross-a1 | G-cross | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-cross-a1 | G-cross | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-cross-a1 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-cross-a1 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - P-cross-a1 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - P-cross-a1 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-cross-a1 | G-cross | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-cross-a2 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-cross-a2 | G-cross | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-launch-action | G-launch-only | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-launch-action | G-launch-only | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stderr>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stdout>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - P-wizard | G-wizard | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - P-wizard | G-wizard | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  removed:
+  - P-cross-a1 | G-cross | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-cross-a1 | G-cross | cm.change_tasklog | task:cluster:A1:common#2
+  - P-cross-a1 | G-cross | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-cross-a1 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-cross-a1 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-cross-a1 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-cross-a1 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-cross-a1 | G-cross | cm.view_tasklog | task:cluster:A1:common#2
+  - P-cross-a2 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-cross-a2 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-launch-action | G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-launch-action | G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:host:h-one:common#1/1
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:host:h-one:on_host#1/1
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:cluster:A1:common#2
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:host:h-one:common#1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:host:h-one:on_host#1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:host:h-one:common#1/1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:host:h-one:on_host#1/1
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:cluster:A1:common#2
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:host:h-one:common#1
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:host:h-one:on_host#1
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-cluster-action | G-solo-cluster-action | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-solo-cluster-action | G-solo-cluster-action | cm.change_tasklog | task:cluster:A1:common#2
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_tasklog | task:cluster:A1:common#2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:host:h-one:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:host:h-one:on_host#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:cluster:A1:common#2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:common#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:host:h-one:on_host#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:host:h-one:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:host:h-one:on_host#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:cluster:A1:common#2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:common#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:host:h-one:on_host#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-custom | G-solo-custom | cm.change_joblog | job:cluster:A1:common#2/1
+  - P-solo-custom | G-solo-custom | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | task:cluster:A1:common#2
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-custom | G-solo-custom | cm.view_joblog | job:cluster:A1:common#2/1
+  - P-solo-custom | G-solo-custom | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | task:cluster:A1:common#2
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_joblog | job:host:h-one:common#1/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_joblog | job:provider:P1:common#1/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_tasklog | task:host:h-one:common#1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_tasklog | task:provider:P1:common#1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_joblog | job:host:h-one:common#1/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_joblog | job:provider:P1:common#1/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stderr
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stdout
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_tasklog | task:host:h-one:common#1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_tasklog | task:provider:P1:common#1
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - P-wizard | G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - P-wizard | G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+rbac_role:
+  added:
+  - task-role:<dangling:tasklog:adcm:ADCM:test_ldap_connection#1> | hidden
+  - task-role:<dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1> | hidden
+  - task-role:<dangling:tasklog:cluster:A1:common#1> | hidden
+  - task-role:<dangling:tasklog:cluster:A1:common#2> | hidden
+  - task-role:<dangling:tasklog:component:A1/svc_1/comp_1:common#1> | hidden
+  - task-role:<dangling:tasklog:host:h-one:common#1> | hidden
+  - task-role:<dangling:tasklog:host:h-one:on_host#1> | hidden
+  - task-role:<dangling:tasklog:provider:P1:common#1> | hidden
+  - task-role:<dangling:tasklog:service:A1/svc_1:common#1> | hidden
+  removed:
+  - task-role:task:adcm:ADCM:test_ldap_connection#1 | hidden
+  - task-role:task:ahg:cluster:A1/ahg-cluster:in_ahg#1 | hidden
+  - task-role:task:cluster:A1:common#1 | hidden
+  - task-role:task:cluster:A1:common#2 | hidden
+  - task-role:task:component:A1/svc_1/comp_1:common#1 | hidden
+  - task-role:task:host:h-one:common#1 | hidden
+  - task-role:task:host:h-one:on_host#1 | hidden
+  - task-role:task:provider:P1:common#1 | hidden
+  - task-role:task:service:A1/svc_1:common#1 | hidden
+rbac_role_child:
+  added:
+  - 'Cluster Action: Common Action | task-role:<dangling:tasklog:cluster:A1:common#2>'
+  - Cluster Administrator | task-role:<dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - Cluster Administrator | task-role:<dangling:tasklog:cluster:A1:common#2>
+  - Cluster Administrator | task-role:<dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - Cluster Administrator | task-role:<dangling:tasklog:host:h-one:common#1>
+  - Cluster Administrator | task-role:<dangling:tasklog:host:h-one:on_host#1>
+  - Cluster Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#1>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:cluster:A1:common#2>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#1>
+  - Provider Administrator | task-role:<dangling:tasklog:host:h-one:common#1>
+  - Provider Administrator | task-role:<dangling:tasklog:provider:P1:common#1>
+  - Service Administrator | task-role:<dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - Service Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#1>
+  removed:
+  - 'Cluster Action: Common Action | task-role:task:cluster:A1:common#2'
+  - Cluster Administrator | task-role:task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - Cluster Administrator | task-role:task:cluster:A1:common#2
+  - Cluster Administrator | task-role:task:component:A1/svc_1/comp_1:common#1
+  - Cluster Administrator | task-role:task:host:h-one:common#1
+  - Cluster Administrator | task-role:task:host:h-one:on_host#1
+  - Cluster Administrator | task-role:task:service:A1/svc_1:common#1
+  - Custom Cluster Operator | task-role:task:cluster:A1:common#2
+  - Custom Cluster Operator | task-role:task:service:A1/svc_1:common#1
+  - Provider Administrator | task-role:task:host:h-one:common#1
+  - Provider Administrator | task-role:task:provider:P1:common#1
+  - Service Administrator | task-role:task:component:A1/svc_1/comp_1:common#1
+  - Service Administrator | task-role:task:service:A1/svc_1:common#1
+effective_object_perm:
+  added:
+  - U-launch | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-launch | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-launch | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-launch | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - U-launch | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - U-launch | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - U-launch | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - U-launch | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-mixed | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-mixed | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-mixed | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-mixed | cm.change_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - U-mixed | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-mixed | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-mixed | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-mixed | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-mixed | cm.view_joblog | <dangling:joblog:provider:P1:common#1/1>
+  - U-mixed | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:provider:P1:common#1/1/ansible:stdout>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:provider:P1:common#1>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-multi | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - U-multi | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-multi | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-multi | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-multi | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - U-multi | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - U-multi | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-multi | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - U-multi | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-multi | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-multi | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-multi | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - U-multi | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - U-multi | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - U-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:ahg:cluster:A1/ahg-cluster:in_ahg#1/1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:component:A1/svc_1/comp_1:common#1/1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:host:h-one:common#1/1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:host:h-one:on_host#1/1>
+  - U-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:component:A1/svc_1/comp_1:common#1/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:common#1/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:host:h-one:on_host#1/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:ahg:cluster:A1/ahg-cluster:in_ahg#1>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:component:A1/svc_1/comp_1:common#1>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:common#1>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:host:h-one:on_host#1>
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-single | cm.change_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-single | cm.change_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  - U-single | cm.view_joblog | <dangling:joblog:cluster:A1:common#2/1>
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#1/1>
+  - U-single | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:check>
+  - U-single | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/ansible:stdout>
+  - U-single | cm.view_logstorage | <dangling:logstorage:cluster:A1:common#2/1/custom:custom>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#1/1/ansible:stdout>
+  - U-single | cm.view_tasklog | <dangling:tasklog:cluster:A1:common#2>
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#1>
+  removed:
+  - U-launch | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-launch | cm.change_tasklog | task:cluster:A1:common#2
+  - U-launch | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-launch | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-launch | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-launch | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-launch | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-launch | cm.view_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-mixed | cm.change_joblog | job:host:h-one:common#1/1
+  - U-mixed | cm.change_joblog | job:provider:P1:common#1/1
+  - U-mixed | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-mixed | cm.change_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-mixed | cm.change_tasklog | task:host:h-one:common#1
+  - U-mixed | cm.change_tasklog | task:provider:P1:common#1
+  - U-mixed | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-mixed | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-mixed | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-mixed | cm.view_joblog | job:host:h-one:common#1/1
+  - U-mixed | cm.view_joblog | job:provider:P1:common#1/1
+  - U-mixed | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-mixed | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-mixed | cm.view_tasklog | task:cluster:A1:common#2
+  - U-mixed | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-mixed | cm.view_tasklog | task:host:h-one:common#1
+  - U-mixed | cm.view_tasklog | task:provider:P1:common#1
+  - U-mixed | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - U-multi | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-multi | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-multi | cm.change_joblog | job:host:h-one:common#1/1
+  - U-multi | cm.change_joblog | job:host:h-one:on_host#1/1
+  - U-multi | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-multi | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-multi | cm.change_tasklog | task:cluster:A1:common#2
+  - U-multi | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-multi | cm.change_tasklog | task:host:h-one:common#1
+  - U-multi | cm.change_tasklog | task:host:h-one:on_host#1
+  - U-multi | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-multi | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-multi | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-multi | cm.view_joblog | job:host:h-one:common#1/1
+  - U-multi | cm.view_joblog | job:host:h-one:on_host#1/1
+  - U-multi | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-multi | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-multi | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-multi | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-multi | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - U-multi | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - U-multi | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - U-multi | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-multi | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-multi | cm.view_tasklog | task:cluster:A1:common#2
+  - U-multi | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-multi | cm.view_tasklog | task:host:h-one:common#1
+  - U-multi | cm.view_tasklog | task:host:h-one:on_host#1
+  - U-multi | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - U-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-overlap | cm.change_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-overlap | cm.change_joblog | job:host:h-one:common#1/1
+  - U-overlap | cm.change_joblog | job:host:h-one:on_host#1/1
+  - U-overlap | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.change_tasklog | task:cluster:A1:common#2
+  - U-overlap | cm.change_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-overlap | cm.change_tasklog | task:host:h-one:common#1
+  - U-overlap | cm.change_tasklog | task:host:h-one:on_host#1
+  - U-overlap | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-overlap | cm.view_joblog | job:component:A1/svc_1/comp_1:common#1/1
+  - U-overlap | cm.view_joblog | job:host:h-one:common#1/1
+  - U-overlap | cm.view_joblog | job:host:h-one:on_host#1/1
+  - U-overlap | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:component:A1/svc_1/comp_1:common#1/1/ansible:stdout
+  - U-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:host:h-one:common#1/1/ansible:stdout
+  - U-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:host:h-one:on_host#1/1/ansible:stdout
+  - U-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.view_tasklog | task:cluster:A1:common#2
+  - U-overlap | cm.view_tasklog | task:component:A1/svc_1/comp_1:common#1
+  - U-overlap | cm.view_tasklog | task:host:h-one:common#1
+  - U-overlap | cm.view_tasklog | task:host:h-one:on_host#1
+  - U-overlap | cm.view_tasklog | task:service:A1/svc_1:common#1
+  - U-single | cm.change_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.change_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.change_tasklog | task:cluster:A1:common#2
+  - U-single | cm.change_tasklog | task:service:A1/svc_1:common#1
+  - U-single | cm.view_joblog | job:cluster:A1:common#2/1
+  - U-single | cm.view_joblog | job:service:A1/svc_1:common#1/1
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:check
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stderr
+  - U-single | cm.view_logstorage | log:service:A1/svc_1:common#1/1/ansible:stdout
+  - U-single | cm.view_tasklog | task:cluster:A1:common#2
+  - U-single | cm.view_tasklog | task:service:A1/svc_1:common#1

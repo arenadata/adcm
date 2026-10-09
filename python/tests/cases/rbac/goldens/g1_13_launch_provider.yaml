@@ -1,0 +1,35 @@
+guardian_groupobjectpermission:
+  added:
+  - G-solo-provider-admin | cm.change_joblog | job:provider:P1:common#2/1
+  - G-solo-provider-admin | cm.change_tasklog | task:provider:P1:common#2
+  - G-solo-provider-admin | cm.view_joblog | job:provider:P1:common#2/1
+  - G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stderr
+  - G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stdout
+  - G-solo-provider-admin | cm.view_tasklog | task:provider:P1:common#2
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_joblog | job:provider:P1:common#2/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_tasklog | task:provider:P1:common#2
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_joblog | job:provider:P1:common#2/1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stderr
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stdout
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_tasklog | task:provider:P1:common#2
+  removed: []
+rbac_role:
+  added:
+  - task-role:task:provider:P1:common#2 | hidden
+  removed: []
+rbac_role_child:
+  added:
+  - Provider Administrator | task-role:task:provider:P1:common#2
+  removed: []
+effective_object_perm:
+  added:
+  - U-mixed | cm.change_joblog | job:provider:P1:common#2/1
+  - U-mixed | cm.change_tasklog | task:provider:P1:common#2
+  - U-mixed | cm.view_joblog | job:provider:P1:common#2/1
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stderr
+  - U-mixed | cm.view_logstorage | log:provider:P1:common#2/1/ansible:stdout
+  - U-mixed | cm.view_tasklog | task:provider:P1:common#2
+  removed: []

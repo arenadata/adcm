@@ -1,0 +1,29 @@
+guardian_groupobjectpermission:
+  added:
+  - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-cross-a1 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-cross-a2 | G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-launch-action | G-launch-only | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - P-wizard | G-wizard | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  removed: []
+effective_object_perm:
+  added:
+  - U-launch | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - U-mixed | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - U-multi | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - U-overlap | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  - U-single | cm.view_logstorage | log:cluster:A1:common#2/1/g1-16:custom
+  removed: []

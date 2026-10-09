@@ -1,0 +1,4 @@
+rbac_role:
+  added:
+  - task-role:task:adcm:ADCM:test_ldap_connection#2 | hidden
+  removed: []

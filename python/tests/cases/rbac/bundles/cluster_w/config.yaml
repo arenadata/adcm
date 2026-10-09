@@ -1,0 +1,19 @@
+# Wizard bundle: `wizard` action with a single operation step, its scripts are rendered by python `scripts_template`
+- type: cluster
+  name: rbac_cluster_w
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  actions:
+    wizard:
+      display_name: Wizard Action
+      masking:
+      wizard_template:
+        file:
+          path: stages.j2
+        engine:
+          type: jinja2
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml

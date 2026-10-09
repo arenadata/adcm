@@ -1,4 +1,5 @@
-# S-B3: cluster bundle A v2. svc_3 and svc_2/comp_2 removed, svc_4 added, action `added` new, `removed` dropped
+# S-B3: cluster bundle A v2. svc_3 and svc_2/comp_2 removed, svc_4 added, action `added` new, `removed` dropped.
+# `revert_upgrade` (`bundle_revert`) rolls a cluster back to the bundle it was upgraded from
 - type: cluster
   name: rbac_cluster_a
   version: "2.0"
@@ -46,6 +47,13 @@
       display_name: Added Action
       masking:
       scripts: *scripts
+    revert_upgrade:
+      display_name: Revert Upgrade
+      masking:
+      scripts:
+        - name: revert
+          script_type: internal
+          script: bundle_revert
 
 - type: service
   name: svc_1
