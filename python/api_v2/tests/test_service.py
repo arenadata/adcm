@@ -517,13 +517,15 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
             # create a task for delete
             _ = self.client.v2[self.service_to_delete].delete()
 
+        task_id = launched.task_id()
+        job_spec_key = JobLog.objects.values_list("spec_key", flat=True).get(task_id=task_id)
         container = make_overridden_container(
-            MockWithEnvProvider(change_jobs={0: JobImitator(call=self.delete_service)})
+            MockWithEnvProvider(change_jobs={job_spec_key: JobImitator(call=self.delete_service)})
         )
 
         def get_main_info_side_effect(*, obj: Service):
             # use a closure to trigger the service deletion during the serialization of main_info
-            self.task_runner(container).launch_task(task_id=launched.task_id())
+            self.task_runner(container).launch_task(task_id=task_id)
             return get_main_info(obj=obj)
 
         with patch("api_v2.service.serializers.get_main_info", side_effect=get_main_info_side_effect):

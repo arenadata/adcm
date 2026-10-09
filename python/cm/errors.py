@@ -10,20 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.exceptions import APIException, ValidationError
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-    HTTP_501_NOT_IMPLEMENTED,
-)
-from rest_framework.views import exception_handler
+from http import HTTPStatus
 
 from cm.logger import logger
+
+HTTP_200_OK: int = HTTPStatus.OK.value
+HTTP_201_CREATED: int = HTTPStatus.CREATED.value
+HTTP_400_BAD_REQUEST: int = HTTPStatus.BAD_REQUEST.value
+HTTP_401_UNAUTHORIZED: int = HTTPStatus.UNAUTHORIZED.value
+HTTP_403_FORBIDDEN: int = HTTPStatus.FORBIDDEN.value
+HTTP_404_NOT_FOUND: int = HTTPStatus.NOT_FOUND.value
+HTTP_409_CONFLICT: int = HTTPStatus.CONFLICT.value
+HTTP_500_INTERNAL_SERVER_ERROR: int = HTTPStatus.INTERNAL_SERVER_ERROR.value
+HTTP_501_NOT_IMPLEMENTED: int = HTTPStatus.NOT_IMPLEMENTED.value
 
 WARN = "warning"
 ERR = "error"
@@ -250,7 +249,7 @@ def get_error(code):
         return "UNKNOWN_ERROR", msg, HTTP_501_NOT_IMPLEMENTED, CRIT
 
 
-class AdcmEx(APIException):
+class AdcmEx(Exception):  # noqa: N818
     def __init__(self, code="UNKNOWN_ERROR", msg="", http_code: int | None = None, args=""):
         err_code, err_msg, err_http_code, level = get_error(code)
         if msg != "":
@@ -263,17 +262,19 @@ class AdcmEx(APIException):
         self.level = level
         self.code = err_code
         self.status_code = err_http_code
-        detail = {
+        self.detail = {
             "code": err_code,
             "level": level,
             "desc": err_msg,
         }
         if err_code == "UNKNOWN_ERROR":
-            detail["args"] = code
+            self.detail["args"] = code
         elif args:
-            detail["args"] = args
+            self.detail["args"] = args
 
-        super().__init__(detail, err_http_code)
+        # APIException, which AdcmEx inherited from previously, did not populate
+        # Exception.args. Keep that behaviour for existing callers.
+        super().__init__()
 
     def __str__(self):
         return self.msg
@@ -287,36 +288,3 @@ def raise_adcm_ex(code, msg="", args=""):
     logger.error(err_msg)
 
     raise AdcmEx(code, msg=msg, args=args)
-
-
-def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
-    if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
-        msg = ""
-        for field_name, error in exc.detail.items():
-            if isinstance(error, list):
-                if isinstance(error[0], dict):
-                    for err_type, err in error[0].items():
-                        msg = f"{msg}{err_type} - {err[0]};"
-                else:
-                    msg = f"{msg}{field_name} - {error[0]};"
-            else:
-                for err_type, err in error.items():
-                    msg = f"{msg}{err_type} - {err[0]};"
-
-        return exception_handler(exc=AdcmEx(code="BAD_REQUEST", msg=msg), context=context)
-
-    response = exception_handler(exc=exc, context=context)
-
-    if not isinstance(exc, AdcmEx) and response and 400 <= response.status_code <= 499:
-        detail = response.status_code
-        if hasattr(exc, "detail"):
-            detail = exc.detail
-
-        data = {
-            "code": "API_ERROR",
-            "level": "ERROR",
-            "desc": detail,
-        }
-        response.data = data
-
-    return response

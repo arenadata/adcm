@@ -30,7 +30,7 @@ from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible_plugin.utils import get_service_by_name
 from cm.converters import CoreObject, orm_object_to_core_descriptor
-from cm.errors import AdcmEx, raise_adcm_ex
+from cm.errors import HTTP_409_CONFLICT, AdcmEx, raise_adcm_ex
 from cm.legacy.checker import FormatError, SchemaError, process_rule
 from cm.legacy.services.bundle import is_path_correct
 from cm.legacy.services.job.run import update_related_configs
@@ -59,7 +59,6 @@ from cm.transition.ansible import ansible_decrypt, ansible_encrypt_and_format
 from django.conf import settings
 from django.db.transaction import atomic
 from rbac.roles import apply_policy_for_new_config
-from rest_framework.status import HTTP_409_CONFLICT
 from typing_extensions import Self
 
 DOCUMENTATION = """

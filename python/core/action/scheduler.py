@@ -86,7 +86,7 @@ class ProcessStarter(Protocol):
     immediate (non-scheduled) task launch as well as by the local queuer.
     """
 
-    def start(self, task_id: TaskID, venv: str, code_dir: Path, log_dir: Path) -> PID: ...
+    def start(self, task_id: TaskID, code_dir: Path, log_dir: Path) -> PID: ...
 
 
 class Claimer(Protocol):

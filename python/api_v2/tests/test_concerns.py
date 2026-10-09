@@ -35,6 +35,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.concern.repo import ConcernRepoI
+from core.tools import convert_keys_to_camel_case
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from core.types import MaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
@@ -83,6 +85,30 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
+    def check_concern_serialization_identity(self, concern: dict) -> None:
+        """
+        Additional check to ensure that the data from the custom camel case converter matches
+        the Django serializer output.
+        """
+
+        repo = self.container.get(ConcernRepoI)
+        concern_info = repo.get_concerns_info(concern_ids={concern["id"]})[0]
+        converted_concern = convert_keys_to_camel_case(
+            value={
+                "id": concern_info.id,
+                "type": concern_info.type.value,
+                "reason": concern_info.reason,
+                "is_blocking": concern_info.blocking,
+                "cause": concern_info.cause.value if concern_info.cause else None,
+                "owner": {
+                    "id": concern_info.owner.id,
+                    "type": concern_info.owner.type.value,
+                },
+            }
+        )
+
+        self.assertDictEqual(concern, converted_concern)
+
     def test_required_service_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
@@ -127,6 +153,8 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         concern, *_ = data["concerns"]
         self.assertEqual(concern["type"], "issue")
         self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+        self.check_concern_serialization_identity(concern=concern)
 
     def test_required_import_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")

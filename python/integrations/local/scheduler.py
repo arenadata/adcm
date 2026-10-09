@@ -20,9 +20,8 @@ import errno
 import logging
 import subprocess
 
-from cm.legacy.utils import get_env_with_venv_path
 from core.action import JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo, WorkerTaskID
-from core.action.job import ExecutorTerminator, JobRepoI, TaskRunnerTerminator, TaskShortFilter
+from core.action.job import ExecutorTerminator, TaskRunnerTerminator
 from core.action.scheduler import (
     LivenessReport,
     ProcessStarter,
@@ -95,19 +94,21 @@ class LocalTaskMonitor(TaskMonitor):
 
 @dataclass(slots=True)
 class LocalProcessStarter(ProcessStarter):
-    def start(self, task_id: TaskID, venv: str, code_dir: Path, log_dir: Path) -> PID:
+    def start(self, task_id: TaskID, code_dir: Path, log_dir: Path) -> PID:
         err_file = open(  # noqa: SIM115
             Path(log_dir, "task_runner.err"), "a+", encoding="utf-8"
         )
-
+        # Use the interpreter path directly without adding it to the process environment
         cmd = [
+            "/adcm/.venv/bin/python",
             str(code_dir / "task_runner.py"),
             "start",
             str(task_id),
         ]
         process_logger.debug("Task #%d run cmd: %s", task_id, " ".join(cmd))
+
         proc = subprocess.Popen(  # noqa: S603, SIM115
-            args=cmd, stderr=err_file, env=get_env_with_venv_path(venv=venv)
+            args=cmd, stderr=err_file, env=os.environ.copy()
         )
 
         return proc.pid
@@ -115,16 +116,16 @@ class LocalProcessStarter(ProcessStarter):
 
 @dataclass(slots=True)
 class LocalTaskQueuer(TaskQueuer):
-    job_repo: JobRepoI
     directories: Directories
     process_starter: ProcessStarter
 
     env = TaskRunnerEnvironment.LOCAL
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        task = next(iter(self.job_repo.find_tasks_short(TaskShortFilter(ids=[task_id]))))
         pid = self.process_starter.start(
-            task_id=task_id, venv=task.action.venv, code_dir=self.directories.code, log_dir=self.directories.logs
+            task_id=task_id,
+            code_dir=self.directories.code,
+            log_dir=self.directories.logs,
         )
 
         return WorkerInfo(environment=self.env, worker_id=pid)

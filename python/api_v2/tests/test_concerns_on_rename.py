@@ -262,6 +262,10 @@ class TestConcernsOnRename(GenericTestCase):
         concern = ConcernItem.objects.get(
             owner_id=self.cluster.pk, owner_type=self.cluster.content_type, name="custom_flag"
         )
+        # additionally check get_concerns_info method within ADCM-8482
+        concerns_from_repo = self.container.get(ConcernRepoI).get_concerns_info(concern_ids={concern.id})
+        concern_info = concerns_from_repo[0]
+        self.assertIsNone(concern_info.cause)
 
         self.rename_cluster(self.cluster, self.NEW_CLUSTER_NAME)
 

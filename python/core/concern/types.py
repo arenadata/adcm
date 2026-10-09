@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypeAlias
 
-from core.types import ADCMCoreType, CoreObjectDescriptor, ObjectID
+from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor, ObjectID
 
 
 class ConcernType(str, Enum):
@@ -61,4 +61,14 @@ class ConcernDraft:
     name: str
     reason: dict
     blocking: bool
+    owner: CoreObjectDescriptor
+
+
+@dataclass(slots=True)
+class ConcernInfo:
+    id: ConcernID
+    type: ConcernType
+    reason: dict
+    blocking: bool
+    cause: ConcernCause | None
     owner: CoreObjectDescriptor

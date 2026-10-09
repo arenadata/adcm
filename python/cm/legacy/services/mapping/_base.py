@@ -32,9 +32,8 @@ from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, 
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.models import Policy
-from rest_framework.status import HTTP_409_CONFLICT
 
-from cm.errors import AdcmEx
+from cm.errors import HTTP_409_CONFLICT, AdcmEx
 from cm.legacy.services.action_host_group import ActionHostGroupRepo
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology

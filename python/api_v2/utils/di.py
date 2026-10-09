@@ -19,6 +19,8 @@ from dishka.integrations.base import wrap_injection
 
 @cache
 def prepare_container():
+    """For middleware only"""
+
     return make_container(*get_main_providers())
 
 

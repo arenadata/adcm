@@ -10,22 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.concern.repo import ConcernRepoI
-from core.concern.types import (
-    ConcernCause,
-    ConcernDraft,
-    ConcernInfo,
-    ConcernRelatedObjects,
-    ConcernTarget,
-    ConcernType,
-)
+from .shared.base import *  # noqa
+from .shared.constants import *  # noqa
+from .shared.dependant import *  # noqa
+from .shared.database import *  # noqa
 
-__all__ = [
-    "ConcernCause",
-    "ConcernDraft",
-    "ConcernInfo",
-    "ConcernRelatedObjects",
-    "ConcernRepoI",
-    "ConcernTarget",
-    "ConcernType",
-]
+INSTALLED_APPS = [*COMMON_APPS]  # noqa: F405
+MIDDLEWARE = []

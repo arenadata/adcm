@@ -13,7 +13,7 @@
 from collections.abc import Collection
 from typing import Protocol, TypeAlias
 
-from core.concern.types import ConcernDraft, ConcernRelatedObjects
+from core.concern.types import ConcernDraft, ConcernInfo, ConcernRelatedObjects
 from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc, ObjectID
 
 # concerns of an owner grouped by objects those concerns are shown on
@@ -49,3 +49,5 @@ class ConcernRepoI(Protocol):
         Find objects given concerns are currently distributed on.
         """
         ...
+
+    def get_concerns_info(self, concern_ids: Collection[ConcernID]) -> tuple[ConcernInfo, ...]: ...

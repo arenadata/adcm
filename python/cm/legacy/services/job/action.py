@@ -18,9 +18,8 @@ from core.legacy.cluster.operations import create_topology_with_new_mapping, fin
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
 from core.types import BundleID, HostID
 from django.conf import settings
-from rest_framework.status import HTTP_409_CONFLICT
 
-from cm.errors import AdcmEx
+from cm.errors import HTTP_409_CONFLICT, AdcmEx
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
