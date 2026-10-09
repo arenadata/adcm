@@ -1,0 +1,14 @@
+# S-B5: cluster bundle E with a single action of its own, its action role is used in a policy
+- type: cluster
+  name: rbac_cluster_e
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  actions:
+    e_action:
+      display_name: E Action
+      masking:
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml

@@ -1,0 +1,84 @@
+# S-B3: cluster bundle A v2. svc_3 and svc_2/comp_2 removed, svc_4 added, action `added` new, `removed` dropped
+- type: cluster
+  name: rbac_cluster_a
+  version: "2.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  config_group_customization: true
+  upgrade:
+    - name: plain
+      versions: &versions
+        min: "1.0"
+        max: "1.0"
+      states:
+        available: any
+    - name: switch
+      versions: *versions
+      states:
+        available: any
+      scripts:
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+  config: &config
+    - name: value
+      type: string
+      default: initial
+  actions:
+    common: &common
+      display_name: Common Action
+      masking:
+      scripts: &scripts
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+    on_host: &on_host
+      display_name: Run On Host
+      host_action: true
+      masking:
+      scripts: *scripts
+    in_ahg: &in_ahg
+      display_name: AHG Action
+      allow_for_action_host_group: true
+      masking:
+      scripts: *scripts
+    added:
+      display_name: Added Action
+      masking:
+      scripts: *scripts
+
+- type: service
+  name: svc_1
+  version: "2.0"
+  config_group_customization: true
+  config: *config
+  actions: &service_actions
+    common: *common
+    on_host: *on_host
+    in_ahg: *in_ahg
+  components: &components
+    comp_1: &component
+      config_group_customization: true
+      config: *config
+      actions:
+        common: *common
+        on_host: *on_host
+        in_ahg: *in_ahg
+    comp_2: *component
+
+- type: service
+  name: svc_2
+  version: "2.0"
+  config_group_customization: true
+  config: *config
+  actions: *service_actions
+  components:
+    comp_1: *component
+
+- type: service
+  name: svc_4
+  version: "2.0"
+  config_group_customization: true
+  config: *config
+  actions: *service_actions
+  components: *components

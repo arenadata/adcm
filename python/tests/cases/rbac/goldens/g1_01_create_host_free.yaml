@@ -1,0 +1,30 @@
+guardian_groupobjectpermission:
+  added:
+  - G-solo-provider-admin | cm.change_config_of_host | host:g1-01-free
+  - G-solo-provider-admin | cm.delete_host | host:g1-01-free
+  - G-solo-provider-admin | cm.remove_host | host:g1-01-free
+  - G-solo-provider-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:g1-01-free
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:g1-01-free@rev1
+  - G-solo-provider-admin | cm.view_host | host:g1-01-free
+  - G-solo-provider-admin | cm.view_objectconfig | config:host:g1-01-free
+  removed: []
+rbac_policy_group_object_perm:
+  added:
+  - P-solo-provider-admin | G-solo-provider-admin | cm.change_config_of_host | host:g1-01-free
+  - P-solo-provider-admin | G-solo-provider-admin | cm.delete_host | host:g1-01-free
+  - P-solo-provider-admin | G-solo-provider-admin | cm.remove_host | host:g1-01-free
+  - P-solo-provider-admin | G-solo-provider-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:g1-01-free
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:g1-01-free@rev1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_host | host:g1-01-free
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_objectconfig | config:host:g1-01-free
+  removed: []
+effective_object_perm:
+  added:
+  - U-mixed | cm.change_config_of_host | host:g1-01-free
+  - U-mixed | cm.delete_host | host:g1-01-free
+  - U-mixed | cm.remove_host | host:g1-01-free
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:g1-01-free
+  - U-mixed | cm.view_configlog | configlog:host:g1-01-free@rev1
+  - U-mixed | cm.view_host | host:g1-01-free
+  - U-mixed | cm.view_objectconfig | config:host:g1-01-free
+  removed: []

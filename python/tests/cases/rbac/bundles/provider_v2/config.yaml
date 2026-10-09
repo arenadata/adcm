@@ -1,0 +1,33 @@
+# S-B4: provider bundle P v2 with provider and host actions and config
+- type: provider
+  name: rbac_provider
+  version: "2.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  config_group_customization: true
+  upgrade:
+    - name: plain
+      versions:
+        min: "1.0"
+        max: "1.0"
+      states:
+        available: any
+  config: &config
+    - name: value
+      type: string
+      default: initial
+  actions:
+    common: &common
+      display_name: Common Action
+      masking:
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+
+- type: host
+  name: rbac_host
+  version: "2.0"
+  config: *config
+  actions:
+    common: *common

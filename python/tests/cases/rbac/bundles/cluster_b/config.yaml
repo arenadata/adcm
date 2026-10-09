@@ -1,0 +1,26 @@
+# S-B2: cluster bundle B. Same "Common Action" display name as A on cluster and service levels, different services
+- type: cluster
+  name: rbac_cluster_b
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  config:
+    - name: value
+      type: string
+      default: initial
+  actions:
+    common: &common
+      display_name: Common Action
+      masking:
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+
+- type: service
+  name: svc_b1
+  version: "1.0"
+  actions:
+    common: *common
+  components:
+    comp_b1:
