@@ -238,6 +238,11 @@ class FinalizeTask:
         with atomic():
             task = self.job_repo.get_task(id=task_id)
 
+            # jobs that weren't started by now won't ever be, final status should see them as revoked
+            self.job_repo.change_status_of_task_jobs(
+                task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
+
             plan = self.job_repo.get_execution_plan(task_id=task_id)
             task_jobs = self.job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
             jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
@@ -246,7 +251,9 @@ class FinalizeTask:
             task_is_aborted = task.status == ExecutionStatus.TERMINATING
 
             final_status = calculate_task_final_status(
-                job_statuses=(job.runtime.status for job in jobs), task_is_aborted=task_is_aborted
+                plan=plan,
+                job_statuses={key: job.runtime.status for key, job in jobs_by_key.items()},
+                task_is_aborted=task_is_aborted,
             )
             if not final_status:
                 message = f"Failed to calculate final status of task {task_id}: {final_status.value}"
@@ -389,6 +396,10 @@ class MarkTaskBroken:
             if not updated:
                 return Fail("status change failed, most likely due to parallel job update")
 
+        # not started jobs are revoked, others that are unfinished are considered broken
+        self.repo.change_status_of_task_jobs(
+            task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+        )
         self.repo.change_status_of_task_jobs(task_id=task_id, previous=UNFINISHED_STATUSES, new=new_status)
 
         if task.is_blocking:

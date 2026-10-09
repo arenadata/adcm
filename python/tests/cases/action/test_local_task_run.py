@@ -24,6 +24,7 @@ from core.action import ExecutionStatus
 from core.legacy.job.executors import Executor
 from core.legacy.job.runners import TaskRunner
 from core.types import TaskID
+from django.utils import timezone
 from rest_framework.status import HTTP_200_OK
 import dishka
 
@@ -40,9 +41,9 @@ WITHOUT_ON_FAIL: Final = "/branches/1-without_on_fail"
 
 SUCCESS: Final = ExecutionStatus.SUCCESS
 FAILED: Final = ExecutionStatus.FAILED
-CREATED: Final = ExecutionStatus.CREATED
 REVOKED: Final = ExecutionStatus.REVOKED
 ABORTED: Final = ExecutionStatus.ABORTED
+BROKEN: Final = ExecutionStatus.BROKEN
 
 INITIAL_STATE: Final = "created"
 
@@ -106,7 +107,7 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
 
         self.assert_task_status(task_id, FAILED)
         self.assert_jobs(
-            task_id, {PREPARE: (FAILED, True), WITH_ON_FAIL: (CREATED, False), WITHOUT_ON_FAIL: (CREATED, False)}
+            task_id, {PREPARE: (FAILED, True), WITH_ON_FAIL: (REVOKED, False), WITHOUT_ON_FAIL: (REVOKED, False)}
         )
         self.assert_owner_state("task_failed", ["failed"])
 
@@ -118,21 +119,22 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
 
         self.assert_task_status(task_id, FAILED)
         self.assert_jobs(
-            task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (FAILED, True), WITHOUT_ON_FAIL: (CREATED, False)}
+            task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (FAILED, True), WITHOUT_ON_FAIL: (REVOKED, False)}
         )
         self.assert_owner_state("branch_failed", ["failed"])
 
-    def test_last_job_aborted_success(self) -> None:
+    def test_job_of_parallel_tail_aborted_aborted_owner_unchanged(self) -> None:
         task_id = self.run_action()
 
         container = make_overridden_container(MockWithEnvProvider(change_jobs={WITHOUT_ON_FAIL: TERMINATED}))
         self.execute_locally(task_id, container)
 
-        self.assert_task_status(task_id, SUCCESS)
+        # parallel group with an aborted job is aborted, and it's the last child of the plan
+        self.assert_task_status(task_id, ABORTED)
         self.assert_jobs(
             task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (SUCCESS, True), WITHOUT_ON_FAIL: (ABORTED, True)}
         )
-        self.assert_owner_state("done", ["succeeded"])
+        self.assert_owner_state(INITIAL_STATE, [])
 
     def test_every_job_aborted_aborted_owner_unchanged(self) -> None:
         task_id = self.run_action()
@@ -169,11 +171,11 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
 
         self.assert_task_status(task_id, ABORTED)
         self.assert_jobs(
-            task_id, {PREPARE: (ABORTED, True), WITH_ON_FAIL: (CREATED, False), WITHOUT_ON_FAIL: (CREATED, False)}
+            task_id, {PREPARE: (ABORTED, True), WITH_ON_FAIL: (REVOKED, False), WITHOUT_ON_FAIL: (REVOKED, False)}
         )
         self.assert_owner_state(INITIAL_STATE, [])
 
-    def test_revoked_job_is_skipped_next_job_runs_success(self) -> None:
+    def test_revoked_job_is_skipped_next_job_runs_aborted_owner_unchanged(self) -> None:
         task_id = self.run_action()
 
         def revoke_next_job(_: Executor) -> int:
@@ -192,8 +194,34 @@ class TestLocalTaskRun(ADCMDjangoAPISuite):
         )
         self.execute_locally(task_id, container)
 
-        self.assert_task_status(task_id, SUCCESS)
+        # parallel group with a revoked job is aborted, and it's the last child of the plan
+        self.assert_task_status(task_id, ABORTED)
         self.assert_jobs(
             task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (REVOKED, False), WITHOUT_ON_FAIL: (SUCCESS, True)}
         )
-        self.assert_owner_state("done", ["succeeded"])
+        self.assert_owner_state(INITIAL_STATE, [])
+
+    def test_runner_broken_mid_plan_started_job_broken_rest_revoked(self) -> None:
+        task_id = self.run_action()
+
+        def break_runner(_: Executor) -> int:
+            # job is started (as it would be if its process was spawned), but runner fails before it's finished
+            JobLog.objects.filter(task_id=task_id, spec_key=WITH_ON_FAIL).update(
+                status=ExecutionStatus.RUNNING, start_date=timezone.now()
+            )
+            message = "Runner failure"
+            raise RuntimeError(message)
+
+        container = make_overridden_container(
+            MockWithEnvProvider(change_jobs={WITH_ON_FAIL_POSITION: JobImitator(call=break_runner)})
+        )
+        with self.assertRaisesRegex(RuntimeError, "Runner failure"):
+            self.execute_locally(task_id, container)
+
+        # as `task_runner.py` does on unhandled error, runner is APP-scoped, so it's the one that executed the task
+        container.get(TaskRunner).consider_broken()
+
+        self.assert_task_status(task_id, BROKEN)
+        self.assert_jobs(
+            task_id, {PREPARE: (SUCCESS, True), WITH_ON_FAIL: (BROKEN, True), WITHOUT_ON_FAIL: (REVOKED, False)}
+        )

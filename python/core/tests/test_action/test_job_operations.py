@@ -18,7 +18,10 @@ from core.action.types import (
     AnsibleScript,
     AnsibleScriptParams,
     ExecutionStatus,
+    ExecutionStyle,
+    GroupSpec,
     JobShortInfo,
+    JobSpecV1,
     RichJob,
     RuntimeDates,
     ScriptSpec,
@@ -27,10 +30,13 @@ from core.action.types import (
     WorkerInfo,
 )
 from core.result import Fail, Success
+from core.spec.keys import level_key_from_full_key
 from core.spec.types import FullSpecKey
 from core.types import Names
 
 S = ExecutionStatus
+PARALLEL = ExecutionStyle.PARALLEL
+SEQUENTIAL = ExecutionStyle.SEQUENTIAL
 ON_SUCCESS = StateChanges(state="done", multi_state_set=("s1",), multi_state_unset=("u1",))
 ON_FAIL = StateChanges(state="task_failed", multi_state_set=("tf",), multi_state_unset=("tu",))
 START = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -84,59 +90,129 @@ def make_jobs(*entries: JobEntry) -> list[RichJob]:
     return jobs
 
 
-class TestCalculateTaskFinalStatus(TestCase):
-    def test_task_aborted_wins_over_everything(self):
-        for statuses in ([S.SUCCESS], [S.FAILED], [S.CREATED], []):
-            with self.subTest(statuses=statuses):
-                self.assertEqual(calculate_task_final_status(statuses, task_is_aborted=True), Success(S.ABORTED))
+PlanEntry = tuple[str, ExecutionStatus] | GroupSpec
 
-    def test_nothing_final_is_fail(self):
-        for statuses in (
-            [],
-            [S.CREATED, S.CREATED],
-            [S.CREATED, S.RUNNING, S.SCHEDULED, S.QUEUED, S.REVOKING, S.TERMINATING, S.BROKEN],
-        ):
-            with self.subTest(statuses=statuses):
-                result = calculate_task_final_status(statuses, task_is_aborted=False)
+
+def make_group(key: str, type_: ExecutionStyle) -> GroupSpec:
+    name = level_key_from_full_key(FullSpecKey(key))
+
+    return GroupSpec(key=FullSpecKey(key), names=Names(internal=name, display=name), type=type_)
+
+
+def make_plan(*entries: PlanEntry) -> tuple[JobSpecV1, dict[FullSpecKey, ExecutionStatus]]:
+    """Scripts are given as `(key, status of its job)`, groups as they are, all in declaration order"""
+
+    specs: list[ScriptSpec | GroupSpec] = []
+    statuses: dict[FullSpecKey, ExecutionStatus] = {}
+
+    for entry in entries:
+        match entry:
+            case GroupSpec():
+                specs.append(entry)
+            case (key, status):
+                # scripts are keyed as "<position>-<name>" within their level, the same way parsing does it
+                _, name = level_key_from_full_key(FullSpecKey(key)).split("-", maxsplit=1)
+                specs.append(
+                    ScriptSpec(
+                        key=FullSpecKey(key),
+                        names=Names(internal=name, display=name),
+                        script=AnsibleScript(type=ScriptType.ANSIBLE, path="a.yaml", params=AnsibleScriptParams()),
+                    )
+                )
+                statuses[FullSpecKey(key)] = status
+
+    return JobSpecV1.from_entries(*specs), statuses
+
+
+# plan with its jobs' statuses | task result (task isn't terminated)
+TASK_RESULT_CASES: tuple[tuple[tuple[PlanEntry, ...], ExecutionStatus], ...] = (
+    # root is a sequential level
+    ((("/0-a", S.SUCCESS),), S.SUCCESS),
+    ((("/0-a", S.SUCCESS), ("/1-b", S.SUCCESS)), S.SUCCESS),
+    ((("/0-a", S.ABORTED), ("/1-b", S.SUCCESS)), S.SUCCESS),
+    ((("/0-a", S.REVOKED), ("/1-b", S.SUCCESS)), S.SUCCESS),
+    ((("/0-a", S.SUCCESS), ("/1-b", S.ABORTED)), S.ABORTED),
+    ((("/0-a", S.SUCCESS), ("/1-b", S.REVOKED)), S.ABORTED),
+    ((("/0-a", S.ABORTED), ("/1-b", S.ABORTED)), S.ABORTED),
+    # everything revoked is revoked hierarchy, task can only be aborted
+    ((("/0-a", S.REVOKED), ("/1-b", S.REVOKED)), S.ABORTED),
+    ((("/0-a", S.SUCCESS), ("/1-b", S.FAILED)), S.FAILED),
+    ((("/0-a", S.FAILED), ("/1-b", S.REVOKED)), S.FAILED),
+    ((("/0-a", S.ABORTED), ("/1-b", S.FAILED), ("/2-c", S.SUCCESS)), S.FAILED),
+    # broken job is a failure
+    ((("/0-a", S.SUCCESS), ("/1-b", S.BROKEN)), S.FAILED),
+    ((("/0-a", S.BROKEN), ("/1-b", S.REVOKED)), S.FAILED),
+    # groups are calculated bottom-up, each counts as one child of its level
+    ((("/0-a", S.SUCCESS), make_group("/g", PARALLEL), ("/g/0-b", S.SUCCESS), ("/g/1-c", S.ABORTED)), S.ABORTED),
+    ((make_group("/g", SEQUENTIAL), ("/g/0-a", S.ABORTED), ("/g/1-b", S.SUCCESS), ("/1-c", S.SUCCESS)), S.SUCCESS),
+    ((make_group("/g", PARALLEL), ("/g/0-a", S.SUCCESS), ("/g/1-b", S.ABORTED), ("/1-c", S.SUCCESS)), S.SUCCESS),
+    ((("/0-a", S.SUCCESS), make_group("/g", SEQUENTIAL), ("/g/0-b", S.SUCCESS), ("/g/1-c", S.REVOKED)), S.ABORTED),
+    ((("/0-a", S.SUCCESS), make_group("/g", SEQUENTIAL), ("/g/0-b", S.ABORTED), ("/g/1-c", S.SUCCESS)), S.SUCCESS),
+    ((make_group("/g", PARALLEL), ("/g/0-a", S.SUCCESS), ("/g/1-b", S.FAILED), ("/1-c", S.SUCCESS)), S.FAILED),
+    (
+        (
+            ("/0-a", S.SUCCESS),
+            make_group("/outer", PARALLEL),
+            ("/outer/0-b", S.SUCCESS),
+            make_group("/outer/inner", SEQUENTIAL),
+            ("/outer/inner/0-c", S.ABORTED),
+            ("/outer/inner/1-d", S.SUCCESS),
+        ),
+        S.SUCCESS,
+    ),
+    (
+        (
+            ("/0-a", S.SUCCESS),
+            make_group("/outer", PARALLEL),
+            ("/outer/0-b", S.SUCCESS),
+            make_group("/outer/inner", SEQUENTIAL),
+            ("/outer/inner/0-c", S.SUCCESS),
+            ("/outer/inner/1-d", S.REVOKED),
+        ),
+        S.ABORTED,
+    ),
+)
+
+# plans whose hierarchy isn't finished, so task result can't be told
+NOT_FINISHED_CASES: tuple[tuple[PlanEntry, ...], ...] = (
+    (("/0-a", S.SUCCESS), ("/1-b", S.RUNNING)),
+    (("/0-a", S.SUCCESS), ("/1-b", S.TERMINATING)),
+    (("/0-a", S.REVOKING),),
+    (("/0-a", S.SUCCESS), ("/1-b", S.CREATED)),
+    (("/0-a", S.CREATED), ("/1-b", S.CREATED)),
+    (("/0-a", S.SUCCESS), make_group("/g", PARALLEL), ("/g/0-b", S.SUCCESS), ("/g/1-c", S.QUEUED)),
+)
+
+
+class TestCalculateTaskFinalStatus(TestCase):
+    def test_task_result_cases(self) -> None:
+        for entries, expected in TASK_RESULT_CASES:
+            with self.subTest(entries=entries):
+                plan, statuses = make_plan(*entries)
+
+                result = calculate_task_final_status(plan=plan, job_statuses=statuses, task_is_aborted=False)
+
+                self.assertEqual(result, Success(expected))
+
+    def test_not_finished_hierarchy_is_fail(self) -> None:
+        for entries in NOT_FINISHED_CASES:
+            with self.subTest(entries=entries):
+                plan, statuses = make_plan(*entries)
+
+                result = calculate_task_final_status(plan=plan, job_statuses=statuses, task_is_aborted=False)
 
                 self.assertIsInstance(result, Fail)
                 self.assertIsInstance(result.value, str)
                 self.assertTrue(result.value)
 
-    def test_aborted_like_only_is_aborted(self):
-        for statuses in ([S.ABORTED], [S.REVOKED], [S.ABORTED, S.REVOKED], [S.REVOKED, S.ABORTED, S.CREATED]):
-            with self.subTest(statuses=statuses):
-                self.assertEqual(calculate_task_final_status(statuses, task_is_aborted=False), Success(S.ABORTED))
+    def test_terminated_task_is_aborted_without_calculation(self) -> None:
+        for entries in (*(entries for entries, _ in TASK_RESULT_CASES), *NOT_FINISHED_CASES):
+            with self.subTest(entries=entries):
+                plan, statuses = make_plan(*entries)
 
-    def test_failed_anywhere_is_failed(self):
-        for statuses in (
-            [S.FAILED],
-            [S.FAILED, S.SUCCESS],
-            [S.SUCCESS, S.FAILED, S.SUCCESS],
-            [S.SUCCESS, S.ABORTED, S.FAILED],
-            [S.REVOKED, S.FAILED, S.CREATED],
-        ):
-            with self.subTest(statuses=statuses):
-                self.assertEqual(calculate_task_final_status(statuses, task_is_aborted=False), Success(S.FAILED))
+                result = calculate_task_final_status(plan=plan, job_statuses=statuses, task_is_aborted=True)
 
-    def test_success_combinations(self):
-        for statuses in (
-            [S.SUCCESS],
-            [S.SUCCESS, S.SUCCESS],
-            [S.SUCCESS, S.ABORTED],
-            [S.ABORTED, S.SUCCESS],
-            [S.SUCCESS, S.REVOKED],
-            [S.REVOKED, S.SUCCESS, S.ABORTED],
-            [S.SUCCESS, S.CREATED, S.RUNNING],
-            [S.CREATED, S.SUCCESS, S.BROKEN],
-        ):
-            with self.subTest(statuses=statuses):
-                self.assertEqual(calculate_task_final_status(statuses, task_is_aborted=False), Success(S.SUCCESS))
-
-    def test_accepts_any_iterable(self):
-        result = calculate_task_final_status((status for status in (S.SUCCESS, S.FAILED)), task_is_aborted=False)
-
-        self.assertEqual(result, Success(S.FAILED))
+                self.assertEqual(result, Success(S.ABORTED))
 
 
 class TestCalculateOwnerStateChanges(TestCase):

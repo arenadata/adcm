@@ -147,7 +147,7 @@ def _convert_level(
 
 
 def _convert_group(group_spec: GroupSpec, children: list[_ConvertedNode]) -> _ConvertedNode:
-    status = aggregate_group_status(children=(status for _, status, _ in children))
+    status = aggregate_group_status(children=[status for _, status, _ in children], style=group_spec.type)
     dates = aggregate_group_dates(children=[dates for *_, dates in children])
 
     node = GroupNode(

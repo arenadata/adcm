@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 from datetime import timezone as tz
 from io import BytesIO
 from operator import itemgetter
-from unittest import TestCase
 from unittest.mock import patch
 
 from cm.converters import model_name_to_core_type
@@ -25,7 +24,6 @@ from cm.models import (
     Component,
     Host,
     HostComponent,
-    JobLog,
     JobStatus,
     Provider,
     Service,
@@ -38,29 +36,10 @@ from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from tests.deprecated import prepare_task_for_action
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
-from unittest_parametrize import ParametrizedTestCase, param, parametrize
 from use_cases.transition.cluster.delete import DeleteService
 
-from api_v2.task.serializers import spec_key_to_group_name
 
-GROUP_BY_SPEC_KEY_PARAMS = (
-    ("spec_key", "expected_group"),
-    [
-        param("", None, id="legacy"),
-        param("/0-job", None, id="root"),
-        param("/some/2-job", "some", id="nested_once"),
-        param("/some/thing/4-job", "thing", id="nested_twice"),
-    ],
-)
-
-
-class TestSpecKeyToGroupName(ParametrizedTestCase, TestCase):
-    @parametrize(*GROUP_BY_SPEC_KEY_PARAMS)
-    def test_group_name_from_spec_key(self, spec_key: str, expected_group: str | None) -> None:
-        self.assertEqual(spec_key_to_group_name(spec_key), expected_group)
-
-
-class TestTask(ADCMDjangoAPISuite, ParametrizedTestCase):
+class TestTask(ADCMDjangoAPISuite):
     suite_setup = SETUP_WITH_RBAC
 
     def setUp(self) -> None:
@@ -225,30 +204,6 @@ class TestTask(ADCMDjangoAPISuite, ParametrizedTestCase):
         self.assertEqual(response.data["id"], self.cluster_task.pk)
         self.assertEqual(response.data["objects"], [task_object])
         self.assertEqual(response.status_code, HTTP_200_OK)
-
-    @parametrize(*GROUP_BY_SPEC_KEY_PARAMS)
-    def test_child_jobs_group_success(self, spec_key: str, expected_group: str | None) -> None:
-        jobs = JobLog.objects.filter(task=self.cluster_task)
-        self.assertTrue(jobs.exists())
-        jobs.update(spec_key=spec_key)
-
-        response = (self.client.v2 / "tasks").get()
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        for task in response.json()["results"]:
-            for child_job in task["childJobs"]:
-                self.assertIn("group", child_job)
-
-        (task,) = (task for task in response.json()["results"] if task["id"] == self.cluster_task.pk)
-        self.assertTrue(task["childJobs"])
-        self.assertEqual([job["group"] for job in task["childJobs"]], [expected_group] * jobs.count())
-
-        response = self.client.v2[self.cluster_task].get()
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        child_jobs = response.json()["childJobs"]
-        self.assertTrue(child_jobs)
-        self.assertEqual([job["group"] for job in child_jobs], [expected_group] * jobs.count())
 
     def test_task_retrieve_not_found_fail(self):
         response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog)).get()
