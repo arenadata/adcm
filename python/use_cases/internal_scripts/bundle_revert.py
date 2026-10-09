@@ -47,7 +47,7 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.action import Task
-from core.action.types import RichJob
+from core.action.types import SimpleInternalScript
 from core.cluster import ClusterService
 from core.config import (
     Attributes,
@@ -75,6 +75,7 @@ from core.types import (
     CoreObjectDescriptor,
     Descriptor,
     HostGroupDescriptor,
+    JobID,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
@@ -459,8 +460,8 @@ class BundleRevertInternalScript:
     status_scenarios: StatusScenarios
 
     @atomic()
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
-        _ = job
+    def do(self, task: Task, script: SimpleInternalScript, job_id: JobID) -> InternalScriptResult:
+        _ = script, job_id
 
         task_ = TaskLog.objects.get(id=task.id)
 

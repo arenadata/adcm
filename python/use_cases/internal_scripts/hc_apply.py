@@ -20,9 +20,9 @@ from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.legacy.services.mapping import change_host_component_mapping_no_lock, check_nothing, lock_cluster_mapping
 from cm.models import Process, ProcessStep, Prototype
 from core.action import AssociatedProcess, HcAclRule, Task, TaskMappingDelta
-from core.action.types import HcApplyScript, RichJob
+from core.action.types import HcApplyScript
 from core.cluster import ClusterService
-from core.types import ADCMCoreType, ClusterID, ComponentNameKey
+from core.types import ADCMCoreType, ClusterID, ComponentNameKey, JobID
 from django.db.models import Q
 from django.db.transaction import atomic
 
@@ -33,7 +33,9 @@ from use_cases.internal_scripts.common import build_result_message
 class HcApplyInternalScript:
     cluster_service: ClusterService
 
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
+    def do(self, task: Task, script: HcApplyScript, job_id: JobID) -> InternalScriptResult:
+        _ = job_id
+
         owner = task.owner
         if owner is None:
             raise RuntimeError("Task owner: was given None, expected an object")
@@ -43,11 +45,6 @@ class HcApplyInternalScript:
                 code="WRONG_OWNER",
                 msg="Internal script `hc_apply` can only be defined in cluster, service or component context`",
             )
-
-        script = job.spec.script
-        if not isinstance(script, HcApplyScript):
-            message = f"Job script: was given {type(script).__name__}, expected {HcApplyScript.__name__}"
-            raise RuntimeError(message)  # noqa: TRY004
 
         params = script.params
         hc_apply_rules = params.rules if params else None

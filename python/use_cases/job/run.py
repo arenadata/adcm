@@ -49,8 +49,8 @@ from core.action.operations import flatten_execution_plan, to_rich_job, to_rich_
 from core.action.scheduler import ProcessStarter
 from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
-from core.config import ConfigRepoI
-from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
+from core.config import ConfigRepoI, ConfigService
+from core.legacy.job.runners import ExecutionTargetFactory, ExternalSettings, RunnerEnvironment
 from core.result import Fail, Success
 from core.scenarios.concern import ConcernScenarios
 from core.settings import Directories
@@ -123,8 +123,9 @@ class SetTaskToRunning:
 @dataclass(slots=True)
 class RunJob:
     repo: JobRepoI
-    target_factory: ExecutionTargetFactoryI
+    target_factory: ExecutionTargetFactory
     cluster_service: ClusterService
+    config_service: ConfigService
     external_settings: ExternalSettings
     config_repo: ConfigRepoI
 
@@ -143,7 +144,7 @@ class RunJob:
             plan = self.repo.get_execution_plan(task_id=task_id)
             job = to_rich_job(spec=plan, job=runtime)
 
-            execute_target, *_ = self.target_factory(task=task, jobs=(job,), configuration=self.external_settings)
+            execute_target = self.target_factory(task=task, job=job, configuration=self.external_settings)
             executor = execute_target.executor
 
             # prepare job environemnt
@@ -151,7 +152,11 @@ class RunJob:
 
             for prepare_environment in execute_target.environment_builders:
                 prepare_environment(
-                    task=task, job=job, configuration=self.external_settings, cluster_service=self.cluster_service
+                    task=task,
+                    job=job,
+                    configuration=self.external_settings,
+                    cluster_service=self.cluster_service,
+                    config_service=self.config_service,
                 )
 
             create_related_configs(job_id=job_id, owner=task.owner, config_repo=self.config_repo)  # pyright: ignore[reportArgumentType]

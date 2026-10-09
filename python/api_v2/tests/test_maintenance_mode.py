@@ -15,6 +15,7 @@ from cm.models import Action, Component, Host, MaintenanceMode, Service, TaskLog
 from cm.tests.mocks.task_runner import FailedJobInfo
 from cm.transition.action import RetrieveStartImpossibleReason
 from core.cluster import ClusterService
+from core.spec.types import FullSpecKey
 from core.types import MaintenanceModeOfObjects, MaintenanceModeState, MMReason, ObjectMM, TaskID
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
@@ -60,9 +61,9 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         provider = cls.uc.add_provider(bundle=provider_bundle, name="provider", description="provider")
         cls.host = cls.uc.add_host(provider=provider, fqdn="host")
 
-    def make_container_with_failed_first_job(self) -> dishka.Container:
+    def make_container_with_failed_first_job(self, spec_key: FullSpecKey) -> dishka.Container:
         # can't be prepared in `setUpTestData`: django deep copies class attributes, container isn't copyable
-        return make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(position=0, return_code=1)))
+        return make_overridden_container(TaskRunnerOverride(failed_job=FailedJobInfo(spec_key=spec_key, return_code=1)))
 
     def assert_task_name_is(self, task_id: TaskID, name: str) -> None:
         actual_name = TaskLog.objects.values_list("name", flat=True).get(id=task_id)
@@ -173,7 +174,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         task_id = launched.task_id()
         self.assert_task_name_is(task_id, "adcm_turn_on_maintenance_mode")
 
-        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
+        container = self.make_container_with_failed_first_job(spec_key="/0-adcm_turn_on_maintenance_mode")
+        self.task_runner(container).launch_task(task_id=task_id)
 
         self.service.refresh_from_db()
         self.assertEqual(self.service.maintenance_mode, initial_object_mm)
@@ -192,7 +194,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         task_id = launched.task_id()
         self.assert_task_name_is(task_id, "adcm_turn_on_maintenance_mode")
 
-        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
+        container = self.make_container_with_failed_first_job(spec_key="/0-adcm_turn_on_maintenance_mode")
+        self.task_runner(container).launch_task(task_id=task_id)
 
         self.component.refresh_from_db()
         self.assertEqual(self.component.maintenance_mode, initial_object_mm)
@@ -211,7 +214,8 @@ class TestMMActions(ADCMDjangoAPISuite, MMUtilsMixin):
         task_id = launched.task_id()
         self.assert_task_name_is(task_id, "adcm_host_turn_on_maintenance_mode")
 
-        self.task_runner(self.make_container_with_failed_first_job()).launch_task(task_id=task_id)
+        container = self.make_container_with_failed_first_job(spec_key="/0-adcm_host_turn_on_maintenance_mode")
+        self.task_runner(container).launch_task(task_id=task_id)
 
         self.host.refresh_from_db()
         self.assertEqual(self.host.maintenance_mode, initial_object_mm)

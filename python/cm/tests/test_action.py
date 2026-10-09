@@ -34,7 +34,7 @@ from core.action import (
 )
 from core.action.job import JobShortFilter
 from core.action.operations import flatten_execution_plan, to_rich_jobs
-from core.action.types import ConfigApplyScript, HcApplyScript, ServiceManageScript
+from core.action.types import ConfigApplyScript, HcApplyScript, ServiceManageScript, SimpleInternalScript
 from core.cluster import ClusterService
 from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import (
@@ -371,7 +371,7 @@ class TestActionLogic(GenericTestCase):
         rules = [HcAclRule(service=service_name, component=c1_name, action="add")]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        result = hc_apply.do(task=task, job=job)
+        result = hc_apply.do(task=task, script=job.spec.script, job_id=110)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(host.pk, component.pk) for host, component in initial_hc}
         self.assertSetEqual(actual_hc, expected_hc)
@@ -390,7 +390,7 @@ class TestActionLogic(GenericTestCase):
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        result = hc_apply.do(task=task, job=job)
+        result = hc_apply.do(task=task, script=job.spec.script, job_id=110)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {(self.host_2.pk, self.component_1.pk), (self.host_3.pk, self.component_2.pk)}
         self.assertSetEqual(actual_hc, expected_hc)
@@ -412,7 +412,7 @@ class TestActionLogic(GenericTestCase):
         ]
         task, job = self.get_dummy_task_job(owner=self.cluster, delta=mapping_delta, rules=rules)
 
-        hc_apply.do(task=task, job=job)
+        hc_apply.do(task=task, script=job.spec.script, job_id=110)
         actual_hc = set(HostComponent.objects.filter(cluster_id=self.cluster.pk).values_list("host_id", "component_id"))
         expected_hc = {
             (self.host_1.pk, self.component_1.pk),
@@ -425,7 +425,7 @@ class TestActionLogic(GenericTestCase):
 
         task, job = self.get_dummy_task_job(owner=self.provider, delta=mapping_delta, rules=rules)
         with self.assertRaises(AdcmEx):
-            hc_apply.do(task=task, job=job)
+            hc_apply.do(task=task, script=job.spec.script, job_id=110)
 
     def test_internal_before_upgrade_clean(self):
         before_upgrade_clean = self.uc.container.get(BeforeUpgradeCleanInternalScript)
@@ -438,7 +438,7 @@ class TestActionLogic(GenericTestCase):
                 owner.before_upgrade = {"state": "created", "bundle_id": owner.prototype.bundle_id}
                 owner.save(update_fields=["before_upgrade"])
 
-                task, job = DummyObject(), DummyObject()
+                task = DummyObject()
                 task.owner = TaskOwner(
                     id=owner.id,
                     type=orm_object_to_core_type(owner),
@@ -447,7 +447,11 @@ class TestActionLogic(GenericTestCase):
                     related_objects=RelatedObjects(),
                 )
 
-                result = before_upgrade_clean.do(task=task, job=job)
+                result = before_upgrade_clean.do(
+                    task=task,
+                    script=SimpleInternalScript(type=ScriptType.INTERNAL, path="before_upgrade_clean", params=None),
+                    job_id=110,
+                )
 
                 owner.refresh_from_db()
                 self.assertDictEqual(owner.before_upgrade, {"state": None})
@@ -461,14 +465,14 @@ class TestActionLogic(GenericTestCase):
         task, job = self.get_fake_config_apply_task_job(owner=self.cluster, parameter=parameter, value=expected_value)
 
         with patch("use_cases.transition.config.update_related_configs"):
-            result = config_apply.do(task=task, job=job)
+            result = config_apply.do(task=task, script=job.spec.script, job_id=job.runtime.id)
 
             expected_message = "The script `config_apply` completed successfully, the configuration updates are done."
             self.assertEqual(result.code, 0)
             self.assertEqual(result.message, expected_message)
 
             # check the completed message after an attempt to apply the current configs
-            result = config_apply.do(task=task, job=job)
+            result = config_apply.do(task=task, script=job.spec.script, job_id=job.runtime.id)
 
         expected_message = (
             "The script `config_apply` completed successfully, but the configuration was updated earlier."
@@ -523,7 +527,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs") as related_configs_mock:
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertIn("services are in place", result.message)
@@ -544,7 +550,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs") as related_configs_mock:
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertIn("already in place", result.message)
@@ -570,7 +578,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs") as related_configs_mock,
             patch("use_cases.transition.config.update_related_configs"),
         ):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertIn("already in place", result.message)
@@ -604,7 +614,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs"),
             patch("use_cases.transition.config.update_related_configs"),
         ):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
 
@@ -628,7 +640,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs"):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertTrue(
@@ -641,7 +655,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with self.assertRaises(AdcmEx) as err:
-            self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(err.exception.code, "PROTOTYPE_NOT_FOUND")
         self.assertIn("nonexistent_service", err.exception.msg)
@@ -662,7 +678,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs"),
             patch("use_cases.transition.config.update_related_configs"),
         ):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         service = Service.objects.get(cluster=self.cluster, prototype__name="another_service_two_components")
@@ -682,7 +700,9 @@ class TestActionLogic(GenericTestCase):
         task, job = self.get_dummy_service_manage_task_job(owner=self.cluster, services=services)
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs"):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         service = Service.objects.get(cluster=self.cluster, prototype__name="another_service_two_components")
@@ -701,7 +721,9 @@ class TestActionLogic(GenericTestCase):
         # repeated call with the same arguments should change nothing
         task, job = self.get_dummy_service_manage_task_job(owner=self.cluster, services=services)
         with patch("use_cases.internal_scripts.service_manage.create_related_configs"):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertIn("already in place", result.message)
@@ -722,7 +744,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs"),
             self.assertRaises(AdcmEx) as err,
         ):
-            self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(err.exception.code, "HOST_NOT_FOUND")
         self.assertFalse(
@@ -744,7 +768,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs"),
             self.assertRaises(AdcmEx) as err,
         ):
-            self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(err.exception.code, "COMPONENT_NOT_FOUND")
 
@@ -789,7 +815,9 @@ class TestActionLogic(GenericTestCase):
             patch("use_cases.internal_scripts.service_manage.create_related_configs"),
             self.assertRaises(AdcmEx) as err,
         ):
-            self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(err.exception.code, "INVALID_HC_HOST_IN_MM")
         self.assertFalse(
@@ -818,7 +846,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs"):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertTrue(
@@ -833,7 +863,9 @@ class TestActionLogic(GenericTestCase):
         )
 
         with patch("use_cases.internal_scripts.service_manage.create_related_configs"):
-            result = self.uc.container.get(ServiceManageInternalScript).do(task=task, job=job)
+            result = self.uc.container.get(ServiceManageInternalScript).do(
+                task=task, script=job.spec.script, job_id=job.runtime.id
+            )
 
         self.assertEqual(result.code, 0)
         self.assertTrue(

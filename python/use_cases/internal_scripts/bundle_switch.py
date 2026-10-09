@@ -16,7 +16,8 @@ from cm.impl.scenarios.bundle_switch import BundleSwitch
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.models import Cluster, Provider, TaskLog
 from core.action import Task
-from core.action.types import RichJob
+from core.action.types import SimpleInternalScript
+from core.types import JobID
 from django.db.transaction import atomic
 from rbac.roles import re_apply_policy_for_jobs
 
@@ -28,8 +29,8 @@ class BundleSwitchInternalScript:
     bundle_switch: BundleSwitch
 
     @atomic()
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
-        _ = job
+    def do(self, task: Task, script: SimpleInternalScript, job_id: JobID) -> InternalScriptResult:
+        _ = script, job_id
 
         task_ = TaskLog.objects.get(id=task.id)
 

@@ -25,12 +25,12 @@ from cm.legacy.services.mapping import (
 )
 from cm.models import Cluster, ObjectType, Prototype, Service
 from core.action import ServiceManageServiceEntry, Task, TaskMappingDelta, TaskOwner
-from core.action.types import RichJob, ServiceManageScript
+from core.action.types import ServiceManageScript
 from core.cluster import ClusterService
 from core.config import ConfigRepoI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.types import ADCMCoreType, BundleID, ClusterID, PrototypeID
+from core.types import ADCMCoreType, BundleID, ClusterID, JobID, PrototypeID
 from django.db.transaction import atomic
 
 from use_cases.internal_scripts.common import build_result_message
@@ -55,9 +55,8 @@ class ServiceManageInternalScript:
     cluster_service: ClusterService
     config_repo: ConfigRepoI
 
-    def do(self, task: Task, job: RichJob) -> InternalScriptResult:
-        owner, cluster_id, entries = _parse_service_manage_arguments(task=task, job=job)
-        job_id = job.runtime.id
+    def do(self, task: Task, script: ServiceManageScript, job_id: JobID) -> InternalScriptResult:
+        owner, cluster_id, entries = _parse_service_manage_arguments(task=task, script=script)
         changes_description = f"{task.display_name} process update"
 
         configs_changed = False
@@ -127,7 +126,7 @@ class ServiceManageInternalScript:
 
 
 def _parse_service_manage_arguments(
-    task: Task, job: RichJob
+    task: Task, script: ServiceManageScript
 ) -> tuple[TaskOwner, ClusterID, tuple[ServiceManageServiceEntry, ...]]:
     owner = task.owner
     if owner is None:
@@ -141,11 +140,6 @@ def _parse_service_manage_arguments(
             raise RuntimeError("Task owner's cluster: was given None, expected an object")
 
         cluster_id = cluster.id
-
-    script = job.spec.script
-    if not isinstance(script, ServiceManageScript):
-        message = f"Job script: was given {type(script).__name__}, expected {ServiceManageScript.__name__}"
-        raise RuntimeError(message)  # noqa: TRY004
 
     return owner, cluster_id, tuple(script.params.services or ())
 

@@ -20,14 +20,15 @@ import os
 
 from application.di.containers import get_main_providers
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
+from cm.legacy.services.job.run.target_factories import AnsibleTargetBuilder, PythonTargetBuilder
 from cm.models import ADCMEntity, Bundle, ConfigLog, TaskLog
 from cm.tests.mocks.task_runner import (
-    ETFMockWithEnvPreparation,
-    ExecutionTargetFactoryDummyMock,
     FailedJobInfo,
     JobImitator,
     JobImplRunnerMock,
     SubprocessRunnerMockEnvironment,
+    TargetBuilderDummyMock,
+    TargetBuilderWithEnvMock,
 )
 from cm.transition.status import StatusScenarios
 from core import secrets
@@ -37,17 +38,19 @@ from core.files.directories import ADCMBundleDir
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
+    AnsibleTargetBuilderI,
     ConsulSettings,
-    ExecutionTargetFactoryI,
     ExternalSettings,
     IntegrationsSettings,
-    JobProcessor,
+    PythonTargetBuilderI,
     RunnerEnvironment,
 )
 from core.result import Success
 from core.settings import Directories
+from core.spec.types import FullSpecKey
 from core.status import FullStatusMap
 from core.types import PID, ConcernID, CoreObjectDescriptor, CurrentADCMVersion, Descriptor, HostID, TaskID
+from dishka import AnyOf
 from dishka.provider import provide
 from django.db.models import Model
 from rbac.scenarios import RBACScenarios
@@ -310,9 +313,9 @@ class TaskRunnerOverride(dishka.Provider):
         super().__init__(*args, **kwargs)
         self._failed_job = failed_job
 
-    @provide
-    def failed_job(self) -> FailedJobInfo | None:
-        return self._failed_job
+    @provide(provides=AnyOf[AnsibleTargetBuilderI, PythonTargetBuilderI])
+    def target_builder(self) -> TargetBuilderDummyMock:
+        return TargetBuilderDummyMock(failed_job=self._failed_job)
 
     @provide
     def runner_settings(self, directories: Directories, consul: ConsulSettings) -> ExternalSettings:
@@ -324,11 +327,6 @@ class TaskRunnerOverride(dishka.Provider):
         )
 
     job_repo = provide(JobImplRunnerMock, provides=JobRepoI)
-    job_factory = provide(ExecutionTargetFactoryDummyMock, provides=ExecutionTargetFactoryI)
-
-    @provide
-    def job_processor(self, factory: ExecutionTargetFactoryI) -> JobProcessor:
-        return JobProcessor(convert=factory)
 
     environment = provide(SubprocessRunnerMockEnvironment, provides=RunnerEnvironment)
 
@@ -336,15 +334,19 @@ class TaskRunnerOverride(dishka.Provider):
 class MockWithEnvProvider(dishka.Provider):
     scope = dishka.Scope.APP
 
-    def __init__(self, *args, change_jobs: dict[int, JobImitator] | None = None, **kwargs):
+    def __init__(self, *args, change_jobs: dict[FullSpecKey, JobImitator] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self._change_jobs = change_jobs
 
-    @provide
-    def change_jobs(self) -> dict[int, JobImitator] | None:
-        return self._change_jobs
+    origin_builders = dishka.provide_all(AnsibleTargetBuilder, PythonTargetBuilder)
 
-    job_factory = provide(ETFMockWithEnvPreparation, provides=ExecutionTargetFactoryI)
+    @provide
+    def ansible_builder(self, origin: AnsibleTargetBuilder) -> AnsibleTargetBuilderI:
+        return TargetBuilderWithEnvMock(origin=origin, change_jobs=self._change_jobs)
+
+    @provide
+    def python_builder(self, origin: PythonTargetBuilder) -> PythonTargetBuilderI:
+        return TargetBuilderWithEnvMock(origin=origin, change_jobs=self._change_jobs)
 
 
 def make_overridden_container(*overrides: dishka.Provider) -> dishka.Container:

@@ -77,7 +77,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         task_id = launched_task.pk
 
         container = make_overridden_container(
-            MockWithEnvProvider(change_jobs={0: JobImitator(call=plugin_call, use_call_return_code=True)})
+            MockWithEnvProvider(change_jobs={"/0-first": JobImitator(call=plugin_call, use_call_return_code=True)})
         )
         self.task_runner(container).launch_task(task_id=task_id)
 
