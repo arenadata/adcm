@@ -1,0 +1,384 @@
+guardian_groupobjectpermission:
+  added:
+  - G-cross | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - G-cross | cm.view_cluster | <dangling:cluster:A2>
+  - G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - G-launch-only | cm.view_cluster | <dangling:cluster:A2>
+  - G-launch-only | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - G-launch-only | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - G-multi-a | cm.change_config_of_cluster | <dangling:cluster:A2>
+  - G-multi-a | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.change_config_of_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.change_import_of_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.change_maintenance_mode_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.edit_action_host_group_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.view_action_host_group_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.view_cluster | <dangling:cluster:A2>
+  - G-multi-a | cm.view_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.view_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - G-multi-a | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_1@rev1>
+  - G-multi-a | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_2@rev1>
+  - G-multi-a | cm.view_configlog | <dangling:configlog:service:A2/svc_1@rev1>
+  - G-multi-a | cm.view_import_of_service | <dangling:service:A2/svc_1>
+  - G-multi-a | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - G-multi-a | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_1>
+  - G-multi-a | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_2>
+  - G-multi-a | cm.view_objectconfig | <dangling:objectconfig:service:A2/svc_1>
+  - G-multi-a | cm.view_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.change_config_of_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.change_import_of_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.change_maintenance_mode_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.edit_action_host_group_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.view_action_host_group_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.view_cluster | <dangling:cluster:A2>
+  - G-multi-b | cm.view_component | <dangling:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.view_component | <dangling:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_1@rev1>
+  - G-multi-b | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_2@rev1>
+  - G-multi-b | cm.view_configlog | <dangling:configlog:service:A2/svc_1@rev1>
+  - G-multi-b | cm.view_import_of_service | <dangling:service:A2/svc_1>
+  - G-multi-b | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_1>
+  - G-multi-b | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_2>
+  - G-multi-b | cm.view_objectconfig | <dangling:objectconfig:service:A2/svc_1>
+  - G-multi-b | cm.view_service | <dangling:service:A2/svc_1>
+  - G-solo-map-hosts | cm.map_host_to_cluster | <dangling:cluster:A2>
+  - G-solo-map-hosts | cm.view_cluster | <dangling:cluster:A2>
+  removed:
+  - G-cross | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - G-cross | cm.view_cluster | cluster:A2
+  - G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - G-launch-only | cm.view_cluster | cluster:A2
+  - G-launch-only | cm.view_configlog | configlog:cluster:A2@rev1
+  - G-launch-only | cm.view_objectconfig | config:cluster:A2
+  - G-multi-a | cm.change_config_of_cluster | cluster:A2
+  - G-multi-a | cm.change_config_of_component | component:A2/svc_1/comp_1
+  - G-multi-a | cm.change_config_of_component | component:A2/svc_1/comp_2
+  - G-multi-a | cm.change_config_of_service | service:A2/svc_1
+  - G-multi-a | cm.change_import_of_service | service:A2/svc_1
+  - G-multi-a | cm.change_maintenance_mode_component | component:A2/svc_1/comp_1
+  - G-multi-a | cm.change_maintenance_mode_component | component:A2/svc_1/comp_2
+  - G-multi-a | cm.change_maintenance_mode_service | service:A2/svc_1
+  - G-multi-a | cm.edit_action_host_group_component | component:A2/svc_1/comp_1
+  - G-multi-a | cm.edit_action_host_group_component | component:A2/svc_1/comp_2
+  - G-multi-a | cm.edit_action_host_group_service | service:A2/svc_1
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_1
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_2
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_1
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_2
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+  - G-multi-a | cm.view_action_host_group_component | component:A2/svc_1/comp_1
+  - G-multi-a | cm.view_action_host_group_component | component:A2/svc_1/comp_2
+  - G-multi-a | cm.view_action_host_group_service | service:A2/svc_1
+  - G-multi-a | cm.view_cluster | cluster:A2
+  - G-multi-a | cm.view_component | component:A2/svc_1/comp_1
+  - G-multi-a | cm.view_component | component:A2/svc_1/comp_2
+  - G-multi-a | cm.view_configlog | configlog:cluster:A2@rev1
+  - G-multi-a | cm.view_configlog | configlog:component:A2/svc_1/comp_1@rev1
+  - G-multi-a | cm.view_configlog | configlog:component:A2/svc_1/comp_2@rev1
+  - G-multi-a | cm.view_configlog | configlog:service:A2/svc_1@rev1
+  - G-multi-a | cm.view_import_of_service | service:A2/svc_1
+  - G-multi-a | cm.view_objectconfig | config:cluster:A2
+  - G-multi-a | cm.view_objectconfig | config:component:A2/svc_1/comp_1
+  - G-multi-a | cm.view_objectconfig | config:component:A2/svc_1/comp_2
+  - G-multi-a | cm.view_objectconfig | config:service:A2/svc_1
+  - G-multi-a | cm.view_service | service:A2/svc_1
+  - G-multi-b | cm.change_config_of_component | component:A2/svc_1/comp_1
+  - G-multi-b | cm.change_config_of_component | component:A2/svc_1/comp_2
+  - G-multi-b | cm.change_config_of_service | service:A2/svc_1
+  - G-multi-b | cm.change_import_of_service | service:A2/svc_1
+  - G-multi-b | cm.change_maintenance_mode_component | component:A2/svc_1/comp_1
+  - G-multi-b | cm.change_maintenance_mode_component | component:A2/svc_1/comp_2
+  - G-multi-b | cm.change_maintenance_mode_service | service:A2/svc_1
+  - G-multi-b | cm.edit_action_host_group_component | component:A2/svc_1/comp_1
+  - G-multi-b | cm.edit_action_host_group_component | component:A2/svc_1/comp_2
+  - G-multi-b | cm.edit_action_host_group_service | service:A2/svc_1
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_1
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_2
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_1
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_2
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+  - G-multi-b | cm.view_action_host_group_component | component:A2/svc_1/comp_1
+  - G-multi-b | cm.view_action_host_group_component | component:A2/svc_1/comp_2
+  - G-multi-b | cm.view_action_host_group_service | service:A2/svc_1
+  - G-multi-b | cm.view_cluster | cluster:A2
+  - G-multi-b | cm.view_component | component:A2/svc_1/comp_1
+  - G-multi-b | cm.view_component | component:A2/svc_1/comp_2
+  - G-multi-b | cm.view_configlog | configlog:component:A2/svc_1/comp_1@rev1
+  - G-multi-b | cm.view_configlog | configlog:component:A2/svc_1/comp_2@rev1
+  - G-multi-b | cm.view_configlog | configlog:service:A2/svc_1@rev1
+  - G-multi-b | cm.view_import_of_service | service:A2/svc_1
+  - G-multi-b | cm.view_objectconfig | config:component:A2/svc_1/comp_1
+  - G-multi-b | cm.view_objectconfig | config:component:A2/svc_1/comp_2
+  - G-multi-b | cm.view_objectconfig | config:service:A2/svc_1
+  - G-multi-b | cm.view_service | service:A2/svc_1
+  - G-solo-map-hosts | cm.map_host_to_cluster | cluster:A2
+  - G-solo-map-hosts | cm.view_cluster | cluster:A2
+rbac_policy_group_object_perm:
+  added:
+  - P-cross-a2 | G-cross | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - P-cross-a2 | G-cross | cm.view_cluster | <dangling:cluster:A2>
+  - P-launch-action | G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - P-launch-action | G-launch-only | cm.view_cluster | <dangling:cluster:A2>
+  - P-launch-owner | G-launch-only | cm.view_cluster | <dangling:cluster:A2>
+  - P-launch-owner | G-launch-only | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - P-launch-owner | G-launch-only | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - P-multi-a-clusters | G-multi-a | cm.change_config_of_cluster | <dangling:cluster:A2>
+  - P-multi-a-clusters | G-multi-a | cm.view_cluster | <dangling:cluster:A2>
+  - P-multi-a-clusters | G-multi-a | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - P-multi-a-clusters | G-multi-a | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - P-multi-group | G-multi-a | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.change_config_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.change_import_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.view_action_host_group_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.view_cluster | <dangling:cluster:A2>
+  - P-multi-group | G-multi-a | cm.view_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.view_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_1@rev1>
+  - P-multi-group | G-multi-a | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_2@rev1>
+  - P-multi-group | G-multi-a | cm.view_configlog | <dangling:configlog:service:A2/svc_1@rev1>
+  - P-multi-group | G-multi-a | cm.view_import_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-a | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-a | cm.view_objectconfig | <dangling:objectconfig:service:A2/svc_1>
+  - P-multi-group | G-multi-a | cm.view_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.change_config_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.change_import_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.view_action_host_group_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.view_cluster | <dangling:cluster:A2>
+  - P-multi-group | G-multi-b | cm.view_component | <dangling:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.view_component | <dangling:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_1@rev1>
+  - P-multi-group | G-multi-b | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_2@rev1>
+  - P-multi-group | G-multi-b | cm.view_configlog | <dangling:configlog:service:A2/svc_1@rev1>
+  - P-multi-group | G-multi-b | cm.view_import_of_service | <dangling:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_1>
+  - P-multi-group | G-multi-b | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_2>
+  - P-multi-group | G-multi-b | cm.view_objectconfig | <dangling:objectconfig:service:A2/svc_1>
+  - P-multi-group | G-multi-b | cm.view_service | <dangling:service:A2/svc_1>
+  - P-solo-map-hosts | G-solo-map-hosts | cm.map_host_to_cluster | <dangling:cluster:A2>
+  - P-solo-map-hosts | G-solo-map-hosts | cm.view_cluster | <dangling:cluster:A2>
+  removed:
+  - P-cross-a2 | G-cross | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - P-cross-a2 | G-cross | cm.view_cluster | cluster:A2
+  - P-launch-action | G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - P-launch-action | G-launch-only | cm.view_cluster | cluster:A2
+  - P-launch-owner | G-launch-only | cm.view_cluster | cluster:A2
+  - P-launch-owner | G-launch-only | cm.view_configlog | configlog:cluster:A2@rev1
+  - P-launch-owner | G-launch-only | cm.view_objectconfig | config:cluster:A2
+  - P-multi-a-clusters | G-multi-a | cm.change_config_of_cluster | cluster:A2
+  - P-multi-a-clusters | G-multi-a | cm.view_cluster | cluster:A2
+  - P-multi-a-clusters | G-multi-a | cm.view_configlog | configlog:cluster:A2@rev1
+  - P-multi-a-clusters | G-multi-a | cm.view_objectconfig | config:cluster:A2
+  - P-multi-group | G-multi-a | cm.change_config_of_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.change_config_of_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.change_config_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.change_import_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.view_action_host_group_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.view_action_host_group_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.view_action_host_group_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.view_cluster | cluster:A2
+  - P-multi-group | G-multi-a | cm.view_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.view_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A2/svc_1/comp_1@rev1
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A2/svc_1/comp_2@rev1
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:service:A2/svc_1@rev1
+  - P-multi-group | G-multi-a | cm.view_import_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.view_objectconfig | config:component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-a | cm.view_objectconfig | config:component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-a | cm.view_objectconfig | config:service:A2/svc_1
+  - P-multi-group | G-multi-a | cm.view_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.change_config_of_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.change_config_of_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.change_config_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.change_import_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.view_action_host_group_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.view_action_host_group_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.view_action_host_group_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.view_cluster | cluster:A2
+  - P-multi-group | G-multi-b | cm.view_component | component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.view_component | component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A2/svc_1/comp_1@rev1
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A2/svc_1/comp_2@rev1
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:service:A2/svc_1@rev1
+  - P-multi-group | G-multi-b | cm.view_import_of_service | service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.view_objectconfig | config:component:A2/svc_1/comp_1
+  - P-multi-group | G-multi-b | cm.view_objectconfig | config:component:A2/svc_1/comp_2
+  - P-multi-group | G-multi-b | cm.view_objectconfig | config:service:A2/svc_1
+  - P-multi-group | G-multi-b | cm.view_service | service:A2/svc_1
+  - P-solo-map-hosts | G-solo-map-hosts | cm.map_host_to_cluster | cluster:A2
+  - P-solo-map-hosts | G-solo-map-hosts | cm.view_cluster | cluster:A2
+rbac_policy_object:
+  added: []
+  removed:
+  - P-cross-a2 | cluster:A2
+  - P-launch-action | cluster:A2
+  - P-launch-owner | cluster:A2
+  - P-multi-a-clusters | cluster:A2
+  - P-multi-group | service:A2/svc_1
+  - P-solo-map-hosts | cluster:A2
+effective_object_perm:
+  added:
+  - U-launch | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - U-launch | cm.view_cluster | <dangling:cluster:A2>
+  - U-launch | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - U-launch | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:cluster:A2>
+  - U-mixed | cm.view_cluster | <dangling:cluster:A2>
+  - U-multi | cm.change_config_of_cluster | <dangling:cluster:A2>
+  - U-multi | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.change_config_of_component | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.change_config_of_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.change_import_of_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.change_maintenance_mode_component | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.change_maintenance_mode_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.edit_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.edit_action_host_group_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | <dangling:service:A2/svc_1>
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:service:A2/svc_1>
+  - U-multi | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.view_action_host_group_component | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.view_action_host_group_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.view_cluster | <dangling:cluster:A2>
+  - U-multi | cm.view_component | <dangling:component:A2/svc_1/comp_1>
+  - U-multi | cm.view_component | <dangling:component:A2/svc_1/comp_2>
+  - U-multi | cm.view_configlog | <dangling:configlog:cluster:A2@rev1>
+  - U-multi | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_1@rev1>
+  - U-multi | cm.view_configlog | <dangling:configlog:component:A2/svc_1/comp_2@rev1>
+  - U-multi | cm.view_configlog | <dangling:configlog:service:A2/svc_1@rev1>
+  - U-multi | cm.view_import_of_service | <dangling:service:A2/svc_1>
+  - U-multi | cm.view_objectconfig | <dangling:objectconfig:cluster:A2>
+  - U-multi | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_1>
+  - U-multi | cm.view_objectconfig | <dangling:objectconfig:component:A2/svc_1/comp_2>
+  - U-multi | cm.view_objectconfig | <dangling:objectconfig:service:A2/svc_1>
+  - U-multi | cm.view_service | <dangling:service:A2/svc_1>
+  removed:
+  - U-launch | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - U-launch | cm.view_cluster | cluster:A2
+  - U-launch | cm.view_configlog | configlog:cluster:A2@rev1
+  - U-launch | cm.view_objectconfig | config:cluster:A2
+  - U-mixed | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
+  - U-mixed | cm.view_cluster | cluster:A2
+  - U-multi | cm.change_config_of_cluster | cluster:A2
+  - U-multi | cm.change_config_of_component | component:A2/svc_1/comp_1
+  - U-multi | cm.change_config_of_component | component:A2/svc_1/comp_2
+  - U-multi | cm.change_config_of_service | service:A2/svc_1
+  - U-multi | cm.change_import_of_service | service:A2/svc_1
+  - U-multi | cm.change_maintenance_mode_component | component:A2/svc_1/comp_1
+  - U-multi | cm.change_maintenance_mode_component | component:A2/svc_1/comp_2
+  - U-multi | cm.change_maintenance_mode_service | service:A2/svc_1
+  - U-multi | cm.edit_action_host_group_component | component:A2/svc_1/comp_1
+  - U-multi | cm.edit_action_host_group_component | component:A2/svc_1/comp_2
+  - U-multi | cm.edit_action_host_group_service | service:A2/svc_1
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_1
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A2/svc_1/comp_2
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_1
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A2/svc_1/comp_2
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+  - U-multi | cm.view_action_host_group_component | component:A2/svc_1/comp_1
+  - U-multi | cm.view_action_host_group_component | component:A2/svc_1/comp_2
+  - U-multi | cm.view_action_host_group_service | service:A2/svc_1
+  - U-multi | cm.view_cluster | cluster:A2
+  - U-multi | cm.view_component | component:A2/svc_1/comp_1
+  - U-multi | cm.view_component | component:A2/svc_1/comp_2
+  - U-multi | cm.view_configlog | configlog:cluster:A2@rev1
+  - U-multi | cm.view_configlog | configlog:component:A2/svc_1/comp_1@rev1
+  - U-multi | cm.view_configlog | configlog:component:A2/svc_1/comp_2@rev1
+  - U-multi | cm.view_configlog | configlog:service:A2/svc_1@rev1
+  - U-multi | cm.view_import_of_service | service:A2/svc_1
+  - U-multi | cm.view_objectconfig | config:cluster:A2
+  - U-multi | cm.view_objectconfig | config:component:A2/svc_1/comp_1
+  - U-multi | cm.view_objectconfig | config:component:A2/svc_1/comp_2
+  - U-multi | cm.view_objectconfig | config:service:A2/svc_1
+  - U-multi | cm.view_service | service:A2/svc_1

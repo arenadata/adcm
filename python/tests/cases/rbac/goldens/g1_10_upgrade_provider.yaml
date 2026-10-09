@@ -1,0 +1,49 @@
+guardian_groupobjectpermission:
+  added:
+  - G-empty | cm.view_configlog | configlog:host:h-one@rev3
+  - G-solo-provider-admin | cm.view_action | action:rbac_provider-2.0/host/rbac_host:common
+  - G-solo-provider-admin | cm.view_action | action:rbac_provider-2.0/provider/rbac_provider:common
+  - G-solo-provider-admin | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev4
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-free@rev2
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-free~dup#1@rev1
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-multi@rev2
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - G-solo-provider-admin | cm.view_configlog | configlog:host:h-unmapped@rev2
+  - G-solo-provider-admin | cm.view_configlog | configlog:provider:P1@rev3
+  - G-solo-provider-admin | cm.view_objectconfig | config:host:h-free~dup#1
+  - G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev2
+  removed:
+  - G-solo-provider-admin | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - G-solo-provider-admin | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+rbac_policy_group_object_perm:
+  added:
+  - P-empty-hosts | G-empty | cm.view_configlog | configlog:host:h-one@rev3
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_action | action:rbac_provider-2.0/host/rbac_host:common
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_action | action:rbac_provider-2.0/provider/rbac_provider:common
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev4
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-free@rev2
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-free~dup#1@rev1
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-multi@rev2
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-one@rev3
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:host:h-unmapped@rev2
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_configlog | configlog:provider:P1@rev3
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_objectconfig | config:host:h-free~dup#1
+  - P-solo-view-host-config | G-solo-view-host-config | cm.view_configlog | configlog:host:h-multi@rev2
+  removed:
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - P-solo-provider-admin | G-solo-provider-admin | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+effective_object_perm:
+  added:
+  - U-mixed | cm.view_action | action:rbac_provider-2.0/host/rbac_host:common
+  - U-mixed | cm.view_action | action:rbac_provider-2.0/provider/rbac_provider:common
+  - U-mixed | cm.view_configlog | configlog:chg:provider:P1/chg-provider@rev4
+  - U-mixed | cm.view_configlog | configlog:host:h-free@rev2
+  - U-mixed | cm.view_configlog | configlog:host:h-free~dup#1@rev1
+  - U-mixed | cm.view_configlog | configlog:host:h-multi@rev2
+  - U-mixed | cm.view_configlog | configlog:host:h-one@rev3
+  - U-mixed | cm.view_configlog | configlog:host:h-unmapped@rev2
+  - U-mixed | cm.view_configlog | configlog:provider:P1@rev3
+  - U-mixed | cm.view_objectconfig | config:host:h-free~dup#1
+  removed:
+  - U-mixed | cm.view_action | action:rbac_provider-1.0/host/rbac_host:common
+  - U-mixed | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common

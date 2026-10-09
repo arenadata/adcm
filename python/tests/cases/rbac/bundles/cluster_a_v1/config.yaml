@@ -1,4 +1,6 @@
-# S-B1: cluster bundle A v1. "Common Action" and host actions on every cluster level, config everywhere, CHG allowed
+# S-B1: cluster bundle A v1. "Common Action" and host actions on every cluster level, config everywhere, CHG allowed.
+# Cluster actions changing topology during a task: `hc_finalize` (mapping set by finalizer), `hc_apply`, `add_spare`.
+# `svc_spare` is never added in setup
 - type: cluster
   name: rbac_cluster_a
   version: "1.0"
@@ -31,6 +33,39 @@
       display_name: Removed Action
       masking:
       scripts: *scripts
+    hc_finalize:
+      display_name: HC Finalize
+      masking:
+      scripts: *scripts
+      hc_acl: &hc_acl
+        - service: svc_1
+          component: comp_2
+          action: add
+        - service: svc_1
+          component: comp_2
+          action: remove
+    hc_apply:
+      display_name: HC Apply
+      masking:
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+        - name: apply
+          script_type: internal
+          script: hc_apply
+      hc_acl: *hc_acl
+    add_spare:
+      display_name: Add Spare
+      masking:
+      scripts:
+        - name: add
+          script_type: internal
+          script: service_manage
+          params:
+            operation: add
+            services:
+              - name: svc_spare
 
 - type: service
   name: svc_1
@@ -66,3 +101,9 @@
   config: *config
   actions: *service_actions
   components: *components
+
+- type: service
+  name: svc_spare
+  version: "1.0"
+  components:
+    comp_1:

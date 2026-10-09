@@ -1,0 +1,129 @@
+guardian_groupobjectpermission:
+  added:
+  - G-overlap | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - G-overlap | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - G-solo-cluster-admin | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - G-solo-cluster-admin | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - G-solo-custom | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - G-solo-custom | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - G-solo-view-cluster-config | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - G-solo-view-cluster-config | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  removed:
+  - G-overlap | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - G-overlap | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - G-solo-cluster-admin | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - G-solo-cluster-admin | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - G-solo-custom | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - G-solo-custom | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - G-solo-view-cluster-config | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - G-solo-view-cluster-config | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+rbac_policy_group_object_perm:
+  added:
+  - P-overlap-admin | G-overlap | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - P-overlap-admin | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - P-overlap-admin | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - P-overlap-admin | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - P-overlap-edit-config | G-overlap | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - P-overlap-edit-config | G-overlap | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - P-solo-custom | G-solo-custom | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - P-solo-custom | G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - P-solo-custom | G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - P-solo-custom | G-solo-custom | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - P-solo-custom | G-solo-custom | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  removed:
+  - P-overlap-admin | G-overlap | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - P-overlap-edit-config | G-overlap | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-overlap-edit-config | G-overlap | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - P-solo-custom | G-solo-custom | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-solo-custom | G-solo-custom | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+effective_object_perm:
+  added:
+  - U-multi | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - U-multi | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - U-multi | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - U-multi | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - U-multi | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - U-overlap | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - U-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - U-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - U-overlap | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - U-overlap | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  - U-single | cm.view_confighostgroup | <dangling:confighostgroup:cluster:A1/chg-cluster>
+  - U-single | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev1>
+  - U-single | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev2>
+  - U-single | cm.view_configlog | <dangling:configlog:chg:cluster:A1/chg-cluster@rev3>
+  - U-single | cm.view_objectconfig | <dangling:objectconfig:chg:cluster:A1/chg-cluster>
+  removed:
+  - U-multi | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - U-multi | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - U-overlap | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - U-overlap | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster
+  - U-single | cm.view_confighostgroup | chg:cluster:A1/chg-cluster
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev1
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev2
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev3
+  - U-single | cm.view_objectconfig | config:chg:cluster:A1/chg-cluster

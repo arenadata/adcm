@@ -1,0 +1,54 @@
+guardian_groupobjectpermission:
+  added:
+  - G-empty | cm.add_host_to_provider | <dangling:provider:P3>
+  - G-empty | cm.change_config_of_provider | <dangling:provider:P3>
+  - G-empty | cm.do_upgrade_of_provider | <dangling:provider:P3>
+  - G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:provider:P3>
+  - G-empty | cm.view_configlog | <dangling:configlog:provider:P3@rev1>
+  - G-empty | cm.view_joblog | <dangling:provider:P3>
+  - G-empty | cm.view_logstorage | <dangling:provider:P3>
+  - G-empty | cm.view_objectconfig | <dangling:objectconfig:provider:P3>
+  - G-empty | cm.view_provider | <dangling:provider:P3>
+  - G-empty | cm.view_tasklog | <dangling:provider:P3>
+  - G-empty | cm.view_upgrade_of_provider | <dangling:provider:P3>
+  removed:
+  - G-empty | cm.add_host_to_provider | provider:P3
+  - G-empty | cm.change_config_of_provider | provider:P3
+  - G-empty | cm.do_upgrade_of_provider | provider:P3
+  - G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P3
+  - G-empty | cm.view_configlog | configlog:provider:P3@rev1
+  - G-empty | cm.view_joblog | provider:P3
+  - G-empty | cm.view_logstorage | provider:P3
+  - G-empty | cm.view_objectconfig | config:provider:P3
+  - G-empty | cm.view_provider | provider:P3
+  - G-empty | cm.view_tasklog | provider:P3
+  - G-empty | cm.view_upgrade_of_provider | provider:P3
+rbac_policy_group_object_perm:
+  added:
+  - P-empty-provider | G-empty | cm.add_host_to_provider | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.change_config_of_provider | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.do_upgrade_of_provider | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.view_configlog | <dangling:configlog:provider:P3@rev1>
+  - P-empty-provider | G-empty | cm.view_joblog | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.view_logstorage | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.view_objectconfig | <dangling:objectconfig:provider:P3>
+  - P-empty-provider | G-empty | cm.view_provider | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.view_tasklog | <dangling:provider:P3>
+  - P-empty-provider | G-empty | cm.view_upgrade_of_provider | <dangling:provider:P3>
+  removed:
+  - P-empty-provider | G-empty | cm.add_host_to_provider | provider:P3
+  - P-empty-provider | G-empty | cm.change_config_of_provider | provider:P3
+  - P-empty-provider | G-empty | cm.do_upgrade_of_provider | provider:P3
+  - P-empty-provider | G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P3
+  - P-empty-provider | G-empty | cm.view_configlog | configlog:provider:P3@rev1
+  - P-empty-provider | G-empty | cm.view_joblog | provider:P3
+  - P-empty-provider | G-empty | cm.view_logstorage | provider:P3
+  - P-empty-provider | G-empty | cm.view_objectconfig | config:provider:P3
+  - P-empty-provider | G-empty | cm.view_provider | provider:P3
+  - P-empty-provider | G-empty | cm.view_tasklog | provider:P3
+  - P-empty-provider | G-empty | cm.view_upgrade_of_provider | provider:P3
+rbac_policy_object:
+  added: []
+  removed:
+  - P-empty-provider | provider:P3

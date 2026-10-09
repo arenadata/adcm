@@ -1,0 +1,227 @@
+guardian_groupobjectpermission:
+  added:
+  - G-overlap | cm.change_config_of_host | host:h-free
+  - G-overlap | cm.change_config_of_host | host:h-free-p2
+  - G-overlap | cm.change_maintenance_mode_host | host:h-free
+  - G-overlap | cm.change_maintenance_mode_host | host:h-free-p2
+  - G-overlap | cm.delete_host | host:h-free
+  - G-overlap | cm.delete_host | host:h-free-p2
+  - G-overlap | cm.remove_host | host:h-free
+  - G-overlap | cm.remove_host | host:h-free-p2
+  - G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - G-overlap | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - G-overlap | cm.view_configlog | configlog:host:h-free@rev1
+  - G-overlap | cm.view_host | host:h-free
+  - G-overlap | cm.view_host | host:h-free-p2
+  - G-overlap | cm.view_objectconfig | config:host:h-free
+  - G-overlap | cm.view_objectconfig | config:host:h-free-p2
+  - G-solo-cluster-admin | cm.change_config_of_host | host:h-free
+  - G-solo-cluster-admin | cm.change_config_of_host | host:h-free-p2
+  - G-solo-cluster-admin | cm.change_maintenance_mode_host | host:h-free
+  - G-solo-cluster-admin | cm.change_maintenance_mode_host | host:h-free-p2
+  - G-solo-cluster-admin | cm.delete_host | host:h-free
+  - G-solo-cluster-admin | cm.delete_host | host:h-free-p2
+  - G-solo-cluster-admin | cm.remove_host | host:h-free
+  - G-solo-cluster-admin | cm.remove_host | host:h-free-p2
+  - G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:host:h-free@rev1
+  - G-solo-cluster-admin | cm.view_host | host:h-free
+  - G-solo-cluster-admin | cm.view_host | host:h-free-p2
+  - G-solo-cluster-admin | cm.view_objectconfig | config:host:h-free
+  - G-solo-cluster-admin | cm.view_objectconfig | config:host:h-free-p2
+  - G-solo-custom | cm.view_host | host:h-free
+  - G-solo-custom | cm.view_host | host:h-free-p2
+  - G-solo-edit-hc | cm.view_host | host:h-free
+  - G-solo-edit-hc | cm.view_host | host:h-free-p2
+  removed:
+  - G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_policy_group_object_perm:
+  added:
+  - P-overlap-admin | G-overlap | cm.change_config_of_host | host:h-free
+  - P-overlap-admin | G-overlap | cm.change_config_of_host | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_host | host:h-free
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_host | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.delete_host | host:h-free
+  - P-overlap-admin | G-overlap | cm.delete_host | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.remove_host | host:h-free
+  - P-overlap-admin | G-overlap | cm.remove_host | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - P-overlap-admin | G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:host:h-free@rev1
+  - P-overlap-admin | G-overlap | cm.view_host | host:h-free
+  - P-overlap-admin | G-overlap | cm.view_host | host:h-free-p2
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:host:h-free
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_host | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_host | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_host | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_host | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.delete_host | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.delete_host | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.remove_host | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.remove_host | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:host:h-free@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_host | host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_host | host:h-free-p2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:host:h-free
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:host:h-free-p2
+  - P-solo-custom | G-solo-custom | cm.view_host | host:h-free
+  - P-solo-custom | G-solo-custom | cm.view_host | host:h-free-p2
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_host | host:h-free
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_host | host:h-free-p2
+  removed:
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_role:
+  added: []
+  removed:
+  - task-role:<dangling:tasklog:service:A1/svc_1:common#2> | hidden
+rbac_role_child:
+  added: []
+  removed:
+  - Cluster Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Service Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+effective_object_perm:
+  added:
+  - U-multi | cm.change_config_of_host | host:h-free
+  - U-multi | cm.change_config_of_host | host:h-free-p2
+  - U-multi | cm.change_maintenance_mode_host | host:h-free
+  - U-multi | cm.change_maintenance_mode_host | host:h-free-p2
+  - U-multi | cm.delete_host | host:h-free
+  - U-multi | cm.delete_host | host:h-free-p2
+  - U-multi | cm.remove_host | host:h-free
+  - U-multi | cm.remove_host | host:h-free-p2
+  - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - U-multi | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - U-multi | cm.view_configlog | configlog:host:h-free@rev1
+  - U-multi | cm.view_host | host:h-free
+  - U-multi | cm.view_host | host:h-free-p2
+  - U-multi | cm.view_objectconfig | config:host:h-free
+  - U-multi | cm.view_objectconfig | config:host:h-free-p2
+  - U-overlap | cm.change_config_of_host | host:h-free
+  - U-overlap | cm.change_config_of_host | host:h-free-p2
+  - U-overlap | cm.change_maintenance_mode_host | host:h-free
+  - U-overlap | cm.change_maintenance_mode_host | host:h-free-p2
+  - U-overlap | cm.delete_host | host:h-free
+  - U-overlap | cm.delete_host | host:h-free-p2
+  - U-overlap | cm.remove_host | host:h-free
+  - U-overlap | cm.remove_host | host:h-free-p2
+  - U-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free
+  - U-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-free-p2
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | host:h-free-p2
+  - U-overlap | cm.view_configlog | configlog:host:h-free-p2@rev1
+  - U-overlap | cm.view_configlog | configlog:host:h-free@rev1
+  - U-overlap | cm.view_host | host:h-free
+  - U-overlap | cm.view_host | host:h-free-p2
+  - U-overlap | cm.view_objectconfig | config:host:h-free
+  - U-overlap | cm.view_objectconfig | config:host:h-free-p2
+  - U-single | cm.view_host | host:h-free
+  - U-single | cm.view_host | host:h-free-p2
+  removed:
+  - U-multi | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-multi | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-multi | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>

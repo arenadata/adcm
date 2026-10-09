@@ -21,9 +21,10 @@ The superuser `admin` (in no group) drives the act step, so it never appears in 
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 from unittest import SkipTest
 
+from ansible_plugin.base import ADCMAnsiblePluginExecutor
 from cm.models import (
     ADCM,
     Action,
@@ -50,6 +51,7 @@ from rbac.roles import assign_view_logstorage_permissions_by_job
 from rbac.scenarios import RBACScenarios
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
+from rest_framework.status import HTTP_200_OK
 from use_cases.dto import RunActionDTO
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.transition.host.duplicate import create_duplicate
@@ -66,11 +68,19 @@ from tests.cases.rbac.snapshot import (
     record_query_count,
     take_snapshot,
 )
-from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuiteNoBundles
+from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuiteNoBundles, prepare_plugin_executor
 
 BUNDLES_DIR: Final = Path(__file__).parent / "bundles"
 GOLDENS_DIR: Final = Path(__file__).parent / "goldens"
 QUERY_COUNTS_DIR: Final = GOLDENS_DIR / "query-counts"
+
+# (host, service, component) entries of A1 mapping after setup
+A1_MAPPING: Final = (
+    ("h-one", "svc_1", "comp_1"),
+    ("h-multi", "svc_1", "comp_1"),
+    ("h-multi", "svc_1", "comp_2"),
+    ("h-multi", "svc_2", "comp_1"),
+)
 
 
 class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
@@ -79,14 +89,15 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
 
     - S-B1/S-B3: bundles A v1/v2; S-B2: bundle B; S-B4: provider P v1/v2
     - S-B5: bundle E, cluster E1, policy on its action role
-    - S-T1: clusters A1, A2 (A v1), B1; S-T2: providers P1, P2, hosts `h-free`, `h-unmapped` (in A1),
+    - S-T1: clusters A1, A2 (A v1), B1; S-T2: providers P1, P2, P3 (no hosts), hosts `h-free`, `h-unmapped` (in A1),
       `h-one` (A1 svc_1/comp_1), `h-multi` (A1 svc_1/comp_1, svc_1/comp_2, svc_2/comp_1), `h-a2`, `h-b1`, `h-free-p2`
     - S-T3: duplicate of `h-free` without cluster
     - S-T4: CHGs on A1, A1/svc_1, A1/svc_1/comp_1, P1 with hosts and 2 config revisions each
     - S-T5: AHGs on A1, A1/svc_1, A1/svc_1/comp_1 with `h-one`
     - S-T6: 2 ConfigLogs on A1, A1/svc_1, A1/svc_1/comp_1, P1, `h-one` (+ CHGs)
     - S-J6: `common` on A1 launched before any policy (TaskRole unattached)
-    - S-J1: `common` on A1, A1/svc_1, A1/svc_1/comp_1, P1, `h-one` after the policies
+    - S-J1: `common` on A1, A1/svc_1, A1/svc_1/comp_1, P1, `h-one` after the policies;
+      jobs of A1 and P1 tasks are contexts for plugin calls (`a1_job`, `p1_job`)
     - S-J2: A1's host action `on_host` on `h-one`; S-J3: `in_ahg` on A1's AHG; S-J4: ADCM `test_ldap_connection`
     - S-J5: custom and check log on the A1 task launched after the policies
     - S-J7: second `common` on A1/svc_1, rotated (TaskLog and orphan JobLogs deleted as logrotate does)
@@ -105,7 +116,10 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
     cluster_e1: Cluster
     provider_p1: Provider
     provider_p2: Provider
+    provider_p3: Provider
     hosts: dict[str, Host]
+    a1_job: JobLog
+    p1_job: JobLog
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -176,6 +190,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
 
         cls.provider_p1 = cls.uc.add_provider(bundle=bundle_p, name="P1")
         cls.provider_p2 = cls.uc.add_provider(bundle=bundle_p, name="P2")
+        cls.provider_p3 = cls.uc.add_provider(bundle=bundle_p, name="P3")
 
         cls.hosts = {
             fqdn: cls.uc.add_host(provider=provider, fqdn=fqdn)
@@ -202,10 +217,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         cls.uc.set_hostcomponent(
             cluster=cls.cluster_a1,
             entries=[
-                (cls.hosts["h-one"], cls.component("A1", "svc_1", "comp_1")),
-                (cls.hosts["h-multi"], cls.component("A1", "svc_1", "comp_1")),
-                (cls.hosts["h-multi"], cls.component("A1", "svc_1", "comp_2")),
-                (cls.hosts["h-multi"], cls.component("A1", "svc_2", "comp_1")),
+                (cls.hosts[host], cls.component("A1", service, component)) for host, service, component in A1_MAPPING
             ],
         )
         cls.uc.set_hostcomponent(
@@ -371,6 +383,8 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
                 ["G-empty"],
                 [cls.hosts["h-one"], cls.hosts["h-a2"]],
             ),
+            # provider without hosts, can be deleted
+            ("P-empty-provider", cls.role("Provider Administrator"), ["G-empty"], [cls.provider_p3]),
         )
 
         for name, role, group_names, objects in policies:
@@ -395,7 +409,7 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         a1_task = cls.launch_action(owner=cls.cluster_a1, action_name="common")
         cls.launch_action(owner=cls.service("A1", "svc_1"), action_name="common")
         cls.launch_action(owner=cls.component("A1", "svc_1", "comp_1"), action_name="common")
-        cls.launch_action(owner=cls.provider_p1, action_name="common")
+        p1_task = cls.launch_action(owner=cls.provider_p1, action_name="common")
         cls.launch_action(owner=cls.hosts["h-one"], action_name="common")
         cls.launch_action(owner=cls.cluster_a1, action_name="on_host", target=cls.hosts["h-one"])
         cls.launch_action(
@@ -420,10 +434,9 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         )
         cls.launch_action(owner=adcm, action_name="test_ldap_connection")
 
-        job = JobLog.objects.filter(task=a1_task).order_by("id").first()
-        if job is None:
-            message = "Task has no jobs"
-            raise RuntimeError(message)
+        cls.a1_job = JobLog.objects.get(task=a1_task)
+        cls.p1_job = JobLog.objects.get(task=p1_task)
+        job = cls.a1_job
 
         custom_log = LogStorage.objects.create(job=job, name="custom", type="custom", format="txt", body="custom")
         assign_view_logstorage_permissions_by_job(log_storage_id=custom_log.pk)
@@ -441,7 +454,43 @@ class RBACWriteSideSuite(ADCMDjangoAPISuiteNoBundles):
         TaskLog.objects.filter(pk=task.pk).delete()
         JobLog.objects.filter(task__isnull=True).delete()
 
-    # Helpers
+    # Act helpers
+
+    def run_plugin(
+        self, executor_type: type[ADCMAnsiblePluginExecutor], arguments: dict[str, Any], job: JobLog
+    ) -> None:
+        """Call plugin executor as Ansible plugin does in context of the given job, expect no error"""
+
+        executor = prepare_plugin_executor(
+            container=self.container, executor_type=executor_type, call_arguments=arguments, call_context=job
+        )
+        result = executor.execute()
+        self.assertIsNone(result.error, result.error)
+
+    def run_action_via_api(
+        self, owner: Cluster | Service | Component | Provider | Host, action_name: str, payload: dict[str, Any]
+    ) -> None:
+        """Run action via API, then execute its task (ansible jobs are mocked), expect task to succeed"""
+
+        action = Action.objects.get(prototype=owner.prototype, name=action_name)
+
+        response = self.client.v2[owner, "actions", action, "run"].post(data=payload)
+        self.assertEqual(response.status_code, HTTP_200_OK, response.content)
+        task_id = response.json()["id"]
+
+        self.task_runner().launch_task(task_id)
+
+        self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), JobStatus.SUCCESS)
+
+    def mapping_payload(self, cluster: str, entries: Iterable[tuple[str, str, str]]) -> list[dict[str, int]]:
+        """`hostComponentMap` / mapping endpoint payload from (host, service, component) entries"""
+
+        return [
+            {"hostId": self.hosts[host].pk, "componentId": self.component(cluster, service, component).pk}
+            for host, service, component in entries
+        ]
+
+    # Setup helpers
 
     @classmethod
     def launch_action(

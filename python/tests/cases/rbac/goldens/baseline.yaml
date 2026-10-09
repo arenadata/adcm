@@ -12,15 +12,27 @@ guardian_groupobjectpermission:
 - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/ansible:stdout
 - G-cross | cm.view_logstorage | log:cluster:A1:common#2/1/custom:custom
 - G-cross | cm.view_tasklog | task:cluster:A1:common#2
+- G-empty | cm.add_host_to_provider | provider:P3
 - G-empty | cm.change_config_of_host | host:h-a2
 - G-empty | cm.change_config_of_host | host:h-one
+- G-empty | cm.change_config_of_provider | provider:P3
+- G-empty | cm.do_upgrade_of_provider | provider:P3
+- G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P3
+- G-empty | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
 - G-empty | cm.view_configlog | configlog:host:h-a2@rev1
 - G-empty | cm.view_configlog | configlog:host:h-one@rev1
 - G-empty | cm.view_configlog | configlog:host:h-one@rev2
+- G-empty | cm.view_configlog | configlog:provider:P3@rev1
 - G-empty | cm.view_host | host:h-a2
 - G-empty | cm.view_host | host:h-one
+- G-empty | cm.view_joblog | provider:P3
+- G-empty | cm.view_logstorage | provider:P3
 - G-empty | cm.view_objectconfig | config:host:h-a2
 - G-empty | cm.view_objectconfig | config:host:h-one
+- G-empty | cm.view_objectconfig | config:provider:P3
+- G-empty | cm.view_provider | provider:P3
+- G-empty | cm.view_tasklog | provider:P3
+- G-empty | cm.view_upgrade_of_provider | provider:P3
 - G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
 - G-launch-only | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
 - G-launch-only | cm.view_cluster | cluster:A2
@@ -285,9 +297,11 @@ guardian_groupobjectpermission:
 - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
 - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+- G-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- G-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -301,9 +315,13 @@ guardian_groupobjectpermission:
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+- G-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - G-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - G-overlap | cm.unmap_host_from_cluster | cluster:A1
+- G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
@@ -532,9 +550,11 @@ guardian_groupobjectpermission:
 - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
 - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+- G-solo-cluster-admin | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- G-solo-cluster-admin | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -548,9 +568,13 @@ guardian_groupobjectpermission:
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+- G-solo-cluster-admin | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - G-solo-cluster-admin | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - G-solo-cluster-admin | cm.unmap_host_from_cluster | cluster:A1
+- G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
@@ -959,6 +983,18 @@ rbac_policy_group_object_perm:
 - P-empty-hosts | G-empty | cm.view_host | host:h-one
 - P-empty-hosts | G-empty | cm.view_objectconfig | config:host:h-a2
 - P-empty-hosts | G-empty | cm.view_objectconfig | config:host:h-one
+- P-empty-provider | G-empty | cm.add_host_to_provider | provider:P3
+- P-empty-provider | G-empty | cm.change_config_of_provider | provider:P3
+- P-empty-provider | G-empty | cm.do_upgrade_of_provider | provider:P3
+- P-empty-provider | G-empty | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | provider:P3
+- P-empty-provider | G-empty | cm.view_action | action:rbac_provider-1.0/provider/rbac_provider:common
+- P-empty-provider | G-empty | cm.view_configlog | configlog:provider:P3@rev1
+- P-empty-provider | G-empty | cm.view_joblog | provider:P3
+- P-empty-provider | G-empty | cm.view_logstorage | provider:P3
+- P-empty-provider | G-empty | cm.view_objectconfig | config:provider:P3
+- P-empty-provider | G-empty | cm.view_provider | provider:P3
+- P-empty-provider | G-empty | cm.view_tasklog | provider:P3
+- P-empty-provider | G-empty | cm.view_upgrade_of_provider | provider:P3
 - P-launch-action | G-launch-only | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A2
 - P-launch-action | G-launch-only | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
 - P-launch-action | G-launch-only | cm.view_cluster | cluster:A2
@@ -1225,9 +1261,11 @@ rbac_policy_group_object_perm:
 - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
 - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+- P-overlap-admin | G-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - P-overlap-admin | G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - P-overlap-admin | G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - P-overlap-admin | G-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- P-overlap-admin | G-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -1241,9 +1279,13 @@ rbac_policy_group_object_perm:
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+- P-overlap-admin | G-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - P-overlap-admin | G-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - P-overlap-admin | G-overlap | cm.unmap_host_from_cluster | cluster:A1
+- P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
@@ -1482,9 +1524,11 @@ rbac_policy_group_object_perm:
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -1498,9 +1542,13 @@ rbac_policy_group_object_perm:
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.unmap_host_from_cluster | cluster:A1
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
@@ -1884,12 +1932,19 @@ rbac_policy_group_object_perm:
 - P-solo-view-host-config | G-solo-view-host-config | cm.view_host | host:h-multi
 - P-solo-view-host-config | G-solo-view-host-config | cm.view_objectconfig | config:host:h-multi
 auth_group_permissions:
+- G-empty | cm.add_bundle
 - G-empty | cm.add_confighostgroup
 - G-empty | cm.add_configlog
+- G-empty | cm.add_host
+- G-empty | cm.add_prototype
+- G-empty | cm.change_bundle
 - G-empty | cm.change_confighostgroup
 - G-empty | cm.change_configlog
 - G-empty | cm.change_objectconfig
+- G-empty | cm.delete_bundle
+- G-empty | cm.delete_concernitem
 - G-empty | cm.delete_confighostgroup
+- G-empty | cm.view_concernitem
 - G-multi-a | cm.add_confighostgroup
 - G-multi-a | cm.add_configlog
 - G-multi-a | cm.change_confighostgroup
@@ -1993,6 +2048,19 @@ rbac_policypermission:
 - P-empty-hosts | group:G-empty | cm.change_configlog
 - P-empty-hosts | group:G-empty | cm.change_objectconfig
 - P-empty-hosts | group:G-empty | cm.delete_confighostgroup
+- P-empty-provider | group:G-empty | cm.add_bundle
+- P-empty-provider | group:G-empty | cm.add_confighostgroup
+- P-empty-provider | group:G-empty | cm.add_configlog
+- P-empty-provider | group:G-empty | cm.add_host
+- P-empty-provider | group:G-empty | cm.add_prototype
+- P-empty-provider | group:G-empty | cm.change_bundle
+- P-empty-provider | group:G-empty | cm.change_confighostgroup
+- P-empty-provider | group:G-empty | cm.change_configlog
+- P-empty-provider | group:G-empty | cm.change_objectconfig
+- P-empty-provider | group:G-empty | cm.delete_bundle
+- P-empty-provider | group:G-empty | cm.delete_concernitem
+- P-empty-provider | group:G-empty | cm.delete_confighostgroup
+- P-empty-provider | group:G-empty | cm.view_concernitem
 - P-multi-a-clusters | group:G-multi-a | cm.add_confighostgroup
 - P-multi-a-clusters | group:G-multi-a | cm.add_configlog
 - P-multi-a-clusters | group:G-multi-a | cm.change_confighostgroup
@@ -2111,9 +2179,12 @@ rbac_role:
 - Add service | business
 - Add service hidden | hidden
 - 'Cluster Action: AHG Action | business'
+- 'Cluster Action: Add Spare | business'
 - 'Cluster Action: Added Action | business'
 - 'Cluster Action: Common Action | business'
 - 'Cluster Action: E Action | business'
+- 'Cluster Action: HC Apply | business'
+- 'Cluster Action: HC Finalize | business'
 - 'Cluster Action: Removed Action | business'
 - 'Cluster Action: Run On Host | business'
 - 'Cluster Action: Upgrade: switch | business'
@@ -2233,7 +2304,10 @@ rbac_role:
 - View service configurations | business
 - View service imports | hidden
 - View users | business
+- rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_add_spare | hidden
 - rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_common | hidden
+- rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_apply | hidden
+- rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_finalize | hidden
 - rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_in_ahg | hidden
 - rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_on_host | hidden
 - rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_removed | hidden
@@ -2330,12 +2404,15 @@ rbac_role_child:
 - Add service | Get service object
 - 'Cluster Action: AHG Action | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_in_ahg'
 - 'Cluster Action: AHG Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_in_ahg'
+- 'Cluster Action: Add Spare | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_add_spare'
 - 'Cluster Action: Added Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_added'
 - 'Cluster Action: Common Action | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_common'
 - 'Cluster Action: Common Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_common'
 - 'Cluster Action: Common Action | rbac_cluster_b_1.0_community_cluster_rbac_cluster_b_common'
 - 'Cluster Action: Common Action | task-role:task:cluster:A1:common#2'
 - 'Cluster Action: E Action | rbac_cluster_e_1.0_community_cluster_rbac_cluster_e_e_action'
+- 'Cluster Action: HC Apply | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_apply'
+- 'Cluster Action: HC Finalize | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_hc_finalize'
 - 'Cluster Action: Removed Action | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_removed'
 - 'Cluster Action: Run On Host | rbac_cluster_a_1.0_community_cluster_rbac_cluster_a_on_host'
 - 'Cluster Action: Run On Host | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_on_host'
@@ -2346,9 +2423,12 @@ rbac_role_child:
 - Cluster Administrator | Add host to provider
 - Cluster Administrator | Add service hidden
 - 'Cluster Administrator | Cluster Action: AHG Action'
+- 'Cluster Administrator | Cluster Action: Add Spare'
 - 'Cluster Administrator | Cluster Action: Added Action'
 - 'Cluster Administrator | Cluster Action: Common Action'
 - 'Cluster Administrator | Cluster Action: E Action'
+- 'Cluster Administrator | Cluster Action: HC Apply'
+- 'Cluster Administrator | Cluster Action: HC Finalize'
 - 'Cluster Administrator | Cluster Action: Removed Action'
 - 'Cluster Administrator | Cluster Action: Run On Host'
 - 'Cluster Administrator | Cluster Action: Upgrade: switch'
@@ -2596,6 +2676,7 @@ rbac_policy_object:
 - P-cross-a2 | cluster:A2
 - P-empty-hosts | host:h-a2
 - P-empty-hosts | host:h-one
+- P-empty-provider | provider:P3
 - P-launch-action | cluster:A2
 - P-launch-owner | cluster:A2
 - P-multi-a-clusters | cluster:A2
@@ -2886,10 +2967,12 @@ effective_object_perm:
 - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
 - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A2/svc_1
+- U-multi | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-a2
 - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - U-multi | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- U-multi | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -2906,9 +2989,13 @@ effective_object_perm:
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
 - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A2/svc_1
+- U-multi | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - U-multi | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - U-multi | cm.unmap_host_from_cluster | cluster:A1
+- U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
@@ -3148,9 +3235,11 @@ effective_object_perm:
 - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_1
 - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_2
 - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+- U-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
 - U-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-multi
 - U-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-one
 - U-overlap | cm.run_action_5f310ff89f5bdb565748119e2dfa2c26d3b04e31ccb3053e71765bab23fc49d7 | host:h-unmapped
+- U-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | cluster:A1
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_1
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_1/comp_2
@@ -3164,9 +3253,13 @@ effective_object_perm:
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_1
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_2
 - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+- U-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
 - U-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
 - U-overlap | cm.unmap_host_from_cluster | cluster:A1
+- U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
 - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+- U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+- U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
 - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
 - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
 - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed

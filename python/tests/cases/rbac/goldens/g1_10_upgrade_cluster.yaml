@@ -1,0 +1,1013 @@
+guardian_groupobjectpermission:
+  added:
+  - G-cross | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - G-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - G-solo-cluster-admin | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - G-solo-cluster-admin | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - G-solo-edit-component-config | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-service-action | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  removed:
+  - G-multi-a | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - G-multi-a | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - G-multi-a | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - G-multi-a | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - G-multi-a | cm.view_component | component:A1/svc_2/comp_2
+  - G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - G-multi-a | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - G-multi-b | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - G-multi-b | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - G-multi-b | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - G-multi-b | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - G-multi-b | cm.view_component | component:A1/svc_2/comp_2
+  - G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - G-multi-b | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - G-overlap | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - G-overlap | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - G-overlap | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - G-overlap | cm.change_config_of_service | service:A1/svc_3
+  - G-overlap | cm.change_import_of_service | service:A1/svc_3
+  - G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - G-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - G-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - G-overlap | cm.change_maintenance_mode_service | service:A1/svc_3
+  - G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-overlap | cm.delete_service | service:A1/svc_3
+  - G-overlap | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - G-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - G-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - G-overlap | cm.edit_action_host_group_service | service:A1/svc_3
+  - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - G-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - G-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - G-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - G-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - G-overlap | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - G-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - G-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - G-overlap | cm.view_action_host_group_service | service:A1/svc_3
+  - G-overlap | cm.view_component | component:A1/svc_2/comp_2
+  - G-overlap | cm.view_component | component:A1/svc_3/comp_1
+  - G-overlap | cm.view_component | component:A1/svc_3/comp_2
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - G-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - G-overlap | cm.view_import_of_service | service:A1/svc_3
+  - G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-overlap | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - G-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - G-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - G-overlap | cm.view_objectconfig | config:service:A1/svc_3
+  - G-overlap | cm.view_service | service:A1/svc_3
+  - G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.change_config_of_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.change_import_of_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.change_maintenance_mode_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-cluster-admin | cm.delete_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.edit_action_host_group_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - G-solo-cluster-admin | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - G-solo-cluster-admin | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - G-solo-cluster-admin | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - G-solo-cluster-admin | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.view_action_host_group_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.view_component | component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.view_component | component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.view_component | component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - G-solo-cluster-admin | cm.view_import_of_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - G-solo-cluster-admin | cm.view_objectconfig | config:service:A1/svc_3
+  - G-solo-cluster-admin | cm.view_service | service:A1/svc_3
+  - G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-custom | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - G-solo-custom | cm.view_component | component:A1/svc_2/comp_2
+  - G-solo-custom | cm.view_component | component:A1/svc_3/comp_1
+  - G-solo-custom | cm.view_component | component:A1/svc_3/comp_2
+  - G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-custom | cm.view_service | service:A1/svc_3
+  - G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-edit-hc | cm.view_component | component:A1/svc_2/comp_2
+  - G-solo-edit-hc | cm.view_component | component:A1/svc_3/comp_1
+  - G-solo-edit-hc | cm.view_component | component:A1/svc_3/comp_2
+  - G-solo-edit-hc | cm.view_service | service:A1/svc_3
+  - G-solo-service-action | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_policy_group_object_perm:
+  added:
+  - P-cross-a1 | G-cross | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-overlap-admin | G-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-overlap-edit-config | G-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-custom | G-solo-custom | cm.view_configlog | configlog:cluster:A1@rev3
+  - P-solo-edit-component-config | G-solo-edit-component-config | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-service-action | G-solo-service-action | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - P-solo-service-admin | G-solo-service-admin | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - P-solo-view-cluster-config | G-solo-view-cluster-config | cm.view_configlog | configlog:cluster:A1@rev3
+  removed:
+  - P-multi-group | G-multi-a | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - P-multi-group | G-multi-a | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - P-multi-group | G-multi-a | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.view_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-a | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - P-multi-group | G-multi-a | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - P-multi-group | G-multi-b | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - P-multi-group | G-multi-b | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.view_component | component:A1/svc_2/comp_2
+  - P-multi-group | G-multi-b | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - P-multi-group | G-multi-b | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.change_config_of_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.change_import_of_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.change_maintenance_mode_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-overlap-admin | G-overlap | cm.delete_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.edit_action_host_group_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - P-overlap-admin | G-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - P-overlap-admin | G-overlap | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.view_action_host_group_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.view_component | component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.view_component | component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.view_component | component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - P-overlap-admin | G-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - P-overlap-admin | G-overlap | cm.view_import_of_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-overlap-admin | G-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-overlap-admin | G-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - P-overlap-admin | G-overlap | cm.view_objectconfig | config:service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.view_service | service:A1/svc_3
+  - P-overlap-admin | G-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-overlap-admin | G-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-action | G-solo-cluster-action | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_config_of_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_import_of_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_maintenance_mode_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.delete_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.edit_action_host_group_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_action_host_group_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_component | component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_component | component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_component | component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_import_of_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_objectconfig | config:service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_service | service:A1/svc_3
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-cluster-admin | G-solo-cluster-admin | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - P-solo-component-host-action | G-solo-component-host-action | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - P-solo-custom | G-solo-custom | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-custom | G-solo-custom | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-solo-custom | G-solo-custom | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - P-solo-custom | G-solo-custom | cm.view_component | component:A1/svc_2/comp_2
+  - P-solo-custom | G-solo-custom | cm.view_component | component:A1/svc_3/comp_1
+  - P-solo-custom | G-solo-custom | cm.view_component | component:A1/svc_3/comp_2
+  - P-solo-custom | G-solo-custom | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-custom | G-solo-custom | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-custom | G-solo-custom | cm.view_service | service:A1/svc_3
+  - P-solo-custom | G-solo-custom | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_component | component:A1/svc_2/comp_2
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_component | component:A1/svc_3/comp_1
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_component | component:A1/svc_3/comp_2
+  - P-solo-edit-hc | G-solo-edit-hc | cm.view_service | service:A1/svc_3
+  - P-solo-service-action | G-solo-service-action | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - P-solo-service-admin | G-solo-service-admin | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - P-solo-service-admin | G-solo-service-admin | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - P-solo-service-admin | G-solo-service-admin | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - P-solo-service-admin | G-solo-service-admin | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+rbac_role:
+  added: []
+  removed:
+  - task-role:<dangling:tasklog:service:A1/svc_1:common#2> | hidden
+rbac_role_child:
+  added: []
+  removed:
+  - Cluster Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Custom Cluster Operator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+  - Service Administrator | task-role:<dangling:tasklog:service:A1/svc_1:common#2>
+effective_object_perm:
+  added:
+  - U-launch | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - U-mixed | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-mixed | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-mixed | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-mixed | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-multi | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - U-multi | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - U-multi | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-multi | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-multi | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-multi | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - U-overlap | cm.run_action_279b8a60f444fa8b6275687ce7e44363d97f72f88e4a3285baf0d9ed812e4061 | cluster:A1
+  - U-overlap | cm.run_action_35bdef1097c348618ab875f8852feeb20287823a0cdcb5bef1c19e574dc53a03 | cluster:A1
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:added
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_1/comp_2:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/component/svc_2/comp_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:on_host
+  - U-overlap | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-overlap | cm.view_configlog | configlog:chg:component:A1/svc_1/comp_1/chg-component@rev4
+  - U-overlap | cm.view_configlog | configlog:chg:service:A1/svc_1/chg-service@rev4
+  - U-overlap | cm.view_configlog | configlog:cluster:A1@rev3
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_1@rev3
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_1/comp_2@rev2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_1@rev2
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_1@rev3
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_2@rev2
+  - U-single | cm.view_action | action:rbac_cluster_a-2.0/cluster/rbac_cluster_a:common
+  - U-single | cm.view_action | action:rbac_cluster_a-2.0/service/svc_1:common
+  - U-single | cm.view_action | action:rbac_cluster_a-2.0/service/svc_2:common
+  - U-single | cm.view_configlog | configlog:chg:cluster:A1/chg-cluster@rev4
+  - U-single | cm.view_configlog | configlog:cluster:A1@rev3
+  removed:
+  - U-mixed | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - U-mixed | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - U-mixed | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-mixed | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-mixed | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - U-multi | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - U-multi | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - U-multi | cm.change_config_of_service | service:A1/svc_3
+  - U-multi | cm.change_import_of_service | service:A1/svc_3
+  - U-multi | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - U-multi | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - U-multi | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - U-multi | cm.change_maintenance_mode_service | service:A1/svc_3
+  - U-multi | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-multi | cm.delete_service | service:A1/svc_3
+  - U-multi | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - U-multi | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - U-multi | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - U-multi | cm.edit_action_host_group_service | service:A1/svc_3
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - U-multi | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - U-multi | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - U-multi | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - U-multi | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - U-multi | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - U-multi | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - U-multi | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - U-multi | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - U-multi | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - U-multi | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - U-multi | cm.view_action_host_group_service | service:A1/svc_3
+  - U-multi | cm.view_component | component:A1/svc_2/comp_2
+  - U-multi | cm.view_component | component:A1/svc_3/comp_1
+  - U-multi | cm.view_component | component:A1/svc_3/comp_2
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - U-multi | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - U-multi | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - U-multi | cm.view_import_of_service | service:A1/svc_3
+  - U-multi | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-multi | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-multi | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-multi | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-multi | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - U-multi | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - U-multi | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - U-multi | cm.view_objectconfig | config:service:A1/svc_3
+  - U-multi | cm.view_service | service:A1/svc_3
+  - U-multi | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-multi | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.change_config_of_component | component:A1/svc_2/comp_2
+  - U-overlap | cm.change_config_of_component | component:A1/svc_3/comp_1
+  - U-overlap | cm.change_config_of_component | component:A1/svc_3/comp_2
+  - U-overlap | cm.change_config_of_service | service:A1/svc_3
+  - U-overlap | cm.change_import_of_service | service:A1/svc_3
+  - U-overlap | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.change_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.change_maintenance_mode_component | component:A1/svc_2/comp_2
+  - U-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_1
+  - U-overlap | cm.change_maintenance_mode_component | component:A1/svc_3/comp_2
+  - U-overlap | cm.change_maintenance_mode_service | service:A1/svc_3
+  - U-overlap | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.change_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-overlap | cm.delete_service | service:A1/svc_3
+  - U-overlap | cm.edit_action_host_group_component | component:A1/svc_2/comp_2
+  - U-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_1
+  - U-overlap | cm.edit_action_host_group_component | component:A1/svc_3/comp_2
+  - U-overlap | cm.edit_action_host_group_service | service:A1/svc_3
+  - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_2/comp_2
+  - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_1
+  - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | component:A1/svc_3/comp_2
+  - U-overlap | cm.run_action_03521db981d6b54ec5c7710fd0056dd825191f8554be0df0919134f42c170f8a | service:A1/svc_3
+  - U-overlap | cm.run_action_3cf54b107489025bf81b078dea8092b7e9a4b7715ea5e89e4dc338745d451dd6 | cluster:A1
+  - U-overlap | cm.run_action_8ac37ffd3ea6e8abae8716de161e4a3579504cbed917328ac3c11dac0a47827e | cluster:A1
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_2/comp_2
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_1
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | component:A1/svc_3/comp_2
+  - U-overlap | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - U-overlap | cm.run_action_96f41b019adf1c99806b86df2331f0d2ebe79e13735cfef4708934337c8835c4 | cluster:A1
+  - U-overlap | cm.run_action_e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52 | cluster:A1
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:add_spare
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_apply
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:hc_finalize
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:removed
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_1/comp_2:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_2/comp_2:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/component/svc_3/comp_2:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:on_host
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:in_ahg
+  - U-overlap | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:on_host
+  - U-overlap | cm.view_action_host_group_component | component:A1/svc_2/comp_2
+  - U-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_1
+  - U-overlap | cm.view_action_host_group_component | component:A1/svc_3/comp_2
+  - U-overlap | cm.view_action_host_group_service | service:A1/svc_3
+  - U-overlap | cm.view_component | component:A1/svc_2/comp_2
+  - U-overlap | cm.view_component | component:A1/svc_3/comp_1
+  - U-overlap | cm.view_component | component:A1/svc_3/comp_2
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_2/comp_2@rev1
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_1@rev1
+  - U-overlap | cm.view_configlog | configlog:component:A1/svc_3/comp_2@rev1
+  - U-overlap | cm.view_configlog | configlog:service:A1/svc_3@rev1
+  - U-overlap | cm.view_import_of_service | service:A1/svc_3
+  - U-overlap | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-overlap | cm.view_joblog | job:ahg:cluster:A1/ahg-cluster:in_ahg#1/1
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-overlap | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stderr
+  - U-overlap | cm.view_logstorage | log:ahg:cluster:A1/ahg-cluster:in_ahg#1/1/ansible:stdout
+  - U-overlap | cm.view_objectconfig | config:component:A1/svc_2/comp_2
+  - U-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_1
+  - U-overlap | cm.view_objectconfig | config:component:A1/svc_3/comp_2
+  - U-overlap | cm.view_objectconfig | config:service:A1/svc_3
+  - U-overlap | cm.view_service | service:A1/svc_3
+  - U-overlap | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-overlap | cm.view_tasklog | task:ahg:cluster:A1/ahg-cluster:in_ahg#1
+  - U-single | cm.change_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.change_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>
+  - U-single | cm.run_action_92a5dc04bd6f9fb8f29f8066fed8a5c1e81bc59ad48a11283b63736867e4f2a8 | service:A1/svc_3
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/cluster/rbac_cluster_a:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_1:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_2:common
+  - U-single | cm.view_action | action:rbac_cluster_a-1.0/service/svc_3:common
+  - U-single | cm.view_component | component:A1/svc_2/comp_2
+  - U-single | cm.view_component | component:A1/svc_3/comp_1
+  - U-single | cm.view_component | component:A1/svc_3/comp_2
+  - U-single | cm.view_joblog | <dangling:joblog:service:A1/svc_1:common#2/1>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stderr>
+  - U-single | cm.view_logstorage | <dangling:logstorage:service:A1/svc_1:common#2/1/ansible:stdout>
+  - U-single | cm.view_service | service:A1/svc_3
+  - U-single | cm.view_tasklog | <dangling:tasklog:service:A1/svc_1:common#2>

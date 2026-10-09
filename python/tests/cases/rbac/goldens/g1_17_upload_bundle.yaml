@@ -1,0 +1,12 @@
+rbac_role:
+  added:
+  - 'Cluster Action: F Action | business'
+  - rbac_cluster_f_1.0_community_cluster_rbac_cluster_f_common | hidden
+  - rbac_cluster_f_1.0_community_cluster_rbac_cluster_f_f_action | hidden
+  removed: []
+rbac_role_child:
+  added:
+  - 'Cluster Action: Common Action | rbac_cluster_f_1.0_community_cluster_rbac_cluster_f_common'
+  - 'Cluster Action: F Action | rbac_cluster_f_1.0_community_cluster_rbac_cluster_f_f_action'
+  - 'Cluster Administrator | Cluster Action: F Action'
+  removed: []

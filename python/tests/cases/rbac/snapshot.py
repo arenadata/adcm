@@ -185,9 +185,10 @@ def collect_object_keys() -> ObjectKeys:
     revisions: Counter[int] = Counter()
     for pk, config_id in ConfigLog.objects.order_by("id").values_list("id", "obj_ref_id"):
         revisions[config_id] += 1
-        keys[ObjectRef("configlog", pk)] = (
-            f"{keys.get(ObjectRef('objectconfig', config_id), NO_OWNER)}@rev{revisions[config_id]}"
-        )
+        owner = keys.get(ObjectRef("objectconfig", config_id))
+        # ConfigLogs outlive their deleted owner: no key of their own, they're rendered as dangling ones
+        if owner is not None:
+            keys[ObjectRef("configlog", pk)] = f"{owner}@rev{revisions[config_id]}"
 
     for pk, bundle, version, type_, parent, name in Prototype.objects.values_list(
         "id", "bundle__name", "bundle__version", "type", "parent__name", "name"

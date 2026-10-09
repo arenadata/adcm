@@ -1,0 +1,18 @@
+# Bundle uploaded by G1.17: "Common Action" shared with other bundles' business role, "F Action" of its own
+- type: cluster
+  name: rbac_cluster_f
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  actions:
+    common:
+      display_name: Common Action
+      masking:
+      scripts: &scripts
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+    f_action:
+      display_name: F Action
+      masking:
+      scripts: *scripts

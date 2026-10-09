@@ -1,0 +1,68 @@
+rbac_role:
+  added: []
+  removed:
+  - 'Cluster Action: Added Action | business'
+  - 'Cluster Action: Upgrade: switch | business'
+  - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_added | hidden
+  - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_common | hidden
+  - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_on_host | hidden
+  - rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success- | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_1_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_2_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_common | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_on_host | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_in_ahg | hidden
+  - rbac_cluster_a_2.0_community_service_svc_4_on_host | hidden
+rbac_role_child:
+  added: []
+  removed:
+  - 'Cluster Action: AHG Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_in_ahg'
+  - 'Cluster Action: Added Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_added'
+  - 'Cluster Action: Common Action | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_common'
+  - 'Cluster Action: Run On Host | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_on_host'
+  - 'Cluster Action: Upgrade: switch | rbac_cluster_a_2.0_community_cluster_rbac_cluster_a_rbac_cluster_a_2.0_community_upgrade_switch_1.0_strict_false-1.0_strict_false_editions-community_state_available-a_n_y_state_on_success-'
+  - 'Cluster Administrator | Cluster Action: Added Action'
+  - 'Cluster Administrator | Cluster Action: Upgrade: switch'
+  - 'Component Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_in_ahg'
+  - 'Component Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_in_ahg'
+  - 'Component Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_in_ahg'
+  - 'Component Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_in_ahg'
+  - 'Component Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_in_ahg'
+  - 'Component Action: Common Action | rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_common'
+  - 'Component Action: Common Action | rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_common'
+  - 'Component Action: Common Action | rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_common'
+  - 'Component Action: Common Action | rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_common'
+  - 'Component Action: Common Action | rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_common'
+  - 'Component Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_1_component_comp_1_on_host'
+  - 'Component Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_1_component_comp_2_on_host'
+  - 'Component Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_2_component_comp_1_on_host'
+  - 'Component Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_4_component_comp_1_on_host'
+  - 'Component Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_4_component_comp_2_on_host'
+  - 'Service Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_1_in_ahg'
+  - 'Service Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_2_in_ahg'
+  - 'Service Action: AHG Action | rbac_cluster_a_2.0_community_service_svc_4_in_ahg'
+  - 'Service Action: Common Action | rbac_cluster_a_2.0_community_service_svc_1_common'
+  - 'Service Action: Common Action | rbac_cluster_a_2.0_community_service_svc_2_common'
+  - 'Service Action: Common Action | rbac_cluster_a_2.0_community_service_svc_4_common'
+  - 'Service Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_1_on_host'
+  - 'Service Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_2_on_host'
+  - 'Service Action: Run On Host | rbac_cluster_a_2.0_community_service_svc_4_on_host'
