@@ -35,6 +35,7 @@ from api_v2.internal.serializers import GroupNode, JobNode, Node, TaskExecutionP
 SEQUENTIAL = ExecutionStyle.SEQUENTIAL
 PARALLEL = ExecutionStyle.PARALLEL
 
+ABORTED = ExecutionStatus.ABORTED
 CREATED = ExecutionStatus.CREATED
 FAILED = ExecutionStatus.FAILED
 RUNNING = ExecutionStatus.RUNNING
@@ -312,6 +313,28 @@ class TestRepresentExecutionPlan(TestCase):
         group = as_group(plan.children[0])
         self.assertEqual(group.status, RUNNING)
         self.assertEqual((group.start_time, group.end_time), (at(0), None))
+
+    def test_settled_mix_group_status_depends_on_its_kind_and_last_child(self) -> None:
+        spec = JobSpecV1.from_entries(
+            make_group("/par", PARALLEL),
+            make_script("/par/0-one"),
+            make_script("/par/1-two"),
+            make_group("/seq", SEQUENTIAL),
+            make_script("/seq/0-one"),
+            make_script("/seq/1-two"),
+        )
+        jobs = [
+            make_job(1, "/par/0-one", SUCCESS, ran(0, 10)),
+            make_job(2, "/par/1-two", ABORTED, ran(0, 10)),
+            make_job(3, "/seq/0-one", ABORTED, ran(10, 20)),
+            make_job(4, "/seq/1-two", SUCCESS, ran(20, 30)),
+        ]
+
+        plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
+
+        parallel, sequential = map(as_group, plan.children)
+        self.assertEqual(parallel.status, ABORTED)
+        self.assertEqual(sequential.status, SUCCESS)
 
     def test_job_of_a_node_the_plan_lacks_fails(self) -> None:
         spec = JobSpecV1.from_entries(make_script("/0-one"))

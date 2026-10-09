@@ -14,12 +14,12 @@ from logging import Logger
 from typing import Any, Protocol
 
 from audit.alt.core import NameHalfSplitter
-from core.action import CallingProcess, ExecutionStatus, Task, TaskOwner
+from core.action import UNFINISHED_STATUSES, CallingProcess, ExecutionStatus, Task, TaskOwner
 from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
 from core.action.job._termination import ExecutorTerminator
 from core.action.job.operations import calculate_owner_state_changes, calculate_task_final_status
 from core.action.operations import flatten_execution_plan, to_rich_jobs
-from core.action.types import RichJob, StateChanges
+from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
 from core.config import ConfigRepoI
 from core.legacy.job.runners import (
@@ -116,6 +116,13 @@ class JobSequenceRunner(TaskRunner):
 
         self._runtime.status = ExecutionStatus.BROKEN
         try:
+            # not started jobs are revoked, others that are unfinished are considered broken
+            self._repo.change_status_of_task_jobs(
+                task_id=self._runtime.task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
+            self._repo.change_status_of_task_jobs(
+                task_id=self._runtime.task_id, previous=UNFINISHED_STATUSES, new=ExecutionStatus.BROKEN
+            )
             self._finish(task=self._repo.get_task(id=self._runtime.task_id), state_changes=StateChanges())
         except:  # noqa: E722
             # force set task finish date if something goes wrong
@@ -142,11 +149,17 @@ class JobSequenceRunner(TaskRunner):
                 if not self._should_proceed(last_job_result=job_result):
                     break
 
+            # jobs that weren't started by now won't ever be, final status should see them as revoked
+            self._repo.change_status_of_task_jobs(
+                task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
+
             # statuses are re-read to be calculated from the same data celery runner uses
-            jobs = self._get_jobs_in_plan_order(task_id=task_id)
+            plan, jobs = self._get_plan_with_jobs_in_order(task_id=task_id)
 
             final_status = calculate_task_final_status(
-                job_statuses=(job.runtime.status for job in jobs),
+                plan=plan,
+                job_statuses={job.spec.key: job.runtime.status for job in jobs},
                 task_is_aborted=self._runtime.termination.is_requested,
             )
             if not final_status:
@@ -171,7 +184,7 @@ class JobSequenceRunner(TaskRunner):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
-        jobs_in_order = self._get_jobs_in_plan_order(task_id=task_id)
+        _, jobs_in_order = self._get_plan_with_jobs_in_order(task_id=task_id)
 
         configured_jobs = tuple(
             self._job_processor.convert(task=task, jobs=jobs_in_order, configuration=self._settings)
@@ -179,13 +192,13 @@ class JobSequenceRunner(TaskRunner):
 
         return task, configured_jobs
 
-    def _get_jobs_in_plan_order(self, task_id: int) -> tuple[RichJob, ...]:
+    def _get_plan_with_jobs_in_order(self, task_id: int) -> tuple[JobSpecV1, tuple[RichJob, ...]]:
         plan = self._repo.get_execution_plan(task_id=task_id)
         task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
         jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
 
         # the plan says both what to run and in which order, jobs only say how each run went
-        return tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
+        return plan, tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
 
     def _is_revoked(self, job_id: int) -> bool:
         found_jobs = self._repo.find_jobs_short(JobShortFilter(ids=[job_id]))

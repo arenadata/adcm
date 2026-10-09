@@ -10,17 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from core.action.types import (
     UNFINISHED_STATUSES,
     ExecutionStatus,
+    ExecutionStyle,
+    JobHierarchyLevel,
+    JobSpecV1,
     RichJob,
     RuntimeDates,
     StateChanges,
 )
 from core.result import Fail, Success
+from core.spec.keys import level_keys_to_full_key
+from core.spec.types import FullSpecKey, LevelSpecKey
 
 TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.ABORTED]
 
@@ -29,31 +34,29 @@ _IN_PROGRESS_STATUSES = frozenset(UNFINISHED_STATUSES).difference((ExecutionStat
 _FAILURE_STATUSES = frozenset((ExecutionStatus.FAILED, ExecutionStatus.BROKEN))
 
 
-_TERMINATION_FLOW_STATUSES = frozenset(
-    {ExecutionStatus.REVOKING, ExecutionStatus.TERMINATING, ExecutionStatus.REVOKED, ExecutionStatus.ABORTED}
-)
-
-
 def calculate_task_final_status(
-    job_statuses: Iterable[ExecutionStatus], task_is_aborted: bool
+    plan: JobSpecV1, job_statuses: Mapping[FullSpecKey, ExecutionStatus], task_is_aborted: bool
 ) -> Success[TaskCompletionStatus] | Fail[str]:
+    """
+    Derive task's result from its plan: the root level is a node like any group (see `aggregate_group_status`).
+
+    Terminated task is aborted whatever its jobs say, so nothing is calculated for it.
+    """
+
     if task_is_aborted:
         return Success(ExecutionStatus.ABORTED)
 
-    # broken job is a leftover of runner's crash, not a result of its execution,
-    # so it can't tell whether task succeeded or not
-    considered = set(job_statuses).difference(UNFINISHED_STATUSES).difference({ExecutionStatus.BROKEN})
+    status = _calculate_level_status(level=plan.hierarchy, group_levels=(), job_statuses=job_statuses)
 
-    if not considered:
-        return Fail("Task has no jobs in a final status, so its result can't be determined")
+    if status in (ExecutionStatus.SUCCESS, ExecutionStatus.FAILED):
+        return Success(status)
 
-    if considered.issubset(_TERMINATION_FLOW_STATUSES):
+    if status in (ExecutionStatus.ABORTED, ExecutionStatus.REVOKED):
         return Success(ExecutionStatus.ABORTED)
 
-    if ExecutionStatus.FAILED in considered:
-        return Success(ExecutionStatus.FAILED)
-
-    return Success(ExecutionStatus.SUCCESS)
+    return Fail(
+        f"Task's jobs are not finished (calculated status is {status.value}), so its result can't be determined"
+    )
 
 
 def calculate_owner_state_changes(
@@ -98,11 +101,18 @@ def calculate_owner_state_changes(
     )
 
 
-def aggregate_group_status(children: Iterable[ExecutionStatus]) -> ExecutionStatus:
+def aggregate_group_status(children: Sequence[ExecutionStatus], style: ExecutionStyle) -> ExecutionStatus:
     """
-    Derive a group's status from its children's statuses.
+    Derive a node's status from its direct children's statuses, given in the node's level order.
 
-    A subgroup counts as a single child with its own derived status.
+    A subgroup counts as a single child with its own derived status, so subgroups are calculated first.
+    Only the last rule reads the order: a sequential node's outcome is the outcome of its last child.
+
+    Parallel node may flicker when celery stalls one of its branches:
+    `SUCCESS-FAILED-CREATED` is `FAILED`, then the stalled branch starts and `SUCCESS-FAILED-RUNNING` is `RUNNING`.
+    It's accepted: the node is still in progress after all.
+
+    Raises `ValueError` when statuses fit no rule (e.g. a newly added status no rule knows about).
     """
 
     statuses = set(children)
@@ -116,16 +126,22 @@ def aggregate_group_status(children: Iterable[ExecutionStatus]) -> ExecutionStat
     if statuses == {ExecutionStatus.CREATED}:
         return ExecutionStatus.CREATED
 
-    if ExecutionStatus.CREATED in statuses:
-        return ExecutionStatus.RUNNING
-
     if statuses == {ExecutionStatus.SUCCESS}:
         return ExecutionStatus.SUCCESS
 
     if statuses == {ExecutionStatus.REVOKED}:
         return ExecutionStatus.REVOKED
 
-    # what's left is a mix of SUCCESS, ABORTED and REVOKED
+    if ExecutionStatus.CREATED in statuses:
+        return ExecutionStatus.RUNNING
+
+    if not statuses.issubset({ExecutionStatus.SUCCESS, ExecutionStatus.ABORTED, ExecutionStatus.REVOKED}):
+        message = f"Statuses {sorted(status.value for status in statuses)} fit no rule of group status calculation"
+        raise ValueError(message)
+
+    if style == ExecutionStyle.SEQUENTIAL and children[-1] == ExecutionStatus.SUCCESS:
+        return ExecutionStatus.SUCCESS
+
     return ExecutionStatus.ABORTED
 
 
@@ -149,3 +165,23 @@ def aggregate_group_dates(children: Sequence[RuntimeDates]) -> RuntimeDates:
 
 def is_terminatable_status(status: ExecutionStatus) -> bool:
     return status in (ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED, ExecutionStatus.RUNNING)
+
+
+def _calculate_level_status(
+    level: JobHierarchyLevel,
+    group_levels: tuple[LevelSpecKey, ...],
+    job_statuses: Mapping[FullSpecKey, ExecutionStatus],
+) -> ExecutionStatus:
+    children = []
+
+    for level_key in level.fields:
+        own_levels = (*group_levels, level_key)
+        child_level = level.child_groups.get(level_key)
+
+        if child_level is None:
+            children.append(job_statuses[level_keys_to_full_key(own_levels)])
+            continue
+
+        children.append(_calculate_level_status(level=child_level, group_levels=own_levels, job_statuses=job_statuses))
+
+    return aggregate_group_status(children=children, style=level.rule)

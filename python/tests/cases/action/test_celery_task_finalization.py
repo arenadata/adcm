@@ -24,7 +24,7 @@ from core.legacy.job.runners import RunnerEnvironment
 from core.types import TaskID
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK
-from use_cases.job.run import FinalizeTask, RunJob
+from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob
 
 from tests.suites import ADCMDjangoAPISuite
 
@@ -41,6 +41,8 @@ FAILED: Final = ExecutionStatus.FAILED
 CREATED: Final = ExecutionStatus.CREATED
 REVOKED: Final = ExecutionStatus.REVOKED
 ABORTED: Final = ExecutionStatus.ABORTED
+RUNNING: Final = ExecutionStatus.RUNNING
+BROKEN: Final = ExecutionStatus.BROKEN
 
 INITIAL_STATE: Final = "created"
 
@@ -77,6 +79,15 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
     def assert_task_status(self, task_id: TaskID, expected: ExecutionStatus) -> None:
         self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), expected.value)
 
+    def assert_jobs(self, task_id: TaskID, expected: dict[str, ExecutionStatus]) -> None:
+        """`expected` maps job's key to its status"""
+
+        actual = {
+            spec_key: ExecutionStatus(status)
+            for spec_key, status in JobLog.objects.filter(task_id=task_id).values_list("spec_key", "status")
+        }
+        self.assertDictEqual(actual, expected)
+
     def assert_owner_state(self, state: str, multi_state: list[str]) -> None:
         self.cluster.refresh_from_db()
         self.assertEqual(self.cluster.state, state)
@@ -106,6 +117,7 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         self.finalize(task_id)
 
         self.assert_task_status(task_id, FAILED)
+        self.assert_jobs(task_id, {PREPARE: FAILED, WITH_ON_FAIL: REVOKED, WITHOUT_ON_FAIL: REVOKED})
         self.assert_owner_state("task_failed", ["failed"])
 
     def test_last_job_failed_without_on_fail_applies_task_on_fail(self) -> None:
@@ -148,16 +160,33 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         self.assert_task_status(task_id, ABORTED)
         self.assert_owner_state(INITIAL_STATE, [])
 
-    def test_no_job_finished_finalization_fails(self) -> None:
+    def test_part_executed_not_started_job_revoked(self) -> None:
+        task_id = self.run_action()
+        self.execute_as(task_id, {PREPARE: SUCCESS, WITH_ON_FAIL: FAILED, WITHOUT_ON_FAIL: CREATED})
+
+        self.finalize(task_id)
+
+        self.assert_task_status(task_id, FAILED)
+        self.assert_jobs(task_id, {PREPARE: SUCCESS, WITH_ON_FAIL: FAILED, WITHOUT_ON_FAIL: REVOKED})
+
+    def test_no_job_started_all_revoked_aborted_owner_unchanged(self) -> None:
         task_id = self.run_action()
         self.execute_as(task_id, {PREPARE: CREATED, WITH_ON_FAIL: CREATED, WITHOUT_ON_FAIL: CREATED})
 
-        with self.assertRaisesRegex(RuntimeError, "no jobs in a final status"):
-            self.finalize(task_id)
+        self.finalize(task_id)
 
-        # broken status is set by errback of finalization (`MarkTaskBroken`), not by finalization itself
-        self.assert_task_status(task_id, ExecutionStatus.RUNNING)
+        self.assert_task_status(task_id, ABORTED)
+        self.assert_jobs(task_id, {PREPARE: REVOKED, WITH_ON_FAIL: REVOKED, WITHOUT_ON_FAIL: REVOKED})
         self.assert_owner_state(INITIAL_STATE, [])
+
+    def test_marked_broken_running_job_broken_not_started_revoked(self) -> None:
+        task_id = self.run_action()
+        self.execute_as(task_id, {PREPARE: SUCCESS, WITH_ON_FAIL: RUNNING, WITHOUT_ON_FAIL: CREATED})
+
+        self.container.get(MarkTaskBroken).do(task_id=task_id, environment=self.container.get(RunnerEnvironment))
+
+        self.assert_task_status(task_id, BROKEN)
+        self.assert_jobs(task_id, {PREPARE: SUCCESS, WITH_ON_FAIL: BROKEN, WITHOUT_ON_FAIL: REVOKED})
 
     def test_revoked_job_is_not_executed(self) -> None:
         task_id = self.run_action()
