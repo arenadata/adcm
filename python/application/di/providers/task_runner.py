@@ -46,6 +46,8 @@ from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
 from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
 from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
 from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
+from use_cases.internal_scripts.host_group_manage import HostGroupManageInternalScript
+from use_cases.internal_scripts.host_manage import HostManageInternalScript
 from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
 from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask
 
@@ -102,6 +104,8 @@ class TaskRunnerProvider(Provider):
         ConfigApplyInternalScript,
         ServiceManageInternalScript,
         BeforeUpgradeCleanInternalScript,
+        HostManageInternalScript,
+        HostGroupManageInternalScript,
     )
     ansible_builder = provide(AnsibleTargetBuilder, provides=AnsibleTargetBuilderI)
     python_builder = provide(PythonTargetBuilder, provides=PythonTargetBuilderI)

@@ -23,6 +23,8 @@ from core.action.types import (
     AnsibleScript,
     ConfigApplyScript,
     HcApplyScript,
+    HostGroupManageScript,
+    HostManageScript,
     InternalScript,
     JobShortInfo,
     PythonScript,
@@ -43,6 +45,8 @@ from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
 from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
 from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
 from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
+from use_cases.internal_scripts.host_group_manage import HostGroupManageInternalScript
+from use_cases.internal_scripts.host_manage import HostManageInternalScript
 from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
 
 from cm.legacy.services.cluster import retrieve_cluster_topology
@@ -131,6 +135,8 @@ class InternalTargetBuilder:
     config_apply: ConfigApplyInternalScript
     service_manage: ServiceManageInternalScript
     before_upgrade_clean: BeforeUpgradeCleanInternalScript
+    host_manage: HostManageInternalScript
+    host_group_manage: HostGroupManageInternalScript
 
     def __call__(
         self, script: InternalScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
@@ -150,6 +156,10 @@ class InternalTargetBuilder:
                 script_func = self.config_apply
             case ServiceManageScript() as script_:
                 script_func = self.service_manage
+            case HostManageScript() as script_:
+                script_func = self.host_manage
+            case HostGroupManageScript() as script_:
+                script_func = self.host_group_manage
             case _:
                 message = f"Unknown internal script {script.path}, can't build runner for it"
                 raise NotImplementedError(message)
@@ -220,7 +230,10 @@ def prepare_ansible_inventory(
 ) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
-    if task.action.hc_acl:
+    # `host_manage` writes a mapping delta of its own, and an action that uses it does not have
+    # to declare `hc_acl`: the `.add` and `.remove` groups the delta puts in this inventory are
+    # how the job after it finds the hosts it has to work on.
+    if task.action.hc_acl or task.hostcomponent.mapping_delta is not None:
         delta = task.hostcomponent.mapping_delta
 
     if task.action_process and topology:
