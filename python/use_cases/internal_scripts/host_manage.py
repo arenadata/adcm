@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from cm.converters import core_type_to_model
 from cm.errors import AdcmEx
 from cm.legacy.services.job.run.executors import InternalScriptResult
+from cm.legacy.services.mapping import check_for_action_mapping, check_host_component_mapping_change
 from cm.models import Cluster, Component, Service
 from cm.transition.status import StatusScenarios
 from core.action import HostGroupReference, TargetCluster, Task, TaskMappingDelta
@@ -123,6 +124,8 @@ class HostManageInternalScript:
                 delta=prepared, rules=params.mapping_rules, host_ids=outcome.here, cluster_id=cluster_id
             )
             if mapped:
+                _check_task_mapping_delta_with(task=task, addition=prepared, cluster_id=cluster_id)
+
                 delta = _mapping_delta_of_task(task=task)
                 merge_mapping_delta(into=delta, addition=prepared)
                 self.job_repo.update_task(id=task.id, data=TaskUpdateDTO(hostcomponentmap=delta))
@@ -209,6 +212,29 @@ def _mapping_delta_of_task(task: Task) -> TaskMappingDelta:
         raise RuntimeError("Task mapping delta: was given None, expected an object")
 
     return delta
+
+
+def _check_task_mapping_delta_with(task: Task, addition: TaskMappingDelta, cluster_id: ClusterID) -> None:
+    """Check the mapping the task would commit once `addition` joins its delta, before it does.
+
+    `hc_apply` and the task finalizer commit a task's delta with no checks, because a delta
+    normally comes from the launch request and was checked there; one written by a script
+    after launch would reach the cluster unchecked. It is checked whole, against the rules an
+    action's mapping is checked against at launch, on a copy, so that a rejected addition
+    leaves the task's delta as it was.
+    """
+
+    candidate = TaskMappingDelta()
+    if task.hostcomponent.mapping_delta is not None:
+        merge_mapping_delta(into=candidate, addition=task.hostcomponent.mapping_delta)
+    merge_mapping_delta(into=candidate, addition=addition)
+
+    check_host_component_mapping_change(
+        cluster_id=cluster_id,
+        bundle_id=Cluster.objects.values_list("prototype__bundle_id", flat=True).get(id=cluster_id),
+        mapping_delta=candidate,
+        checks_func=check_for_action_mapping,
+    )
 
 
 def _apply_group_membership(

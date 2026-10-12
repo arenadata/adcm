@@ -1016,6 +1016,21 @@ class TestHostManageInternalScripts(GenericTestCase):
     def add_duplicates(self, task: object | None = None, **extra):
         return self.run_host_manage(task=task, operation="add_duplicates", source=self.whole_source_cluster(), **extra)
 
+    def share_through_middle_cluster(self) -> list:
+        """Duplicate the source's hosts into this cluster through a cluster that holds copies of them.
+
+        A middle cluster gets duplicates of the source, and this cluster then duplicates the
+        middle cluster's hosts. Returns the selector that names the middle cluster.
+        """
+
+        middle = self.uc.add_cluster(bundle=self.source.prototype.bundle, name="Middle cluster")
+        self.add_duplicates(target=[TargetCluster(cluster_name=middle.name)])
+
+        through_middle = [ClusterHostSource(type="cluster", cluster_name=middle.name)]
+        self.run_host_manage(operation="add_duplicates", source=through_middle)
+
+        return through_middle
+
     def target_duplicates(self) -> dict[str, Host]:
         return {host.fqdn: host for host in Host.objects.filter(cluster=self.target, original__isnull=False)}
 
@@ -1200,6 +1215,46 @@ class TestHostManageInternalScripts(GenericTestCase):
             )
 
         self.assertIn("no_such_component", err.exception.msg)
+
+    def test_mapping_rules_violating_a_constraint_fail(self):
+        """`hc_apply` commits the task's delta unchecked, so the script must not store a delta the bundle forbids."""
+
+        bundle = self.uc.upload_bundle(
+            self.base_dir / "python" / "api_v2" / "tests" / "bundles" / "hc_mapping_constraints"
+        )
+        self.target = self.uc.add_cluster(bundle=bundle, name="Constrained cluster")
+        self.service, *_ = self.uc.add_services_to_cluster(
+            cluster=self.target, names=["service_with_zero_one_component_constraint"]
+        )
+        self.service_name = self.service.prototype.name
+
+        task = self.make_task()
+
+        # two hosts onto a component that allows at most one
+        with self.assertRaises(AdcmEx) as err:
+            self.add_duplicates(
+                task=task, mapping_rules=[HcAclRule(service=self.service_name, component="zero_one", action="add")]
+            )
+
+        self.assertEqual(err.exception.code, "COMPONENT_CONSTRAINT_ERROR")
+
+        # the duplicates made before the check are rolled back, and the task carries no delta
+        self.assertEqual(self.target_duplicates(), {})
+        self.assertIsNone(task.hostcomponent.mapping_delta)
+        self.assertIsNone(JobRepo().get_task_mutable_fields(id=task.id).hostcomponent.mapping_delta)
+
+    def test_mapping_rules_onto_a_host_in_mm_fail(self):
+        self.add_duplicates()
+        Host.objects.filter(cluster=self.target, fqdn="shared-1").update(maintenance_mode=MaintenanceMode.ON)
+
+        task = self.make_task()
+        with self.assertRaises(AdcmEx) as err:
+            self.add_duplicates(
+                task=task, mapping_rules=[HcAclRule(service=self.service_name, component="component_1", action="add")]
+            )
+
+        self.assertEqual(err.exception.code, "INVALID_HC_HOST_IN_MM")
+        self.assertIsNone(task.hostcomponent.mapping_delta)
 
     # groups
 
@@ -1434,6 +1489,23 @@ class TestHostManageInternalScripts(GenericTestCase):
         group = ConfigHostGroup.objects.get(object_id=self.service.pk, name="adb-one")
         self.assertEqual(sorted(group.hosts.values_list("fqdn", flat=True)), ["shared-1", "shared-2"])
 
+    def test_add_to_groups_with_hosts_shared_through_another_cluster(self):
+        through_middle = self.share_through_middle_cluster()
+        self.map_duplicates()
+        self.run_group_manage(operation="add", groups=[self.group_of(name="adb-one")])
+
+        result = self.run_host_manage(
+            operation="add_to_groups",
+            source=through_middle,
+            groups=[HostGroupReference(name="adb-one", type="config_host_group", object=self.owner)],
+        )
+
+        self.assertIn("2 membership(s) added", result.message)
+        group = ConfigHostGroup.objects.get(object_id=self.service.pk, name="adb-one")
+        self.assertEqual(
+            set(group.hosts.values_list("id", flat=True)), {h.pk for h in self.target_duplicates().values()}
+        )
+
     def test_add_to_groups_missing_group_fail(self):
         self.add_duplicates()
         self.map_duplicates()
@@ -1466,6 +1538,29 @@ class TestHostManageInternalScripts(GenericTestCase):
 
         result = self.run_host_manage(operation="remove_duplicates", source=self.whole_source_cluster())
         self.assertIn("but the duplicates were removed earlier", result.message)
+
+    def test_remove_duplicates_of_hosts_shared_through_another_cluster(self):
+        """What a `source` gave this cluster, the same `source` takes away, even when it names copies."""
+
+        through_middle = self.share_through_middle_cluster()
+        self.map_duplicates()
+
+        # the copies here are made from the originals, not from the middle cluster's copies
+        self.assertEqual(
+            {fqdn: host.original_id for fqdn, host in self.target_duplicates().items()},
+            {"shared-1": self.source_host_1.pk, "shared-2": self.source_host_2.pk},
+        )
+
+        result = self.run_host_manage(operation="remove_duplicates", source=through_middle)
+
+        self.assertEqual(result.code, 0)
+        self.assertIn("2 deleted", result.message)
+        self.assertEqual(self.target_duplicates(), {})
+        self.assertFalse(HostComponent.objects.filter(cluster=self.target).exists())
+
+        # the middle cluster's copies and the originals are not this cluster's to delete
+        self.assertEqual(Host.objects.filter(cluster__name="Middle cluster").count(), 2)
+        self.assertEqual(Host.objects.filter(cluster=self.source).count(), 2)
 
     def test_remove_duplicates_through_a_group_after_the_source_is_gone(self):
         self.add_duplicates()

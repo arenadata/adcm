@@ -39,7 +39,6 @@ from core.action import (
 from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ClusterID, ComponentID, HostID, HostName, ObjectID
-from django.db.models import Q
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 
@@ -284,15 +283,28 @@ def _originals_of(host_ids: Collection[HostID]) -> list[Host]:
     grouped - and a copy is always made from the original.
     """
 
-    if not host_ids:
+    original_ids = _original_ids_of(host_ids)
+    if not original_ids:
         return []
 
-    original_ids = {
+    return list(Host.objects.filter(id__in=original_ids).order_by("fqdn"))
+
+
+def _original_ids_of(host_ids: Collection[HostID]) -> set[HostID]:
+    """The id of the original behind every given host, in one query.
+
+    Every duplicate points at the original itself, never at another duplicate, so this is what
+    identifies a host across clusters: two copies are copies of the same host exactly when
+    their originals are equal, however each of them was selected.
+    """
+
+    if not host_ids:
+        return set()
+
+    return {
         original_id or host_id
         for host_id, original_id in Host.objects.filter(id__in=host_ids).values_list("id", "original_id")
     }
-
-    return list(Host.objects.filter(id__in=original_ids).order_by("fqdn"))
 
 
 # REMOVE DUPLICATES
@@ -312,11 +324,13 @@ def remove_duplicates(
 ) -> RemoveDuplicatesOutcome:
     """Unmap, detach and delete this cluster's duplicates of the selected hosts.
 
-    Only duplicates of this cluster are ever touched, and a selector may name either side of
-    the copy: the originals in the cluster they belong to, or - when that cluster is already
-    gone - the duplicates themselves, through a group that holds them. Components still mapped
-    on a duplicate are unmapped first, so cleanup also finishes a run that failed before its
-    mapping step.
+    Only duplicates of this cluster are ever touched, and they are matched by their original,
+    the same identity `add_duplicates` uses: a selector may name the originals in the cluster
+    they belong to, copies of them that another cluster holds, or - when the cluster they came
+    from is already gone - this cluster's duplicates themselves, through a group that holds
+    them. Whatever a `source` gave this cluster, the same `source` takes away. Components still
+    mapped on a duplicate are unmapped first, so cleanup also finishes a run that failed before
+    its mapping step.
     """
 
     # imported lazily: `cm.legacy.api` transitively imports the module that runs internal
@@ -329,14 +343,12 @@ def remove_duplicates(
     from core.types import ADCMCoreType, CoreObjectDescriptor
 
     outcome = RemoveDuplicatesOutcome()
-    if not source_host_ids:
+
+    original_ids = _original_ids_of(source_host_ids)
+    if not original_ids:
         return outcome
 
-    duplicates = dict(
-        Host.objects.filter(cluster_id=here, original__isnull=False)
-        .filter(_either_side_of_the_copy(source_host_ids))
-        .values_list("id", "fqdn")
-    )
+    duplicates = dict(Host.objects.filter(cluster_id=here, original_id__in=original_ids).values_list("id", "fqdn"))
     if not duplicates:
         return outcome
 
@@ -382,10 +394,6 @@ def remove_duplicates(
     outcome.removed_ids = sorted(duplicates)
 
     return outcome
-
-
-def _either_side_of_the_copy(host_ids: Collection[HostID]) -> Q:
-    return Q(id__in=host_ids) | Q(original_id__in=host_ids)
 
 
 # MAPPING DELTA
@@ -503,19 +511,16 @@ def hosts_of_cluster_named(host_ids: Collection[HostID], cluster_id: ClusterID) 
 def duplicates_here(host_ids: Collection[HostID], cluster_id: ClusterID) -> set[HostID]:
     """This cluster's duplicates of the given hosts.
 
-    Only duplicates, never the cluster's own hosts: a selector may name the originals in the
-    cluster they belong to or the duplicates themselves, and either way what comes back is the
-    copies held here - the same set `remove_duplicates` would delete.
+    Only duplicates, never the cluster's own hosts: a selector may name the originals, copies
+    of them in another cluster or the duplicates held here, and whichever it names, what comes
+    back is the copies held here - the same set `remove_duplicates` would delete.
     """
 
-    if not host_ids:
+    original_ids = _original_ids_of(host_ids)
+    if not original_ids:
         return set()
 
-    return set(
-        Host.objects.filter(cluster_id=cluster_id, original__isnull=False)
-        .filter(_either_side_of_the_copy(host_ids))
-        .values_list("id", flat=True)
-    )
+    return set(Host.objects.filter(cluster_id=cluster_id, original_id__in=original_ids).values_list("id", flat=True))
 
 
 __all__ = [
