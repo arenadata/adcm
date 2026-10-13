@@ -14,6 +14,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
+from typing import Any
 
 from cm.errors import AdcmEx
 from cm.legacy.api import cancel_locking_tasks
@@ -38,6 +39,7 @@ from cm.models import (
 )
 from cm.transition.status import StatusScenarios
 from core.converters import named_mapping_from_topology
+from core.legacy.bundle.types import MissingServiceRequiresViolation
 from core.legacy.cluster.types import ClusterTopology
 from core.legacy.concern.checks import find_not_added_required_services, find_unsatisfied_service_requirements
 from core.types import ADCMCoreType, ComponentNameKey, CoreObjectDescriptor, ServiceID, ServiceNameKey
@@ -159,6 +161,80 @@ class DeleteServiceFromAPI:
         self.delete_service.do(service)
 
 
+def _find_dependent_objects(
+    service_data: dict[str, Any],
+    unsatisfied_requirements: tuple[MissingServiceRequiresViolation, ...],
+) -> tuple[set[str], set[tuple[str, str]]]:
+    dependant_services = set()
+    dependant_components = set()
+
+    for violation in unsatisfied_requirements:
+        if service_data["name"] != violation.required_service:
+            continue
+
+        obj = violation.dependant_object
+        if isinstance(obj, ServiceNameKey):
+            dependant_services.add(obj.service)
+        elif isinstance(obj, ComponentNameKey):
+            dependant_services.add(obj.service)
+            dependant_components.add((obj.service, obj.component))
+
+    return dependant_services, dependant_components
+
+
+def _fetch_service_display_names(cluster_id: int, service_names: set[str]) -> dict[str, str]:
+    if not service_names:
+        return {}
+
+    return dict(
+        Service.objects.filter(cluster_id=cluster_id, prototype__name__in=service_names).values_list(
+            "prototype__name", "prototype__display_name"
+        )
+    )
+
+
+def _fetch_component_display_names(cluster_id: int, component_keys: set[tuple[str, str]]) -> dict[tuple[str, str], str]:
+    if not component_keys:
+        return {}
+
+    service_names = {k[0] for k in component_keys}
+    component_names = {k[1] for k in component_keys}
+
+    rows = Component.objects.filter(
+        cluster_id=cluster_id,
+        service__prototype__name__in=service_names,
+        prototype__name__in=component_names,
+    ).values_list("service__prototype__name", "prototype__name", "prototype__display_name")
+
+    return {(dep_service_name, component_name): display_name for dep_service_name, component_name, display_name in rows}
+
+
+def _build_conflict_message(
+    target_display_name: str,
+    service_map: dict[str, str],
+    component_map: dict[tuple[str, str], str],
+) -> str:
+    parts = []
+
+    covered_services = set()
+
+    for (service_name, component_name), component_display_name in sorted(component_map.items()):
+        service_display_name = service_map.get(service_name) or service_name
+        component_display_name = component_display_name or component_name
+
+        parts.append(f'component "{component_display_name}" of service "{service_display_name}"')
+        covered_services.add(service_name)
+
+    for service_name, service_display_name in sorted(service_map.items()):
+        if service_name in covered_services:
+            continue
+
+        service_display_name = service_display_name or service_name
+        parts.append(f'service "{service_display_name}"')
+
+    return f'Service "{target_display_name}" is required by: {", ".join(parts)}'
+
+
 def _get_error_on_service_deletion(
     service_id: ServiceID, cluster_topology: ClusterTopology, delete_action_exists: bool, related_mapping_exists: bool
 ) -> AdcmEx | None:
@@ -218,23 +294,14 @@ def _get_error_on_service_deletion(
         },
         named_mapping=named_mapping_from_topology(topology=cluster_topology),
     )
-    service_required_by = []
-    for violation in unsatisfied_service_requirements:
-        if service_data["name"] != violation.required_service:
-            continue
 
-        service_display_name = Service.objects.values_list("prototype__display_name", flat=True).get(
-            cluster_id=service_data["cluster_id"], prototype__name=violation.dependant_object.service
-        )
+    required_by_services, required_by_components = _find_dependent_objects(
+        service_data, unsatisfied_service_requirements
+    )
 
-        if isinstance(violation.dependant_object, ServiceNameKey):
-            service_required_by.append(f'service "{service_display_name}"')
+    service_names_map = _fetch_service_display_names(service_data["cluster_id"], required_by_services)
+    component_names_map = _fetch_component_display_names(service_data["cluster_id"], required_by_components)
 
-        elif isinstance(violation.dependant_object, ComponentNameKey):
-            service_required_by.append(
-                f'component "{violation.dependant_object.component}" of service "{service_display_name}"'
-            )
-
-    if service_required_by:
-        error_msg = f'Service "{display_name}" is required by: {", ".join(service_required_by)}'
+    if service_names_map or component_names_map:
+        error_msg = _build_conflict_message(display_name, service_names_map, component_names_map)
         return AdcmEx(code="SERVICE_CONFLICT", msg=error_msg)
