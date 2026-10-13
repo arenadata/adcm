@@ -87,7 +87,7 @@ class TestRole(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.;", "level": "error"}
+            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.", "level": "error"}
         )
 
     def test_create_already_exists_failed(self):

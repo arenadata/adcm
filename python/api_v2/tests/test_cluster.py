@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from unittest.mock import patch
+import os
 
 from cm.models import (
     Action,
@@ -173,7 +174,7 @@ class TestCluster(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "BAD_REQUEST",
-                "desc": "prototype_id - This field is required.;name - This field is required.;",
+                "desc": f"prototype_id - This field is required.{os.linesep}name - This field is required.",
                 "level": "error",
             },
         )
@@ -673,7 +674,7 @@ class TestClusterActions(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "BAD_REQUEST",
-                "desc": "non_field_errors - Invalid data. Expected a dictionary, but got list.;",
+                "desc": "non_field_errors - Invalid data. Expected a dictionary, but got list.",
                 "level": "error",
             },
         )
@@ -688,7 +689,7 @@ class TestClusterActions(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.;", "level": "error"}
+            response.json(), {"code": "BAD_REQUEST", "desc": "adcm_meta - This field is required.", "level": "error"}
         )
 
     def test_run_action_with_config_required_config_fail(self):
@@ -699,7 +700,7 @@ class TestClusterActions(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.;", "level": "error"}
+            response.json(), {"code": "BAD_REQUEST", "desc": "config - This field is required.", "level": "error"}
         )
 
     def test_retrieve_action_with_hc_success(self):

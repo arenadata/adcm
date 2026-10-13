@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from cm.errors import AdcmEx
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
@@ -24,17 +26,7 @@ def _to_api_exception(exc: AdcmEx) -> APIException:
 
 def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
     if isinstance(exc, ValidationError) and isinstance(exc.detail, dict):
-        msg = ""
-        for field_name, error in exc.detail.items():
-            if isinstance(error, list):
-                if isinstance(error[0], dict):
-                    for err_type, err in error[0].items():
-                        msg = f"{msg}{err_type} - {err[0]};"
-                else:
-                    msg = f"{msg}{field_name} - {error[0]};"
-            else:
-                for err_type, err in error.items():
-                    msg = f"{msg}{err_type} - {err[0]};"
+        msg = os.linesep.join(_stringify_validation_error(detail=exc.detail))
 
         exc = AdcmEx(code="BAD_REQUEST", msg=msg)
 
@@ -55,3 +47,24 @@ def custom_drf_exception_handler(exc: Exception, context) -> Response | None:
         }
 
     return response
+
+
+def _stringify_validation_error(detail, field_name=None) -> list[str]:
+    if isinstance(detail, dict):
+        messages = []
+        for key, value in detail.items():
+            messages.extend(_stringify_validation_error(detail=value, field_name=key))
+
+        return messages
+
+    if isinstance(detail, list):
+        messages = []
+        for item in detail:
+            if isinstance(item, (dict | list)):
+                messages.extend(_stringify_validation_error(detail=item, field_name=field_name))
+            else:
+                messages.append(f"{field_name} - {item}")
+
+        return messages
+
+    return [f"{field_name} - {detail}"]
