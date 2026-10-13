@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import datetime
 import zoneinfo
 
@@ -136,7 +137,27 @@ class TestUserAPI(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "password - This field is required.;", "level": "error"}
+            response.json(), {"code": "BAD_REQUEST", "desc": "password - This field is required.", "level": "error"}
+        )
+
+    def test_create_username_multiple_errors_for_same_field_fail(self) -> None:
+        invalid_username = f"user name{'a' * settings.USERNAME_MAX_LENGTH}"
+
+        response = (self.client.v2 / "rbac" / "users").post(
+            data={"username": invalid_username, "password": "test_user_password"},
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": (
+                    f"username - Ensure this field has no more than {settings.USERNAME_MAX_LENGTH} characters."
+                    f"{os.linesep}username - This value does not match the required pattern."
+                ),
+                "level": "error",
+            },
         )
 
     def test_create_password_does_not_meet_requirements_fail(self) -> None:
@@ -642,7 +663,7 @@ class TestUserAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "BAD_REQUEST",
-                "desc": "ordering - Select a valid choice. param is not one of the available choices.;",
+                "desc": "ordering - Select a valid choice. param is not one of the available choices.",
                 "level": "error",
             },
         )
