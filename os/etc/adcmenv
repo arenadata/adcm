@@ -32,7 +32,7 @@ ssl_keys_dir="${adcmuserconf}/ssl"
 ssl_config_dir="${adcmuserconf}/nginx"
 ssl_config_template="/etc/nginx/http.d/ssl.conf.disabled"
 ssl_config_filename="ssl.conf"
-adcmvenv="${adcmroot}/.venv/bin"
+adcmvenv="${ADCM_VENV}/bin"
 
 waitforwsgi() {
   while [ ! -S "${wsgisocketfile}" ]; do

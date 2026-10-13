@@ -3,7 +3,7 @@
   name: ADCM
   version: "999.0"  # higher than any real ADCM bundle version
   contract_version: "2.1"
-  venv: "2.21"
+  venv: "adcm"
 
   config:
     - name: "global"

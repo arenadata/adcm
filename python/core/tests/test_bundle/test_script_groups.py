@@ -33,6 +33,7 @@ from core.bundle._errors import BundleParsingError, BundleValidationError
 from core.bundle._parsing import v_2_1
 from core.bundle._parsing.types import RootEntry
 from core.bundle._parsing.v_2_1.scripts import ClusterEntry, detect_entry_kind
+from core.bundle._parsing.v_2_1.targets import ADCMVenv, MainVenv
 from core.bundle._validate import check_actions, check_upgrades
 from core.spec.types import FullSpecKey
 from core.types import Names
@@ -63,7 +64,7 @@ OBJECT: Final = """
 type: {type}
 name: {name}
 version: "2"
-venv: "2.21"
+venv: "{venv}"
 """
 
 GROUPED_SCRIPTS: Final = """
@@ -142,8 +143,10 @@ def load(template: str) -> Any:
     return yaml.safe_load(template)
 
 
-def build_object(type_: Literal["cluster", "service", "provider", "host", "adcm"], name: str) -> dict:
-    return load(OBJECT.format(type=type_, name=name))
+def build_object(
+    type_: Literal["cluster", "service", "provider", "host", "adcm"], name: str, venv: ADCMVenv | MainVenv
+) -> dict:
+    return load(OBJECT.format(type=type_, name=name, venv=venv))
 
 
 def build_group(name: str, scripts: list[dict], type_: str = "parallel") -> dict:
@@ -185,20 +188,20 @@ def with_component(service: dict, name: str, component: dict) -> dict:
 def build_bundles(contract_version: ContractVersion) -> dict[str, list[dict]]:
     """Bundles with grouped scripts in every place scripts can be declared at"""
 
-    cluster = with_contract_version(build_object("cluster", "cluster"), contract_version)
+    cluster = with_contract_version(build_object("cluster", "cluster", "2.21"), contract_version)
     cluster = with_action(cluster, grouped_scripts())
     cluster = with_upgrade(cluster, grouped_upgrade_scripts())
 
-    service = with_action(build_object("service", "service"), grouped_scripts())
+    service = with_action(build_object("service", "service", "2.21"), grouped_scripts())
     service = with_component(service, name="component", component=with_action({}, grouped_scripts()))
 
-    provider = with_contract_version(build_object("provider", "provider"), contract_version)
+    provider = with_contract_version(build_object("provider", "provider", "2.21"), contract_version)
     provider = with_action(provider, grouped_scripts())
     provider = with_upgrade(provider, grouped_upgrade_scripts())
 
-    host = with_action(build_object("host", "host"), grouped_scripts())
+    host = with_action(build_object("host", "host", "2.21"), grouped_scripts())
 
-    adcm = with_contract_version(build_object("adcm", "adcm"), contract_version)
+    adcm = with_contract_version(build_object("adcm", "adcm", "adcm"), contract_version)
     adcm = with_action(adcm, grouped_scripts())
 
     return {"cluster": [cluster, service], "provider": [provider, host], "adcm": [adcm]}
@@ -394,7 +397,7 @@ class TestScriptGroupsParsing(TestCase):
         self.assertEqual(spec, expected)
 
         # statically declared scripts
-        cluster = with_contract_version(build_object("cluster", "cluster"), "2.1")
+        cluster = with_contract_version(build_object("cluster", "cluster", "2.21"), "2.1")
         cluster = with_action(cluster, grouped_scripts(), allow_to_terminate=True)
         definitions = self.parser.parse_root_entries(to_root_entries([cluster]), bundle_root=BUNDLE_ROOT)
         self.assertEqual(collect_scripts_specs(definitions), {f"cluster/actions/{ACTION_NAME}": expected})
@@ -510,7 +513,7 @@ class TestScriptGroupsValidation(TestCase):
 
     def parse_and_validate(self, place: Place, scripts: list[dict]) -> None:
         switch = load(UPGRADE_SWITCH_SCRIPT)
-        cluster = with_contract_version(build_object("cluster", "cluster"), "2.1")
+        cluster = with_contract_version(build_object("cluster", "cluster", "2.21"), "2.1")
 
         match place:
             case "rendered upgrade":
@@ -531,8 +534,10 @@ class TestScriptGroupsValidation(TestCase):
         )
         check_upgrades(upgrades=definition.upgrades, definitions=definitions, bundle_root=BUNDLE_ROOT)
 
-    def parse_root_entry(self, object_type: Literal["cluster", "provider", "adcm"], scripts: list[dict]) -> None:
-        entry = with_action(with_contract_version(build_object(object_type, object_type), "2.1"), scripts)
+    def parse_root_entry(
+        self, object_type: Literal["cluster", "provider", "adcm"], venv: ADCMVenv | MainVenv, scripts: list[dict]
+    ) -> None:
+        entry = with_action(with_contract_version(build_object(object_type, object_type, venv), "2.1"), scripts)
         self.parser.parse_root_entries(to_root_entries([entry]), bundle_root=BUNDLE_ROOT)
 
     # NB: parallel groups below always contain at least 2 entries, since fewer isn't allowed for them
@@ -753,18 +758,27 @@ class TestScriptGroupsValidation(TestCase):
         hc_apply = {"name": "apply", "script_type": "internal", "script": "hc_apply"}
         clean = {"name": "clean", "script_type": "internal", "script": "before_upgrade_clean"}
 
-        for object_type, script in (("cluster", hc_apply), ("provider", clean), ("adcm", load(SIMPLE_SCRIPT))):
+        for object_type, venv, script in (
+            ("cluster", "2.21", hc_apply),
+            ("provider", "2.21", clean),
+            ("adcm", "adcm", load(SIMPLE_SCRIPT)),
+        ):
             with self.subTest(f"{object_type} accepts {script['script']}"):
-                self.parse_root_entry(object_type, [build_group(name="group", scripts=[script])])
+                self.parse_root_entry(object_type, venv, [build_group(name="group", scripts=[script])])
 
-        for object_type, script, error in (
-            ("provider", hc_apply, "Input tag 'hc_apply' found using 'script' does not match any of the expected tags"),
-            ("adcm", clean, "does not match any of the expected tags: 'ansible', 'python'"),
+        for object_type, venv, script, error in (
+            (
+                "provider",
+                "2.21",
+                hc_apply,
+                "Input tag 'hc_apply' found using 'script' does not match any of the expected tags",
+            ),
+            ("adcm", "adcm", clean, "does not match any of the expected tags: 'ansible', 'python'"),
         ):
             with (
                 self.subTest(f"{object_type} rejects {script['script']}"),
                 self.assertRaises(BundleParsingError) as err,
             ):
-                self.parse_root_entry(object_type, [build_group(name="group", scripts=[script])])
+                self.parse_root_entry(object_type, venv, [build_group(name="group", scripts=[script])])
 
             self.assertIn(error, err.exception.message)

@@ -17,7 +17,12 @@ WORKDIR /code
 RUN . build.sh
 
 
-FROM alpine:3.24 AS python_builder
+# Common base for the stages that need ADCM_VENV: ENV is inherited through FROM <stage>.
+FROM alpine:3.24 AS base
+ENV ADCM_VENV=/venv/adcm
+
+
+FROM base AS python_builder
 
 RUN apk add --no-cache --virtual .build-deps \
     build-base \
@@ -27,6 +32,7 @@ RUN apk add --no-cache --virtual .build-deps \
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_PYTHON_PREFERENCE=only-managed
 ENV UV_PYTHON_INSTALL_DIR=/python
+ENV UV_PROJECT_ENVIRONMENT=$ADCM_VENV
 
 WORKDIR /adcm
 
@@ -76,7 +82,7 @@ from importlib.metadata import version; \
 print('ansible', ansible.__version__, '| django', django.__version__)"
 
 
-FROM alpine:3.24
+FROM base
 
 RUN apk update && \
     apk upgrade && \
@@ -112,7 +118,7 @@ RUN for svc in /etc/sv/*/; do \
 COPY --from=go_builder --chown=adcm:adcm /code/bin/runstatus /adcm/go/bin/runstatus
 COPY --from=ui_builder --chown=adcm:adcm /wwwroot /adcm/wwwroot
 COPY --from=python_builder --chown=adcm:adcm /python /python
-COPY --from=python_builder --chown=adcm:adcm /adcm/.venv /adcm/.venv
+COPY --from=python_builder --chown=adcm:adcm ${ADCM_VENV} ${ADCM_VENV}
 COPY --from=env_216 --chown=adcm:adcm /venv/2.16 /venv/2.16
 COPY --from=env_221 --chown=adcm:adcm /venv/2.21 /venv/2.21
 COPY --chown=adcm:adcm conf /adcm/conf
@@ -139,7 +145,7 @@ RUN for name in python3.13 python3.12 python3.11 python3.10 python3 python; do \
             { echo "interpreter discovery would pick ${name} -> ${found}"; exit 1; }; \
     done && \
     command -v python3.10 python3 python && \
-    /adcm/.venv/bin/python -m compileall -q -j 0 /adcm/python && \
+    ${ADCM_VENV}/bin/python -m compileall -q -j 0 /adcm/python && \
     /venv/2.16/bin/python -m compileall -q -j 0 /venv/2.16/collections/ansible_collections/arenadata/adcm && \
     /venv/2.21/bin/python -m compileall -q -j 0 /venv/2.21/collections/ansible_collections/arenadata/adcm && \
     find /adcm/python -type d -name "__pycache__" -exec chown -R adcm:adcm {} + && \
@@ -156,7 +162,7 @@ RUN mkdir -p /adcm/data/log /adcm/run && \
     chmod 700 /adcm/run && \
     chown -R adcm:adcm /adcm/run /adcm/data
 
-RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput && \
+RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build ${ADCM_VENV}/bin/python /adcm/python/manage.py collectstatic --noinput && \
     chown -R adcm:adcm /adcm/wwwroot/static
 
 ENV PYTHONPATH=/adcm/python
