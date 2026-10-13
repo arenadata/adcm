@@ -33,6 +33,7 @@ from core.bundle._parsing.v_2_1.scripts import (
     UpgradeEntry,
 )
 
+ADCMVenv: TypeAlias = Literal["adcm"]
 MainVenv: TypeAlias = Literal["2.16", "2.21"]
 ChildVenv: TypeAlias = Annotated[MainVenv | None, Field(default=None)]
 
@@ -61,7 +62,7 @@ class Host(HostV2[ProviderEntry]):
 
 class ADCMSchema(ADCMSchemaV2[ADCMEntry, UpgradeEntry]):
     contract_version: Literal["2.1"]  # pyright: ignore[reportIncompatibleVariableOverride]
-    venv: MainVenv  # pyright: ignore[reportIncompatibleVariableOverride]
+    venv: ADCMVenv  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 DynamicActionScripts = DynamicActionScriptsV2[DynamicActionEntry]

@@ -100,7 +100,7 @@ class LocalProcessStarter(ProcessStarter):
         )
         # Use the interpreter path directly without adding it to the process environment
         cmd = [
-            "/adcm/.venv/bin/python",
+            str(Path(os.environ.get("ADCM_VENV", "/venv/adcm"), "bin", "python")),
             str(code_dir / "task_runner.py"),
             "start",
             str(task_id),
