@@ -291,6 +291,10 @@ components:
           nullable: true
         objectChanges:
           type: object
+        address:
+          type: string
+        agent:
+          type: string
       required:
       - id
       - name
@@ -300,6 +304,8 @@ components:
       - object
       - user
       - objectChanges
+      - address
+      - agent
     AuditLogResultEnum:
       enum:
       - success
@@ -382,12 +388,18 @@ components:
         details:
           type: object
           additionalProperties: {}
+        address:
+          type: string
+        agent:
+          type: string
       required:
       - id
       - user
       - result
       - time
       - details
+      - address
+      - agent
     AuditSessionResultEnum:
       enum:
       - success
