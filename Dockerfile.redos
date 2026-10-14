@@ -1,7 +1,7 @@
 # The ansible environments are built and published by the ansible-environments repo. Each
 # ships its /venv complete: a musl CPython, ansible-core and the collections.
-ARG ANSIBLE_216_IMAGE=hub.adsw.io/ansible/ansible:2.16.4-python3.10-musl-release-2-0-0
-ARG ANSIBLE_221_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-musl-release-2-0-0
+ARG ANSIBLE_216_IMAGE=arenadata/ansible:2.16.4-python3.10-musl
+ARG ANSIBLE_221_IMAGE=arenadata/ansible:2.21.4-python3.12-musl
 
 FROM golang:1.26 AS go_builder
 COPY ./go /code
