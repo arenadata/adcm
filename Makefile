@@ -3,13 +3,16 @@ APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 SELENOID_HOST ?= 10.92.2.65
 SELENOID_PORT ?= 4444
-ADCM_VERSION = "3.0.0"
+ADCM_VERSION = "3.0.1"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: build unittests pretty lint version
+.PHONY: build build-redos unittests pretty lint version
 
 build:
-	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+	@docker build --platform=linux/amd64 . -f Dockerfile -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+
+build-redos:
+	@docker build --platform=linux/amd64 . -f Dockerfile.redos -t $(APP_IMAGE):$(APP_TAG)-redos8 --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
 	time docker run -d --rm -e POSTGRES_PASSWORD="postgres" --name postgres -p 5500:5432  postgres:14
@@ -18,6 +21,9 @@ unittests:
 	DB_HOST="localhost" DB_USER="postgres" DB_PORT="5500" DB_NAME="postgres" DB_PASS="postgres" \
 	time uv run python/manage.py test python -v 2 --parallel --keepdb
 	docker stop postgres
+
+test-integrations:
+	@echo "This is a placeholder; the actual launch is in develop."
 
 pretty:
 	uv sync --inexact --group lint

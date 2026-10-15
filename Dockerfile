@@ -93,9 +93,8 @@ COPY --from=arenadata/ansible:2.16.4-python3.10 --chown=adcm:adcm /venv/2.16 /ve
 COPY --from=python_builder --chown=adcm:adcm /venv/2.16 /venv/2.16
 COPY --from=arenadata/ansible:2.16.4-python3.10 --chown=adcm:adcm /root/.ansible/collections /venv/2.16/collections
 # Copy Ansible 2.21 venv
-COPY --from=arenadata/ansible:2.21.2-python3.12 --chown=adcm:adcm /venv/2.21 /venv/2.21
+COPY --from=arenadata/ansible:2.21.4-python3.12 --chown=adcm:adcm /venv/2.21 /venv/2.21
 COPY --from=python_builder --chown=adcm:adcm /venv/2.21 /venv/2.21
-COPY --from=arenadata/ansible:2.21.2-python3.12 --chown=adcm:adcm /root/.ansible/collections /venv/2.21/collections
 
 COPY --chown=adcm:adcm conf /adcm/conf
 COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
@@ -129,6 +128,11 @@ RUN mkdir -p /adcm/data/log /adcm/run && \
 
 RUN DJANGO_SETTINGS_MODULE=adcm.settings_setups.build /adcm/.venv/bin/python /adcm/python/manage.py collectstatic --noinput && \
     chown -R adcm:adcm /adcm/wwwroot/static
+
+# Remove *.whl files for ensurepip module
+# This fix is relevant only for 3.0; in 3.1, there is no module ensurepip
+RUN rm /usr/local/lib/python3.10/ensurepip/_bundled/setuptools-79.0.1-py3-none-any.whl && \
+    rm /usr/local/lib/python3.10/ensurepip/_bundled/pip-23.0.1-py3-none-any.whl
 
 ENV PYTHONPATH=/adcm/python
 ENV HOME=/home/adcm
