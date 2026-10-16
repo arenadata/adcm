@@ -32,16 +32,13 @@ class GetParentObjectMixin:
     kwargs: dict
 
     @overload
-    def get_parent_object(self, raise_: None) -> ParentObject | None:
-        ...
+    def get_parent_object(self, raise_: None) -> ParentObject | None: ...
 
     @overload
-    def get_parent_object(self, raise_: Exception) -> ParentObject:
-        ...
+    def get_parent_object(self, raise_: Exception) -> ParentObject: ...
 
     @overload
-    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None:
-        ...
+    def get_parent_object(self, raise_: Exception | None = None) -> ParentObject | None: ...
 
     def get_parent_object(self, raise_: Exception | None = None, ignore_groups: bool = False) -> ParentObject | None:
         try:

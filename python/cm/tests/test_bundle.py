@@ -15,6 +15,7 @@ import uuid
 import shutil
 import tempfile
 
+from core.action.types import ScriptSpec
 from django.db import IntegrityError
 from rest_framework.status import (
     HTTP_409_CONFLICT,
@@ -33,8 +34,8 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
     Service,
-    SubAction,
 )
+from cm.tests.scripts import names_with_params, read_plan_scripts
 
 
 class TestBundle(BaseTestCase):
@@ -240,51 +241,47 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
         self.maxDiff = None
 
-    def get_ordered_subs(self, bundle: Bundle, action_name: str):
-        return SubAction.objects.filter(action__name=action_name, action__prototype__bundle=bundle).order_by("id")
+    def get_ordered_subs(self, bundle: Bundle, action_name: str) -> list[ScriptSpec]:
+        return read_plan_scripts(Action.objects.filter(name=action_name, prototype__bundle=bundle).order_by("id"))
 
     def test_params_in_action_processing_during_upload(self) -> None:
         bundle = self.add_bundle(
             source_dir=self.base_dir / "python" / "cm" / "tests" / "bundles" / "cluster_various_params_in_actions"
         )
-        fields = ("name", "params")
+        # every script of this bundle is an ansible one, so `ansible_tags` is always in its params
+        no_params = {"ansible_tags": ""}
 
         subs = self.get_ordered_subs(action_name="job_no_params", bundle=bundle)
-        self.assertEqual(subs.count(), 1)
-        self.assertEqual(list(subs.values_list(*fields)), [("job_no_params", {})])
+        self.assertEqual(names_with_params(subs), [("job_no_params", no_params)])
 
         subs = self.get_ordered_subs(action_name="job_params", bundle=bundle)
-        self.assertEqual(subs.count(), 1)
-        self.assertEqual(
-            list(subs.values_list(*fields)), [("job_params", {"ansible_tags": "hello, there", "custom": [4, 3]})]
-        )
+        self.assertEqual(names_with_params(subs), [("job_params", {"ansible_tags": "hello, there", "custom": [4, 3]})])
 
         subs = self.get_ordered_subs(action_name="task_no_params", bundle=bundle)
-        self.assertEqual(subs.count(), 2)
-        self.assertEqual(list(subs.values_list(*fields)), [("first", {}), ("second", {})])
+        self.assertEqual(names_with_params(subs), [("first", no_params), ("second", no_params)])
 
         subs = self.get_ordered_subs(action_name="task_params_in_action", bundle=bundle)
-        self.assertEqual(subs.count(), 2)
-        self.assertEqual(list(subs.values_list(*fields)), [("first", {}), ("second", {})])
+        self.assertEqual(names_with_params(subs), [("first", no_params), ("second", no_params)])
 
         subs = self.get_ordered_subs(action_name="task_params_in_action_and_scripts", bundle=bundle)
-        self.assertEqual(subs.count(), 2)
         self.assertEqual(
-            list(subs.values_list(*fields)),
-            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", {})],
+            names_with_params(subs),
+            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", no_params)],
         )
 
         subs = self.get_ordered_subs(action_name="task_params_in_action_and_all_scripts", bundle=bundle)
-        self.assertEqual(subs.count(), 2)
         self.assertEqual(
-            list(subs.values_list(*fields)),
-            [("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}), ("second", {"perfect": "thing"})],
+            names_with_params(subs),
+            [
+                ("first", {"ansible_tags": "one, two", "jinja2_native": "hello"}),
+                ("second", {"ansible_tags": "", "perfect": "thing"}),
+            ],
         )
 
         subs = self.get_ordered_subs(action_name="task_params_in_scripts", bundle=bundle)
-        self.assertEqual(subs.count(), 2)
         self.assertEqual(
-            list(subs.values_list(*fields)), [("first", {"ansible_tags": "one"}), ("second", {"perfect": "thing"})]
+            names_with_params(subs),
+            [("first", {"ansible_tags": "one"}), ("second", {"ansible_tags": "", "perfect": "thing"})],
         )
 
     def test_config_paths_are_made_relative_to_bundle_root_on_upload(self) -> None:
@@ -298,7 +295,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
         expected_schema_4 = {"root": {"match": "list", "item": "integer"}, "integer": {"match": "int"}}
 
         expected_config_defaults = {
-            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            **dict.fromkeys(("relative_plain", "full_plain", "relative_secret", "full_secret"), "nicename.txt"),
             "relative_inside_plain": "inside/common.txt",
             "full_inside_secret": "inside/common.txt",
         }
@@ -338,7 +335,7 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
         # definition outside of root
         expected_config_defaults = {
-            **{key: "nicename.txt" for key in ("relative_plain", "full_plain", "relative_secret", "full_secret")},
+            **dict.fromkeys(("relative_plain", "full_plain", "relative_secret", "full_secret"), "nicename.txt"),
             "relative_plain": "service_1/nicename.txt",
             "full_plain": "nicename.txt",
             "relative_secret": "service_1/nicename.txt",
@@ -373,18 +370,16 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
 
     def test_action_paths_are_made_relative_to_bundle_root_on_upload(self) -> None:
         expected_task_jinja_paths = {
-            **{key: "conf.j2" for key in ("as_job_relative", "as_job_full", "as_task_config_relative")},
-            **{
-                key: "inside/conf.j2"
-                for key in ("as_job_inner_relative", "as_job_inner_full", "as_task_config_inside_full")
-            },
+            **dict.fromkeys(("as_job_relative", "as_job_full", "as_task_config_relative"), "conf.j2"),
+            **dict.fromkeys(
+                ("as_job_inner_relative", "as_job_inner_full", "as_task_config_inside_full"), "inside/conf.j2"
+            ),
         }
         expected_scripts = {
-            **{key: "action.yaml" for key in ("as_job_relative", "as_job_full", "rel_1", "rel_2")},
-            **{
-                key: "inside/action.yaml"
-                for key in ("as_job_inner_relative", "as_job_inner_full", "full_one", "full_two")
-            },
+            **dict.fromkeys(("as_job_relative", "as_job_full", "rel_1", "rel_2"), "action.yaml"),
+            **dict.fromkeys(
+                ("as_job_inner_relative", "as_job_inner_full", "full_one", "full_two"), "inside/action.yaml"
+            ),
         }
 
         bundle = self.add_bundle(source_dir=Path(__file__).parent / "bundles" / "cluster_paths_validation")
@@ -396,7 +391,10 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
         ):
             jinja_paths = {a.name: a.config_template["file"]["path"] for a in Action.objects.filter(prototype=proto)}
             self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
-            paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
+            paths = {
+                script.names.internal: script.script.path
+                for script in read_plan_scripts(Action.objects.filter(prototype=proto))
+            }
             self.assertDictEqual(paths, expected_scripts)
 
         expected_task_jinja_paths = {
@@ -423,5 +421,8 @@ class TestBundleParsing(BaseTestCase, BundleLogicMixin):
         ):
             jinja_paths = {a.name: a.config_template["file"]["path"] for a in Action.objects.filter(prototype=proto)}
             self.assertDictEqual(jinja_paths, expected_task_jinja_paths)
-            paths = {sa.name: sa.script for sa in SubAction.objects.filter(action__prototype=proto)}
+            paths = {
+                script.names.internal: script.script.path
+                for script in read_plan_scripts(Action.objects.filter(prototype=proto))
+            }
             self.assertDictEqual(paths, expected_scripts)

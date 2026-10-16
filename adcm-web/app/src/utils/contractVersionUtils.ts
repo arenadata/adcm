@@ -1,5 +1,5 @@
 import { AdcmContractVersionStatus, type AdcmContractVersion } from '@models/adcm/bundle';
-import type { AdcmCluster, AdcmPrototype, AdcmPrototypeVersions } from '@models/adcm';
+import type { AdcmCluster, AdcmHostProvider, AdcmPrototype, AdcmPrototypeVersions } from '@models/adcm';
 import type { BadgeStatus } from '@uikit/Badge/Badge.types';
 
 export const contractVersionBadgeStatuses: Record<AdcmContractVersionStatus, BadgeStatus> = {
@@ -11,16 +11,16 @@ export const contractVersionBadgeStatuses: Record<AdcmContractVersionStatus, Bad
 export const getContractVersionBadgeStatus = (status?: AdcmContractVersionStatus): BadgeStatus =>
   status ? contractVersionBadgeStatuses[status] : contractVersionBadgeStatuses[AdcmContractVersionStatus.Supported];
 
-export const getUniqueClusterPrototypeIds = (clusters: AdcmCluster[]): number[] => [
-  ...new Set(clusters.map((cluster) => cluster.prototype.id)),
+export const getUniqueEntityPrototypeIds = (entities: (AdcmCluster | AdcmHostProvider)[]): number[] => [
+  ...new Set(entities.map((entity) => entity.prototype.id)),
 ];
 
-export const attachContractVersionsToClusters = (
-  clusters: AdcmCluster[],
+export const attachContractVersionsToEntities = (
+  entities: (AdcmCluster | AdcmHostProvider)[],
   prototypes: AdcmPrototype[],
-): AdcmCluster[] => {
-  if (!clusters.length || !prototypes.length) {
-    return clusters;
+): (AdcmCluster | AdcmHostProvider)[] => {
+  if (!entities.length || !prototypes.length) {
+    return entities;
   }
 
   const contractVersionByPrototypeId = new Map<number, AdcmContractVersion>();
@@ -30,15 +30,15 @@ export const attachContractVersionsToClusters = (
     }
   }
 
-  return clusters.map((cluster) => {
-    const contractVersion = contractVersionByPrototypeId.get(cluster.prototype.id);
+  return entities.map((entity) => {
+    const contractVersion = contractVersionByPrototypeId.get(entity.prototype.id);
     if (!contractVersion) {
-      return cluster;
+      return entity;
     }
     return {
-      ...cluster,
+      ...entity,
       prototype: {
-        ...cluster.prototype,
+        ...entity.prototype,
         contractVersion,
       },
     };

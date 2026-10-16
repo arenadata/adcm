@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.types import CoreObjectDescriptor
 
 from cm.converters import model_name_to_core_type
@@ -202,6 +203,7 @@ class TestCHGsInInventory(BaseInventoryTestCase):
                         target=target,
                         is_host_action=action.host_action,
                         cluster_service=self.uc.container.get(ClusterService),
+                        config_service=self.uc.container.get(ConfigService),
                     )
                 )
                 self.check_hosts_topology(actual_inventory["all"]["children"], expected_topology)

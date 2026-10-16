@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Literal
 import logging
 
 from audit.alt.core import NameHalfSplitter
@@ -31,27 +31,72 @@ from cm.legacy.services.job.run.runners import (
     update_object_maintenance_mode,
 )
 from cm.transition.status import StatusScenarios
-from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner, is_operation_step_task
-from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action import (
+    UNFINISHED_STATUSES,
+    CallingProcess,
+    ExecutionStatus,
+    Task,
+    TaskOwner,
+    is_operation_step_task,
+)
+from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
+from core.action.job.operations import (
+    TaskCompletionStatus,
+    calculate_owner_state_changes,
+    calculate_task_final_status,
+)
+from core.action.operations import flatten_execution_plan, to_rich_job, to_rich_jobs
+from core.action.scheduler import ProcessStarter
+from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
-from core.legacy.job.runners import ExecutionTargetFactoryI, ExternalSettings, RunnerEnvironment
+from core.config import ConfigRepoI, ConfigService
+from core.legacy.job.runners import ExecutionTargetFactory, ExternalSettings, RunnerEnvironment
 from core.result import Fail, Success
-from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
+from core.scenarios.concern import ConcernScenarios
+from core.settings import Directories
+from core.spec.types import FullSpecKey
+from core.types import PID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor, JobID, TaskID
 from django.db.transaction import atomic
 from use_cases.wizard import CompleteWizardOperationStep
-import core
 
 # NOTE:
 #  Type checker errors are ignored for now, because it's problematic to resolve it now reasonably
 
 logger = logging.getLogger("task-runner")
 
-PlannedJobs: TypeAlias = tuple[Job, ...]
-
 
 @dataclass(slots=True)
 class TaskDescription:
-    jobs: PlannedJobs
+    # plan defines how jobs are run (order, grouping), jobs are looked up in `jobs` by plan keys
+    plan: JobSpecV1
+    jobs: dict[FullSpecKey, RichJob]
+
+
+@dataclass(slots=True)
+class StartTask:
+    job_repo: JobRepoI
+    concern_scenarios: ConcernScenarios
+    process_starter: ProcessStarter
+    directories: Directories
+
+    # `__call__` instead of `.do()`: this needs to be a plain callable to satisfy the `TaskStarter` protocol
+    # used by `_ScheduleTask`/wizard, which just invoke it as `starter(id)`
+    def __call__(self, task_id: TaskID) -> PID:
+        task = self.job_repo.get_task(id=task_id)
+
+        # the concern is named after the job that runs first, which the plan's order decides
+        plan = self.job_repo.get_execution_plan(task_id=task_id)
+        first_key = flatten_execution_plan(plan)[0]
+
+        task_jobs = self.job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+        first_job = jobs_by_key[first_key]
+
+        self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
+
+        return self.process_starter.start(
+            task_id=task_id, code_dir=self.directories.code, log_dir=self.directories.logs
+        )
 
 
 @dataclass(slots=True)
@@ -63,34 +108,43 @@ class SetTaskToRunning:
         status = ExecutionStatus.RUNNING
 
         with atomic():
-            jobs = self.repo.get_task_jobs(task_id=task_id)
+            plan = self.repo.get_execution_plan(task_id=task_id)
+            task_jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+            jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
 
             to_update = TaskUpdateDTO(pid=environment.pid, start_date=environment.now(), status=status)
             self.repo.update_task(id=task_id, data=to_update)
 
         self.notifier.send_task_status_update_event(task_id=task_id, status=status.value)
 
-        return TaskDescription(jobs=tuple(jobs))
+        return TaskDescription(plan=plan, jobs=jobs_by_key)
 
 
 @dataclass(slots=True)
 class RunJob:
     repo: JobRepoI
-    target_factory: ExecutionTargetFactoryI
+    target_factory: ExecutionTargetFactory
     cluster_service: ClusterService
+    config_service: ConfigService
     external_settings: ExternalSettings
+    config_repo: ConfigRepoI
 
     def do(
         self, task_id: TaskID, job_id: JobID, environment: RunnerEnvironment
     ) -> Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.REVOKED, ExecutionStatus.ABORTED]:
         with atomic():
             task = self.repo.get_task(id=task_id)
-            job = self.repo.get_job(id=job_id)
 
-            if job.status == ExecutionStatus.REVOKED:
-                return job.status
+            found_jobs = self.repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+            runtime = next(iter(found_jobs))
 
-            execute_target, *_ = self.target_factory(task=task, jobs=(job,), configuration=self.external_settings)
+            if runtime.status == ExecutionStatus.REVOKED:
+                return runtime.status
+
+            plan = self.repo.get_execution_plan(task_id=task_id)
+            job = to_rich_job(spec=plan, job=runtime)
+
+            execute_target = self.target_factory(task=task, job=job, configuration=self.external_settings)
             executor = execute_target.executor
 
             # prepare job environemnt
@@ -98,10 +152,14 @@ class RunJob:
 
             for prepare_environment in execute_target.environment_builders:
                 prepare_environment(
-                    task=task, job=job, configuration=self.external_settings, cluster_service=self.cluster_service
+                    task=task,
+                    job=job,
+                    configuration=self.external_settings,
+                    cluster_service=self.cluster_service,
+                    config_service=self.config_service,
                 )
 
-            create_related_configs(job_id=job_id, owner=task.owner)  # pyright: ignore[reportArgumentType]
+            create_related_configs(job_id=job_id, owner=task.owner, config_repo=self.config_repo)  # pyright: ignore[reportArgumentType]
 
             executor.execute()
 
@@ -179,13 +237,29 @@ class FinalizeTask:
     ):
         with atomic():
             task = self.job_repo.get_task(id=task_id)
-            jobs = tuple(self.job_repo.get_task_jobs(task_id=task_id))
+
+            # jobs that weren't started by now won't ever be, final status should see them as revoked
+            self.job_repo.change_status_of_task_jobs(
+                task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
+
+            plan = self.job_repo.get_execution_plan(task_id=task_id)
+            task_jobs = self.job_repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+            jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+            jobs = tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
 
             task_is_aborted = task.status == ExecutionStatus.TERMINATING
 
-            task_result = core.action.job.operations.calculate_task_final_status(
-                last_job_status=jobs[-1].status, task_is_aborted=task_is_aborted
+            final_status = calculate_task_final_status(
+                plan=plan,
+                job_statuses={key: job.runtime.status for key, job in jobs_by_key.items()},
+                task_is_aborted=task_is_aborted,
             )
+            if not final_status:
+                message = f"Failed to calculate final status of task {task_id}: {final_status.value}"
+                raise RuntimeError(message)
+
+            task_result = final_status.value
 
             if task.is_blocking:
                 delete_task_lock_concern(task_id=task_id)
@@ -208,15 +282,13 @@ class FinalizeTask:
                 #   but that requires clarification of task runner process and configurability of it,
                 #   which for now is not achievable.
 
-                # not very accurate status filtering, but ok since all those operations are chaotic for now
-                incomplete_step_statuses = {ExecutionStatus.CREATED, ExecutionStatus.REVOKED}
-                last_finished_job = next(
-                    filter(lambda j: j.status not in incomplete_step_statuses, reversed(jobs)), None
-                )
-                if last_finished_job:
+                if task_result != ExecutionStatus.ABORTED:
+                    state_changes = calculate_owner_state_changes(
+                        task_result=task_result, jobs=jobs, on_success=task.on_success, on_fail=task.on_fail
+                    )
                     owner_descriptor = CoreObjectDescriptor(id=task.owner.id, type=task.owner.type)
                     self._update_owner_state(
-                        task=task, last_finished_job=last_finished_job, owner=owner_descriptor, task_result=task_result
+                        task=task, owner=owner_descriptor, task_result=task_result, state_changes=state_changes
                     )
 
                 # Note:
@@ -247,35 +319,24 @@ class FinalizeTask:
             logger.exception("Error loading host-component map on task finish")
 
     def _update_owner_state(
-        self, task: Task, last_finished_job: Job, owner: CoreObjectDescriptor, task_result: ExecutionStatus
+        self,
+        task: Task,
+        owner: CoreObjectDescriptor,
+        task_result: TaskCompletionStatus,
+        state_changes: StateChanges,
     ) -> None:
-        if task_result == ExecutionStatus.SUCCESS:
-            multi_state_set = task.on_success.multi_state_set
-            multi_state_unset = task.on_success.multi_state_unset
-            state = task.on_success.state
-            if not state:
-                logger.warning('task for "%s" success state is not set', task.action.display_name)
-
-        elif task_result == ExecutionStatus.FAILED:
-            job_on_fail = last_finished_job.on_fail
-            task_on_fail = task.on_fail
-            state = job_on_fail.state or task_on_fail.state
-            multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set
-            multi_state_unset = job_on_fail.multi_state_unset or task_on_fail.multi_state_unset
-            if not state:
-                logger.warning('task for "%s" fail state is not set', task.action.display_name)
-
-        else:
-            if task_result != ExecutionStatus.ABORTED:
-                logger.error("unknown task status: %s", task_result)
-
-            return
+        state = state_changes.state
+        if not state:
+            result_name = "success" if task_result == ExecutionStatus.SUCCESS else "fail"
+            logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
             self.job_repo.update_owner_state(owner=owner, state=state)
 
         self.job_repo.update_owner_multi_states(
-            owner=owner, add_multi_states=multi_state_set, remove_multi_states=multi_state_unset
+            owner=owner,
+            add_multi_states=state_changes.multi_state_set,
+            remove_multi_states=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:
@@ -334,6 +395,12 @@ class MarkTaskBroken:
             updated = self.repo.change_task_status(id=task_id, previous=from_status, new=new_status)
             if not updated:
                 return Fail("status change failed, most likely due to parallel job update")
+
+        # not started jobs are revoked, others that are unfinished are considered broken
+        self.repo.change_status_of_task_jobs(
+            task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+        )
+        self.repo.change_status_of_task_jobs(task_id=task_id, previous=UNFINISHED_STATUSES, new=new_status)
 
         if task.is_blocking:
             delete_task_lock_concern(task_id=task_id)

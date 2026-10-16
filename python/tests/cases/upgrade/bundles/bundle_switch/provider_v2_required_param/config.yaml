@@ -1,0 +1,38 @@
+- type: provider
+  name: revert_provider
+  version: "2.1"
+  contract_version: "2.1"
+  venv: "2.16"
+  upgrade:
+    - name: api
+      versions: &versions
+        min: "1.0"
+        max: "1.0"
+      states:
+        available: any
+    - name: task
+      versions: *versions
+      states:
+        available: any
+      scripts:
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+  config:
+    - name: kept
+      type: string
+      default: provider-kept
+    - name: required_without_default
+      type: string
+      required: true
+
+- type: host
+  name: revert_host
+  version: "2.1"
+  config:
+    - name: kept
+      type: string
+      default: host-kept
+    - name: required_without_default
+      type: string
+      required: true

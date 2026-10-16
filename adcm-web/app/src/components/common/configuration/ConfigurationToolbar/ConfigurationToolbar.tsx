@@ -10,9 +10,10 @@ interface ConfigurationToolbarProps {
   onSave: () => void;
   onRevert: () => void;
   isViewDraft: boolean;
+  canSave: boolean;
 }
 
-const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onRevert, isViewDraft }) => {
+const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onRevert, isViewDraft, canSave }) => {
   const { filter, onFilterChange, isValid, areExpandedAll, handleChangeExpandedAll } = useConfigurationFormContext();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +39,7 @@ const ConfigurationToolbar: React.FC<ConfigurationToolbarProps> = ({ onSave, onR
         <Button variant="secondary" onClick={onRevert} disabled={!isViewDraft}>
           Discard changes
         </Button>
-        <Button onClick={onSave} hasError={!isValid} disabled={!isViewDraft || !isValid}>
+        <Button onClick={onSave} hasError={!isValid} disabled={!canSave || !isValid}>
           Save
         </Button>
       </ButtonGroup>

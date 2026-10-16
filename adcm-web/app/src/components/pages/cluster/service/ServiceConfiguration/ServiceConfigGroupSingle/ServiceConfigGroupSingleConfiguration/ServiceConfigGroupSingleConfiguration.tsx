@@ -3,6 +3,7 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import { useServiceConfigGroupSingleConfiguration } from './useServiceConfigGroupSingleConfiguration';
 import { useServiceConfigGroupSingleConfigurationsCompare } from './useServiceConfigGroupSingleConfigurationsCompare';
 import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
@@ -33,7 +34,12 @@ const ServiceConfigGroupSingleConfiguration: React.FC = () => {
       />
 
       <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+        <ConfigurationSubHeader
+          onSave={onSave}
+          onRevert={onReset}
+          isViewDraft={selectedConfigId === 0}
+          canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+        />
         <ConfigurationMinimap>
           <ConfigurationMain
             isLoading={isConfigurationLoading}

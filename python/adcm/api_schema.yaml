@@ -88,6 +88,8 @@ components:
         displayName:
           type: string
           maxLength: 1000
+        description:
+          type: string
         startImpossibleReason:
           type: string
           nullable: true
@@ -123,6 +125,8 @@ components:
         displayName:
           type: string
           maxLength: 1000
+        description:
+          type: string
         startImpossibleReason:
           type: string
           nullable: true
@@ -150,6 +154,7 @@ components:
       - id
       - name
       - displayName
+      - description
       - startImpossibleReason
       - isAllowToTerminate
       - hostComponentMapRules
@@ -286,6 +291,10 @@ components:
           nullable: true
         objectChanges:
           type: object
+        address:
+          type: string
+        agent:
+          type: string
       required:
       - id
       - name
@@ -295,6 +304,8 @@ components:
       - object
       - user
       - objectChanges
+      - address
+      - agent
     AuditLogResultEnum:
       enum:
       - success
@@ -377,12 +388,18 @@ components:
         details:
           type: object
           additionalProperties: {}
+        address:
+          type: string
+        agent:
+          type: string
       required:
       - id
       - user
       - result
       - time
       - details
+      - address
+      - agent
     AuditSessionResultEnum:
       enum:
       - success
@@ -3687,6 +3704,14 @@ components:
       required:
       - processSyncKey
       - stepId
+    TaskGroupTerminate:
+      type: object
+      properties:
+        group:
+          type: string
+          description: Internal name of group to terminate.
+      required:
+      - group
     TaskList:
       type: object
       properties:
@@ -23470,7 +23495,8 @@ paths:
   /api/v2/tasks/{taskId}/terminate/:
     post:
       operationId: postTaskTerminate
-      description: Terminate the execution of a specific task.
+      description: Terminate the execution of a specific task, or of one of its script
+        groups when the request body names one.
       summary: POST task terminate
       parameters:
       - in: path
@@ -23481,12 +23507,24 @@ paths:
         required: true
       tags:
       - tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskGroupTerminate'
+        required: true
       security:
       - tokenAuth: []
       - cookieAuth: []
       responses:
         '200':
           description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
         '403':
           content:
             application/json:

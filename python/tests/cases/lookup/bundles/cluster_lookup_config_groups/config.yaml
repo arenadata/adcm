@@ -1,0 +1,39 @@
+---
+- type: cluster
+  name: cluster_lookup_config_groups
+  version: 1
+  config_group_customization: true
+  config:
+    - name: group
+      type: group
+      subs:
+        - name: string
+          type: string
+          default: string
+    - name: activatable_group
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: integer
+          type: integer
+          default: 1
+    - name: customizable
+      type: string
+      group_customization: true
+      default: customizable
+    - name: not_customizable
+      type: integer
+      group_customization: false
+      default: 1
+    - name: not_customizable_group
+      type: group
+      group_customization: false
+      subs:
+        - name: customizable_field
+          type: list
+          group_customization: true
+          default:
+            - value
+  contract_version: '2.1'
+  venv: '2.16'

@@ -12,7 +12,6 @@
 
 from adcm.serializers import EmptySerializer
 from cm.errors import AdcmEx
-from cm.legacy.adcm_config.config import get_main_info
 from cm.legacy.upgrade import get_upgrade
 from cm.legacy.validators import ClusterUniqueValidator, StartMidEndValidator
 from cm.models import (
@@ -43,7 +42,7 @@ from rest_framework.status import HTTP_409_CONFLICT
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import LicenseDict, PrototypeRelatedSerializer, PrototypeWithEditionRelatedSerializer
 from api_v2.prototype.utils import get_license_text
-from api_v2.serializers import DependOnDict, WithStatusSerializer
+from api_v2.serializers import DependOnDict, WithStatusSerializer, get_main_info
 
 
 class ClusterSerializer(WithStatusSerializer):

@@ -14,7 +14,8 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any, Literal, Protocol, TypeAlias
 
-from core import action
+from core import config
+from core.action.types import JobSpecV1
 from core.bundle._types import BundleDefinitionKey, ContractVersionTag
 from core.templates import Template
 
@@ -27,7 +28,7 @@ class GeneralObjectDescription(Protocol):
 
 # EXTERNAL SECTION START
 
-ParameterKey: TypeAlias = tuple[str, ...]
+ParameterKey: TypeAlias = tuple[config.ParameterLevelName, ...]
 
 
 # copied from cm.legacy.services.config.spec for ADCM-6355
@@ -90,7 +91,6 @@ class ActionAvailability:
 @dataclass(slots=True)
 class ActionDefinition:
     # Identification
-    type: Literal["task", "job"]
     name: str
 
     # Details
@@ -100,7 +100,7 @@ class ActionDefinition:
 
     # Specifics
     is_host_action: bool = False
-    venv: Literal["2.16"] = "2.16"
+    venv: Literal["2.16", "2.21"] = "2.16"
 
     # Allowed operations
     allow_to_terminate: bool = False
@@ -114,30 +114,22 @@ class ActionDefinition:
     unavailable_at: ActionAvailability = field(default_factory=lambda: ActionAvailability(states=[], multi_states=[]))
 
     # Task settings
-    scripts: list[action.JobSpec] = field(default_factory=list)
-    scripts_jinja: str | None = None
+    scripts: JobSpecV1 | None = None
     scripts_template: Template | None = None
 
     config: ConfigDefinition | None = None
-    config_jinja: str | None = None
     config_template: Template | None = None
 
-    hostcomponentmap: list = field(default_factory=list)
+    # `None` means `hc_acl` isn't declared at all, which is told apart from an empty declaration
+    # (e.g. `hc_apply` requires `hc_acl` to be declared, yet empty one is enough).
+    # NOTE: kept this way to not change existing behavior, whether such a distinction is required is yet to be decided.
+    #       Storage doesn't tell them apart: both are saved as an empty list.
+    hostcomponentmap: list | None = None
     wizard_template: Template | None = None
 
     # Task completion
     on_success: OnCompletion = field(default_factory=OnCompletion)
     on_fail: OnCompletion = field(default_factory=OnCompletion)
-
-    # Misc
-    partial_execution: bool = False
-
-    def __post_init__(self):
-        if self.scripts and self.scripts_jinja:
-            raise ValueError("Either `scripts` or `jinja_scripts` should be set, not both at once")
-
-        if self.config and self.config_jinja:
-            raise ValueError("Either `config` or `jinja_config` should be set, not both at once")
 
 
 @dataclass(slots=True)
@@ -232,7 +224,7 @@ class Definition(GeneralObjectDescription):
     # Misc
     path: str = "."
     adcm_min_version: str | None = None
-    venv: Literal["2.16"] = "2.16"
+    venv: Literal["2.16", "2.21"] = "2.16"
     shared: bool = False
 
 

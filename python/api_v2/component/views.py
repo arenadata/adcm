@@ -285,72 +285,60 @@ class HostComponentViewSet(PermissionListMixin, ListModelMixin, ObjectWithStatus
 
 @document_config_host_group_viewset(object_type="component")
 @audit_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentCHGViewSet(CHGViewSet):
-    ...
+class ComponentCHGViewSet(CHGViewSet): ...
 
 
 @document_host_config_host_group_viewset(object_type="component")
 @audit_host_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentHostCHGViewSet(HostCHGViewSet):
-    ...
+class ComponentHostCHGViewSet(HostCHGViewSet): ...
 
 
 @document_config_viewset(object_type="component config group", operation_id_variant="ComponentConfigGroup")
 @audit_config_config_host_group_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentConfigCHGViewSet(ConfigLogViewSet):
-    ...
+class ComponentConfigCHGViewSet(ConfigLogViewSet): ...
 
 
 @document_action_viewset(object_type="component")
 @audit_action_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentActionViewSet(ActionViewSet):
-    ...
+class ComponentActionViewSet(ActionViewSet): ...
 
 
 @document_action_host_group_viewset(object_type="component")
 @audit_action_host_group_viewset(parent_component_from_lookup)
-class ComponentActionHostGroupViewSet(ActionHostGroupViewSet):
-    ...
+class ComponentActionHostGroupViewSet(ActionHostGroupViewSet): ...
 
 
 @document_action_host_group_hosts_viewset(object_type="component")
-class ComponentActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
-    ...
+class ComponentActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet): ...
 
 
 @document_action_host_group_actions_viewset(object_type="component")
-class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
-    ...
+class ComponentActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet): ...
 
 
 @document_action_process_viewset(
     object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
 )
 @audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
-class ComponentActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
-    ...
+class ComponentActionHostGroupActionsProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(
     object_type="componentActionHostGroup", operation_id_variant="ComponentActionHostGroup"
 )
-class ComponentActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ComponentActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet): ...
 
 
 @document_config_viewset(object_type="component")
 @audit_config_viewset(type_in_name="Component", retrieve_owner=parent_component_from_lookup)
-class ComponentConfigViewSet(ConfigLogViewSet):
-    ...
+class ComponentConfigViewSet(ConfigLogViewSet): ...
 
 
 @audit_action_process_viewset(retrieve_owner=parent_component_from_lookup)
 @document_action_process_viewset(object_type="component")
-class ComponentActionProcessViewSet(ActionProcessViewSet):
-    ...
+class ComponentActionProcessViewSet(ActionProcessViewSet): ...
 
 
 # TODO: document, audit
 @document_action_process_step_viewset(object_type="component")
-class ComponentActionProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ComponentActionProcessStepViewSet(ProcessStepViewSet): ...

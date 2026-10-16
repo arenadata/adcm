@@ -1,0 +1,31 @@
+- name: prepare
+  script_type: ansible
+  script: ./playbook.yaml
+
+- group: parallel
+  name: shards
+  display_name: Shards
+  scripts:
+    - group: sequential
+      name: shard_a
+      scripts:
+        - name: step
+          script_type: ansible
+          script: ./playbook.yaml
+        - name: step
+          script_type: ansible
+          script: ./playbook.yaml
+        - name: finish
+          script_type: ansible
+          script: ./playbook.yaml
+
+    - group: sequential
+      name: shard_b
+      scripts:
+        - name: step
+          script_type: ansible
+          script: ./playbook.yaml
+
+- name: finish
+  script_type: ansible
+  script: ./playbook.yaml

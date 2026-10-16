@@ -10,27 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from adcm.permissions import VIEW_TASKLOG_PERMISSION
-from adcm.serializers import EmptySerializer
 from audit.alt.api import audit_update
+from audit.alt.hooks import adjust_denied_on_404_result
 from cm.errors import AdcmEx
 from cm.models import ProcessStepInput, TaskLog
 from core.errors import NotFoundError
 from dishka import FromDishka
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import OuterRef, QuerySet, Subquery
 from django.db.transaction import atomic
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from guardian.mixins import PermissionListMixin
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -42,10 +39,14 @@ from api_v2.log_storage.utils import (
     get_task_download_archive_file_handler,
     get_task_download_archive_name,
 )
+from api_v2.permissions import TaskVisibilityMixin
 from api_v2.task.filters import TaskFilter
-from api_v2.task.permissions import TaskPermissions
-from api_v2.task.serializers import TaskListSerializer
-from api_v2.utils.audit import detect_object_for_task, set_task_name
+from api_v2.task.serializers import TaskGroupTerminateSerializer, TaskListSerializer
+from api_v2.utils.audit import (
+    detect_object_for_task,
+    set_task_termination_target_name,
+    task_termination_404_is_denial,
+)
 from api_v2.views import ADCMGenericViewSet, inject
 
 
@@ -92,10 +93,20 @@ from api_v2.views import ADCMGenericViewSet, inject
     ),
     terminate=extend_schema(
         operation_id="postTaskTerminate",
-        description="Terminate the execution of a specific task.",
+        description=(
+            "Terminate the execution of a specific task, "
+            "or of one of its script groups when the request body names one."
+        ),
         summary="POST task terminate",
+        request={"application/json": TaskGroupTerminateSerializer},
         responses=responses(
-            success=(HTTP_200_OK, None), errors=(HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT)
+            success=(HTTP_200_OK, None),
+            errors=(
+                HTTP_400_BAD_REQUEST,
+                HTTP_403_FORBIDDEN,
+                HTTP_404_NOT_FOUND,
+                HTTP_409_CONFLICT,
+            ),
         ),
     ),
     retrieve=extend_schema(
@@ -118,21 +129,17 @@ from api_v2.views import ADCMGenericViewSet, inject
         ],
         responses={
             (HTTP_200_OK, "application/tar+gzip"): {"type": "string", "format": "binary"},
-            **{err_code: ErrorSerializer for err_code in (HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND)},
+            **dict.fromkeys((HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND), ErrorSerializer),
         },
     ),
 )
-class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
+class TaskViewSet(TaskVisibilityMixin, ListModelMixin, RetrieveModelMixin, ADCMGenericViewSet):
     queryset = TaskLog.objects.select_related("action").order_by("-pk")
     serializer_class = TaskListSerializer
     filterset_class = TaskFilter
-    permission_classes = [IsAuthenticated, TaskPermissions]
-    permission_required = [VIEW_TASKLOG_PERMISSION]
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
-        if not self.request.user.is_superuser:
-            queryset = queryset.exclude(object_type=ContentType.objects.get(app_label="cm", model="adcm"))
 
         return self._annotate_queryset_with_step_display_names(queryset)
 
@@ -144,20 +151,40 @@ class TaskViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, ADCMG
 
         return qs.annotate(step_display_name=Subquery(inputs_qs.values("step__display_name")[:1]))
 
-    @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(on_collect=set_task_name)
-    @action(methods=["post"], detail=True, serializer_class=EmptySerializer)
+    @audit_update(name="{task_name} cancelled", object_=detect_object_for_task).attach_hooks(
+        pre_call=set_task_termination_target_name,
+        on_collect=adjust_denied_on_404_result(objects_exist=task_termination_404_is_denial),
+    )
+    @action(
+        methods=["post"],
+        detail=True,
+        serializer_class=TaskGroupTerminateSerializer,
+    )
     @inject
-    def terminate(self, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__) -> Response:
+    def terminate(
+        self, request: Request, *_, job_service: FromDishka[core.action.job.JobService], pk: str, **__
+    ) -> Response:
         # for pemission checks
         self.get_object()
 
+        task_id = int(pk)
+
+        group_name: str | None = None
+        if isinstance(request.data, dict) and request.data:
+            body = TaskGroupTerminateSerializer(data=request.data)
+            body.is_valid(raise_exception=True)
+            group_name = body.validated_data["group"]
+
         try:
             with atomic():
-                job_service.terminate_task(task_id=int(pk))
+                if group_name is not None:
+                    job_service.terminate_group(task_id=task_id, name=group_name)
+                else:
+                    job_service.terminate_task(task_id=task_id)
         except (core.action.job.errors.JobValidationError, core.action.job.errors.JobTerminationError) as e:
             raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
-        except NotFoundError:
-            raise NotFound() from None
+        except NotFoundError as e:
+            raise NotFound(e.message) from None
 
         return Response(status=HTTP_200_OK)
 

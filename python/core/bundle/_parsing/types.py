@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal, Protocol, TypeAlias
 
 from core import action, mapping
+from core.action.types import JobSpecV1
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._types import ComponentKey, ContractVersionTag, VersionInfo
 
@@ -35,16 +36,14 @@ class RootEntry:
 
 
 class BundleParser(Protocol):
-    def parse_root_entries(self, entries: Iterable[RootEntry], bundle_root: Path) -> DefinitionsMap:
-        ...
+    def parse_root_entries(self, entries: Iterable[RootEntry], bundle_root: Path) -> DefinitionsMap: ...
 
     def parse_config(
         self,
         config: list[dict],
         bundle_root: Path,
         template_path: Path,
-    ) -> ConfigDefinition:
-        ...
+    ) -> ConfigDefinition: ...
 
     def parse_scripts(
         self,
@@ -52,20 +51,17 @@ class BundleParser(Protocol):
         template_path: Path,
         action_allow_to_terminate: bool,
         mode: Literal["action", "upgrade", "wizard"],
-    ) -> list[action.JobSpec]:
-        ...
+    ) -> JobSpecV1: ...
 
     def parse_wizard_stages(
         self,
         stages: list[dict],
         template_path: Path,
-    ) -> list[action.wizard.Stage]:
-        ...
+    ) -> list[action.wizard.Stage]: ...
 
     def parse_mapping_rules(
         self, rules: list[dict], component_keys: Collection[ComponentKey]
-    ) -> list[mapping.MappingRule]:
-        ...
+    ) -> list[mapping.MappingRule]: ...
 
 
 BundleParsers: TypeAlias = list[tuple[VersionInfo, BundleParser]]

@@ -14,3 +14,5 @@ from typing import Final
 
 SECRETS_FILENAME: Final = "secrets_v2.json"
 SECRETS_FILENAME_DEPRECATED: Final = "secrets.json"
+
+DEFAULT_DB_PORT: Final = "5432"

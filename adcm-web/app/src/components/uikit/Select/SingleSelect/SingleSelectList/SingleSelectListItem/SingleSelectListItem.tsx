@@ -1,6 +1,7 @@
-import ConditionalWrapper from '@uikit/ConditionalWrapper/ConditionalWrapper';
-import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
 import Tooltip from '@uikit/Tooltip/Tooltip';
+import type { DefaultSelectListItemProps } from '@uikit/Select/Select.types';
+import FlexGroup from '@uikit/FlexGroup/FlexGroup';
+import Icon from '@uikit/Icon/Icon';
 
 interface SingleSelectListItemProps<T> extends DefaultSelectListItemProps<T>, React.PropsWithChildren {}
 
@@ -13,11 +14,17 @@ const SingleSelectListItem = <T,>({ onSelect, option, className, children }: Sin
   };
 
   return (
-    <ConditionalWrapper Component={Tooltip} isWrap={!!title} label={title} placement="bottom-start">
-      <li className={className} onClick={handleClick}>
+    <li className={className} onClick={handleClick}>
+      <FlexGroup gap="8px">
         {children}
-      </li>
-    </ConditionalWrapper>
+
+        {Boolean(title) && (
+          <Tooltip label={title}>
+            <Icon size={16} name="g2-information" />
+          </Tooltip>
+        )}
+      </FlexGroup>
+    </li>
   );
 };
 

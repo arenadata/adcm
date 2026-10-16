@@ -2,12 +2,14 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
 import type { RequestError } from '@api';
-import { AdcmHostProvidersApi, AdcmHostsApi } from '@api';
+import { AdcmHostProvidersApi, AdcmHostsApi, AdcmPrototypesApi } from '@api';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { upsertConcern } from '@utils/concernStoreUtils';
 import { showError } from '@store/notificationsSlice';
 import { RequestState } from '@models/loadState';
 import { processErrorResponse } from '@utils/responseUtils';
+import { attachContractVersionsToEntities, getUniqueEntityPrototypeIds } from '@utils/contractVersionUtils';
+import type { AdcmPrototype } from '@models/adcm';
 
 interface AdcmHostProviderState {
   hostProvider: AdcmHostProvider | null;
@@ -33,7 +35,22 @@ const getHostsCount = createAsyncThunk(
 
 const getHostProvider = createAsyncThunk('adcm/hostProvider/getHostProvider', async (id: number, thunkAPI) => {
   try {
-    return await AdcmHostProvidersApi.getHostProvider(id);
+    const provider = await AdcmHostProvidersApi.getHostProvider(id);
+    const prototypeIds = getUniqueEntityPrototypeIds([provider]);
+    let prototypes: AdcmPrototype[] = [];
+    if (prototypeIds.length) {
+      try {
+        const response = await AdcmPrototypesApi.getPrototypes({ ids: prototypeIds }, undefined, {
+          pageNumber: 0,
+          perPage: prototypeIds.length,
+        });
+        prototypes = response.results;
+      } catch {
+        prototypes = [];
+      }
+    }
+    const [enriched] = attachContractVersionsToEntities([provider], prototypes) as AdcmHostProvider[];
+    return enriched;
   } catch (error) {
     thunkAPI.dispatch(showError({ message: 'Hostprovider not found' }));
     return thunkAPI.rejectWithValue(error);

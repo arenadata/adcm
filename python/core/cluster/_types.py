@@ -92,6 +92,13 @@ class ClusterTopology:
         else:
             raise KeyError(f"No component with id {component_id}")
 
+    def get_service_by_component(self, component_id: ComponentID) -> ServiceTopology:
+        for service in self.services.values():
+            if component_id in service.components:
+                return service
+        else:
+            raise KeyError(f"No service found for component with id {component_id}")
+
 
 @dataclass(slots=True, frozen=True)
 class Export:

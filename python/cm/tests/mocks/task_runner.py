@@ -10,29 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import Any, NamedTuple
 
-from core.action import Job, ScriptType, Task
-from core.cluster import ClusterService
+from core.action import Task
+from core.action.types import AnsibleScript, JobShortInfo, PythonScript
 from core.legacy.job.executors import ExecutionResult, Executor, ExecutorConfig
-from core.legacy.job.runners import ExecutionTarget, ExternalSettings
-from core.logs import LogsService
-from core.scenarios.cluster import BeforeUpgradeScenarios
-from core.scenarios.config import ConfigScenarios
+from core.legacy.job.runners import AnsibleTargetBuilderI, ExecutionTarget, ExternalSettings, PythonTargetBuilderI
+from core.spec.types import FullSpecKey
 from django.utils import timezone
-from rbac.scenarios import RBACScenarios
 from typing_extensions import Self
-from use_cases.cluster.update import ResetBeforeUpgradeCluster
-from use_cases.provider.update import ResetBeforeUpgradeProvider
-from use_cases.transition.config import UpdateConfigurationFromJob
-from use_cases.transition.service_manage import ManageClusterServices
 
 from cm.impl.job.repo import JobRepo
-from cm.legacy.services.job.run import ExecutionTargetFactory
-from cm.legacy.services.job.run.executors import InternalScriptResult
 
 
 def do_nothing(*_, **__):
@@ -40,7 +31,7 @@ def do_nothing(*_, **__):
 
 
 class FailedJobInfo(NamedTuple):
-    position: int
+    spec_key: FullSpecKey
     return_code: int = 1
 
 
@@ -56,118 +47,48 @@ default_imitator = JobImitator()
 # ExecutionTarget Factories
 
 
-class ExecutionTargetFactoryDummyMock(ExecutionTargetFactory):
-    def __init__(
-        self,
-        *,
-        failed_job: FailedJobInfo | None = None,
-        logs_service: LogsService,
-        rbac_scenarios: RBACScenarios,
-        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
-        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
-        update_configuration_from_job: UpdateConfigurationFromJob,
-        manage_services: ManageClusterServices,
-        config_scenarios: ConfigScenarios,
-        cluster_service: ClusterService,
-        before_upgrade_scenarios: BeforeUpgradeScenarios,
-    ):
-        super().__init__(
-            logs_service=logs_service,
-            rbac_scenarios=rbac_scenarios,
-            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
-            reset_provider_before_upgrade=reset_provider_before_upgrade,
-            update_configuration_from_job=update_configuration_from_job,
-            manage_services=manage_services,
-            config_scenarios=config_scenarios,
-            cluster_service=cluster_service,
-            before_upgrade_scenarios=before_upgrade_scenarios,
-        )
-
-        self._failed_job = failed_job
+@dataclass(slots=True)
+class TargetBuilderDummyMock:
+    failed_job: FailedJobInfo | None = None
 
     def __call__(
-        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
-    ) -> Generator[ExecutionTarget, None, None]:
-        _ = task
-        for job_num, job in enumerate(jobs):
-            work_dir = configuration.adcm.run_dir / str(job.id)
-
-            if job.type == ScriptType.INTERNAL:
-                internal_script_func = self._supported_internal_scripts[job.script]
-                script = partial(internal_script_func, task=task, job=job)
-                executor = InternalExecutorMock(config=ExecutorConfig(work_dir=work_dir), script=script)
-
-            else:
-                executor_kwargs = {}
-                if self._failed_job is not None and job_num == self._failed_job.position:
-                    executor_kwargs = {"return_code": self._failed_job.return_code}
-
-                job_imitator = JobImitator(**executor_kwargs)
-                executor = MockExecutor(
-                    script_type=job.script,
-                    imitator=job_imitator,
-                    config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
-                )
-
-            yield ExecutionTarget(
-                job=job,
-                executor=executor,
-                environment_builders=(),
-                finalizers=(),
-            )
-
-
-class ETFMockWithEnvPreparation(ExecutionTargetFactory):
-    def __init__(
         self,
-        *,
-        change_jobs: dict[int, JobImitator] | None = None,
-        logs_service: LogsService,
-        rbac_scenarios: RBACScenarios,
-        reset_cluster_before_upgrade: ResetBeforeUpgradeCluster,
-        reset_provider_before_upgrade: ResetBeforeUpgradeProvider,
-        update_configuration_from_job: UpdateConfigurationFromJob,
-        manage_services: ManageClusterServices,
-        config_scenarios: ConfigScenarios,
-        cluster_service: ClusterService,
-        before_upgrade_scenarios: BeforeUpgradeScenarios,
-    ):
-        super().__init__(
-            logs_service=logs_service,
-            rbac_scenarios=rbac_scenarios,
-            reset_cluster_before_upgrade=reset_cluster_before_upgrade,
-            reset_provider_before_upgrade=reset_provider_before_upgrade,
-            update_configuration_from_job=update_configuration_from_job,
-            manage_services=manage_services,
-            config_scenarios=config_scenarios,
-            cluster_service=cluster_service,
-            before_upgrade_scenarios=before_upgrade_scenarios,
+        script: AnsibleScript | PythonScript,
+        task: Task,  # noqa: ARG002
+        job: JobShortInfo,
+        configuration: ExternalSettings,
+    ) -> ExecutionTarget:
+        imitator = default_imitator
+        if self.failed_job is not None and job.spec_key == self.failed_job.spec_key:
+            imitator = JobImitator(return_code=self.failed_job.return_code)
+
+        executor = MockExecutor(
+            script_type=script.path,
+            imitator=imitator,
+            config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
         )
 
-        self.imitators = change_jobs or {}
-        self.default_imitator = default_imitator
+        return ExecutionTarget(executor=executor, environment_builders=(), finalizers=())
+
+
+@dataclass(slots=True)
+class TargetBuilderWithEnvMock:
+    origin: AnsibleTargetBuilderI | PythonTargetBuilderI
+    change_jobs: dict[FullSpecKey, JobImitator] | None = None
 
     def __call__(
-        self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings
-    ) -> Generator[ExecutionTarget, None, None]:
-        for i, target in enumerate(super().__call__(task=task, jobs=jobs, configuration=configuration)):
-            if target.job.type == ScriptType.INTERNAL:
-                yield target
-                continue
+        self, script: AnsibleScript | PythonScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget:
+        target = self.origin(script=script, task=task, job=job, configuration=configuration)
+        executor = MockExecutor(
+            script_type=target.executor.script_type,
+            config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(job.id)),
+            imitator=(self.change_jobs or {}).get(job.spec_key, default_imitator),
+        )
 
-            imitator = self.imitators.get(i, self.default_imitator)
-            executor = MockExecutor(
-                script_type=target.executor.script_type,
-                config=ExecutorConfig(work_dir=configuration.adcm.run_dir / str(target.job.id)),
-                imitator=imitator,
-            )
-
-            yield ExecutionTarget(
-                job=target.job,
-                executor=executor,
-                environment_builders=target.environment_builders,
-                finalizers=target.finalizers,
-            )
+        return ExecutionTarget(
+            executor=executor, environment_builders=target.environment_builders, finalizers=target.finalizers
+        )
 
 
 # Executors
@@ -196,19 +117,6 @@ class MockExecutor(Executor):
         return self
 
     def wait_finished(self) -> Self:
-        return self
-
-
-class InternalExecutorMock(MockExecutor):
-    script_type = "internal"
-
-    def __init__(self, config: ExecutorConfig, script: Callable[[], InternalScriptResult]):
-        super().__init__(config=config)
-        self._script = script
-
-    def execute(self) -> Self:
-        script_result = self._script()
-        self._result = ExecutionResult(code=script_result.code)
         return self
 
 

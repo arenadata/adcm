@@ -10,11 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.converters import orm_object_to_core_type
+from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
+from cm.impl.job.repo import _get_selector_for_core_object
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, raise_flag, raise_flag_for_process
-from cm.legacy.services.concern.locks import create_task_flag_concern, create_task_lock_concern
 from cm.models import Action, ADCMEntity, Cluster, ConcernCause, ConcernItem, ConcernType, Host, JobLog, TaskLog
+from cm.tests.scripts import build_plan, build_script_spec
+from core.action import ScriptType
+from core.action.job import JobRepoI, JobShortFilter
+from core.action.operations import to_rich_job
 from core.concern.repo import ConcernRepoI
+from core.scenarios.concern import ConcernScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor, Descriptor
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_409_CONFLICT
@@ -104,30 +109,43 @@ class TestConcernsOnRename(GenericTestCase):
         }
 
     def create_task_concern(self, owner: Cluster, *, blocking: bool) -> ConcernItem:
-        task = TaskLog.objects.create(
+        owner_descriptor = orm_object_to_core_descriptor(owner)
+        spec_key = f"/0-{self.ACTION_NAME}"
+        task_orm = TaskLog.objects.create(
             action=Action.objects.get(prototype=owner.prototype, name=self.ACTION_NAME),
             object_id=owner.pk,
             object_type=owner.content_type,
             owner_id=owner.pk,
-            owner_type=orm_object_to_core_type(owner).value,
-            selector={},
+            owner_type=owner_descriptor.type.value,
+            selector=_get_selector_for_core_object(target=owner_descriptor, owner=owner_descriptor),
             status="running",
             verbose=False,
             is_blocking=blocking,
             name=self.ACTION_NAME,
             display_name="Dummy",
+            # job is named as its owner on purpose: `job` placeholder must not be renamed
+            execution_plan=build_plan(build_script_spec(spec_key, self.ACTION_NAME, display_name=owner.name)),
         )
-        # job is named as its owner on purpose: `job` placeholder must not be renamed
-        JobLog.objects.create(
-            task=task,
+        job_orm = JobLog.objects.create(
+            task=task_orm,
             status="running",
+            spec_key=spec_key,
+            script_type=ScriptType.ANSIBLE.value,
+            script="main.yaml",
             name=self.ACTION_NAME,
             display_name=owner.name,
             start_date=timezone.now(),
             finish_date=timezone.now(),
         )
-        create_concern = create_task_lock_concern if blocking else create_task_flag_concern
-        return ConcernItem.objects.get(id=create_concern(task))
+
+        job_repo = self.container.get(JobRepoI)
+        plan = job_repo.get_execution_plan(task_id=task_orm.pk)
+        job = next(iter(job_repo.find_jobs_short(JobShortFilter(ids=[job_orm.pk]))))
+        concern_id = self.container.get(ConcernScenarios).create_job_concern(
+            task=job_repo.get_task(id=task_orm.pk), first_job=to_rich_job(spec=plan, job=job)
+        )
+
+        return ConcernItem.objects.get(id=concern_id)
 
     # cluster
 
@@ -244,6 +262,10 @@ class TestConcernsOnRename(GenericTestCase):
         concern = ConcernItem.objects.get(
             owner_id=self.cluster.pk, owner_type=self.cluster.content_type, name="custom_flag"
         )
+        # additionally check get_concerns_info method within ADCM-8482
+        concerns_from_repo = self.container.get(ConcernRepoI).get_concerns_info(concern_ids={concern.id})
+        concern_info = concerns_from_repo[0]
+        self.assertIsNone(concern_info.cause)
 
         self.rename_cluster(self.cluster, self.NEW_CLUSTER_NAME)
 

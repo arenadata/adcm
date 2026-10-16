@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Any, Generic, Literal, TypeAlias, TypeVar
 
 from core import config, templates
-from core.action import JobSpec
+from core.action.types import JobSpecV1
 from core.mapping import MappingOperation, MappingPair, MappingRule
 
 ProcessID: TypeAlias = int
@@ -59,7 +59,7 @@ ConfigStepSpec: TypeAlias = tuple[config.spec.FullSpec, config.Defaults]
 ConfigStepData: TypeAlias = config.Configuration
 
 
-OperationStepSpec: TypeAlias = list[JobSpec]
+OperationStepSpec: TypeAlias = JobSpecV1
 
 # use cases are unknown for now
 OperationStepData: TypeAlias = Any
@@ -76,7 +76,7 @@ class MappingStepData:
 
 
 ST = TypeVar("ST", bound=StepType)
-SpecT = TypeVar("SpecT", bound=ConfigStepSpec | list[JobSpec] | list[MappingRule] | None)
+SpecT = TypeVar("SpecT", bound=ConfigStepSpec | OperationStepSpec | MappingStepSpec | None)
 
 
 @dataclass(slots=True)
@@ -95,18 +95,15 @@ StepT = TypeVar("StepT", bound=_Step)
 
 
 @dataclass(slots=True)
-class ConfigStep(_Step[Literal[StepType.CONFIGURATION], ConfigStepSpec]):
-    ...
+class ConfigStep(_Step[Literal[StepType.CONFIGURATION], ConfigStepSpec]): ...
 
 
 @dataclass(slots=True)
-class OperationStep(_Step[Literal[StepType.OPERATION], OperationStepSpec]):
-    ...
+class OperationStep(_Step[Literal[StepType.OPERATION], OperationStepSpec]): ...
 
 
 @dataclass(slots=True)
-class MappingStep(_Step[Literal[StepType.MAPPING], MappingStepSpec]):
-    ...
+class MappingStep(_Step[Literal[StepType.MAPPING], MappingStepSpec]): ...
 
 
 Step: TypeAlias = ConfigStep | OperationStep | MappingStep
@@ -150,18 +147,15 @@ class _StepDefinition(Generic[ST, M]):
 
 
 @dataclass(slots=True)
-class ConfigStepDefinition(_StepDefinition[StepType.CONFIGURATION, StepExtra]):
-    ...
+class ConfigStepDefinition(_StepDefinition[StepType.CONFIGURATION, StepExtra]): ...
 
 
 @dataclass(slots=True)
-class OperationStepDefinition(_StepDefinition[StepType.OPERATION, OperationStepExtra]):
-    ...
+class OperationStepDefinition(_StepDefinition[StepType.OPERATION, OperationStepExtra]): ...
 
 
 @dataclass(slots=True)
-class MappingStepDefinition(_StepDefinition[StepType.MAPPING, StepExtra]):
-    ...
+class MappingStepDefinition(_StepDefinition[StepType.MAPPING, StepExtra]): ...
 
 
 StepDefinition: TypeAlias = ConfigStepDefinition | OperationStepDefinition | MappingStepDefinition

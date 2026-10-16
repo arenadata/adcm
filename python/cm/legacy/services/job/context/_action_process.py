@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from core.legacy.cluster.types import ClusterTopology
 from core.types import Descriptor
-from infra.services import get_config_service
 import core
 
 from cm.legacy.services.job.context._types import CurrentStep, ProcessContext
@@ -32,7 +31,9 @@ class ProcessInfo:
         return ProcessContext(stages=self.stages, current=self.current)
 
 
-def get_action_process_context(process: Process, topology: ClusterTopology) -> ProcessInfo:
+def get_action_process_context(
+    process: Process, topology: ClusterTopology, config_service: core.config.ConfigService
+) -> ProcessInfo:
     steps_qs = process.steps.all().select_related("processstepinput")
 
     steps_by_name: dict[str, ProcessStep] = {step.name: step for step in steps_qs}
@@ -55,7 +56,9 @@ def get_action_process_context(process: Process, topology: ClusterTopology) -> P
             if hasattr(step_obj, "processstepinput"):
                 match step["type"]:
                     case core.action.wizard.StepType.CONFIGURATION:
-                        step_data = _build_config_for_step(process=process, step_obj=step_obj)
+                        step_data = _build_config_for_step(
+                            process=process, step_obj=step_obj, config_service=config_service
+                        )
                     case core.action.wizard.StepType.MAPPING if step_obj.processstepinput.mapping:
                         step_data["groups"], cumulative_groups = _build_mapping_for_step(step_obj, topology)
 
@@ -65,10 +68,8 @@ def get_action_process_context(process: Process, topology: ClusterTopology) -> P
     return ProcessInfo(stages=stages, current=current, cumulative_delta=cumulative_groups)
 
 
-def _build_config_for_step(process: Process, step_obj: ProcessStep) -> dict:
+def _build_config_for_step(process: Process, step_obj: ProcessStep, config_service: core.config.ConfigService) -> dict:
     config_input = step_obj.processstepinput.configuration
-
-    config_service = get_config_service()
 
     specification = core.config.spec.FullSpec.model_validate(step_obj.step_spec[0])
     attributes = {key: core.config.Attributes(**value) for key, value in config_input["attributes"].items()}

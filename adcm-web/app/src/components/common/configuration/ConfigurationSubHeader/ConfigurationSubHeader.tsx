@@ -7,6 +7,7 @@ interface ConfigurationSubHeaderProps {
   onSave: (description: string) => void;
   onRevert: () => void;
   isViewDraft: boolean;
+  canSave: boolean;
 }
 
 const ConfigurationSubHeader: React.FC<ConfigurationSubHeaderProps> = ({ onSave, ...props }) => {

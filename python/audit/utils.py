@@ -34,8 +34,7 @@ AUDITED_HTTP_METHODS = frozenset(("POST", "DELETE", "PUT", "PATCH"))
 URL_PATH_PATTERN = re.compile(r".*/api/v(?P<api_version>\d+)/(?P<target_path>.*?)/?$")
 
 
-class UserNotFoundError(Exception):
-    ...
+class UserNotFoundError(Exception): ...
 
 
 class LogInResult(Enum):

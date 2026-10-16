@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Service functions for working with Group model"""
+
 import functools
 
 from cm.errors import raise_adcm_ex

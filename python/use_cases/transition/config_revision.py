@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 from cm.converters import core_type_to_model
-from cm.legacy.services.config import retrieve_configs_with_revision
 from cm.models import ConfigRevision, JobLog
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, ObjectID, PrototypeID
 from django.db.transaction import atomic
@@ -148,15 +147,15 @@ class FindPrimaryConfigDiff:
 
         return {cod: target_info for cod, target_info in targets.items() if cod in suitable_targets}
 
-    @staticmethod
     def _get_configs_with_revision(
+        self,
         targets: dict[CoreObjectDescriptor, TargetInfo],
     ) -> dict[CoreObjectDescriptor, ConfigID]:
         type_ids_map: dict[ADCMCoreType, set[ObjectID]] = defaultdict(set)
         for target in targets:
             type_ids_map[target.type].add(target.id)
 
-        return retrieve_configs_with_revision(objects=type_ids_map)
+        return self.config_service.retrieve_configs_with_revision(objects=type_ids_map)
 
 
 def _get_related_configs_of_targets(

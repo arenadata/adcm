@@ -52,6 +52,8 @@ export interface AdcmAuditOperation {
   object: AdcmAuditOperationObject;
   user: AdcmAuditOperationUser;
   objectChanges: AdcmAuditOperationObjectChanges;
+  address?: string | null;
+  agent?: string | null;
 }
 
 export interface AdcmAuditOperationFilter {
@@ -79,6 +81,8 @@ export interface AdcmAuditLogin {
   details: {
     username: string;
   };
+  address?: string | null;
+  agent?: string | null;
 }
 
 export enum AdcmAuditLoginResultType {

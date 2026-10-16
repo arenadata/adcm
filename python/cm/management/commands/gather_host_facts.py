@@ -16,8 +16,11 @@ import sys
 import json
 import subprocess
 
+from application.di.containers import get_main_providers
 from django.conf import settings
 from django.core.management import BaseCommand
+import core
+import dishka
 
 from cm.collect_statistics.gather_hardware_info import get_inventory
 
@@ -35,8 +38,13 @@ class Command(BaseCommand):
 
         inventory_file = self._inventory_dir / "inventory.json"
 
+        container = dishka.make_container(*get_main_providers())
+        with container() as request_container:
+            config_service = request_container.get(core.config.ConfigService)
+            inventory = get_inventory(config_service=config_service)
+
         with inventory_file.open(mode="w", encoding="utf-8") as file_:
-            json.dump(get_inventory(), file_)
+            json.dump(inventory, file_)
 
         os.chdir(self._workdir)
 
@@ -53,11 +61,12 @@ class Command(BaseCommand):
         stdout_file = self._inventory_dir / "ansible.stdout"
         stderr_file = self._inventory_dir / "ansible.stderr"
 
-        with stdout_file.open(mode="w", encoding="utf-8") as stdout, stderr_file.open(
-            mode="w", encoding="utf-8"
-        ) as stderr:
-            ansible_process = subprocess.Popen(
-                ansible_command,  # noqa: S603
+        with (
+            stdout_file.open(mode="w", encoding="utf-8") as stdout,
+            stderr_file.open(mode="w", encoding="utf-8") as stderr,
+        ):
+            ansible_process = subprocess.Popen(  # noqa: S603
+                ansible_command,
                 env=get_environ(venv="2.16"),
                 stdout=stdout,
                 stderr=stderr,
@@ -81,5 +90,6 @@ def get_environ(venv: str) -> MutableMapping[str, str]:
     # This needs to be fixed.
     env = os.environ.copy()
     env["PATH"] = f"/venv/{venv}/bin:{env['PATH']}"
+    env["DJANGO_SETTINGS_MODULE"] = "adcm.settings_setups.plugin"
     env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{venv}/collections"
     return env

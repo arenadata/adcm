@@ -1,0 +1,39 @@
+# `on_fail` changes that are allowed: state of grouped scripts, empty multi-state lists anywhere
+# and multi-state changes of top-level scripts
+- type: cluster
+  name: on_fail_allowed_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      scripts:
+        - name: top_level
+          script_type: ansible
+          script: ./playbook.yaml
+          on_fail:
+            state: top_level_failed
+            multi_state:
+              set: [top_level_failed_flag]
+              unset: [succeeded]
+
+        - group: parallel
+          name: branches
+          scripts:
+            - group: sequential
+              name: inner
+              scripts:
+                - name: state_only
+                  script_type: ansible
+                  script: ./playbook.yaml
+                  on_fail:
+                    state: branch_failed
+            - name: empty_lists
+              script_type: ansible
+              script: ./playbook.yaml
+              on_fail:
+                state: branch_failed
+                multi_state:
+                  set: []
+                  unset: []

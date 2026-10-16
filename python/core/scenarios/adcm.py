@@ -29,8 +29,7 @@ class InitializeADCM:
     config_service: config.ConfigService
 
     @abstractmethod
-    def do(self, bundle_id: BundleID):
-        ...
+    def do(self, bundle_id: BundleID): ...
 
 
 @dataclass(slots=True)
@@ -39,5 +38,4 @@ class UpgradeADCM:
     config_scenarios: ConfigScenarios
 
     @abstractmethod
-    def do(self, bundle_id: BundleID):
-        ...
+    def do(self, bundle_id: BundleID): ...

@@ -10,42 +10,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from dataclasses import dataclass
 
-from core.action._types import JobSpec
-from core.action.job._repo import JobRepoI, LogCreateDTO, TaskCreateDTO, TaskUpdateMainFieldsDTO
-from core.action.job._termination import TerminationSignaller
+from core.action.job._repo import (
+    JobRepoI,
+    JobShortFilter,
+    LogCreateDTO,
+    PostInitTaskAttributesDTO,
+    TaskCreateDTO,
+)
 from core.action.job.errors import JobTerminationError, JobValidationError, TaskCreateError
 from core.action.job.operations import is_terminatable_status
-from core.result import Fail
+from core.action.operations import to_rich_job, to_rich_jobs
+from core.action.types import ExecutionStatus, JobSpecV1
+from core.spec.keys import is_part_of_group
 from core.types import ActionID, JobID, TaskID
 
 
 @dataclass(slots=True)
 class JobService:
     repo: JobRepoI
-    signaller: TerminationSignaller
 
-    def retrieve_scripts(self, action_id: ActionID) -> tuple[JobSpec, ...]:
+    def retrieve_scripts(self, action_id: ActionID) -> JobSpecV1:
         return self.repo.find_scripts_of_action(action_id=action_id)
 
     def create_task(self, payload: TaskCreateDTO) -> TaskID:
         return self.repo.create_task(payload=payload)
 
-    def set_task_mapping_and_configuration(self, task_id: TaskID, payload: TaskUpdateMainFieldsDTO) -> None:
-        self.repo.fill_task_mapping_and_configuration(task_id=task_id, payload=payload)
+    def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
+        self.repo.set_post_init_task_attributes(task_id=task_id, payload=payload)
 
-    def create_jobs(self, task_id: TaskID, scripts: tuple[JobSpec, ...] = ()) -> None:
-        if not scripts:
+    def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> None:
+        if not scripts.scripts:
             message = "Can't compose task for action, because no associated jobs found"
             raise TaskCreateError(message)
 
-        self.repo.create_jobs(task_id=task_id, scripts=scripts)
+        created = self.repo.create_jobs(task_id=task_id, scripts=scripts)
+        jobs_by_key = to_rich_jobs(spec=scripts, jobs=created)
 
         logs = []
-        for job in self.repo.find_jobs_of_task(task_id=task_id):
-            logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
-            logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
+        for job in jobs_by_key.values():
+            # logs are named after the kind of script that writes them
+            log_name = job.spec.script.type.value
+            logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stdout", format="txt"))
+            logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stderr", format="txt"))
 
         if logs:
             self.repo.create_logs(logs)
@@ -61,15 +70,51 @@ class JobService:
             message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"
             raise JobValidationError(message)
 
-        result = self.signaller.signal_termination_for_task(task)
-        if isinstance(result, Fail):
-            message = f"Task #{task_id} termination failed: {result.value}"
+        changed = self.repo.change_task_status(id=task_id, previous=task.status, new=_revoke_status_for(task.status))
+        if not changed:
+            message = f"Task #{task_id} termination failed due to status change, try again later"
             raise JobTerminationError(message)
 
-    def terminate_job(self, job_id: JobID) -> None:
-        job = self.repo.get_job(job_id)
+    def terminate_group(self, task_id: TaskID, name: str) -> None:
+        plan = self.repo.get_execution_plan(task_id=task_id)
 
-        if not job.is_termination_allowed:
+        group = next((candidate for candidate in plan.groups.values() if candidate.names.internal == name), None)
+        if group is None:
+            message = f'Group "{name}" of task #{task_id} doesn\'t exist in its execution plan'
+            raise JobTerminationError(message)
+
+        task = self.repo.get_task(task_id)
+        if not is_terminatable_status(task.status):
+            message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"
+            raise JobValidationError(message)
+
+        target_keys = tuple(key for key in plan.scripts if is_part_of_group(key, group.key))
+
+        found_jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task_id], spec_keys=target_keys))
+        terminatable_jobs = tuple(job for job in found_jobs if is_terminatable_status(job.status))
+
+        if not terminatable_jobs:
+            message = f'Group "{name}" of task #{task_id} has nothing to terminate'
+            raise JobTerminationError(message)
+
+        ids_by_status: dict[ExecutionStatus, list[JobID]] = defaultdict(list)
+        for job in terminatable_jobs:
+            ids_by_status[job.status].append(job.id)
+
+        for status, ids in ids_by_status.items():
+            # a job no longer in this exact status by the time of the update was changed concurrently
+            # (e.g. by the runner): its result wins, so it's skipped rather than treated as an error
+            self.repo.change_status_of_jobs(ids=ids, previous=(status,), new=_revoke_status_for(status))
+
+    def terminate_job(self, job_id: JobID) -> None:
+        found_jobs = self.repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+        job = next(iter(found_jobs))
+
+        # a job on its own says nothing about whether it may be terminated, its plan node does
+        plan = self.repo.get_execution_plan(task_id=job.task_id)
+        script_spec = to_rich_job(spec=plan, job=job).spec
+
+        if not script_spec.details.terminatable:
             message = f"Job #{job_id} termination is not allowed due to action definition"
             raise JobValidationError(message)
 
@@ -77,7 +122,16 @@ class JobService:
             message = f"Job #{job_id} termination is not allowed due to status: {job.status.value}"
             raise JobValidationError(message)
 
-        result = self.signaller.signal_termination_for_job(job)
-        if isinstance(result, Fail):
-            message = f"Job #{job_id} termination failed: {result.value}"
+        changed = self.repo.change_job_status(id=job_id, previous=job.status, new=_revoke_status_for(job.status))
+        if not changed:
+            message = f"Job #{job_id} termination failed due to status change, try again later"
             raise JobTerminationError(message)
+
+
+def _revoke_status_for(current: ExecutionStatus) -> ExecutionStatus:
+    """
+    Nothing was started yet for a task/job in `CREATED`, so it's revoked at once,
+    otherwise runner has to be given a chance to stop gracefully
+    """
+
+    return ExecutionStatus.REVOKED if current == ExecutionStatus.CREATED else ExecutionStatus.REVOKING

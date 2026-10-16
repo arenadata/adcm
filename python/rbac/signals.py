@@ -25,7 +25,7 @@ def handle_name_type_display_name(sender, instance, **kwargs):  # noqa: ARG001
     if kwargs["raw"]:
         return
 
-    base_group_name_pattern = re.compile(rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)')
+    base_group_name_pattern = re.compile(rf"(?P<base_name>.*?)(?: \[(?:{'|'.join(OriginType.values)})\]|$)")
     match = base_group_name_pattern.match(instance.name)
     if match and match.group("base_name"):
         name, display_name = get_group_name_display_name(name=match.group("base_name"), type_=instance.type)

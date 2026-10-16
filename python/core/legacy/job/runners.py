@@ -17,9 +17,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple, Protocol
 
-from core.action import ExecutionStatus, Job, Task
+from core.action import ExecutionStatus, Task
 from core.action.job import JobRepoI
+from core.action.types import (
+    AnsibleScript,
+    ConfigApplyScript,
+    HcApplyScript,
+    InternalScript,
+    JobShortInfo,
+    PythonScript,
+    RichJob,
+    ServiceManageScript,
+    SimpleInternalScript,
+)
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.job.executors import Executor
 
 
@@ -51,58 +63,69 @@ class ExternalSettings(NamedTuple):
 
 
 class JobFinalizer(Protocol):
-    def __call__(self, job: Job) -> None:
-        ...
+    def __call__(self, job: RichJob) -> None: ...
 
 
 class JobEnvironmentBuilder(Protocol):
     def __call__(
         self,
         task: Task,
-        job: Job,
+        job: RichJob,
         configuration: ExternalSettings,
         cluster_service: ClusterService,
-    ) -> None:
-        ...
+        config_service: ConfigService,
+    ) -> None: ...
 
 
-class ExecutionTarget(NamedTuple):
-    job: Job
+@dataclass(slots=True)
+class ExecutionTarget:
     executor: Executor
     environment_builders: Iterable[JobEnvironmentBuilder]
     # stuff like `finish_check` should go to finalizers
     finalizers: Iterable[JobFinalizer]
 
 
-class ExecutionTargetFactoryI(Protocol):
-    def __call__(self, task: Task, jobs: Iterable[Job], configuration: ExternalSettings) -> Iterable[ExecutionTarget]:
-        ...
+class AnsibleTargetBuilderI(Protocol):
+    def __call__(
+        self, script: AnsibleScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
 
 
-def always_true(_: "Job") -> bool:
-    return True
+class PythonTargetBuilderI(Protocol):
+    def __call__(
+        self, script: PythonScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
 
 
-class JobFilterPredicate(Protocol):
-    def __call__(self, job: Job, /) -> bool:
-        ...
-
-
-def non_success(job: "Job") -> bool:
-    return job.status != ExecutionStatus.SUCCESS
+class InternalTargetBuilderI(Protocol):
+    def __call__(
+        self, script: InternalScript, task: Task, job: JobShortInfo, configuration: ExternalSettings
+    ) -> ExecutionTarget: ...
 
 
 @dataclass(slots=True)
-class JobProcessor:
-    convert: ExecutionTargetFactoryI
-    filter_predicate: JobFilterPredicate = always_true
+class ExecutionTargetFactory:
+    ansible: AnsibleTargetBuilderI
+    python: PythonTargetBuilderI
+    internal: InternalTargetBuilderI
+
+    def __call__(self, task: Task, job: RichJob, configuration: ExternalSettings) -> ExecutionTarget:
+        match job.spec.script:
+            case AnsibleScript() as script:
+                return self.ansible(script=script, task=task, job=job.runtime, configuration=configuration)
+            case PythonScript() as script:
+                return self.python(script=script, task=task, job=job.runtime, configuration=configuration)
+            case (SimpleInternalScript() | HcApplyScript() | ConfigApplyScript() | ServiceManageScript()) as script:
+                return self.internal(script=script, task=task, job=job.runtime, configuration=configuration)
+            case _:
+                message = f"Can't convert job of type {job.spec.script.type}"
+                raise NotImplementedError(message)
 
 
 class RunnerEnvironment(Protocol):
     pid: int
 
-    def now(self) -> datetime:
-        ...
+    def now(self) -> datetime: ...
 
 
 @dataclass(slots=True)
@@ -118,7 +141,7 @@ class RunnerRuntime:
 
 
 class TaskRunner(ABC):
-    _job_processor: JobProcessor
+    _target_factory: ExecutionTargetFactory
     _settings: ExternalSettings
 
     # external dependencies
@@ -130,12 +153,12 @@ class TaskRunner(ABC):
     def __init__(
         self,
         *,
-        job_processor: JobProcessor,
+        target_factory: ExecutionTargetFactory,
         settings: ExternalSettings,
         repo: JobRepoI,
         environment: RunnerEnvironment,
     ):
-        self._job_processor = job_processor
+        self._target_factory = target_factory
         self._settings = settings
         self._repo = repo
         self._environment = environment

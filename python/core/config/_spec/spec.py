@@ -19,7 +19,8 @@ from typing_extensions import Self
 
 from core.config._names import full_name_to_level_names, level_names_to_full_name
 from core.config._spec.parameters import ParameterGroup, SimpleParameter
-from core.config._types import FullDisplayName, ParameterFullName, ParameterLevelName
+from core.config._types import FullDisplayName, ParameterFullName
+from core.spec.hierarchy import HierarchyLevel
 
 
 @dataclass(slots=True)
@@ -48,46 +49,10 @@ class HierarchyValidationRule(str, Enum):
 
 
 @dataclass(slots=True)
-class SpecHierarchyLevel:
-    fields: list[ParameterLevelName] = field(default_factory=list)
-    child_groups: dict[ParameterLevelName, Self] = field(default_factory=dict)
-    rule: HierarchyValidationRule = HierarchyValidationRule.ALL
-
-    def register(self, name: list[ParameterLevelName] | tuple[ParameterLevelName, ...]) -> None:
-        *groups, own_name = name
-
-        if not groups:
-            self.fields.append(own_name)
-            return
-
-        first_group, *rest_groups = groups
-
-        if first_group not in self.child_groups:
-            # This one added for convenience in cases when "groups" aren't passed in function, but only "parameters".
-            # See test `test_hierarchy_register_without_groups` for example.
-            if first_group not in self.fields:
-                self.fields.append(first_group)
-
-            self.child_groups[first_group] = self.__class__()
-
-        self.child_groups[first_group].register((*rest_groups, own_name))
-
-    def set_rule(
-        self, group: list[ParameterLevelName] | tuple[ParameterLevelName, ...], rule: HierarchyValidationRule
-    ) -> None:
-        *groups, own_name = group
-
-        if not groups:
-            if own_name not in self.child_groups:
-                # rule can be set only for groups, we trust caller on that,
-                # so we create it if it's missing
-                self.child_groups[own_name] = self.__class__()
-
-            self.child_groups[own_name].rule = rule
-            return
-
-        first_group, *rest_groups = groups
-        self.child_groups[first_group].set_rule(group=(*rest_groups, own_name), rule=rule)
+class SpecHierarchyLevel(HierarchyLevel[HierarchyValidationRule]):
+    @classmethod
+    def build_with_defaults(cls) -> Self:
+        return cls(rule=HierarchyValidationRule.ALL)
 
 
 class FullSpec(BaseModel):
@@ -102,7 +67,7 @@ class FullSpec(BaseModel):
         - they can be great in size => no reason to take them everywhere the spec goes
     """
 
-    hierarchy: SpecHierarchyLevel = Field(default_factory=SpecHierarchyLevel)
+    hierarchy: SpecHierarchyLevel = Field(default_factory=SpecHierarchyLevel.build_with_defaults)
     groups: dict[ParameterFullName, ParameterGroup] = Field(default_factory=dict)
     parameters: dict[ParameterFullName, SimpleParameter] = Field(default_factory=dict)
 

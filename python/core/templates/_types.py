@@ -29,12 +29,10 @@ class RenderEngineType(str, Enum):
 
 class TemplateRenderer(ABC):
     @abstractmethod
-    def can_be_rendered(self) -> bool:
-        ...
+    def can_be_rendered(self) -> bool: ...
 
     @abstractmethod
-    def render(self, context: dict) -> Any:
-        ...
+    def render(self, context: dict) -> Any: ...
 
 
 # Renderer Arguments

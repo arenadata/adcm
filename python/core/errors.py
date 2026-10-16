@@ -16,12 +16,10 @@ from core.types import ADCMLocalizedError, ADCMMessageError
 
 
 # todo should it be localized by default?
-class OperationError(ADCMLocalizedError):
-    ...
+class OperationError(ADCMLocalizedError): ...
 
 
-class NotFoundError(ADCMMessageError):
-    ...
+class NotFoundError(ADCMMessageError): ...
 
 
 class ConfigValueError(ADCMLocalizedError):

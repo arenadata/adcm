@@ -1,0 +1,31 @@
+---
+- type: provider
+  name: provider_lookup_config
+  version: 1
+  actions: &id001
+    dummy:
+      masking: null
+      scripts:
+        - name: dummy
+          script: ./playbook.yaml
+          script_type: ansible
+  config: &id002
+    - name: plain_s
+      type: string
+      default: initial
+    - name: plain_i
+      type: integer
+      default: 3
+    - name: g1
+      type: group
+      subs:
+        - name: plain_s
+          type: string
+          default: initial in group
+  contract_version: '2.1'
+  venv: '2.16'
+- type: host
+  name: host_lookup_config
+  version: 1
+  actions: *id001
+  config: *id002

@@ -12,7 +12,7 @@
 
 from uuid import uuid4
 
-from django.contrib.contenttypes.models import ContentType
+from core.action import ScriptType
 from django.utils import timezone
 
 from cm.errors import AdcmEx
@@ -24,11 +24,11 @@ from cm.models import (
     Cluster,
     Component,
     ConcernItem,
-    ConfigHostGroup,
     ConfigLog,
     Host,
     HostComponent,
     JobLog,
+    JobStatus,
     ObjectConfig,
     Prototype,
     PrototypeConfig,
@@ -36,6 +36,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.tests.scripts import build_plan, build_script_spec
 
 
 def gen_name(prefix: str):
@@ -177,25 +178,33 @@ def gen_action(name: str | None = None, bundle=None, prototype=None) -> Action:
         bundle = bundle or gen_bundle()
         prototype = gen_prototype(bundle, "service")
     return Action.objects.create(
-        name=name or gen_name("action_"), display_name=f"Test {prototype.type} action", prototype=prototype, type="task"
+        name=name or gen_name("action_"), display_name=f"Test {prototype.type} action", prototype=prototype
     )
+
+
+GENERATED_SPEC_KEY = "/0-dummy"
 
 
 def gen_task_log(obj: ADCMEntity, action: Action = None) -> TaskLog:
     return TaskLog.objects.create(
         action=action or gen_action(prototype=obj.prototype),
         object_id=obj.pk,
-        status="CREATED",
+        status=JobStatus.CREATED,
         task_object=obj,
         start_date=timezone.now(),
         finish_date=timezone.now(),
+        # a single node, which `gen_job_log` makes the job of
+        execution_plan=build_plan(build_script_spec(GENERATED_SPEC_KEY, "dummy")),
     )
 
 
 def gen_job_log(task: TaskLog) -> JobLog:
     return JobLog.objects.create(
         task=task,
-        status="CREATED",
+        status=JobStatus.CREATED,
+        spec_key=GENERATED_SPEC_KEY,
+        script_type=ScriptType.ANSIBLE.value,
+        script="main.yaml",
         start_date=timezone.now(),
         finish_date=timezone.now(),
     )
@@ -265,11 +274,3 @@ def gen_config(config: dict = None, attr: dict = None) -> ObjectConfig:
     object_config.save()
 
     return object_config
-
-
-def gen_group(name, object_id, model_name):
-    return ConfigHostGroup.objects.create(
-        object_id=object_id,
-        object_type=ContentType.objects.get(model=model_name),
-        name=name,
-    )

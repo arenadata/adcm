@@ -114,7 +114,7 @@ def get_config_host_group_alternatives_for_hosts_in_provider_groups(
             inplace=True,
         )
 
-        group_before_upgrade = objects_before_upgrade.get((group.owner, group.name), None)
+        group_before_upgrade = objects_before_upgrade.get((group.owner, group.name))
 
         for host_info in group.hosts:
             node = result[host_info.name]["provider"]

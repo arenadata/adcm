@@ -3,6 +3,7 @@ import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHe
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import { useSettingsConfigurationsCompare } from './useSettingsConfigurationsCompare';
 import { useSettingsConfiguration } from './useSettingsConfiguration';
 import s from './SettingsConfiguration.module.scss';
@@ -33,7 +34,12 @@ const SettingsConfiguration: React.FC = () => {
         compareOptions={compareOptions}
       />
       <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+        <ConfigurationSubHeader
+          onSave={onSave}
+          onRevert={onReset}
+          isViewDraft={selectedConfigId === 0}
+          canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+        />
         <ConfigurationMinimap>
           <ConfigurationMain
             isLoading={isConfigurationLoading}

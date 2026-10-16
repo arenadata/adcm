@@ -1,0 +1,23 @@
+# multi-state changes on failure of a grouped script can't be relied on:
+# only one failed job's `on_fail` is applied when parallel branches fail
+- type: cluster
+  name: script_groups_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped:
+      scripts:
+        - group: parallel
+          name: branches
+          scripts:
+            - name: flagging
+              script_type: ansible
+              script: ./playbook.yaml
+              on_fail:
+                multi_state:
+                  set: [branch_failed_flag]
+            - name: plain
+              script_type: ansible
+              script: ./playbook.yaml

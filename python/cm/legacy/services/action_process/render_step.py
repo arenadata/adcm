@@ -19,9 +19,9 @@ from core.types import ActionProcessID, ActionProcessStepID
 import core
 
 from cm.errors import AdcmEx
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.services.action_process import repo
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState, StepUpdateDTO
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.logger import logger
 
 

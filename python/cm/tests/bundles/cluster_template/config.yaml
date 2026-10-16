@@ -16,5 +16,35 @@
         engine:
           type: jinja2
       masking: {}
+
+    adcm_5556_paths:
+      scripts_template:
+        file:
+          path: templates/scripts.py
+          entrypoint: get_scripts
+        engine:
+          type: python
+      config_template:
+        file:
+          path: outer/configs/config_1.j2
+        engine:
+          type: jinja2
+      masking: {}
+
+    with_activatable_group:
+      config:
+        - name: group
+          type: group
+          activatable: true
+          subs:
+            - name: x
+              type: integer
+      scripts_template:
+        file:
+          path: templates/scripts_by_activatable_group.j2
+        engine:
+          type: jinja2
+      masking: {}
+
   contract_version: '2.1'
   venv: '2.16'

@@ -20,9 +20,33 @@ get them directly, instead of only through `container.get(...)`.
 
 from functools import cache
 from pathlib import Path
+from typing import Annotated
 import os
 
 from core.settings import Directories
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from application.constants import DEFAULT_DB_PORT
+from application.utils import parse_settings_from_env
+
+
+class DBSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="db_")
+
+    user: str
+    # prefix looks to be ignored when alias is used
+    password: Annotated[SecretStr, Field(alias="db_pass")]
+    name: str
+    host: str
+    port: str = DEFAULT_DB_PORT
+
+    options: Annotated[dict, Field(default_factory=dict)]
+
+
+@cache
+def parse_db_settings_from_env() -> DBSettings:
+    return parse_settings_from_env(settings_cls=DBSettings, name="database")
 
 
 @cache

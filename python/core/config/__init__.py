@@ -15,6 +15,7 @@ from core.config import _spec as spec  # noqa
 from core.config import _names as names
 from core.config import _operations as operations
 from core.config import _pattern as pattern
+from core.config import _yspec as yspec
 from core.config._errors import DefaultFileMissingError, ConfigOperationError
 from core.config._config import (
     flat_to_nested,
@@ -106,4 +107,5 @@ __all__ = [
     "secrets",
     "set_by_full_name",
     "spec",
+    "yspec",
 ]

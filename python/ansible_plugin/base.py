@@ -18,7 +18,7 @@ from typing import Any, Generic, Literal, ParamSpec, Protocol, TypeAlias, TypeVa
 import fcntl
 import traceback
 
-from application.di.containers import get_main_providers
+from application.di.containers import get_ansible_plugin_providers
 from cm.errors import AdcmEx
 import dishka
 
@@ -166,8 +166,7 @@ class TargetDetector(Protocol):
         context_owner: CoreObjectDescriptor,
         context: VarsContextSection,
         parsed_arguments: Any,
-    ) -> tuple[CoreObjectDescriptor, ...]:
-        ...
+    ) -> tuple[CoreObjectDescriptor, ...]: ...
 
 
 def from_objects(
@@ -337,8 +336,7 @@ class CallResult(Generic[ReturnValue]):
 
 
 class ArgumentsValidator(Protocol[CallArguments]):
-    def __call__(self, arguments: CallArguments) -> PluginValidationError | None:
-        ...
+    def __call__(self, arguments: CallArguments) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,8 +349,7 @@ class ArgumentsConfig(Generic[CallArguments]):
 class TargetValidator(Protocol):
     def __call__(
         self, context_owner: CoreObjectDescriptor, context: VarsContextSection, raw_arguments: dict
-    ) -> PluginValidationError | None:
-        ...
+    ) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -381,8 +378,7 @@ class TargetConfig:
 class ContextValidator(Protocol):
     def __call__(
         self, context_owner: CoreObjectDescriptor, context: VarsContextSection
-    ) -> PluginValidationError | None:
-        ...
+    ) -> PluginValidationError | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -593,7 +589,7 @@ class ADCMAnsiblePlugin(ActionBase):
         with (settings.RUN_DIR / str(task_vars["job"]["id"]) / "config.json").open(encoding="utf-8") as file:
             fcntl.flock(file.fileno(), fcntl.LOCK_EX)
 
-            di_container = dishka.make_container(*get_main_providers())
+            di_container = dishka.make_container(*get_ansible_plugin_providers())
             with di_container(scope=dishka.Scope.REQUEST) as container:
                 executor = self._get_executor(tmp=tmp, task_vars=task_vars, container=container)
                 execution_result = executor.execute()

@@ -9,15 +9,15 @@
   license: ./EULA.txt
   upgrade:
     - name: upgrade
-      versions: &id001
+      versions: &from_1_to_2
         min: '1.0'
         max: '2.0'
-      states: &id002
+      states: &available_any
         available: any
       description: This is upgrade!
     - name: upgrade_via_action_simple
-      versions: *id001
-      states: *id002
+      versions: *from_1_to_2
+      states: *available_any
       scripts: &id003
         - name: pre
           script: ./playbook.yaml
@@ -29,8 +29,8 @@
           script: ./playbook.yaml
           script_type: ansible
     - name: upgrade_via_action_complex
-      versions: *id001
-      states: *id002
+      versions: *from_1_to_2
+      states: *available_any
       scripts: *id003
       config:
         - name: simple
@@ -77,20 +77,28 @@
       versions:
         min_strict: '0'
         max: '0.3'
-      states: *id002
+      states: *available_any
     - name: unfit_state
-      versions: *id001
+      versions: *from_1_to_2
       states:
         available:
           - doesnotexist
     - name: with_scripts_adcm_7807
-      versions: *id001
-      states: *id002
+      versions: *from_1_to_2
+      states: *available_any
       scripts_template:
         engine:
           type: jinja2
         file:
           path: ./adcm_7807_upgrade_scripts.j2
+    - name: adcm_8031_upgrade
+      versions: *from_1_to_2
+      scripts_template:
+        file:
+          path: ./adcm_8031_scripts_template_irrelevant_condition.j2
+        engine:
+          type: jinja2
+      states: *available_any
   config: &id004
     - name: string
       type: string

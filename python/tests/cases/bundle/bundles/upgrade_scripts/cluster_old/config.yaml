@@ -1,0 +1,5 @@
+- type: cluster
+  name: upgrade_scripts_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.16"

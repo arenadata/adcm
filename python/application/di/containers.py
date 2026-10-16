@@ -13,7 +13,6 @@
 
 from dishka import Provider
 
-from application.di.providers.celery import CeleryProvider
 from application.di.providers.environment import EnvironmentProvider
 from application.di.providers.main import (
     ActionHostGroupProvider,
@@ -34,16 +33,12 @@ from application.di.providers.main import (
     UtilsProvider,
     WizardProvider,
 )
-from application.di.providers.task_runner import JobUseCaseProvider, TaskRunnerProvider
 
 
-def get_main_providers() -> tuple[Provider, ...]:
+def get_ansible_plugin_providers() -> tuple[Provider, ...]:
     return (
-        ActionHostGroupProvider(),
         BundleProvider(),
-        CeleryProvider(),
         LogsServiceProvider(),
-        MetricsProvider(),
         ClusterProvider(),
         ConcernProvider(),
         ConfigProvider(),
@@ -52,12 +47,29 @@ def get_main_providers() -> tuple[Provider, ...]:
         PathResolverProvider(),
         ProviderProvider(),
         ScenariosProvider(),
-        TaskRunnerProvider(),
         UpgradeProvider(),
         UseCaseProvider(),
         UtilsProvider(),
         WizardProvider(),
-        AuditProvider(),
+    )
+
+
+def get_task_runner_providers() -> tuple[Provider, ...]:
+    from application.di.providers.task_runner import TaskRunnerProvider
+
+    return *get_ansible_plugin_providers(), TaskRunnerProvider(), AuditProvider()
+
+
+def get_main_providers() -> tuple[Provider, ...]:
+    from application.di.providers.celery import CeleryProvider
+    from application.di.providers.task_runner import JobUseCaseProvider
+
+    providers = (
+        ActionHostGroupProvider(),
+        CeleryProvider(),
+        MetricsProvider(),
         JobUseCaseProvider(),
         ADCMProvider(),
     )
+
+    return *get_task_runner_providers(), *providers

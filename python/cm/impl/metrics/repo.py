@@ -37,6 +37,9 @@ class ClusterMetricsRepo(ClusterMetricsRepoI):
                     "disk": format_size_from_bytes(disk),
                 }
                 for cluster_id, cpu_vcores, ram, disk in rows.values_list(*self._host_info_fields)
+                # facts gathered before ADCM 3.0.0 have no "ram_bytes" and "disk_size",
+                # so resources are considered absent until facts are re-gathered
+                if ram and disk
             }
             if rows
             else {}

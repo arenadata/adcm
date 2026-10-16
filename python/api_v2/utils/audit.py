@@ -50,10 +50,13 @@ from cm.models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from django.core.handlers.wsgi import WSGIRequest
-from django.db.models import Model, Prefetch
+from django.db.models import JSONField, Model, Prefetch
+from django.db.models.expressions import RawSQL
 from django.http.request import RawPostDataException
 from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
+
+from api_v2.task.serializers import TaskGroupTerminateSerializer
 
 # object retrievers
 
@@ -365,7 +368,7 @@ def _retrieve_request_body(request: WSGIRequest) -> Any | None:
 
     # request's body can be read only once
     body = None
-    with suppress(AttributeError, json.JSONDecodeError, RawPostDataException):
+    with suppress(AttributeError, json.JSONDecodeError, UnicodeDecodeError, RawPostDataException):
         body = json.loads(request.body)
 
     return body
@@ -411,6 +414,21 @@ component_with_parents_specified_in_path_exists = partial(
     model=Component,
     arg_model_field_map={"cluster_pk": "cluster_id", "service_pk": "service_id"},
 )
+
+
+def task_termination_404_is_denial(hook: AuditHook) -> bool:
+    """
+    Whether 404 on task termination is about access (kept as denied).
+
+    The only exception is group termination (JSON object body with `group`) of a task
+    lacking execution plan (legacy one): the plan is what isn't found, so it's a failure.
+    """
+
+    data = _retrieve_request_body(request=hook.call_arguments.get("request"))
+    if not (isinstance(data, dict) and "group" in data):
+        return True
+
+    return not TaskLog.objects.filter(id=hook.call_arguments.get("pk"), execution_plan__isnull=True).exists()
 
 
 def retrieve_user_password_groups(id_: int) -> dict:
@@ -654,23 +672,46 @@ def set_job_name(
     context.name = context.name.format(job_name=job_name).strip()
 
 
-def set_task_name(
-    context: OperationAuditContext,
-    call_arguments: AuditedCallArguments,
-    result: Result | None,  # noqa: ARG001
-    exception: Exception | None,  # noqa: ARG001
-) -> None:
-    task_name = (
-        TaskLog.objects.select_related("action")
-        .values_list("action__display_name", flat=True)
-        .filter(id=call_arguments["pk"])
-        .first()
-    )
+class set_task_termination_target_name(AuditHook):  # noqa: N801
+    """
+    Build task termination's operation name, naming whichever of task/group is being cancelled.
 
-    if task_name is None:
-        task_name = "Task"
+    Wording depends on presence of `group` in the JSON object body:
+    no `group` means task termination, otherwise it's a group one.
+    Group name is normalized with `TaskGroupTerminateSerializer`, as the view does,
+    and only a valid one is looked up among plan groups' internal names;
+    the found group is named by its display name, an unknown or invalid one isn't named at all.
+    The task name is baked into the template text (braces doubled, since it isn't the
+    templated slot), the group's display name is the templated, truncatable name.
+    """
 
-    context.name = context.name.format(task_name=task_name).strip()
+    def __call__(self) -> None:
+        task_id = self.call_arguments.get("pk")
+
+        data = _retrieve_request_body(request=self.call_arguments.get("request"))
+        if not (isinstance(data, dict) and "group" in data):
+            self.context.name = f"{_get_task_name(task_id=task_id) or 'Task'} cancelled".strip()
+            return
+
+        # same validation the view runs: non-bool str/int/float, non-blank after trimming,
+        # no NUL byte or lone UTF-16 surrogate (`CharField`'s built-in validators)
+        serializer = TaskGroupTerminateSerializer(data=data)
+        if not serializer.is_valid():
+            self.context.name = f"{_get_task_name(task_id=task_id) or 'Task'} group cancelled".strip()
+            return
+
+        task_name, group_display_name = _get_task_and_group_display_names(
+            task_id=task_id, group_name=serializer.validated_data["group"]
+        )
+        task_name = task_name or "Task"
+
+        if group_display_name is None:
+            self.context.name = f"{task_name} group cancelled".strip()
+            return
+
+        escaped_task_name = task_name.replace("{", "{{").replace("}", "}}")
+        template = f'{escaped_task_name} group "{{}}" cancelled'
+        self.context.name = OperationNameTemplate(names=(group_display_name,), template=template)
 
 
 def get_ahg_audit_name(id_: int) -> str | None:
@@ -712,3 +753,33 @@ def get_audit_object_name(object_id: int, model_name: str) -> str:
             raise ValueError(f"Unexpected audit type: {audit_type}")
 
     return "/".join(names or ())
+
+
+def _get_task_name(task_id: str | int | None) -> str | None:
+    return TaskLog.objects.values_list("action__display_name", flat=True).filter(id=task_id).first()
+
+
+def _get_task_and_group_display_names(task_id: str | int | None, group_name: str) -> tuple[str | None, str | None]:
+    """Retrieve task's (action's) display name and display name of its plan group in one query"""
+
+    row = (
+        TaskLog.objects.filter(id=task_id)
+        .annotate(
+            # jsonpath is a constant of the SQL text, group name travels as a parameter only (`$name` var)
+            group_display_name=RawSQL(
+                "jsonb_path_query_first(execution_plan, "
+                "'$.groups.* ? (@.names.internal == $name).names.display', "
+                "jsonb_build_object('name', %s::text))",
+                (group_name,),
+                output_field=JSONField(),
+            )
+        )
+        .values_list("action__display_name", "group_display_name")
+        .first()
+    )
+    if row is None:
+        return None, None
+
+    task_name, group_display_name = row
+
+    return task_name, (group_display_name if isinstance(group_display_name, str) else None)

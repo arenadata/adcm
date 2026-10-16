@@ -42,15 +42,15 @@ class CeleryTerminator(Terminator):
     def terminate_task(self, task: TaskShortInfo) -> None:
         with atomic():
             self.repo.change_status_of_task_jobs(
-                task_id=task.id, previous=ExecutionStatus.CREATED, new=ExecutionStatus.REVOKED
+                task_id=task.id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
             )
 
-        jobs = self.repo.find_jobs_of_task(task.id)
+        jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task.id]))
         # we assume that jobs can't be in scheduled/queued statuses,
         # when REVOKING/TERMINATING is uninteresting for this process,
         # it should be independent (at least I see it like that for now)
         running_jobs = tuple(job for job in jobs if job.status == ExecutionStatus.RUNNING)
-        job_id_celery_task_id_pairs = tuple(map(attrgetter("id", "execution_env.worker_id"), running_jobs))
+        job_id_celery_task_id_pairs = tuple(map(attrgetter("id", "worker.worker_id"), running_jobs))
 
         celery_task_ids = list(filter(None, map(itemgetter(1), job_id_celery_task_id_pairs)))
         if celery_task_ids:
@@ -61,7 +61,7 @@ class CeleryTerminator(Terminator):
             self.send_stop_executor_signal_for_job(job_id=job_id, celery_task_id=celery_task_id)
 
     def terminate_job(self, job: JobShortInfo) -> None:
-        self.send_stop_executor_signal_for_job(job_id=job.id, celery_task_id=job.worker["worker_id"])
+        self.send_stop_executor_signal_for_job(job_id=job.id, celery_task_id=job.worker.worker_id)
 
     def send_stop_executor_signal_for_job(self, job_id: int, celery_task_id: str | int | None) -> None:
         self.app.control.broadcast(
@@ -129,18 +129,16 @@ class CeleryTaskMonitor(TaskMonitor):
         self, task_with_jobs: tuple[TaskShortInfo, list[JobShortInfo]], celery_task_ids: set[str]
     ) -> TaskLivenessStatus:
         task, jobs = task_with_jobs
-        task_related_celery_ids = {task.worker.get("worker_id"), *(job.worker.get("worker_id") for job in jobs)} - {
-            None
-        }
+        task_related_celery_ids = {task.worker.worker_id, *(job.worker.worker_id for job in jobs)} - {None}
         if task_related_celery_ids.intersection(celery_task_ids):
             return TaskLivenessStatus.ALIVE
 
-        # finish_dates will be missing for tasks with one or the first running job.
+        # finish dates will be missing for tasks with one or the first running job.
         # Meanwhile, the trust gap is needed to “give time” for the new job to start
         # (and therefore it will be displayed in the scheduled or active list)
-        # If none of the jobs have a finish_date assigned and they are not listed in the set above,
+        # If none of the jobs have a finish date assigned and they are not listed in the set above,
         # this most likely means that there’s no point in waiting for the trust gap in the hope that it will appear.
-        finish_dates = tuple(filter(None, map(attrgetter("finish_date"), jobs)))
+        finish_dates = tuple(job.dates.finish for job in jobs if job.dates.finish is not None)
 
         if finish_dates:
             latest_finished_job_date = max(finish_dates)

@@ -12,9 +12,7 @@
 
 from pathlib import Path
 
-from cm.models import ConfigHostGroup
 from core.types import ADCMHostGroupType
-from django.contrib.contenttypes.models import ContentType
 from djangorestframework_camel_case.util import camelize
 from rbac.models import Group, Role, User
 from rbac.services.policy import policy_create
@@ -61,11 +59,7 @@ class TestEventIsSent(django.test.TransactionTestCase, WithPreparedFSAndInitADCM
             object=[],
             description="second description",
         )
-        self.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(self.provider),
-            object_id=self.provider.pk,
-        )
+        self.host_group = self.uc.add_config_host_group(owner=self.provider, name="config_host_group")
 
     def test_update_event_is_sent(self):
         request_events_dict = {

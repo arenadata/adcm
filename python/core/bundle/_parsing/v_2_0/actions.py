@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Generic, Literal, TypeVar
 
 from pydantic import AfterValidator, BeforeValidator, Field, StrictBool, model_validator
 
@@ -28,6 +28,10 @@ from core.bundle._parsing.v_2_0.schema import (
     ScriptsTemplate,
     WizardTemplate,
 )
+
+# Entries of `scripts` differ between contract versions (e.g. groups of scripts),
+# so actions are parametrized by them
+ScriptT = TypeVar("ScriptT")
 
 # States, action-specific arguments
 
@@ -163,7 +167,7 @@ class _ActionBase:
 
     states: Annotated[ActionStatesSchema | None, Field(default=None)]
     masking: Masking
-    on_fail: Annotated[StateActionResultSchema | str | None, Field(default=None)]
+    on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
 
     config: ConfigAsListDictOrNoneNoDuplicates
@@ -192,8 +196,8 @@ class _ActionBase:
 
 
 @dataclass(slots=True)
-class ClusterObjectAction(_ActionBase):
-    scripts: Annotated[list[ClusterScript] | None, Field(default=None)]
+class ClusterObjectAction(_ActionBase, Generic[ScriptT]):
+    scripts: Annotated[list[ScriptT] | None, Field(default=None)]
     scripts_template: Annotated[ScriptsTemplate | None, Field(default=None)]
     config_template: Annotated[ConfigTemplate | None, Field(default=None)]
     wizard_template: Annotated[WizardTemplate | None, Field(default=None)]
@@ -209,7 +213,7 @@ class ClusterObjectAction(_ActionBase):
         specified = tuple(filter(None, (self.scripts, self.scripts_template)))
         if len(specified) != 1:
             raise ValueError(
-                'Exactly one of "scripts" or "scripts_template" must be provided, ' "not multiple nor neither."
+                'Exactly one of "scripts" or "scripts_template" must be provided, not multiple nor neither.'
             )
 
         return self
@@ -219,20 +223,6 @@ class ClusterObjectAction(_ActionBase):
         specified = tuple(filter(None, (self.config, self.config_template)))
         if len(specified) > 1:
             raise ValueError('At most one of "config" or "config_template" must be provided.')
-
-        return self
-
-    @model_validator(mode="after")
-    def validate_hc_apply_together_hc_acl(self):
-        if self.scripts is None:
-            return self
-
-        if self.wizard_template is not None:
-            return self
-
-        for script in self.scripts:
-            if script.script_type == "internal" and script.script == "hc_apply" and self.hc_acl is None:
-                raise ValueError('"hc_apply" requires "hc_acl" declaration')
 
         return self
 
@@ -250,40 +240,40 @@ class ClusterObjectAction(_ActionBase):
 
 
 @dataclass(slots=True)
-class ADCMAction(_ActionBase):
-    scripts: list[ADCMScript]
+class ADCMAction(_ActionBase, Generic[ScriptT]):
+    scripts: list[ScriptT]
 
 
 @dataclass(slots=True)
-class HostAction(_ActionBase):
-    scripts: list[ProviderScript]
+class HostAction(_ActionBase, Generic[ScriptT]):
+    scripts: list[ScriptT]
 
 
 @dataclass(slots=True)
-class ProviderAction(HostAction):
+class ProviderAction(HostAction[ScriptT]):
     allow_for_action_host_group: Annotated[StrictBool, Field(default=None)]
 
 
 # United
 
 ClusterActions = Annotated[
-    dict[Name, ClusterObjectAction] | None,
+    dict[Name, ClusterObjectAction[ScriptT]] | None,
     Field(default=None),
     BeforeValidator(forbidden_mm_actions),
 ]
 
 
 HostActions = Annotated[
-    dict[Name, HostAction] | None,
+    dict[Name, HostAction[ScriptT]] | None,
     Field(default=None),
 ]
 
 ProviderActions = Annotated[
-    dict[Name, ProviderAction] | None,
+    dict[Name, ProviderAction[ScriptT]] | None,
     Field(default=None),
 ]
 
 ADCMActions = Annotated[
-    dict[Name, ADCMAction] | None,
+    dict[Name, ADCMAction[ScriptT]] | None,
     Field(default=None),
 ]

@@ -11,21 +11,9 @@
 # limitations under the License.
 
 
-import os
-
-
 class _Flag:
     __slots__ = ("header", "env")
 
     def __init__(self, flag: str) -> None:
         self.header = flag
         self.env = flag.replace("-", "_").upper()
-
-
-FLAG_JOB_SCHEDULER = _Flag("feature-job-scheduler")
-FLAG_CONFIG_PROCESSING = _Flag("feature-config-processing")
-
-
-def use_new_job_scheduler() -> bool:
-    #    return os.environ.get(FLAG_JOB_SCHEDULER.env) == "new"
-    return os.environ.get(FLAG_JOB_SCHEDULER.env) != "old"

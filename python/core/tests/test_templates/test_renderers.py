@@ -35,8 +35,7 @@ class _TemplateRendererBaseTest(ABC):
         self.not_existing_file = Path(f"not-exist.{self.file_ext}")
 
     @abstractmethod
-    def get_renderer(self, path: Path) -> TemplateRenderer:
-        ...
+    def get_renderer(self, path: Path) -> TemplateRenderer: ...
 
     def test_correct_file_can_be_rendered_true(self):
         renderer = self.get_renderer(self.correct_file)

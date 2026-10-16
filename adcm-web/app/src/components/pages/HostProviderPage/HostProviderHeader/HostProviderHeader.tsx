@@ -1,18 +1,20 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { ButtonGroup, Text } from '@uikit';
+import { Badge, ButtonGroup, Text } from '@uikit';
 import EntityHeader from '@commonComponents/EntityHeader/EntityHeader';
 import { useDispatch, useStore } from '@hooks';
 import { orElseGet } from '@utils/checkUtils';
 import HostProviderDeleteButton from './HostProviderDeleteButton/HostProviderDeleteButton';
 import { getHostsCount } from '@store/adcm/hostProviders/hostProviderSlice';
 import HostProviderDynamicActionsButton from './HostProviderDynamicActionsButton/HostProviderDynamicActionsButton';
+import { getContractVersionBadgeStatus } from '@utils/contractVersionUtils';
 
 const HostProviderHeader: React.FC = () => {
   const dispatch = useDispatch();
 
   const hostProvider = useStore(({ adcm }) => adcm.hostProvider.hostProvider);
   const hostsCount = useStore(({ adcm }) => adcm.hostProvider.hostsCount);
+  const versionBadgeStatus = getContractVersionBadgeStatus(hostProvider?.prototype.contractVersion?.status);
 
   useEffect(() => {
     if (hostProvider) {
@@ -25,7 +27,9 @@ const HostProviderHeader: React.FC = () => {
       title={orElseGet(hostProvider, (hostProvider) => <Text variant="h3">{hostProvider.name}</Text>)}
       central={orElseGet(hostProvider, (hostProvider) => (
         <>
-          <span>Version {hostProvider.prototype.version}</span>
+          <span>
+            Version <Badge status={versionBadgeStatus}>{hostProvider.prototype.version}</Badge>
+          </span>
           <span>{hostsCount} hosts</span>
         </>
       ))}

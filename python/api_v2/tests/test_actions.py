@@ -14,11 +14,9 @@ from collections.abc import Collection
 from functools import partial
 from operator import itemgetter
 from typing import Literal, TypeAlias
-from unittest.mock import patch
 import json
-import unittest
 
-from cm.legacy.services.jinja_env import _get_action_info
+from cm.impl.common.execution_plan import parse_execution_plan
 from cm.models import (
     ADCM,
     Action,
@@ -45,6 +43,7 @@ from rbac.models import Role
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
+from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
@@ -53,6 +52,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched, assert_task_revoked
 from unittest_parametrize import parametrize
 
 from api_v2.tests.base import APIV2Mixin, TestUtilsMixin
@@ -291,7 +291,6 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
             description="TEST DESCRIPTION 2",
             display_name="Test service action name",
             prototype=self.cluster.prototype,
-            type="task",
             state_available="any",
             name="test_service_action_name",
             host_action=False,
@@ -357,9 +356,10 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.host_1.maintenance_mode = MaintenanceMode.ON
         self.host_1.save(update_fields=["maintenance_mode"])
 
-        response = self.client.v2[self.host_1, "actions", disallowed_action, "run"].post(
-            data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
-        )
+        with assert_no_task_launched():
+            response = self.client.v2[self.host_1, "actions", disallowed_action, "run"].post(
+                data={"hostComponentMap": [], "config": {}, "adcmMeta": {}, "isVerbose": False},
+            )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(
@@ -370,7 +370,6 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
                 "level": "error",
             },
         )
-        self.task_runner.expect_task_not_launched()
 
     def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
         non_terminatable_status = ExecutionStatus.QUEUED
@@ -383,7 +382,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched().id
+        task_id = response.json()["id"]
         job = JobLog.objects.filter(task_id=task_id).first()
         job.status = non_terminatable_status
         job.save(update_fields=["status"])
@@ -404,37 +403,39 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        response = self.client.v2[self.host_1, "actions", allowed_action, "run"].post(
-            data={
-                "hostComponentMap": [{"hostId": self.host_1.pk, "componentId": 1000}],
-                "config": {},
-                "adcmMeta": {},
-                "isVerbose": False,
-            },
-        )
+        with assert_no_task_launched():
+            response = self.client.v2[self.host_1, "actions", allowed_action, "run"].post(
+                data={
+                    "hostComponentMap": [{"hostId": self.host_1.pk, "componentId": 1000}],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
         expected_response = {"code": "COMPONENT_NOT_FOUND", "desc": "component doesn't exist", "level": "error"}
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(response.json(), expected_response)
-        self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_non_existing_host_fail(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
 
-        response = self.client.v2[self.host_1, "actions", allowed_action, "run"].post(
-            data={
-                "hostComponentMap": [{"hostId": 1000, "componentId": self.component_1.pk}],
-                "config": {},
-                "adcmMeta": {},
-                "isVerbose": False,
-            },
-        )
+        with assert_no_task_launched():
+            response = self.client.v2[self.host_1, "actions", allowed_action, "run"].post(
+                data={
+                    "hostComponentMap": [{"hostId": 1000, "componentId": self.component_1.pk}],
+                    "config": {},
+                    "adcmMeta": {},
+                    "isVerbose": False,
+                },
+            )
+
         expected_response = {"code": "FOREIGN_HOST", "desc": "host is not belong to the cluster", "level": "error"}
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertDictEqual(response.json(), expected_response)
-        self.task_runner.expect_task_not_launched()
 
     def test_adcm_4856_action_with_duplicated_hc_success(self) -> None:
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
@@ -453,8 +454,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
         self.assert_task_status_is(task_id, "success")
 
     def test_adcm_4856_action_with_several_entries_hc_success(self) -> None:
@@ -477,8 +478,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
         self.assert_task_status_is(task_id, "success")
 
     def test_adcm_5348_action_not_allowed_on_any_cluster_failed(self):
@@ -519,7 +520,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data), 4)
 
         self.client.login(**test_user_credentials)
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()
@@ -593,21 +594,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
             ["host-1", "host-2", "host-3", "host-4", "host-5", "host-6", "host-7", "host-8", "host-13", "host-14"],
         )
 
-    def test_retrieve_jinja_config_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_retrieve_jinja_config()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_retrieve_jinja_config_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_retrieve_jinja_config()
-
-        patched.assert_called()
-
-    def _test_retrieve_jinja_config(self):
+    def test_retrieve_jinja_config(self):
         action = Action.objects.filter(name="check_state", prototype=self.cluster.prototype).first()
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -627,21 +614,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
-    def test_adcm_6013_jinja_config_with_min_max_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_adcm_6013_jinja_config_with_min_max()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_adcm_6013_jinja_config_with_min_max_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_adcm_6013_jinja_config_with_min_max()
-
-        patched.assert_called()
-
-    def _test_adcm_6013_jinja_config_with_min_max(self):
+    def test_adcm_6013_jinja_config_with_min_max(self):
         action = Action.objects.get(name="check_numeric_min_max_param", prototype=self.cluster.prototype)
 
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -670,21 +643,7 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
         expected_response["id"] = action.id
         self.assertDictEqual(response.json(), expected_response)
 
-    def test_adcm_4703_action_retrieve_returns_500_old_processing(self):
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_adcm_4703_action_retrieve_returns_500()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_adcm_4703_action_retrieve_returns_500_new_processing(self):
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_adcm_4703_action_retrieve_returns_500()
-
-        patched.assert_called()
-
-    def _test_adcm_4703_action_retrieve_returns_500(self) -> None:
+    def test_adcm_4703_action_retrieve_returns_500(self) -> None:
         for object_ in (self.cluster, self.service_1, self.component_1):
             with self.subTest(object_.__class__.__name__):
                 response = self.client.v2[object_, "actions"].get()
@@ -693,15 +652,6 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
                 for action_id in map(itemgetter("id"), response.json()):
                     response = self.client.v2[object_, "actions", action_id].get()
                     self.assertEqual(response.status_code, HTTP_200_OK)
-
-    def test_get_action_info_success(self) -> None:
-        for object_, group in (
-            (self.cluster, "CLUSTER"),
-            (self.service_1, self.service_1.name),
-            (self.component_1, f"{self.component_1.service.name}.{self.component_1.name}"),
-        ):
-            action = Action.objects.filter(name="check_state", prototype=object_.prototype).get()
-            self.assertDictEqual(_get_action_info(action=action), {"name": "check_state", "owner_group": group})
 
     def test_adcm_8330_conflicting_params(self) -> None:
         # an ansible script's own (arbitrary) params must not be confused with reserved
@@ -725,8 +675,8 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
                 response = self.client.v2[self.cluster, "actions", action, "run"].post()
 
                 self.assertEqual(response.status_code, HTTP_200_OK)
-                task_id = self.task_runner.expect_task_launched().id
-                self.task_runner.run_task(task_id)
+                task_id = response.json()["id"]
+                self.task_runner().launch_task(task_id)
 
                 self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "success")
                 self.assertDictEqual(
@@ -734,9 +684,23 @@ class TestActionWithTemplates(ADCMDjangoAPISuite):
                     expected_params,
                 )
 
+                # the task keeps the plan it ran, and each of its nodes got exactly one job
+                plan = parse_execution_plan(TaskLog.objects.values_list("execution_plan", flat=True).get(id=task_id))
+                self.assertEqual(
+                    sorted(JobLog.objects.filter(task_id=task_id).values_list("spec_key", flat=True)),
+                    sorted(plan.scripts),
+                )
+
 
 class TestAction(ADCMDjangoAPISuite):
     maxDiff = None
+
+    # description isn't specified in bundle / single line / multi line
+    EXPECTED_ACTION_DESCRIPTIONS = {
+        "action": "",
+        "with_config": "Action with configuration parameters",
+        "with_hc": "Action with hc_acl rules.\nIt adds component_1 and removes component_2.",
+    }
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -780,6 +744,26 @@ class TestAction(ADCMDjangoAPISuite):
         )
         self.assertDictEqual(configuration["adcmMeta"], {"/activatable_group": {"isActive": True}})
 
+    def test_adcm_7956_retrieve_description_success(self) -> None:
+        for action_name, expected_description in self.EXPECTED_ACTION_DESCRIPTIONS.items():
+            with self.subTest(action=action_name):
+                action = Action.objects.get(name=action_name, prototype=self.cluster_1.prototype)
+
+                response = self.client.v2[self.cluster_1, "actions", action].get()
+
+                self.assertEqual(response.status_code, HTTP_200_OK)
+                self.assertEqual(response.json()["description"], expected_description)
+
+    def test_adcm_7956_list_description_success(self) -> None:
+        response = self.client.v2[self.cluster_1, "actions"].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        descriptions = {entry["name"]: entry["description"] for entry in response.json()}
+        for action_name, expected_description in self.EXPECTED_ACTION_DESCRIPTIONS.items():
+            with self.subTest(action=action_name):
+                self.assertEqual(descriptions[action_name], expected_description)
+
     def test_run_non_blocking(self) -> None:
         action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
 
@@ -787,10 +771,15 @@ class TestAction(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        launched_task_id = self.task_runner.expect_task_launched().id
-        task = TaskLog.objects.get(id=launched_task_id)
+        launched_task_id = response.json()["id"]
 
-        self.assertIsNone(task.lock)
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(launched_task_id)
+
+        self.assertIsNone(TaskLog.objects.get(id=launched_task_id).lock)
 
         self.assertEqual(self.cluster_1.concerns.count(), 1)
         first_concern = self.cluster_1.concerns.get()
@@ -811,9 +800,55 @@ class TestAction(ADCMDjangoAPISuite):
 
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+            self.task_runner().schedule_task(response.json()["id"])
+
             self.assertEqual(self.cluster_1.concerns.count(), 2)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.FLAG).count(), 1)
             self.assertEqual(self.cluster_1.concerns.filter(type=ConcernType.LOCK).count(), 1)
+
+    def test_adcm_8475_service_manage_script_params_serialization(self) -> None:
+        action = Action.objects.get(name="adcm_8475_add_services_scripts", prototype=self.cluster_1.prototype)
+
+        response = self.client.v2[self.cluster_1, "actions", action, "run"].post()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        task_id = response.json()["id"]
+
+        jobs = {job.name: job for job in JobLog.objects.filter(task_id=task_id)}
+        expected_params_add_services = {
+            "operation": "add",
+            "services": [{"name": "service_1", "config_changes": None, "hc_changes": None}],
+        }
+
+        self.assertDictEqual(jobs["add services"].params, expected_params_add_services)
+        self.assertDictEqual(jobs["clean before upgrade"].params, {})
+
+        self.task_runner().launch_task(task_id)
+
+        self.assertEqual(TaskLog.objects.values_list("status", flat=True).get(id=task_id), "success")
+
+    def test_task_revoked_when_object_gets_locked_before_scheduling(self) -> None:
+        action = Action.objects.get(name="action", prototype=self.cluster_1.prototype)
+
+        # both tasks are created while cluster is free of concerns:
+        # concerns are distributed when task is scheduled, not when action is launched
+        configuration = self.client.v2[self.cluster_1, "actions", self.action_with_config].get().json()["configuration"]
+
+        first_response = self.client.v2[self.cluster_1, "actions", action, "run"].post()
+        second_response = self.client.v2[self.cluster_1, "actions", self.action_with_config, "run"].post(
+            data={"configuration": {"config": configuration["config"], "adcmMeta": configuration["adcmMeta"]}}
+        )
+
+        self.assertEqual(first_response.status_code, HTTP_200_OK)
+        self.assertEqual(second_response.status_code, HTTP_200_OK)
+
+        self.task_runner().schedule_task(first_response.json()["id"])
+
+        # by now cluster is locked by the first task, so the second one can't be scheduled;
+        # scheduler doesn't raise on validation failure, it revokes the task
+        self.task_runner().schedule_task(second_response.json()["id"])
+
+        assert_task_revoked(second_response.json()["id"])
 
     def test_adcm_7841_variant_in_config(self) -> None:
         """
@@ -880,7 +915,7 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         mapping: Collection[tuple[Host, Component]] = (),
         config: dict[Literal["config", "adcmMeta"], dict] | None = None,
         expected_code: int = HTTP_200_OK,
-    ) -> None:
+    ) -> Response:
         hc = {"hostComponentMap": [{"hostId": host.id, "componentId": component.id} for host, component in mapping]}
         config = config or {"config": {}, "adcmMeta": {}}
 
@@ -888,8 +923,9 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
 
         self.assertEqual(response.status_code, expected_code, f"Unexpected run result: {response.status_code}")
 
-    def get_launched_task_mapping(self):
-        task_id = self.task_runner.expect_task_launched().id
+        return response
+
+    def get_task_mapping(self, task_id: TaskID) -> dict:
         return TaskLog.objects.values_list("hostcomponentmap", flat=True).get(id=task_id)
 
     def test_adcm_7530_simple_add_remove_success(self):
@@ -898,10 +934,10 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
 
-        self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        response = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
         self.assertDictEqual(
-            self.get_launched_task_mapping(),
+            self.get_task_mapping(response.json()["id"]),
             {
                 "add": {str(self.component_1.id): [self.host_2.id]},
                 "remove": {str(self.component_2.id): [self.host_1.id]},
@@ -914,13 +950,13 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
         self.check_mm_is_on_only_for(
             obj=self.host_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
-        self.run_task(
-            object_=self.cluster_1,
-            action=self.action,
-            mapping=((self.host_1, self.component_1),),
-            expected_code=HTTP_409_CONFLICT,
-        )
-        self.task_runner.expect_task_not_launched()
+        with assert_no_task_launched():
+            self.run_task(
+                object_=self.cluster_1,
+                action=self.action,
+                mapping=((self.host_1, self.component_1),),
+                expected_code=HTTP_409_CONFLICT,
+            )
 
     def test_adcm_7530_remove_host_in_mm_success(self):
         self.create_mapping(
@@ -931,10 +967,11 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             obj=self.host_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
 
-        self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_1, self.component_2),))
+        response = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_1, self.component_2),))
 
         self.assertDictEqual(
-            self.get_launched_task_mapping(), {"add": {}, "remove": {str(self.component_2.id): [self.host_2.id]}}
+            self.get_task_mapping(response.json()["id"]),
+            {"add": {}, "remove": {str(self.component_2.id): [self.host_2.id]}},
         )
 
     def test_adcm_7530_component_mm_does_not_affects_remove_mapping_success(self):
@@ -944,10 +981,10 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             obj=self.component_2, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
 
-        self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        response = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
         self.assertDictEqual(
-            self.get_launched_task_mapping(),
+            self.get_task_mapping(response.json()["id"]),
             {
                 "add": {str(self.component_1.id): [self.host_2.id]},
                 "remove": {str(self.component_2.id): [self.host_1.id]},
@@ -961,10 +998,10 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             obj=self.component_1, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
 
-        self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        response = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
         self.assertDictEqual(
-            self.get_launched_task_mapping(),
+            self.get_task_mapping(response.json()["id"]),
             {
                 "add": {str(self.component_1.id): [self.host_2.id]},
                 "remove": {str(self.component_2.id): [self.host_1.id]},
@@ -980,10 +1017,10 @@ class TestActionHCMapping(ADCMDjangoAPISuite, APIV2Mixin, TestUtilsMixin):
             obj=None, cluster_id=self.cluster_1.id, cluster_service=self.container.get(ClusterService)
         )
 
-        self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
+        response = self.run_task(object_=self.cluster_1, action=self.action, mapping=((self.host_2, self.component_1),))
 
         self.assertDictEqual(
-            self.get_launched_task_mapping(),
+            self.get_task_mapping(response.json()["id"]),
             {
                 "add": {str(self.component_1.id): [self.host_2.id]},
                 "remove": {str(self.component_2.id): [self.host_1.id]},

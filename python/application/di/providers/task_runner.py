@@ -15,26 +15,39 @@ import os
 import logging
 
 from cm.legacy import status_api
-from cm.legacy.services.job.run import ExecutionTargetFactory
 from cm.legacy.services.job.run.runners import EventNotifier, JobSequenceRunner, StatusServerInteractor
+from cm.legacy.services.job.run.target_factories import (
+    AnsibleTargetBuilder,
+    InternalTargetBuilder,
+    PythonTargetBuilder,
+)
 from cm.legacy.services.status import notify
+from core.action.scheduler import ProcessStarter
 from core.legacy.job.runners import (
     ADCMSettings,
     AnsibleSettings,
+    AnsibleTargetBuilderI,
     ConsulSettings,
-    ExecutionTargetFactoryI,
+    ExecutionTargetFactory,
     ExternalSettings,
     IntegrationsSettings,
-    JobFilterPredicate,
-    JobProcessor,
+    InternalTargetBuilderI,
+    PythonTargetBuilderI,
     RunnerEnvironment,
     TaskRunner,
 )
 from core.secrets import Secret, SecretsBackend
 from core.settings import Directories
-from dishka import Provider, Scope, from_context, provide, provide_all
+from dishka import Provider, Scope, provide, provide_all
 from django.utils import timezone
-from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning
+from integrations.local.scheduler import LocalProcessStarter
+from use_cases.internal_scripts.before_upgrade_clean import BeforeUpgradeCleanInternalScript
+from use_cases.internal_scripts.bundle_revert import BundleRevertInternalScript
+from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
+from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
+from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
+from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
+from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask
 
 
 class SubprocessRunnerEnvironment:
@@ -82,9 +95,18 @@ class TaskRunnerProvider(Provider):
     def status_server(self) -> StatusServerInteractor:
         return notify
 
-    job_factory = provide(ExecutionTargetFactory, provides=ExecutionTargetFactoryI)
-    job_filter = from_context(JobFilterPredicate)
-    job_processor = provide(JobProcessor)
+    internal_scripts = provide_all(
+        BundleSwitchInternalScript,
+        BundleRevertInternalScript,
+        HcApplyInternalScript,
+        ConfigApplyInternalScript,
+        ServiceManageInternalScript,
+        BeforeUpgradeCleanInternalScript,
+    )
+    ansible_builder = provide(AnsibleTargetBuilder, provides=AnsibleTargetBuilderI)
+    python_builder = provide(PythonTargetBuilder, provides=PythonTargetBuilderI)
+    internal_builder = provide(InternalTargetBuilder, provides=InternalTargetBuilderI)
+    target_factory = provide(ExecutionTargetFactory)
 
     environment = provide(SubprocessRunnerEnvironment, provides=RunnerEnvironment)
 
@@ -94,4 +116,5 @@ class TaskRunnerProvider(Provider):
 class JobUseCaseProvider(Provider):
     scope = Scope.APP
 
-    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken)
+    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken, StartTask)
+    process_starter = provide(LocalProcessStarter, provides=ProcessStarter)

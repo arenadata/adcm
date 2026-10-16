@@ -91,8 +91,7 @@ class FakeRepo(ConfigRepoI):
         *,
         defaults: Literal[False],
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
-    ) -> spec.FullSpec:
-        ...
+    ) -> spec.FullSpec: ...
 
     @overload
     def get_spec(
@@ -101,8 +100,7 @@ class FakeRepo(ConfigRepoI):
         *,
         defaults: EncryptFunc,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
-    ) -> tuple[spec.FullSpec, Defaults]:
-        ...
+    ) -> tuple[spec.FullSpec, Defaults]: ...
 
     def get_spec(
         self,
@@ -122,14 +120,12 @@ class FakeRepo(ConfigRepoI):
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[False], encrypt: None = None
-    ) -> dict[PrototypeID, spec.FullSpec]:
-        ...
+    ) -> dict[PrototypeID, spec.FullSpec]: ...
 
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[True], encrypt: EncryptFunc
-    ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        ...
+    ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]: ...
 
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: bool, encrypt: EncryptFunc | None = None

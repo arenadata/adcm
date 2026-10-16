@@ -18,6 +18,8 @@ export const canBulkLink = (hosts: AdcmHost[]) => hosts.length > 0 && hosts.ever
 
 export const canBulkDelete = (hosts: AdcmHost[]) => hosts.length > 0 && hosts.every(isHostDeletable);
 
+export const canBulkShare = (hosts: AdcmHost[]) => hosts.length > 0;
+
 export const haveSameHostProvider = (hosts: AdcmHost[]) =>
   hosts.length > 0 && hosts.every((host) => host.hostprovider.id === hosts[0].hostprovider.id);
 

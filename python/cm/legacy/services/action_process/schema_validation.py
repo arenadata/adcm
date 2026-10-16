@@ -44,8 +44,7 @@ class _StepIDParam(BaseModel):
 # Submit
 
 
-class SubmitOperationStepParams(_SyncKeyParam, _StepIDParam):
-    ...
+class SubmitOperationStepParams(_SyncKeyParam, _StepIDParam): ...
 
 
 class SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam):
@@ -72,8 +71,7 @@ class CompleteProcessPayload(BaseModel):
 # Reset
 
 
-class _ResetStepParams(_SyncKeyParam, _StepIDParam):
-    ...
+class _ResetStepParams(_SyncKeyParam, _StepIDParam): ...
 
 
 class ResetStepPayload(BaseModel):
@@ -84,8 +82,7 @@ class ResetStepPayload(BaseModel):
 # Skip
 
 
-class SkipOperationStepParams(_SyncKeyParam, _StepIDParam):
-    ...
+class SkipOperationStepParams(_SyncKeyParam, _StepIDParam): ...
 
 
 class SkipStepPayload(BaseModel):

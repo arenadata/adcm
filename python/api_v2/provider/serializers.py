@@ -12,7 +12,6 @@
 
 from adcm.serializers import EmptySerializer
 from cm.errors import AdcmEx
-from cm.legacy.adcm_config.config import get_main_info
 from cm.legacy.upgrade import get_upgrade
 from cm.models import ObjectType, Prototype, Provider
 from rest_framework.serializers import (
@@ -24,6 +23,7 @@ from rest_framework.serializers import (
 
 from api_v2.concern.serializers import ConcernSerializer
 from api_v2.prototype.serializers import PrototypeRelatedSerializer
+from api_v2.serializers import get_main_info
 
 
 class ProviderSerializer(ModelSerializer):

@@ -17,6 +17,18 @@ import dishka
 from .shared.base import *  # noqa
 from .shared.constants import *  # noqa
 
+# database isn't configured during image build, but Django requires `DATABASES` to be declared
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": None,
+        "USER": None,
+        "PASSWORD": None,
+        "HOST": None,
+        "PORT": None,
+    }
+}
+
 container = dishka.make_container(EnvironmentProvider())
 directories = container.get(Directories)
 STATIC_ROOT = directories.base / "wwwroot/static/"

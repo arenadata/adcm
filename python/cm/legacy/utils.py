@@ -15,7 +15,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 import os
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt
+from cm.transition.ansible import ansible_decrypt
 
 if TYPE_CHECKING:
     from cm.models import ADCMEntity
@@ -71,15 +71,6 @@ def deep_merge(origin: dict, renovator: Mapping) -> dict:
             origin[key] = value
 
     return origin
-
-
-def obj_to_dict(obj: Any, keys: Iterable) -> dict:
-    dictionary = {}
-    for key in keys:
-        if hasattr(obj, key):
-            dictionary[key] = getattr(obj, key)
-
-    return dictionary
 
 
 def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:

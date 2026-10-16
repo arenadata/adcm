@@ -11,14 +11,14 @@
 # limitations under the License.
 
 from cm.legacy.api import check_license
-from cm.legacy.config import init_object_config
 from cm.legacy.services.concern.cases import recalculate_own_concerns_on_add_hosts
 from cm.legacy.services.concern.distribution import distribute_concern_from_provider_to_host
 from cm.logger import logger
 from cm.models import Cluster, Host, ObjectType, Prototype
 from cm.transition.status import StatusScenarios
-from core.types import ADCMCoreType, BundleID, ProviderID
+from core.types import ADCMCoreType, BundleID, CoreObjectDescriptor, ProviderID
 from rbac.scenarios import RBACScenarios
+import core
 
 
 def create_host(
@@ -27,6 +27,7 @@ def create_host(
     fqdn: str,
     cluster: Cluster | None,
     rbac_scenarios: RBACScenarios,
+    config_service: core.config.ConfigService,
     status_scenarios: StatusScenarios | None = None,
 ) -> Host:
     status_scenarios = status_scenarios or StatusScenarios()
@@ -35,12 +36,12 @@ def create_host(
 
     host = Host.objects.create(prototype=host_prototype, provider_id=provider_id, fqdn=fqdn, cluster=cluster)
 
-    obj_conf = init_object_config(proto=host.prototype, obj=host)
-    host.config = obj_conf
-    host.save(update_fields=["config"])
+    config_service.create_initial_configuration_if_required(
+        owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST)
+    )
 
     concern_map = {ADCMCoreType.HOST: {host.id: set()}}
-    host_concern_map = recalculate_own_concerns_on_add_hosts(host=host)
+    host_concern_map = recalculate_own_concerns_on_add_hosts(host=host, config_service=config_service)
 
     if host_concern_map:
         concern_id = next(iter(host_concern_map[ADCMCoreType.HOST][host.id]))

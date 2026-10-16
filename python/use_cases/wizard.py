@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import cast
 from uuid import UUID
 
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 from cm.legacy.services import mapping
 from cm.legacy.services.action_process.errors import ActionProcessOperationError, ActionProcessPayloadError
 from cm.legacy.services.action_process.operations import (
@@ -34,8 +35,6 @@ from cm.legacy.services.action_process.schema_validation import (
 )
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState, ProcessTarget
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag, raise_flag_for_process, update_hierarchy_for_flag
 from cm.legacy.services.job.action import check_no_blocking_concerns
@@ -62,7 +61,7 @@ import core
 import core.bundle
 
 from use_cases.dto import InputConfigConverter
-from use_cases.transition.job.schedule import TaskStarter
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 
 @dataclass(slots=True, frozen=True)
@@ -159,7 +158,6 @@ class PerformWizardProcessOperation:
 
     bundle_renderer: BundleRenderer[ActionArgs, TaskArgs]
     fill_wizard_step_spec: FillWizardStepSpec[ActionArgs, TaskArgs]
-    start_task: TaskStarter
     rbac_scenarios: RBACScenarios
     available_contract_versions: core.bundle.AvailableContractVersions
 
@@ -370,8 +368,11 @@ class PerformWizardProcessOperation:
                 )
 
                 task_id = self.job_service.create_task(payload=task_payload)
-                scripts = tuple(step_spec)
-                self.job_service.create_jobs(task_id=task_id, scripts=scripts)
+                self.job_service.set_post_init_task_attributes(
+                    task_id=task_id,
+                    payload=core.action.job.PostInitTaskAttributesDTO(execution_plan=step_spec),
+                )
+                self.job_service.create_jobs(task_id=task_id, scripts=step_spec)
 
                 step_input_data = core.action.wizard.StepInputDTO(job_id=task_id, created_at=timezone.now())
                 self.wizard_repo.upsert_step_input(step_id=payload.params.step_id, data=step_input_data)
@@ -382,13 +383,10 @@ class PerformWizardProcessOperation:
 
                 self.wizard_service.revoke_next_steps(process_id=process.process_id, step_id=payload.params.step_id)
 
-                # todo write pid to task (executor)
-                # todo actually should use starter to avoid hardcoding
                 task_orm = TaskLog.objects.get(id=task_id)
 
                 self.rbac_scenarios.re_apply_policy_for_jobs(task=task_orm)
 
-                self.start_task(task_orm)
                 return None
 
             case core.action.wizard.StepType.MAPPING:

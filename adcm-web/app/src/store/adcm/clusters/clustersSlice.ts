@@ -8,8 +8,8 @@ import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
 import {
-  attachContractVersionsToClusters,
-  getUniqueClusterPrototypeIds,
+  attachContractVersionsToEntities,
+  getUniqueEntityPrototypeIds,
   mergeClusterPreservingContractVersion,
 } from '@utils/contractVersionUtils';
 import { upsertConcern } from '@utils/concernStoreUtils';
@@ -29,7 +29,7 @@ const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFrom
 
   try {
     const batch = await AdcmClustersApi.getClusters(filter, sortParams, paginationParams);
-    const prototypeIds = getUniqueClusterPrototypeIds(batch.results);
+    const prototypeIds = getUniqueEntityPrototypeIds(batch.results);
     let prototypes: AdcmPrototype[] = [];
     if (prototypeIds.length) {
       try {
@@ -42,7 +42,7 @@ const loadClustersFromBackend = createAsyncThunk('adcm/clusters/loadClustersFrom
         prototypes = [];
       }
     }
-    const results = attachContractVersionsToClusters(batch.results, prototypes);
+    const results = attachContractVersionsToEntities(batch.results, prototypes) as AdcmCluster[];
     return { ...batch, results };
   } catch (error) {
     return thunkAPI.rejectWithValue(error);

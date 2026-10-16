@@ -31,12 +31,10 @@ class FillWizardStepSpec(Generic[ActionArgsT, TaskArgsT]):
     bundle_renderer: BundleRenderer[ActionArgsT, TaskArgsT]
 
     @abstractmethod
-    def convert_action_args_to_task_args(self, args: ActionArgsT) -> TaskArgsT:
-        ...
+    def convert_action_args_to_task_args(self, args: ActionArgsT) -> TaskArgsT: ...
 
     @abstractmethod
-    def retrieve_extra_errors(self) -> tuple[type[Exception], ...]:
-        ...
+    def retrieve_extra_errors(self) -> tuple[type[Exception], ...]: ...
 
     def do(
         self,

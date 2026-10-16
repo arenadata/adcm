@@ -14,11 +14,13 @@ from collections.abc import Iterable, Iterator
 from enum import Enum
 from typing import Literal, TypeAlias
 
-from core.action._types import JobSpec, ScriptType
+from core.action.types import JobHierarchyLevel, JobShortInfo, JobSpecV1, RichJob, ScriptType
 from core.cluster import ClusterTopology
 from core.cluster._operations import find_children
 from core.config import Attributes
 from core.result import Fail, Success
+from core.spec.keys import level_keys_to_full_key
+from core.spec.types import FullSpecKey, LevelSpecKey
 from core.types import (
     ADCMCoreType,
     ClusterDesc,
@@ -37,8 +39,62 @@ class ActionStartImpossibleReason(str, Enum):
     MAINTENANCE_MODE = 'The {entity_type} is not available. One or more {violator_type} in "Maintenance mode"'
 
 
-def has_bundle_revert_script(scripts: Iterable[JobSpec]) -> bool:
-    return any(script.script_type == ScriptType.INTERNAL and script.script == "bundle_revert" for script in scripts)
+def to_rich_job(spec: JobSpecV1, job: JobShortInfo) -> RichJob:
+    """
+    Pair a job with the plan node it was created for.
+
+    The plan says what the task consists of, so a job pointing at a node that isn't in it
+    is a job that shouldn't exist, not a node to be invented.
+    """
+
+    try:
+        script_spec = spec.scripts[job.spec_key]
+    except KeyError as err:
+        message = f"Execution plan has no {job.spec_key} job #{job.id} is made of"
+        raise KeyError(message) from err
+
+    return RichJob(spec=script_spec, runtime=job)
+
+
+def to_rich_jobs(spec: JobSpecV1, jobs: Iterable[JobShortInfo]) -> dict[FullSpecKey, RichJob]:
+    """
+    Pair every given job with its plan node, keyed the way the plan keys them.
+
+    Ordering is none of this function's business: take it from `flatten_execution_plan`
+    where it matters, and look the jobs up by the keys it yields.
+    """
+
+    return {job.spec_key: to_rich_job(spec=spec, job=job) for job in jobs}
+
+
+def flatten_execution_plan(spec: JobSpecV1) -> tuple[FullSpecKey, ...]:
+    """
+    Lay a plan out in the order its scripts are to be run.
+
+    The hierarchy is the order, so it alone is walked here.
+
+    Only keys come out: whoever needs the scripts themselves has the plan to take them from.
+    """
+
+    return tuple(_flatten_level(level=spec.hierarchy, group_levels=()))
+
+
+def _flatten_level(level: JobHierarchyLevel, group_levels: tuple[LevelSpecKey, ...]) -> Iterator[FullSpecKey]:
+    for level_key in level.fields:
+        own_levels = (*group_levels, level_key)
+
+        if child_level := level.child_groups.get(level_key):
+            yield from _flatten_level(level=child_level, group_levels=own_levels)
+            continue
+
+        yield level_keys_to_full_key(own_levels)
+
+
+def has_bundle_revert_script(spec: JobSpecV1) -> bool:
+    return any(
+        script_spec.script.type == ScriptType.INTERNAL and script_spec.script.path == "bundle_revert"
+        for script_spec in spec.scripts.values()
+    )
 
 
 def detect_start_impossible_reason_for_adcm(

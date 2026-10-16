@@ -17,5 +17,4 @@ class LogFilter(
     AdvancedFilterSet,
     char_fields=("name", "type"),
     number_fields=("id", ("job", "job__id")),
-):
-    ...
+): ...

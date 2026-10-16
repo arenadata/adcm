@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC
 from collections import defaultdict, deque
 from pathlib import Path
 
@@ -23,7 +22,6 @@ from core.legacy.bundle.types import (
 )
 from core.legacy.concern.checks import parse_constraint
 from core.types import BundleID, ComponentNameKey
-from django.conf import settings
 
 from cm.models import ObjectType, Prototype
 
@@ -75,29 +73,6 @@ def is_path_correct(raw_path: str) -> bool:
     False
     """
     return raw_path.startswith("./") or not raw_path.startswith(("..", "/"))
-
-
-class PathResolver(ABC):
-    __slots__ = ("_root",)
-
-    _root: Path
-
-    @property
-    def bundle_root(self) -> Path:
-        return self._root
-
-    def resolve(self, path: str | Path) -> Path:
-        return self._root / path
-
-
-class BundlePathResolver(PathResolver):
-    def __init__(self, bundle_hash: str):
-        self._root = settings.BUNDLE_DIR / bundle_hash
-
-
-class ADCMBundlePathResolver(PathResolver):
-    def __init__(self):
-        self._root = settings.BASE_DIR / "conf" / "adcm"
 
 
 def retrieve_bundle_restrictions(bundle_id: BundleID) -> BundleRestrictions:

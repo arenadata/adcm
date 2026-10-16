@@ -17,20 +17,16 @@ from adcm_version import compare_prototype_versions
 
 class ObjectWithVersions(Protocol):
     @property
-    def min_version(self) -> str:
-        ...
+    def min_version(self) -> str: ...
 
     @property
-    def max_version(self) -> str:
-        ...
+    def max_version(self) -> str: ...
 
     @property
-    def min_strict(self) -> bool:
-        ...
+    def min_strict(self) -> bool: ...
 
     @property
-    def max_strict(self) -> bool:
-        ...
+    def max_strict(self) -> bool: ...
 
 
 def is_version_suitable(version: str, versions_object: ObjectWithVersions) -> bool:
@@ -42,7 +38,7 @@ def is_version_suitable(version: str, versions_object: ObjectWithVersions) -> bo
     ):
         return False
 
-    if (
+    if (  # noqa: SIM103
         versions_object.max_strict
         and compare_prototype_versions(version, versions_object.max_version) >= 0
         or versions_object.max_version

@@ -113,8 +113,7 @@ class ClusterDB(HostClusterDBProtocol):
 
 
 class _StatusServerService(Protocol):
-    def reset_hc_map(self) -> None:
-        ...
+    def reset_hc_map(self) -> None: ...
 
 
 def perform_host_to_cluster_map(

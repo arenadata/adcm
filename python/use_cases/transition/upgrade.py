@@ -15,23 +15,19 @@ from typing import Literal
 
 from cm import models
 from cm.errors import AdcmEx
+from cm.impl.scenarios.bundle_switch import BundleSwitch
 from cm.legacy.api import check_license
-from cm.legacy.bundle_switch_revert import bundle_switch
 
 # todo waiting for refactoring, don't want to copy it anywhere for now
 from cm.legacy.upgrade import check_upgrade, update_before_upgrade
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
-from core.cluster import ClusterService
-from core.scenarios.config import ConfigScenarios
 from core.types import TaskID
 from django.db.transaction import atomic
-from rbac.scenarios import RBACScenarios
 import core
 import core.bundle
 
 from use_cases.dto import UpgradeActionDTO
-from use_cases.legacy.upgrade import build_switch_revert_callbacks
 from use_cases.transition.job.schedule import ScheduleTask
 
 
@@ -41,10 +37,8 @@ class UpgradeObject:
     config_service: core.config.ConfigService
     available_contract_versions: core.bundle.AvailableContractVersions
     retrieve_sir: RetrieveStartImpossibleReason
-    rbac_scenarios: RBACScenarios
-    config_scenarios: ConfigScenarios
     status_scenarios: StatusScenarios
-    cluster_service: ClusterService
+    bundle_switch: BundleSwitch
 
     def do(
         self,
@@ -74,18 +68,7 @@ class UpgradeObject:
             update_before_upgrade(obj=target, config_service=self.config_service)
 
         if not upgrade.action:
-            callbacks = build_switch_revert_callbacks(
-                config_service=self.config_service,
-                rbac_scenarios=self.rbac_scenarios,
-                cluster_service=self.cluster_service,
-            )
-            bundle_switch(
-                obj=target,
-                upgrade=upgrade,
-                callbacks=callbacks,
-                config_service=self.config_service,
-                config_scenarios=self.config_scenarios,
-            )
+            self.bundle_switch.do(target=target, upgrade=upgrade)
 
             if upgrade.state_on_success:
                 target.state = upgrade.state_on_success

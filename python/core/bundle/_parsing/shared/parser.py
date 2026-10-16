@@ -17,16 +17,29 @@ from pathlib import Path
 from typing import Generic, Literal, TypeAlias, TypeVar
 
 from core import action, mapping
+from core.action.types import JobSpecV1
 from core.bundle._definitions import ConfigDefinition, DefinitionsMap
 from core.bundle._errors import BundleParsingError, convert_validation_to_bundle_error
-from core.bundle._parsing.shared.conversion import detect_relative_path_to_bundle_root, extract_config, extract_scripts
+from core.bundle._parsing.shared.conversion import (
+    detect_relative_path_to_bundle_root,
+    extract_config,
+    extract_scripts,
+    iterate_scripts,
+)
 from core.bundle._parsing.shared.model import BundleModel
 from core.bundle._parsing.shared.targets import ActionWizardStages, MappingRules
 from core.bundle._parsing.shared.wizard import ConfigurationStep, MappingStep, OperationStep
 from core.bundle._parsing.types import BundleParser, RootEntry
 from core.bundle._representation import repr_from_raw
 from core.bundle._types import BundleDefinitionKey, ComponentKey
-from core.bundle._validate import check_action_hc_acl_rules
+from core.bundle._validate import (
+    check_action_hc_acl_rules,
+    check_bundle_switch_amount_for_rendered_upgrade,
+    check_execution_hierarchy,
+    check_no_bundle_changing_scripts_in_groups,
+    check_no_bundle_switch,
+    check_no_on_fail_multi_states_in_groups,
+)
 from core.errors import localize_error
 
 _RelativePath: TypeAlias = str
@@ -37,20 +50,16 @@ ObjectT = TypeVar("ObjectT", bound=BundleModel)
 
 class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
     @abstractmethod
-    def _get_schema_mapping(self) -> dict[str, type[RootT]]:
-        ...
+    def _get_schema_mapping(self) -> dict[str, type[RootT]]: ...
 
     @abstractmethod
-    def _get_config_model(self) -> type[BundleModel]:
-        ...
+    def _get_config_model(self) -> type[BundleModel]: ...
 
     @abstractmethod
-    def _get_scripts_model(self, mode: Literal["action", "upgrade", "wizard"]) -> type[BundleModel]:
-        ...
+    def _get_scripts_model(self, mode: Literal["action", "upgrade", "wizard"]) -> type[BundleModel]: ...
 
     @abstractmethod
-    def _flatten_definitions(self, definition: RootT) -> Iterable[tuple[BundleDefinitionKey, ObjectT]]:
-        ...
+    def _flatten_definitions(self, definition: RootT) -> Iterable[tuple[BundleDefinitionKey, ObjectT]]: ...
 
     @abstractmethod
     def _convert_objects(
@@ -58,8 +67,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         definitions: dict[BundleDefinitionKey, ObjectT],
         relative_definition_paths: dict[BundleDefinitionKey, _RelativePath],
         bundle_root: Path,
-    ) -> DefinitionsMap:
-        ...
+    ) -> DefinitionsMap: ...
 
     # Implementation
 
@@ -105,20 +113,34 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         template_path: Path,
         action_allow_to_terminate: bool,
         mode: Literal["action", "upgrade", "wizard"],
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         model_ = self._get_scripts_model(mode)
         parsed = model_.model_validate({"scripts": scripts})
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
-        for script in dumped:  # propagate `allow_to_terminate` attr from action if not set
+        for script in iterate_scripts(dumped):  # propagate `allow_to_terminate` attr from action if not set
             if not script.get("allow_to_terminate"):
                 script["allow_to_terminate"] = action_allow_to_terminate
 
         result = extract_scripts(scripts=dumped, path_resolution_root=template_path.parent)
 
-        if not result:
-            message = "Conversion to scripts definition failed: unexpectedly got None"
+        if result is None or not result.scripts:
+            message = "Conversion to scripts definition failed: unexpectedly got nothing"
             raise BundleParsingError(message)
+
+        # rendered scripts never reach bundle validation, so the plan is checked right here
+        check_no_bundle_changing_scripts_in_groups(spec=result)
+        check_no_on_fail_multi_states_in_groups(spec=result)
+        check_execution_hierarchy(spec=result)
+
+        match mode:
+            case "action":
+                # the DSL lets an action's scripts reach `bundle_switch` through the internal script union,
+                # so the rule that regular actions must not switch bundles is enforced here,
+                # the same way `check_actions` enforces it for statically declared scripts
+                check_no_bundle_switch(scripts=result)
+            case "upgrade":
+                check_bundle_switch_amount_for_rendered_upgrade(scripts=result)
 
         return result
 

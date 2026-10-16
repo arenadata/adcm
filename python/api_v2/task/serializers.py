@@ -35,6 +35,10 @@ class TaskObjectsFieldSerializer(EmptySerializer):
     type = ChoiceField(choices=tuple((v, v) for v in OBJECT_ORDER))
 
 
+class TaskGroupTerminateSerializer(EmptySerializer):
+    group = CharField(allow_blank=False, help_text="Internal name of group to terminate.")
+
+
 class JobListSerializer(ModelSerializer):
     is_terminatable = SerializerMethodField()
     start_time = DateTimeField(source="start_date", allow_null=True, read_only=True)
@@ -88,11 +92,9 @@ class TaskSerializer(ModelSerializer):
     @staticmethod
     def get_is_terminatable(obj: TaskLog) -> bool:
         allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
+        is_active_status = obj.status in {JobStatus.CREATED, JobStatus.RUNNING}
 
-        if allow_to_terminate and obj.status in {JobStatus.CREATED, JobStatus.RUNNING}:
-            return True
-
-        return False
+        return allow_to_terminate and is_active_status
 
     @staticmethod
     @extend_schema_field(field=TaskObjectsFieldSerializer(many=True), component_name="TaskObjectsField")

@@ -42,12 +42,10 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
     serializer_class = ImportPostSerializer
 
     @abstractmethod
-    def detect_get_check_kwargs(self) -> tuple[dict, dict]:
-        ...
+    def detect_get_check_kwargs(self) -> tuple[dict, dict]: ...
 
     @abstractmethod
-    def detect_cluster_service_bind_arguments(self, obj: Cluster | Service) -> tuple[Cluster, Service | None]:
-        ...
+    def detect_cluster_service_bind_arguments(self, obj: Cluster | Service) -> tuple[Cluster, Service | None]: ...
 
     def get_object_and_check_perm(self, request) -> Cluster | Service:
         kwargs_get, kwargs_check = self.detect_get_check_kwargs()

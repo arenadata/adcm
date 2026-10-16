@@ -14,6 +14,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.concern.distribution import distribute_concern_on_related_objects
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.concern.messages import ConcernMessage
 from cm.models import (
@@ -33,6 +35,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.concern.repo import ConcernRepoI
+from core.tools import convert_keys_to_camel_case
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from core.types import MaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
@@ -81,6 +85,30 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
+    def check_concern_serialization_identity(self, concern: dict) -> None:
+        """
+        Additional check to ensure that the data from the custom camel case converter matches
+        the Django serializer output.
+        """
+
+        repo = self.container.get(ConcernRepoI)
+        concern_info = repo.get_concerns_info(concern_ids={concern["id"]})[0]
+        converted_concern = convert_keys_to_camel_case(
+            value={
+                "id": concern_info.id,
+                "type": concern_info.type.value,
+                "reason": concern_info.reason,
+                "is_blocking": concern_info.blocking,
+                "cause": concern_info.cause.value if concern_info.cause else None,
+                "owner": {
+                    "id": concern_info.owner.id,
+                    "type": concern_info.owner.type.value,
+                },
+            }
+        )
+
+        self.assertDictEqual(concern, converted_concern)
+
     def test_required_service_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
         expected_concern_reason = {
@@ -125,6 +153,8 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         concern, *_ = data["concerns"]
         self.assertEqual(concern["type"], "issue")
         self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+        self.check_concern_serialization_identity(concern=concern)
 
     def test_required_import_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
@@ -205,6 +235,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
+
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
             concern.delete()
@@ -251,6 +287,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         def run_action(_object, object_action) -> list[tuple[int, int]]:
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
 
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
@@ -405,6 +447,75 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertEqual(len(concerns), 1)
             self.assertEqual(concerns.first().cause, "config")
 
+    def test_outdated_config_flag_does_not_leak_via_shared_host(self) -> None:
+        # `first_service`/`first_service.first_component` have `enable_outdated_config` on;
+        # `second_service` shares a host with `first_component` but has it off, so it should never
+        # get the flag on its own — the only question is whether *distribution* leaks it there anyway,
+        # the way LOCK/ISSUE concerns do (see `test_adcm_6275_concern_propagation_success`)
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_flag_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_service.state = "notcreated"
+        first_service.save(update_fields=["state"])
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="flag_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        response = self.client.v2[first_service, "configs"].post(
+            data={"config": {"string_param": "changed", "int_param": 12}, "adcmMeta": {}, "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        flag_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name
+        concern = ConcernItem.objects.get(
+            name=flag_name, owner_id=first_service.pk, owner_type=first_service.content_type
+        )
+
+        # distribution (the concern's m2m links), not just ownership
+        # `shared_host` is mapped to `first_component`, so it's within `first_service`'s own
+        # hierarchy and should get the flag too — only the objects reachable solely *through*
+        # the shared host (the sibling service and its component) are the actual leak candidates
+        self.assertIn(concern, first_service.concerns.all())
+        self.assertIn(concern, shared_host.concerns.all())
+        for not_leaked_to in (second_service, second_service_component):
+            self.assertNotIn(concern, not_leaked_to.concerns.all())
+
+    def test_config_issue_leaks_via_shared_host(self) -> None:
+        # unlike FLAG (see `test_outdated_config_flag_does_not_leak_via_shared_host`), ISSUE concerns
+        # owned by a service/component *do* widen to whatever else sits on a shared host — this locks
+        # in that leak for the same topology used in the flag test
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_issue_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="issue_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        first_service_cod = CoreObjectDescriptor(id=first_service.pk, type=ADCMCoreType.SERVICE)
+        issue = create_issue(owner=first_service_cod, cause=ConcernCause.CONFIG)
+        distribute_concern_on_related_objects(owner=first_service_cod, concern_id=issue.pk)
+
+        # distribution (the concern's m2m links), not just ownership
+        for leaked_to in (first_service, shared_host, second_service, second_service_component):
+            self.assertIn(issue, leaked_to.concerns.all())
+
     def test_service_requirements(self):
         cluster = self.uc.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
         service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=cluster)
@@ -440,6 +551,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
 
         expected_concern_reason = {
             "message": ConcernMessage.LOCKED_BY_JOB.template.message,
@@ -590,6 +707,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
                 action = Action.objects.get(name="action_1_comp_1", prototype=component.prototype)
                 response = self.client.v2[component, "actions", action, "run"].post()
                 self.assertEqual(response.status_code, HTTP_200_OK)
+
+                # concerns are distributed when task is scheduled, not when action is launched,
+                # so object stays free of them until scheduler picks the task up
+                self.assertEqual(len(component.concerns.all()), 1)
+
+                self.task_runner().schedule_task(response.json()["id"])
 
                 response = self.client.v2[concerns.last()].delete()
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)

@@ -10,9 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Generator
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Literal
 
+from cm.models import JobStatus, TaskLog
+from core.types import TaskID
 from django.utils import timezone
 
 
@@ -103,3 +108,78 @@ def assert_dict_contains_subset(subset, superset):
 
     missing_items = [item for item in subset.items() if item not in superset.items()]
     assert not any(missing_items), f"Missing items in superset: {', '.join([key for key, _ in missing_items])}"  # noqa: S101
+
+
+@contextmanager
+def assert_no_task_launched() -> Generator[None, None, None]:
+    """
+    Check that no new task appeared while the block was executed.
+
+    Relies on task ids being monotonic, which holds for parallel runs too:
+    each django test is wrapped in its own transaction.
+    """
+
+    latest_before = _latest_task_id()
+
+    yield
+
+    latest_after = _latest_task_id()
+
+    assert latest_after == latest_before, f"Expected no task launched, but got #{latest_after}"  # noqa: S101
+
+
+def _latest_task_id() -> int | None:
+    return TaskLog.objects.order_by("-id").values_list("id", flat=True).first()
+
+
+def assert_task_revoked(task_id: int) -> None:
+    """
+    Check that task was revoked, which is how scheduler reports validation failure:
+    it doesn't raise, it sets task status instead.
+    """
+
+    status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
+
+    assert status == JobStatus.REVOKED, f"Expected task #{task_id} to be revoked, but it's {status}"  # noqa: S101
+
+
+@dataclass(slots=True)
+class LaunchedTask:
+    _task_id: TaskID | None = None
+
+    def task_id(self) -> TaskID:
+        if self._task_id is None:
+            message = "Task isn't registered yet, id is only available after `expect_task_launched` block is left"
+            raise RuntimeError(message)
+
+        return self._task_id
+
+    def register(self, task_id: TaskID) -> None:
+        self._task_id = task_id
+
+
+@contextmanager
+def expect_task_launched() -> Generator[LaunchedTask, None, None]:
+    """
+    Check that exactly one task was created while the block was executed
+    and provide access to its id.
+
+    Relies on task ids being monotonic, which holds for parallel runs too:
+    each django test is wrapped in its own transaction.
+    """
+
+    known_task_id = _latest_task_id() or 0
+    launched = LaunchedTask()
+
+    yield launched
+
+    new_task_ids = tuple(TaskLog.objects.filter(id__gt=known_task_id).order_by("id").values_list("id", flat=True))
+
+    if len(new_task_ids) > 1:
+        message = f"Expected one task to be launched, but got {len(new_task_ids)}: {new_task_ids}. "
+        message += "Launch tasks one by one, `expect_task_launched` can't tell which one is the required one"
+        raise RuntimeError(message)
+
+    assert new_task_ids, "Expected task to be launched, but got none"  # noqa: S101
+
+    launched.register(new_task_ids[0])

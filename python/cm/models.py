@@ -10,22 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from functools import partial
 from itertools import chain
 from typing import Optional, TypeAlias
 from uuid import uuid4
-import os.path
 
 from core.action import ScriptType
+from core.concern.types import ConcernCause as _ConcernCause
+from core.concern.types import ConcernType as _ConcernType
 from core.legacy.action.process.types import ProcessState, ProcessStepState
 from core.logs import Severity
-from core.types import ADCMCoreType, ADCMHostGroupType, Descriptor, ExtraActionTargetType
-from django.conf import settings
+from core.types import ADCMCoreType, ExtraActionTargetType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, transaction
+from django.db import models
 from django.db.models import QuerySet
 from django.db.models.functions import Lower
 from django.db.models.signals import post_delete
@@ -33,7 +33,6 @@ from django.dispatch import receiver
 import core
 
 from cm.errors import AdcmEx
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 
 
@@ -143,7 +142,7 @@ class ADCMModel(models.Model):
                 if getattr(self, field_name) != self._loaded_values[field_name]:
                     raise AdcmEx(
                         "NOT_CHANGEABLE_FIELDS",
-                        f'{", ".join(not_changeable_fields)} fields cannot be changed',
+                        f"{', '.join(not_changeable_fields)} fields cannot be changed",
                     )
         super().save(*args, **kwargs)
 
@@ -813,132 +812,6 @@ class ConfigHostGroup(ADCMModel):
     class Meta:
         unique_together = ["object_id", "name", "object_type"]
 
-    def get_config_spec(self):
-        """Return spec for config"""
-        spec = {}
-        for field in PrototypeConfig.objects.filter(prototype=self.object.prototype, action__isnull=True).order_by(
-            "id",
-        ):
-            group_customization = field.group_customization
-            if group_customization is None:
-                group_customization = self.object.prototype.config_group_customization
-            field_spec = {
-                "type": field.type,
-                "group_customization": group_customization,
-                "limits": field.limits,
-            }
-            if field.subname == "":
-                if field.type == "group":
-                    field_spec.update({"fields": {}})
-                spec[field.name] = field_spec
-            else:
-                spec[field.name]["fields"][field.subname] = field_spec
-        return spec
-
-    def create_group_keys(
-        self,
-        config_spec: dict,
-        group_keys: dict[str, bool] = None,
-        custom_group_keys: dict[str, bool] = None,
-    ):
-        """
-        Returns a map of fields that are included in a group,
-        as well as a map of fields that cannot be included in a group
-        """
-
-        if group_keys is None:
-            group_keys = {}
-
-        if custom_group_keys is None:
-            custom_group_keys = {}
-
-        for config_key, config_value in config_spec.items():
-            if config_value["type"] == "group":
-                value = None
-
-                if "activatable" in config_value["limits"]:
-                    value = False
-
-                group_keys.setdefault(config_key, {"value": value, "fields": {}})
-                custom_group_keys.setdefault(config_key, {"value": config_value["group_customization"], "fields": {}})
-                self.create_group_keys(
-                    config_value["fields"],
-                    group_keys[config_key]["fields"],
-                    custom_group_keys[config_key]["fields"],
-                )
-            else:
-                group_keys[config_key] = False
-                custom_group_keys[config_key] = config_value["group_customization"]
-
-        return group_keys, custom_group_keys
-
-    def get_group_keys(self):
-        config_log = ConfigLog.objects.get(id=self.config.current)
-
-        return config_log.attr.get("group_keys", {})
-
-    def merge_config(self, object_config: dict, config_host_group: dict, group_keys: dict, config=None):
-        """Merge object config with group config based group_keys"""
-
-        if config is None:
-            config = {}
-
-        for group_key, group_value in group_keys.items():
-            if isinstance(group_value, Mapping):
-                config.setdefault(group_key, {})
-                self.merge_config(
-                    object_config[group_key],
-                    config_host_group[group_key],
-                    group_keys[group_key]["fields"],
-                    config[group_key],
-                )
-            else:
-                if group_value and group_key in config_host_group:
-                    config[group_key] = config_host_group[group_key]
-                else:
-                    if group_key in object_config:
-                        config[group_key] = object_config[group_key]
-
-        return config
-
-    @staticmethod
-    def merge_attr(object_attr: dict, group_attr: dict, group_keys: dict, attr=None):
-        """Merge object attr with group attr based group_keys"""
-
-        if attr is None:
-            attr = {}
-
-        for group_key, group_value in group_keys.items():
-            if isinstance(group_value, Mapping) and group_key in object_attr:
-                if group_value["value"]:
-                    attr[group_key] = group_attr[group_key]
-                else:
-                    attr[group_key] = object_attr[group_key]
-
-        return attr
-
-    def get_config_attr(self):
-        """Return attr for group config without group_keys and custom_group_keys params"""
-
-        config_log = ConfigLog.obj.get(id=self.config.current)
-        return {k: v for k, v in config_log.attr.items() if k not in ("group_keys", "custom_group_keys")}
-
-    def get_config_and_attr(self):
-        """Return merge object config with group config and merge attr"""
-
-        object_cl = ConfigLog.objects.get(id=self.object.config.current)
-        object_config = object_cl.config
-        object_attr = object_cl.attr
-        group_cl = ConfigLog.objects.get(id=self.config.current)
-        host_group = group_cl.config
-        group_keys = group_cl.attr.get("group_keys", {})
-        group_attr = self.get_config_attr()
-        config = self.merge_config(object_config, host_group, group_keys)
-        attr = self.merge_attr(object_attr, group_attr, group_keys)
-        self.prepare_files_for_config(config)
-
-        return config, attr
-
     def host_candidate(self) -> QuerySet:
         """Returns candidate hosts valid to add to the group"""
 
@@ -960,70 +833,6 @@ class ConfigHostGroup(ADCMModel):
         if set(host_ids).difference({host.pk for host in self.host_candidate()}):
             raise AdcmEx("GROUP_CONFIG_HOST_ERROR")
 
-    def prepare_files_for_config(self, config=None):
-        """Creating file for file type field"""
-
-        if self.config is None:
-            return
-
-        if config is None:
-            config = ConfigLog.objects.get(id=self.config.current).config
-
-        fields = PrototypeConfig.objects.filter(
-            prototype=self.object.prototype,
-            action__isnull=True,
-            type__in={"file", "secretfile"},
-        ).order_by("id")
-        for field in fields:
-            filename = ".".join(
-                [
-                    self.object.prototype.type,
-                    str(self.object.id),
-                    "group",
-                    str(self.id),
-                    field.name,
-                    field.subname,
-                ],
-            )
-            filepath = str(settings.FILE_DIR / filename)
-
-            value = config[field.name][field.subname] if field.subname else config[field.name]
-
-            if field.type == "secretfile":
-                value = ansible_decrypt(msg=value)
-
-            if value is not None:
-                # See cm.adcm_config.py:313
-                if field.name == "ansible_ssh_private_key_file" and value != "" and value[-1] == "-":
-                    value += "\n"
-
-                with open(filepath, mode="w", encoding=settings.ENCODING_UTF_8) as f:
-                    f.write(value)
-
-                os.chmod(filepath, 0o0600)  # noqa: PTH101
-            else:
-                if os.path.exists(filename):  # noqa: PTH101, PTH110
-                    os.remove(filename)  # noqa: PTH107
-
-    @transaction.atomic()
-    def save(self, *args, **kwargs):
-        from infra.services import get_config_service
-
-        from cm.converters import orm_object_to_core_descriptor
-
-        super().save(*args, **kwargs)
-        config_service = get_config_service()
-        config_service.create_initial_configuration_of_host_group(
-            group=Descriptor(id=self.pk, type=ADCMHostGroupType.CONFIG),
-            owner=orm_object_to_core_descriptor(self.object),
-        )
-        self.refresh_from_db(fields=("config",))
-
-
-class ActionType(models.TextChoices):
-    TASK = "task", "task"
-    JOB = "job", "job"
-
 
 SCRIPT_TYPE = tuple((entry.value, entry.value) for entry in ScriptType)
 
@@ -1035,8 +844,6 @@ class AbstractAction(ADCMModel):
     display_name = models.CharField(max_length=1000, blank=True)
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
-
-    type = models.CharField(max_length=1000, choices=ActionType)
 
     state_available = models.JSONField(default=list)
     state_unavailable = models.JSONField(default=list)
@@ -1052,17 +859,18 @@ class AbstractAction(ADCMModel):
 
     hostcomponentmap = models.JSONField(default=list)
     allow_to_terminate = models.BooleanField(default=False)
-    partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
     allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
 
     wizard_template = models.JSONField(null=True, default=None)
 
-    config_jinja = models.CharField(max_length=1000, blank=True, null=True)
     config_template = models.JSONField(null=True, default=None)
-    scripts_jinja = models.CharField(max_length=512, blank=True, null=False, default="")
     scripts_template = models.JSONField(null=True, default=None)
+
+    # serialized `core.action.types.JobSpecV1` of statically declared scripts,
+    # `None` for actions that render their plan from `scripts_template`
+    scripts = models.JSONField(null=True, default=None)
 
     _venv = models.CharField(default="default", db_column="venv", max_length=1000, blank=False)
 
@@ -1145,27 +953,6 @@ class Action(AbstractAction):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
-
-
-class AbstractSubAction(ADCMModel):
-    action = None
-
-    name = models.CharField(max_length=1000)
-    display_name = models.CharField(max_length=1000, blank=True)
-    script = models.CharField(max_length=1000)
-    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=1000, blank=True)
-    multi_state_on_fail_set = models.JSONField(default=list)
-    multi_state_on_fail_unset = models.JSONField(default=list)
-    params = models.JSONField(default=dict)
-    allow_to_terminate = models.BooleanField(default=False)
-
-    class Meta:
-        abstract = True
-
-
-class SubAction(AbstractSubAction):
-    action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
 class HostComponent(ADCMModel):
@@ -1309,6 +1096,10 @@ class TaskLog(ADCMModel):
     is_blocking = models.BooleanField(default=True)
     process = models.JSONField(null=True, default=None)
 
+    # serialized `core.action.types.JobSpecV1` the task runs: either the action's own `scripts`
+    # or the result of rendering its `scripts_template`
+    execution_plan = models.JSONField(null=True, default=None)
+
     # default for name is made for tasks that have no action after bundle is deleted
     name = models.CharField(max_length=1200, default="-")
     display_name = models.CharField(max_length=1200, default="-")
@@ -1329,8 +1120,23 @@ class TaskLog(ADCMModel):
         return (self.finish_date - self.start_date).total_seconds()
 
 
-class JobLog(AbstractSubAction):
+class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
+
+    # key of the node in the task's `execution_plan` this job was created for
+    spec_key = models.CharField(max_length=1000, blank=True, default="")
+
+    # duplicates of the spec node's fields, kept until the plan becomes the only source
+    name = models.CharField(max_length=1000)
+    display_name = models.CharField(max_length=1000, blank=True)
+    script = models.CharField(max_length=1000)
+    script_type = models.CharField(max_length=1000, choices=SCRIPT_TYPE)
+    state_on_fail = models.CharField(max_length=1000, blank=True)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
+    params = models.JSONField(default=dict)
+    allow_to_terminate = models.BooleanField(default=False)
+
     pid = models.PositiveIntegerField(blank=True, default=0)
     status = models.CharField(max_length=1000, choices=JobStatus, default="created")
     start_date = models.DateTimeField(null=True, default=None)
@@ -1411,19 +1217,19 @@ class LogStorage(ADCMModel):
 
 
 class ConcernType(models.TextChoices):
-    LOCK = "lock", "lock"
-    ISSUE = "issue", "issue"
-    FLAG = "flag", "flag"
+    LOCK = _ConcernType.LOCK.value, _ConcernType.LOCK.value
+    ISSUE = _ConcernType.ISSUE.value, _ConcernType.ISSUE.value
+    FLAG = _ConcernType.FLAG.value, _ConcernType.FLAG.value
 
 
 class ConcernCause(models.TextChoices):
-    CONFIG = "config", "config"
-    JOB = "job", "job"
-    HOSTCOMPONENT = "host-component", "host-component"
-    IMPORT = "import", "import"
-    SERVICE = "service", "service"
-    REQUIREMENT = "requirement", "requirement"
-    CONFIGURING_PROCESS = "configuring_process", "configuring_process"
+    CONFIG = _ConcernCause.CONFIG.value, _ConcernCause.CONFIG.value
+    JOB = _ConcernCause.JOB.value, _ConcernCause.JOB.value
+    HOSTCOMPONENT = _ConcernCause.HOSTCOMPONENT.value, _ConcernCause.HOSTCOMPONENT.value
+    IMPORT = _ConcernCause.IMPORT.value, _ConcernCause.IMPORT.value
+    SERVICE = _ConcernCause.SERVICE.value, _ConcernCause.SERVICE.value
+    REQUIREMENT = _ConcernCause.REQUIREMENT.value, _ConcernCause.REQUIREMENT.value
+    CONFIGURING_PROCESS = _ConcernCause.CONFIGURING_PROCESS.value, _ConcernCause.CONFIGURING_PROCESS.value
 
 
 class ConcernItem(ADCMModel):

@@ -278,7 +278,7 @@ class APIV2Mixin:
         except Exception:  # noqa: BLE001 - best-effort error reporting
             details = response.content
 
-        return f"Expected response code {expected_code}, got {response.status_code}. " f"Response details: {details}"
+        return f"Expected response code {expected_code}, got {response.status_code}. Response details: {details}"
 
 
 class TestUtilsMixin:

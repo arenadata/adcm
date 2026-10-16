@@ -19,20 +19,19 @@ import argparse
 
 import adcm.init_django  # noqa: F401, isort:skip
 
-from application.di.containers import get_main_providers
-from core.legacy.job.runners import JobFilterPredicate, TaskRunner, always_true, non_success
+from application.di.containers import get_task_runner_providers
+from core.legacy.job.runners import TaskRunner
 import dishka
 
 
 def main():
     parser = argparse.ArgumentParser()
+    # keep for backward compatibility for now
     parser.add_argument("command", choices=["start", "restart"])
     parser.add_argument("task_id", type=int)
     args = parser.parse_args()
 
-    container_context = {JobFilterPredicate: non_success if args.command == "restart" else always_true}
-
-    container = dishka.make_container(*get_main_providers(), context=container_context)
+    container = dishka.make_container(*get_task_runner_providers())
 
     with container():
         runner = container.get(TaskRunner)

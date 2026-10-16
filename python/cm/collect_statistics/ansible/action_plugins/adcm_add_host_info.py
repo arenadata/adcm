@@ -159,7 +159,7 @@ class ActionModule(ActionBase):
                 )
             except Exception as e:  # noqa: BLE001
                 message = (
-                    f"Failed to prepare devices record for {host_name}: {e}\n" f"Traceback:\n{traceback.format_exc()}\n"
+                    f"Failed to prepare devices record for {host_name}: {e}\nTraceback:\n{traceback.format_exc()}\n"
                 )
                 sys.stderr.write(message)
 

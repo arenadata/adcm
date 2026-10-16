@@ -1,0 +1,31 @@
+name: Validate Pull Request Changes
+
+on:
+  pull_request:
+    paths:
+      - 'python/**'
+      - 'dev/linters/**'
+      - 'conf/adcm/python_scripts/**'
+      - 'Makefile'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - '.github/workflows/on_push_to_pull_request.yaml'
+      - '.github/workflows/step_lint_python_code.yaml'
+      - '.github/workflows/step_run_python_unittests.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python-code:
+    name: Python code
+    uses: ./.github/workflows/step_lint_python_code.yaml
+
+  python-unittests:
+    name: Python unittests
+    uses: ./.github/workflows/step_run_python_unittests.yaml

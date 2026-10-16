@@ -17,5 +17,4 @@ class UpgradeFilter(
     AdvancedFilterSet,
     char_fields=("name", "display_name"),
     number_fields=("id",),
-):
-    ...
+): ...

@@ -14,9 +14,7 @@
 Real Django settings that aren't dependant on environment
 """
 
-from json import JSONDecodeError
 import os
-import json
 
 WSGI_APPLICATION = "adcm.wsgi.application"
 
@@ -26,27 +24,32 @@ DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
 DEBUG = os.getenv("DEBUG") in {"1", "True", "true"}
 
 ALLOWED_HOSTS = ["*"]
-INSTALLED_APPS = [
+COMMON_APPS = [
     "rbac",  # keep it above 'django.contrib.auth' in order to keep "createsuperuser" working
-    "django_filters",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
-    "rest_framework.authtoken",
     "social_django",
     "guardian",
     "cm.apps.CmConfig",
     "audit",
+    "application",
+]
+
+API_APPS = [
+    "django_filters",
+    "rest_framework",
+    "rest_framework.authtoken",
     "api_v2",
     "corsheaders",
     "drf_spectacular",
     "drf_spectacular_sidecar",
-    "application",
     "health",
 ]
+
+INSTALLED_APPS = [*COMMON_APPS, *API_APPS]
 
 MIDDLEWARE = [
     "api_v2.utils.di.DishkaMiddleware",
@@ -64,33 +67,6 @@ MIDDLEWARE = [
 ]
 if not DEBUG:
     MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
-
-
-def get_db_options() -> dict:
-    db_options = os.getenv("DB_OPTIONS", "{}")
-    try:
-        parsed = json.loads(db_options)
-    except JSONDecodeError as json_error:
-        raise RuntimeError("Failed to decode DB_OPTIONS as JSON") from json_error
-    if not isinstance(parsed, dict):
-        raise RuntimeError("DB_OPTIONS should be dict")  # noqa: TRY004
-    return parsed
-
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASS"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT", default="5432"),
-        "CONN_MAX_AGE": 60,
-        "CONN_HEALTH_CHECKS": True,  # Improves the reliability of connection reuse
-        # and prevents errors when the connection was closed by the database server.
-        "OPTIONS": get_db_options(),
-    }
-}
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -115,7 +91,7 @@ REST_FRAMEWORK = {
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
     ],
-    "EXCEPTION_HANDLER": "cm.errors.custom_drf_exception_handler",
+    "EXCEPTION_HANDLER": "api_v2.errors.custom_drf_exception_handler",
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
     "DEFAULT_VERSION": "v2",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",

@@ -10,12 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import asyncio
 
 from asgiref.sync import sync_to_async
 from cm.models import ClusterBind
 from rbac.models import User
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 from tests.base import APPLICATION_JSON
 from tests.client import ADCMAsyncTestClient
 from tests.suites import ADCMDjangoAPISuite
@@ -150,6 +151,24 @@ class TestImport(ADCMDjangoAPISuite):
                 {"id": ClusterBind.objects.last().pk, "source": {"id": self.export_service.pk, "type": "service"}},
             ],
             data[0]["binds"],
+        )
+
+    def test_create_multiple_invalid_fields_fail(self):
+        response = self.client.v2[self.import_cluster, "imports"].post(
+            data=[
+                {"source": {"id": self.export_cluster.pk, "type": "cool"}},
+                {"source": {"type": "service"}},
+            ],
+        )
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertDictEqual(
+            response.json(),
+            {
+                "code": "BAD_REQUEST",
+                "desc": f'type - "cool" is not a valid choice.{os.linesep}id - This field is required.',
+                "level": "error",
+            },
         )
 
     def test_cluster_imports_create_empty_success(self):

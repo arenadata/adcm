@@ -18,6 +18,7 @@ from adcm_version import compare_prototype_versions
 from core.types import ClusterBindSchema, Descriptor
 from core.versions import is_version_suitable
 import core
+import core.bundle
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.job.context import get_imports_for_inventory
@@ -49,8 +50,7 @@ from cm.models import (
 from cm.transition.action import RetrieveStartImpossibleReason
 
 
-class DifferentBundleError(Exception):
-    ...
+class DifferentBundleError(Exception): ...
 
 
 def check_upgrade(

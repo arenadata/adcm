@@ -1,0 +1,23 @@
+- type: provider
+  name: revert_provider
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  config:
+    - name: kept
+      type: string
+      default: provider-kept
+    - name: removed
+      type: integer
+      default: 1
+
+- type: host
+  name: revert_host
+  version: "1.0"
+  config:
+    - name: kept
+      type: string
+      default: host-kept
+    - name: removed
+      type: integer
+      default: 2

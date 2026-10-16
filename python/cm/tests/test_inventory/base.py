@@ -18,10 +18,10 @@ import json
 
 from core.action import TaskMappingDelta
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import CoreObjectDescriptor
-from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
 from tests.suites import ADCMDjangoAPISuite
 
@@ -97,18 +97,16 @@ class BaseInventoryTestCase(ADCMDjangoAPISuite):
                 is_host_action=action.host_action,
                 delta=delta,
                 cluster_service=self.uc.container.get(ClusterService),
+                config_service=self.uc.container.get(ConfigService),
             )
         )
 
         self.check_hosts_topology(data=actual_inventory["all"]["children"], expected=expected_topology)
         self.check_data_by_template(data=actual_inventory, templates_data=expected_data)
 
-    @staticmethod
-    def add_config_host_group(parent: ADCMModel, hosts: Iterable[Host]) -> ConfigHostGroup:
-        host_group = ConfigHostGroup.objects.create(
-            object_type=ContentType.objects.get_for_model(model=parent),
-            object_id=parent.pk,
-            name=f"Group for {parent.__class__.__name__} {parent.pk}",
+    def add_config_host_group(self, parent: ADCMModel, hosts: Iterable[Host]) -> ConfigHostGroup:
+        host_group = self.uc.add_config_host_group(
+            owner=parent, name=f"Group for {parent.__class__.__name__} {parent.pk}"
         )
         host_group.hosts.set(hosts)
         return host_group

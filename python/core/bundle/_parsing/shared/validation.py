@@ -16,12 +16,10 @@ from adcm_version import compare_prototype_versions
 
 from core import config
 from core.bundle._constants import ADCM_MM_ACTION_FORBIDDEN_PROPS_SET, ADCM_SERVICE_ACTION_NAMES_SET, NAME_REGEX
-from core.bundle._validate import validate_bundle_switch_amount
-from core.result import Fail, Success
 from core.templates import Template
 
 if TYPE_CHECKING:
-    from core.bundle._parsing.v_1_0.schema import VersionsSchema
+    from core.bundle._parsing.v_2_0.schema import VersionsSchema
 
 
 ActionName: TypeAlias = str
@@ -58,11 +56,17 @@ def script_is_correct_path(script: str):
     return script
 
 
+def license_is_correct_path(license_: str | None) -> str | None:
+    if license_ is not None and not is_path_correct(license_):
+        raise ValueError(f"Unsupported path format for license: {license_}")
+
+    return license_
+
+
 def validate_name(name: str) -> str:
     if NAME_REGEX.fullmatch(name) is None:
         raise ValueError(
-            "Name is incorrect. Only latin characters, digits, "
-            "dots (.), dashes (-), and underscores (_) are allowed.",
+            "Name is incorrect. Only latin characters, digits, dots (.), dashes (-), and underscores (_) are allowed.",
         )
 
     return name
@@ -94,13 +98,6 @@ def convert_config(config: Any) -> list:
         new_config.append(new_value)
 
     return new_config
-
-
-def license_allowed_for_type(type_: str) -> None:
-    allowed_types = {"cluster", "service", "provider"}
-
-    if type_ not in allowed_types:
-        raise ValueError("License can be placed in cluster, service or provider")
 
 
 def min_and_max_present(versions: "VersionsSchema"):
@@ -140,7 +137,7 @@ def forbidden_mm_actions(actions: Any) -> Any:
     for name, data in actions.items():
         if name in ADCM_SERVICE_ACTION_NAMES_SET and ADCM_MM_ACTION_FORBIDDEN_PROPS_SET.intersection(data.keys()):
             raise ValueError(
-                "Maintenance mode actions shouldn't have " f'"{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
+                f'Maintenance mode actions shouldn\'t have "{ADCM_MM_ACTION_FORBIDDEN_PROPS_SET}" properties',
             )
 
     return actions
@@ -173,16 +170,6 @@ def field_not_set_mode_before(value: T, field_name: str) -> T:
         raise ValueError(message)
 
     return value
-
-
-def upgrade_scripts_are_valid(scripts: list) -> list:
-    match validate_bundle_switch_amount(scripts):
-        case Success(None):
-            return scripts
-
-        case Fail(value=err_message):
-            message = f"{err_message} in upgrade"
-            raise ValueError(message)
 
 
 # bad typehint due to universality requirement

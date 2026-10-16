@@ -14,12 +14,9 @@
 Keep here providers that aren't Django-dependant, so they can be used during startup (django init phase)
 """
 
-from typing import Annotated, TypeVar
 import os
 
-from adcm.feature_flags import use_new_job_scheduler
 from core import secrets
-from core.ext_utils.pydantic import represent_missing_and_others_errors_without_description
 from core.files.directories import ADCMBundleDir, BundlesDir
 from core.files.secrets_provider import FSSecretsBackend
 from core.scenarios.adcm import DefaultURL
@@ -31,15 +28,12 @@ from integrations import consul, vault
 from integrations.celery.settings import CelerySettings
 from integrations.consul import ConsulBackend
 from jobs.scheduler.settings import SchedulerSettings
-from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import pydantic
 
 from application.constants import SECRETS_FILENAME
-from application.environment import directories_from_env
-from application.types import ADCMMaintenanceMode, SecretsSource, TaskRunnerMode
-
-_EnvSettingsT = TypeVar("_EnvSettingsT", bound=BaseSettings)
+from application.environment import directories_from_env, parse_db_settings_from_env
+from application.types import ADCMMaintenanceMode, SecretsSource
+from application.utils import parse_settings_from_env
 
 
 # don't know where to put it yet, so keeping close to usage point
@@ -55,29 +49,10 @@ class ConsulSettings(BaseSettings):
     consul: consul.ClientSettings
 
 
-class EnvDBSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="db_")
-
-    user: str
-    # prefix looks to be ignored when alias is used
-    password: Annotated[SecretStr, Field(alias="db_pass")]
-    name: str
-    host: str
-    port: str
-
-    options: Annotated[dict, Field(default_factory=dict)]
+class VaultSecretsInitError(Exception): ...
 
 
-class VaultSecretsInitError(Exception):
-    ...
-
-
-class ConsulSettingsInitError(Exception):
-    ...
-
-
-class WorkerSettingsInitError(Exception):
-    ...
+class ConsulSettingsInitError(Exception): ...
 
 
 class EnvironmentProvider(Provider):
@@ -125,13 +100,6 @@ class EnvironmentProvider(Provider):
                 raise secrets.SecretBaseError(message)
 
     @provide
-    def task_runner_mode(self) -> TaskRunnerMode:
-        if use_new_job_scheduler():
-            return TaskRunnerMode.SCHEDULLER
-
-        return TaskRunnerMode.INSTANT
-
-    @provide
     def vault_settings(self) -> vault.ClientSettings:
         return parse_vault_settings_from_env().vault
 
@@ -159,7 +127,7 @@ class EnvironmentProvider(Provider):
         from integrations.celery.pg.transport import make_broker_url
         from sqlalchemy import URL
 
-        db = parse_settings_from_env(EnvDBSettings, "database")
+        db = parse_db_settings_from_env()
         # Build via URL.create so credentials/host/db and options are properly
         # percent-encoded — a password containing @ : / ? # would otherwise
         # break URL parsing and authentication.
@@ -226,17 +194,6 @@ class EnvironmentProvider(Provider):
     @provide
     def scheduler_settings(self) -> SchedulerSettings:
         return parse_settings_from_env(SchedulerSettings, "scheduler")
-
-
-def parse_settings_from_env(settings_cls: type[_EnvSettingsT], name: str) -> _EnvSettingsT:
-    try:
-        return settings_cls()
-    except pydantic.ValidationError as e:
-        message = represent_missing_and_others_errors_without_description(
-            errors=e.errors(),
-            prefix=f"Failed to retrieve {name} settings from environment.\nSummary:\n",
-        )
-        raise WorkerSettingsInitError(message) from None
 
 
 def parse_vault_settings_from_env() -> VaultSettings:

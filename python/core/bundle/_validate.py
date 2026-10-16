@@ -18,9 +18,8 @@ from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
 from typing import Final, TypeAlias, cast
 
-import jinja2
-
 from core import action, config
+from core.action.types import ExecutionStyle, HcApplyScript, JobHierarchyLevel, JobSpecV1, ScriptSpec
 from core.bundle._definitions import (
     ActionDefinition,
     ConfigDefinition,
@@ -28,17 +27,27 @@ from core.bundle._definitions import (
     ImportDefinition,
     UpgradeDefinition,
 )
-from core.bundle._errors import BundleValidationError
+from core.bundle._errors import BundleParsingError, BundleValidationError
 from core.bundle._predicates import has_requires, is_component, is_component_key, is_service
 from core.bundle._representation import dependency_entry_to_key, repr_from_key
 from core.bundle._types import BundleDefinitionKey
 from core.constants import ADCM_HOST_TURN_OFF_MM_ACTION_NAME, ADCM_HOST_TURN_ON_MM_ACTION_NAME
 from core.errors import localize_error
 from core.result import Fail, Success
+from core.spec.keys import is_in_any_group, level_keys_to_full_key
+from core.spec.types import LevelSpecKey
 from core.templates import RendererEnv, Template, get_renderer
 from core.types import ADCMCoreType
 
 FILE_TYPES: Final = {"file", "secretfile"}
+
+_MAX_DECLARED_HIERARCHY_DEPTH: Final = 2
+"""
+Root level is always present and always sequential, two more levels may be declared under it.
+
+It's a restriction of what a bundle may declare, not of what a spec may be:
+operations over an execution plan are expected to handle any depth.
+"""
 
 ConvertConfigDefinition: TypeAlias = Callable[[ConfigDefinition, Path], tuple[config.spec.FullSpec, config.Defaults]]
 
@@ -159,7 +168,7 @@ def check_bound_to(bound_to: dict, owner_key: BundleDefinitionKey) -> None:
         raise BundleValidationError(message)
 
 
-def _is_parameter_present_in_definition(name: str, definition: ConfigDefinition) -> bool:
+def _is_parameter_present_in_definition(name: config.ParameterFullName, definition: ConfigDefinition) -> bool:
     return config.names.full_name_to_level_names(name) in definition.parameters
 
 
@@ -171,7 +180,7 @@ def check_config_definition(definition: ConfigDefinition, bundle_root: Path):
     )
 
 
-def _is_parameter_present_in_fullspec(name: str, spec: config.spec.FullSpec) -> bool:
+def _is_parameter_present_in_fullspec(name: config.ParameterFullName, spec: config.spec.FullSpec) -> bool:
     return name in spec.parameters
 
 
@@ -190,7 +199,7 @@ def check_dynamic_config_definition(
 def _check_config_definition(
     definition: ConfigDefinition,
     bundle_root: Path,
-    is_parameter_present_in_config: Callable[[str], bool],
+    is_parameter_present_in_config: Callable[[config.ParameterFullName], bool],
 ) -> None:
     # For now performing these checks in here,
     # because later they will be "invalidated" by conversion to spec and defaults.
@@ -213,8 +222,7 @@ def _check_config_definition(
                     dependency_name = config.names.ensure_full_name(source["name"])
                     if not is_parameter_present_in_config(dependency_name):
                         message = (
-                            f"variant parameter is dependant on {dependency_name}, "
-                            "but it is missing in configuration"
+                            f"variant parameter is dependant on {dependency_name}, but it is missing in configuration"
                         )
                         raise BundleValidationError(message)
 
@@ -264,38 +272,57 @@ def check_actions(
 ) -> None:
     for action_definition in actions:
         with localize_error(f"Action {action_definition.name}"):
-            check_no_bundle_switch(scripts=action_definition.scripts)
+            check_hc_apply_has_hc_acl(action=action_definition)
             check_mm_host_action_is_allowed(action=action_definition, definition_type=definition_type)
             check_action_hc_acl_rules(hostcomponentmap=action_definition.hostcomponentmap, definitions=definitions)
-            check_jinja_templates_are_correct(action=action_definition, bundle_root=bundle_root)
             check_templates_are_correct(action=action_definition, bundle_root=bundle_root)
-            check_action_scripts(action=action_definition)
 
-
-def check_action_scripts(action: ActionDefinition):
-    for script in action.scripts:
-        if script.script_type == "internal" and script.script == "hc_apply" and "rules" in script.params:
-            apply_rules = {(entry["action"], entry["service"], entry["component"]) for entry in script.params["rules"]}
-            action_rules = {
-                (entry["action"], entry["service"], entry["component"]) for entry in action.hostcomponentmap
-            }
-
-            extra_rules = apply_rules - action_rules
-            if extra_rules:
-                extra_rules_repr = ", ".join(
-                    map(
-                        str,
-                        (
-                            {"action": action, "service": service, "component": component}
-                            for action, service, component in extra_rules
-                        ),
-                    )
+            if action_definition.scripts is not None:
+                check_no_bundle_changing_scripts_in_groups(spec=action_definition.scripts)
+                check_no_on_fail_multi_states_in_groups(spec=action_definition.scripts)
+                check_no_bundle_switch(scripts=action_definition.scripts)
+                check_action_scripts(
+                    scripts=action_definition.scripts, hostcomponentmap=action_definition.hostcomponentmap
                 )
-                message = (
-                    "HC rules in hc_apply script should follow action's hc_acl rules, "
-                    f"but following are missing in action's definition: {extra_rules_repr}"
+                check_execution_hierarchy(spec=action_definition.scripts)
+
+
+def check_hc_apply_has_hc_acl(action: ActionDefinition) -> None:
+    # wizards have mapping steps of their own, so they aren't required to declare `hc_acl`
+    if action.scripts is None or action.wizard_template is not None or action.hostcomponentmap is not None:
+        return
+
+    if any(isinstance(script_spec.script, HcApplyScript) for script_spec in action.scripts.scripts.values()):
+        # This one is because of original implementation validated it on bundle DSL level,
+        # so we keep the error type for now since it affects API error returned.
+        # Can be turned to validation error if no effect on user is registered.
+        raise BundleParsingError('"hc_apply" requires "hc_acl" declaration')
+
+
+def check_action_scripts(scripts: JobSpecV1, hostcomponentmap: list | None) -> None:
+    for script_spec in scripts.scripts.values():
+        if not isinstance(script_spec.script, HcApplyScript) or script_spec.script.params is None:
+            continue
+
+        apply_rules = {(rule.action, rule.service, rule.component) for rule in script_spec.script.params.rules}
+        action_rules = {(entry["action"], entry["service"], entry["component"]) for entry in hostcomponentmap or ()}
+
+        extra_rules = apply_rules - action_rules
+        if extra_rules:
+            extra_rules_repr = ", ".join(
+                map(
+                    str,
+                    (
+                        {"action": action, "service": service, "component": component}
+                        for action, service, component in extra_rules
+                    ),
                 )
-                raise BundleValidationError(message)
+            )
+            message = (
+                "HC rules in hc_apply script should follow action's hc_acl rules, "
+                f"but following are missing in action's definition: {extra_rules_repr}"
+            )
+            raise BundleValidationError(message)
 
 
 def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMap, bundle_root: Path) -> None:
@@ -305,17 +332,14 @@ def check_upgrades(upgrades: list[UpgradeDefinition], definitions: DefinitionsMa
 
         with localize_error(f"Upgrade {upgrade.name}"):
             check_action_hc_acl_rules(hostcomponentmap=upgrade.action.hostcomponentmap, definitions=definitions)
-            if upgrade.action.scripts_template is None:
+
+            if upgrade.action.scripts is not None:
+                check_no_bundle_changing_scripts_in_groups(spec=upgrade.action.scripts)
+                check_no_on_fail_multi_states_in_groups(spec=upgrade.action.scripts)
                 check_bundle_switch_amount_for_upgrade_action(upgrade=upgrade)
-            else:
+                check_execution_hierarchy(spec=upgrade.action.scripts)
+            elif upgrade.action.scripts_template is not None:
                 check_templates_are_correct(action=upgrade.action, bundle_root=bundle_root)
-
-
-def check_jinja_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
-    if action.config_jinja:
-        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.config_jinja)
-    if action.scripts_jinja:
-        check_file_is_correct_jinja_template(bundle_root=bundle_root, relative_template_path=action.scripts_jinja)
 
 
 def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> None:
@@ -326,10 +350,81 @@ def check_templates_are_correct(action: ActionDefinition, bundle_root: Path) -> 
 # Atomic checks
 
 
-def check_no_bundle_switch(scripts: Iterable[action.JobSpec]) -> None:
-    for script in scripts:
-        if script.script_type == action.ScriptType.INTERNAL and script.script == "bundle_switch":
-            message = f"bundle_switch is disallowed for {script.name} script"
+_MIN_GROUP_ENTRIES: Final = {ExecutionStyle.SEQUENTIAL: 1, ExecutionStyle.PARALLEL: 2}
+
+
+def check_execution_hierarchy(spec: JobSpecV1) -> None:
+    _check_hierarchy_level(level=spec.hierarchy, parent_rule=None, group_levels=())
+
+
+def _check_hierarchy_level(
+    level: JobHierarchyLevel, parent_rule: ExecutionStyle | None, group_levels: tuple[LevelSpecKey, ...]
+) -> None:
+    depth = len(group_levels)
+
+    if depth > _MAX_DECLARED_HIERARCHY_DEPTH:
+        message = (
+            f"Scripts can be nested in {_MAX_DECLARED_HIERARCHY_DEPTH} levels of groups at most, "
+            f"got a group at depth {depth}"
+        )
+        raise BundleValidationError(message)
+
+    # the root level is sequential by definition rather than by declaration,
+    # so the first declared level is allowed to repeat it
+    is_first_declared_level = depth == 1
+
+    if parent_rule is not None and level.rule == parent_rule and not is_first_declared_level:
+        message = f'Nested groups must alternate execution style, got "{level.rule.value}" inside "{parent_rule.value}"'
+        raise BundleValidationError(message)
+
+    entries_amount = len(level.fields)
+    minimum = _MIN_GROUP_ENTRIES[level.rule]
+
+    # the root level isn't a group, so the restriction doesn't apply to it
+    if group_levels and entries_amount < minimum:
+        entries = "entry" if minimum == 1 else "entries"
+        message = (
+            f'{level.rule.value.capitalize()} group "{level_keys_to_full_key(group_levels)}" '
+            f"has to contain at least {minimum} {entries}, got {entries_amount}"
+        )
+        raise BundleValidationError(message)
+
+    for key, child_level in level.child_groups.items():
+        _check_hierarchy_level(level=child_level, parent_rule=level.rule, group_levels=(*group_levels, key))
+
+
+def check_no_bundle_switch(scripts: JobSpecV1) -> None:
+    for script_spec in scripts.scripts.values():
+        if _is_bundle_switch(script_spec):
+            message = f"bundle_switch is disallowed for {script_spec.names.internal} script"
+            raise BundleValidationError(message)
+
+
+def check_no_bundle_changing_scripts_in_groups(spec: JobSpecV1) -> None:
+    for script_spec in spec.scripts.values():
+        script = script_spec.script
+
+        if (
+            is_in_any_group(script_spec.key)
+            and script.type == action.ScriptType.INTERNAL
+            and script.path in ("bundle_switch", "bundle_revert")
+        ):
+            message = (
+                f'"{script.path}" script isn\'t allowed inside groups: '
+                f'"{script_spec.names.internal}" is declared at "{script_spec.key}"'
+            )
+            raise BundleValidationError(message)
+
+
+def check_no_on_fail_multi_states_in_groups(spec: JobSpecV1) -> None:
+    for script_spec in spec.scripts.values():
+        on_fail = script_spec.on_fail
+
+        if is_in_any_group(script_spec.key) and (on_fail.multi_state_set or on_fail.multi_state_unset):
+            message = (
+                "on_fail.multi_state isn't allowed for scripts inside groups: "
+                f'"{script_spec.names.internal}" is declared at "{script_spec.key}"'
+            )
             raise BundleValidationError(message)
 
 
@@ -346,8 +441,8 @@ def check_mm_host_action_is_allowed(action: ActionDefinition, definition_type: s
         raise BundleValidationError(message)
 
 
-def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[BundleDefinitionKey]) -> None:
-    for hc_entry in hostcomponentmap:
+def check_action_hc_acl_rules(hostcomponentmap: list | None, definitions: Collection[BundleDefinitionKey]) -> None:
+    for hc_entry in hostcomponentmap or ():
         try:
             hc_entry_key = dependency_entry_to_key(hc_entry)
         except KeyError as e:
@@ -360,17 +455,6 @@ def check_action_hc_acl_rules(hostcomponentmap: list, definitions: Collection[Bu
                     raise BundleValidationError(message)
 
 
-def check_file_is_correct_jinja_template(bundle_root: Path, relative_template_path: str) -> None:
-    path = bundle_root / relative_template_path
-
-    try:
-        content = path.read_text(encoding="utf-8")
-        jinja2.Template(source=content)
-    except (FileNotFoundError, jinja2.TemplateError) as e:
-        message = f"Incorrect template for jinja_* template at {path.relative_to(bundle_root)}: {e}"
-        raise BundleValidationError(message) from e
-
-
 def check_file_is_correct_template(bundle_root: Path, template: Template) -> None:
     renderer = get_renderer(template=template, environment=RendererEnv(discovery_root=bundle_root))
     if not renderer.can_be_rendered():
@@ -379,25 +463,36 @@ def check_file_is_correct_template(bundle_root: Path, template: Template) -> Non
 
 
 def check_bundle_switch_amount_for_upgrade_action(upgrade: UpgradeDefinition) -> None:
-    if not upgrade.action:
+    if not upgrade.action or upgrade.action.scripts is None:
         return
 
-    scripts = upgrade.action.scripts
-
-    match validate_bundle_switch_amount(scripts):
+    match validate_bundle_switch_amount_in_spec(upgrade.action.scripts):
         case Fail(value=err_message):
             message = f'{err_message} in upgrade "{upgrade.name}"'
             raise BundleValidationError(message)
 
 
-# scripts typehint is bad due to this function requirements to be quite universal,
-# yet current typesystem handles it differently
-def validate_bundle_switch_amount(scripts: list) -> Success[None] | Fail[str]:
-    scripts_with_bundle_switch = tuple(
-        script for script in scripts if script.script_type == "internal" and script.script == "bundle_switch"
+def validate_bundle_switch_amount_in_spec(spec: JobSpecV1) -> Success[None] | Fail[str]:
+    return _detect_bundle_switch_amount_violation(
+        amount=sum(1 for script_spec in spec.scripts.values() if _is_bundle_switch(script_spec))
     )
 
-    amount_of_bundle_switches = len(scripts_with_bundle_switch)
+
+def check_bundle_switch_amount_for_rendered_upgrade(scripts: JobSpecV1) -> None:
+    match validate_bundle_switch_amount_in_spec(scripts):
+        case Fail(value=err_message):
+            # Parsing error for compatibility reasons: meaningfully it's validation one.
+            # Can be changed if users aren't affected.
+            message = f"{err_message} in upgrade"
+            raise BundleParsingError(message)
+
+
+def _is_bundle_switch(script_spec: ScriptSpec) -> bool:
+    return script_spec.script.type == action.ScriptType.INTERNAL and script_spec.script.path == "bundle_switch"
+
+
+def _detect_bundle_switch_amount_violation(amount: int) -> Success[None] | Fail[str]:
+    amount_of_bundle_switches = amount
 
     if amount_of_bundle_switches == 0:
         return Fail('Scripts block must contain exact one block with script "bundle_switch"')
@@ -425,7 +520,6 @@ def check_import_defaults_exist_in_config(imports: Iterable[ImportDefinition], c
         for default_name in entry.default or ():
             if default_name not in group_names_in_config:
                 message = (
-                    f"Group specified as default for import {entry.name} "
-                    f"is missing in configuration: {default_name}"
+                    f"Group specified as default for import {entry.name} is missing in configuration: {default_name}"
                 )
                 raise BundleValidationError(message)

@@ -12,16 +12,16 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from core import action, bundle, config, mapping, templates
+from core.action.types import JobSpecV1
 from core.dynamic_bundle.types import ContextGathererI
 from core.types import CoreObjectDescriptor
 
 
 class SecretsDecryptor(Protocol):
-    def __call__(self, /, data: dict) -> dict:
-        ...
+    def __call__(self, /, data: dict) -> dict: ...
 
 
 CtxAT = TypeVar("CtxAT")
@@ -59,7 +59,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(
@@ -79,7 +79,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(
@@ -99,7 +99,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         args: CtxTT,
         bundle_context: bundle.BundleContext,
         action_allow_to_terminate: bool,
-    ) -> list[action.JobSpec]:
+    ) -> JobSpecV1:
         render_context = self.context.prepare_context_for_task(args)
 
         data = self._render_template(
@@ -161,15 +161,16 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
             message = f"Failed to render template: {e.args[0]}"
             raise bundle.BundleParsingError(message=message) from e
 
-        return _ensure_render_result_is_list_of_dicts(rendered_data)
+        # must be list of dicts
+        if (
+            not rendered_data
+            or not isinstance(rendered_data, list)
+            or not all(isinstance(e, dict) for e in rendered_data)
+        ):
+            message = f"Rendering result is expected to be list of dicts: {template.file.path}"
+            raise bundle.BundleParsingError(message)
 
-
-def _ensure_render_result_is_list_of_dicts(value: Any) -> list[dict]:
-    if not isinstance(value, list) and all(isinstance(e, dict) for e in value):
-        message = "Rendering result is expected to be list of dicts"
-        raise TypeError(message)
-
-    return value
+        return rendered_data
 
 
 def _decrypt_secrets(source: dict, decrypt: config.DecryptFunc) -> dict:

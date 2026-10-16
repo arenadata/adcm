@@ -11,21 +11,10 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Protocol
 import os
 import signal
 
-from core.action import ExecutionStatus, Job, Task
-from core.action.job import JobRepoI
 from core.result import Fail, Success
-
-
-class TerminationSignaller(Protocol):
-    def signal_termination_for_task(self, task: Task) -> Success[None] | Fail[str]:
-        ...
-
-    def signal_termination_for_job(self, job: Job) -> Success[None] | Fail[str]:
-        ...
 
 
 @dataclass(slots=True)
@@ -57,48 +46,3 @@ class ExecutorTerminator:
             return Fail(f"failed to terminate process: {e}")
 
         return Success(None)
-
-
-@dataclass(slots=True)
-class DirectOSTerminationSignaller(TerminationSignaller):
-    task_runner_terminator: TaskRunnerTerminator
-    executor_terminator: ExecutorTerminator
-
-    def signal_termination_for_task(self, task: Task) -> Success[None] | Fail[str]:
-        pid = task.execution_env.pid
-
-        if pid == 0:
-            return Fail("termination is too early, try to execute later")
-
-        return self.task_runner_terminator.terminate(pid)
-
-    def signal_termination_for_job(self, job: Job) -> Success[None] | Fail[str]:
-        pid = job.execution_env.pid
-
-        if pid == 0:
-            return Fail("termination is too early, try to execute later")
-
-        return self.executor_terminator.terminate(pid)
-
-
-@dataclass(slots=True)
-class IndirectRepoTerminationSignaller(TerminationSignaller):
-    repo: JobRepoI
-
-    def signal_termination_for_task(self, task: Task) -> Success[None] | Fail[str]:
-        new_status = ExecutionStatus.REVOKED if task.status == ExecutionStatus.CREATED else ExecutionStatus.REVOKING
-        changed = self.repo.change_task_status(id=task.id, previous=task.status, new=new_status)
-        match changed:
-            case True:
-                return Success(None)
-            case False:
-                return Fail("task termination failed due to status change, try again later")
-
-    def signal_termination_for_job(self, job: Job) -> Success[None] | Fail[str]:
-        new_status = ExecutionStatus.REVOKED if job.status == ExecutionStatus.CREATED else ExecutionStatus.REVOKING
-        changed = self.repo.change_job_status(id=job.id, previous=job.status, new=new_status)
-        match changed:
-            case True:
-                return Success(None)
-            case False:
-                return Fail("job termination failed due to status change, try again later")

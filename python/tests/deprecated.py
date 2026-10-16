@@ -19,8 +19,8 @@ import tarfile
 
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
-from cm.legacy.api import add_host_to_cluster
-from cm.legacy.services.job.action import prepare_task_for_action
+from cm.impl.job.repo import JobRepo
+from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
     ADCM,
@@ -35,32 +35,33 @@ from cm.models import (
     HostComponent,
     JobLog,
     JobStatus,
-    ObjectType,
-    Prototype,
     Provider,
     Service,
     TaskLog,
 )
 from cm.transition.status import StatusScenarios
 from core.action import Task
-from core.action.job import TaskPayloadDTO
+from core.action.job import (
+    LaunchOptions,
+    LogCreateDTO,
+    PostInitTaskAttributesDTO,
+    TaskCreateDTO,
+    TaskExtraInfo,
+    TaskPayloadDTO,
+)
+from core.action.job.errors import TaskCreateError
+from core.action.operations import to_rich_jobs
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
-from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
+from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from django.db.models import QuerySet
 from django.db.transaction import atomic
-from infra.services import get_config_service
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.scenarios import RBACScenarios
 from rbac.services.group import create as create_group
 from rbac.services.policy import policy_create
 from rbac.services.role import role_create
 from rbac.services.user import perform_user_creation
-from use_cases.transition.cluster.create import (
-    CreateServicesFromPrototypes,
-)
-from use_cases.transition.hostprovider.create import create_host
 
 APPLICATION_JSON = "application/json"
 
@@ -99,33 +100,20 @@ class BundleLogicMixin:
 
 
 class BusinessLogicMixin(BundleLogicMixin):
-    def add_host(self, provider: Provider, fqdn: str, cluster: Cluster | None = None) -> Host:
-        host_id = create_host(
-            hostprovider=provider,
-            name=fqdn,
-            cluster=cluster,
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(),
+    @classmethod
+    def add_host_to_cluster(cls, cluster: Cluster, host: Host) -> Host:
+        perform_host_to_cluster_map(
+            cluster_id=cluster.pk,
+            hosts=[host.pk],
+            status_service=cls.uc.container.get(StatusScenarios),
+            rbac_scenarios=cls.uc.container.get(RBACScenarios),
         )
+        # `perform_host_to_cluster_map` updates the DB without touching the passed-in ORM instance,
+        # unlike the old `add_host_to_cluster` it replaces — refresh it in place so callers that don't
+        # capture the return value (many don't) still see `host.cluster` populated.
+        host.refresh_from_db(fields=["cluster"])
 
-        return Host.objects.get(id=host_id)
-
-    @staticmethod
-    def add_host_to_cluster(cluster: Cluster, host: Host) -> Host:
-        return add_host_to_cluster(cluster=cluster, host=host, rbac_scenarios=RBACScenarios())
-
-    @staticmethod
-    def add_services_to_cluster(service_names: list[str], cluster: Cluster) -> QuerySet[Service]:
-        service_prototypes = Prototype.objects.filter(
-            type=ObjectType.SERVICE, name__in=service_names, bundle=cluster.prototype.bundle
-        ).values_list("id", flat=True)
-        services = CreateServicesFromPrototypes(
-            config_service=get_config_service(),
-            rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(),
-        ).do(cluster=cluster, prototype_ids=list(service_prototypes))
-        return Service.objects.filter(id__in=[service.id for service in services])
+        return host
 
     @staticmethod
     def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
@@ -186,13 +174,68 @@ class BusinessLogicMixin(BundleLogicMixin):
         group.delete()
 
 
+def prepare_task_for_action(
+    target: ActionTargetDescriptor | CoreObjectDescriptor,
+    orm_owner: ADCM | Cluster | Service | Component | Provider | Host,
+    action: ActionID,
+    payload: TaskPayloadDTO,
+) -> Task:
+    """
+    Compose a task and its jobs directly, skipping the checks a real launch performs.
+
+    Lives here rather than in production code because nothing but tests ever wanted it:
+    tests that need a `Task` to feed somewhere, without running the action to get one.
+    """
+
+    job_repo = JobRepo()
+    owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
+    orm_action = Action.objects.select_related("prototype").get(id=action)
+
+    if payload.conf:
+        raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
+
+    create_dto = TaskCreateDTO(
+        owner=owner,
+        target=target.as_core_or_group_descriptor if not isinstance(target, CoreObjectDescriptor) else target,
+        action_id=action,
+        launch=LaunchOptions(is_verbose=payload.verbose, is_blocking=payload.is_blocking),
+        extra=TaskExtraInfo(
+            name=orm_action.name, display_name=orm_action.display_name, description=orm_action.description
+        ),
+    )
+
+    task_id = job_repo.create_task(payload=create_dto)
+    task = job_repo.get_task(task_id)
+
+    execution_plan = job_repo.get_job_specs(id=action)
+
+    if not execution_plan.scripts:
+        message = f"Can't compose task for action #{action}, because no associated jobs found"
+        raise TaskCreateError(message)
+
+    job_repo.set_post_init_task_attributes(
+        task_id=task.id, payload=PostInitTaskAttributesDTO(execution_plan=execution_plan)
+    )
+    created = job_repo.create_jobs(task_id=task.id, scripts=execution_plan)
+
+    logs = []
+    for job in to_rich_jobs(spec=execution_plan, jobs=created).values():
+        log_name = job.spec.script.type.value
+        logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stdout", format="txt"))
+        logs.append(LogCreateDTO(job_id=job.runtime.id, name=log_name, type="stderr", format="txt"))
+
+    if logs:
+        job_repo.create_logs(logs)
+
+    return task
+
+
 class TaskTestMixin:
     def prepare_task(
         self,
         owner: ADCM | Cluster | Service | Component | Provider | Host,
         payload: TaskPayloadDTO | None = None,
         host: Host | None = None,
-        feature_scripts_jinja: bool = False,
         **action_search_kwargs,
     ) -> Task:
         owner_descriptor = CoreObjectDescriptor(id=owner.id, type=orm_object_to_core_type(owner))
@@ -201,31 +244,29 @@ class TaskTestMixin:
         return prepare_task_for_action(
             target=ActionTargetDescriptor(id=target.id, type=target.type),
             orm_owner=owner,
-            orm_target=host or owner,
             action=action.id,
             payload=payload or TaskPayloadDTO(),
-            feature_scripts_jinja=feature_scripts_jinja,
         )
 
     def simulate_finished_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
+        response = self.client.v2[object_, "actions", action, "run"].post(
             data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id=task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id=task_id)
 
         task = TaskLog.objects.get(id=task_id)
 
         return task, task.joblog_set.last()
 
     def simulate_running_task(self, object_: Cluster | Service | Component, action: Action) -> tuple[TaskLog, JobLog]:
-        self.client.v2[object_, "actions", action, "run"].post(
+        response = self.client.v2[object_, "actions", action, "run"].post(
             data={"configuration": None, "isVerbose": True, "hostComponentMap": [], "description": ""}
         )
 
-        task_id = self.task_runner.expect_task_launched().id
-        self.task_runner.run_task(task_id)
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
 
         task = TaskLog.objects.get(id=task_id)
         job = task.joblog_set.last()

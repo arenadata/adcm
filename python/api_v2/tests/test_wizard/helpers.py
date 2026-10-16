@@ -95,8 +95,11 @@ class WizardProcessHelpers:
             ProcessStepInput.objects.create(step_id=step.id, job=None, configuration={"config": {}, "attr": {}})
 
     def cleanup_process_hc_service(self, cluster_id: int, service_ids: list[int], process_id: int):
+        """`service_ids` are deleted in the given order: a service can't be deleted while another one requires it"""
+
         HostComponent.objects.filter(cluster_id=cluster_id).delete()
-        for service in Service.objects.filter(cluster_id=cluster_id, id__in=service_ids):
+        for service_id in service_ids:
+            service = Service.objects.get(id=service_id, cluster_id=cluster_id)
             response = self.client.v2[service].delete()
             self.assertEqual(response.status_code, 204)
         steps_qs = ProcessStep.objects.filter(process_id=process_id)

@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.provider._repo import ProviderRepoI
+from core.provider._repo import HostInfo, ProviderRepoI
 from core.provider._service import ProviderService
 
 __all__ = [
+    "HostInfo",
     "ProviderRepoI",
     "ProviderService",
 ]

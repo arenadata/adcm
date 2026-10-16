@@ -10,8 +10,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from core.bundle._parsing.v_2_0.parser import Parser
-
-__all__ = [
-    "Parser",
-]

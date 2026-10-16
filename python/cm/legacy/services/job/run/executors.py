@@ -78,6 +78,7 @@ class AnsibleProcessExecutor(ProcessExecutor):
         env = super()._get_environment_variables()
         env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
         # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
+        env["DJANGO_SETTINGS_MODULE"] = "adcm.settings_setups.plugin"
         env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
         env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{self._config.venv}/collections"
 

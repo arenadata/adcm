@@ -13,18 +13,40 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
+from pathlib import Path
+from typing import cast
 import os
 import errno
 import logging
+import subprocess
 
-from cm.legacy.services.job.run import run_task_in_local_subprocess
-from core.action import JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo
+from core.action import JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo, WorkerTaskID
 from core.action.job import ExecutorTerminator, TaskRunnerTerminator
-from core.action.scheduler import LivenessReport, TaskLivenessStatus, TaskMonitor, TaskQueuer, Terminator
+from core.action.scheduler import (
+    LivenessReport,
+    ProcessStarter,
+    TaskLivenessStatus,
+    TaskMonitor,
+    TaskQueuer,
+    Terminator,
+)
+from core.settings import Directories
 from core.types import PID, TaskID
-from jobs.scheduler import repo
 
 monitor_logger = logging.getLogger("scheduler.monitor")
+process_logger = logging.getLogger("adcm")
+
+
+def _to_pid(worker: WorkerInfo) -> PID:
+    """Locally a worker is the process running the thing, so its id is its pid"""
+
+    # an id that isn't set is no more of a pid than an unparsable one
+    try:
+        return int(cast(WorkerTaskID, worker.worker_id))
+    except (TypeError, ValueError) as err:
+        message = f"Expected a local worker id to be a pid, got {worker.worker_id!r}"
+        raise ValueError(message) from err
+
 
 # Implementations
 
@@ -35,10 +57,10 @@ class LocalTerminator(Terminator):
     executor_terminator: ExecutorTerminator
 
     def terminate_task(self, task: TaskShortInfo) -> None:
-        self.task_runner_terminator.terminate(int(task.worker["worker_id"]))
+        self.task_runner_terminator.terminate(_to_pid(task.worker))
 
     def terminate_job(self, job: JobShortInfo) -> None:
-        self.executor_terminator.terminate(int(job.worker["worker_id"]))
+        self.executor_terminator.terminate(_to_pid(job.worker))
 
 
 @dataclass(slots=True)
@@ -56,8 +78,9 @@ class LocalTaskMonitor(TaskMonitor):
 
     def is_alive(self, task: TaskShortInfo) -> TaskLivenessStatus:
         try:
-            pid = int(task.worker["worker_id"])
+            pid = _to_pid(task.worker)
         except ValueError:
+            monitor_logger.exception("Liveness of task id=%d is unknown", task.id)
             return TaskLivenessStatus.UNKNOWN
 
         if pid < 2:
@@ -69,12 +92,41 @@ class LocalTaskMonitor(TaskMonitor):
         return TaskLivenessStatus.DEAD
 
 
+@dataclass(slots=True)
+class LocalProcessStarter(ProcessStarter):
+    def start(self, task_id: TaskID, code_dir: Path, log_dir: Path) -> PID:
+        err_file = open(  # noqa: SIM115
+            Path(log_dir, "task_runner.err"), "a+", encoding="utf-8"
+        )
+        # Use the interpreter path directly without adding it to the process environment
+        cmd = [
+            str(Path(os.environ.get("ADCM_VENV", "/venv/adcm"), "bin", "python")),
+            str(code_dir / "task_runner.py"),
+            "start",
+            str(task_id),
+        ]
+        process_logger.debug("Task #%d run cmd: %s", task_id, " ".join(cmd))
+
+        proc = subprocess.Popen(  # noqa: S603, SIM115
+            args=cmd, stderr=err_file, env=os.environ.copy()
+        )
+
+        return proc.pid
+
+
+@dataclass(slots=True)
 class LocalTaskQueuer(TaskQueuer):
+    directories: Directories
+    process_starter: ProcessStarter
+
     env = TaskRunnerEnvironment.LOCAL
-    repo = repo
 
     def queue(self, task_id: TaskID) -> WorkerInfo:
-        pid = run_task_in_local_subprocess(task=self.repo.retrieve_task_orm(task_id=task_id), command="start")
+        pid = self.process_starter.start(
+            task_id=task_id,
+            code_dir=self.directories.code,
+            log_dir=self.directories.logs,
+        )
 
         return WorkerInfo(environment=self.env, worker_id=pid)
 

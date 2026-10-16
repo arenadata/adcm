@@ -16,6 +16,7 @@ import os
 
 from audit.alt.core import NameHalfSplitter, NameSplitterSettings, build_name_splitter_settings_from_django_models
 from cm.impl.adcm.repo import ADCMRepo
+from cm.impl.bundle.context import ActionArgs, ContextGatherer, TaskArgs
 from cm.impl.bundle.definition import definition_to_full_spec
 from cm.impl.bundle.repo import BundleRepo
 from cm.impl.cluster.repo import ClusterRepo
@@ -27,21 +28,17 @@ from cm.impl.logs.repo import LogsRepo
 from cm.impl.metrics.repo import ClusterMetricsRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
+from cm.impl.scenarios.bundle_switch import BundleSwitch
 from cm.impl.scenarios.wizard import FillWizardStepSpecLegacy
 from cm.impl.upgrade.repo import UpgradeRepo
 from cm.impl.wizard.repo import WizardRepo
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService
-from cm.legacy.services.bundle_alt.render import ActionArgs, ContextGatherer, TaskArgs
-from cm.legacy.services.job.run import start_task
 from cm.transition.action import RetrieveStartImpossibleReason
 from cm.transition.status import StatusScenarios
 from core import secrets
 from core.action.job import (
-    DirectOSTerminationSignaller,
     ExecutorTerminator,
-    IndirectRepoTerminationSignaller,
     TaskRunnerTerminator,
-    TerminationSignaller,
 )
 from core.concern.repo import ConcernRepoI
 from core.dynamic_bundle.render import BundleRenderer
@@ -49,14 +46,17 @@ from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.scenarios.cluster import BeforeUpgradeScenarios
+from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
 from core.scenarios.config import ConfigScenarios
+from core.scenarios.status import StatusScenariosI
 from core.scenarios.wizard import FillWizardStepSpec
 from core.settings import Directories
-from dishka import Provider, Scope, provide, provide_all
+from dishka import Provider, Scope, alias, provide, provide_all
 from rbac.scenarios import RBACScenarios
 from use_cases.bundle import AcceptLicense, InitOrUpgradeADCM, ParseBundleFromRequest
 from use_cases.cluster.maintenance_mode import SetMaintenanceMode
 from use_cases.cluster.update import ResetBeforeUpgradeCluster
+from use_cases.internal_scripts.bundle_revert import RevertUpgrade
 from use_cases.logs.check import AddCheckLogRecordForJob
 from use_cases.provider.update import ResetBeforeUpgradeProvider
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
@@ -67,21 +67,17 @@ from use_cases.transition.config import (
     UpdateConfigurationOfObject,
 )
 from use_cases.transition.config_revision import FindPrimaryConfigDiff, SetPrimaryConfigRevision
-from use_cases.transition.hostprovider.create import CreateHostprovider
+from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
 from use_cases.transition.job.schedule import (
     RetrieveConfigurationForAction,
     ScheduleMMChangingTask,
     ScheduleTask,
-    TaskStarter,
 )
-from use_cases.transition.service_manage import ManageClusterServices
 from use_cases.transition.upgrade import UpgradeObject
 from use_cases.wizard import CompleteWizardOperationStep, InitiateWizardProcess, PerformWizardProcessOperation
 import core
 import yaml
 import core.bundle
-
-from application.types import TaskRunnerMode
 
 
 class PathResolverProvider(Provider):
@@ -108,7 +104,8 @@ class ConfigProvider(Provider):
     def validators(self) -> core.config.VariantValidators:
         return core.config.VariantValidators(main=MainConfigVariantResolver, default=DefaultsVariantResolver)
 
-    repo = provide(ConfigRepo, provides=core.config.ConfigRepoI)
+    repo = provide(ConfigRepo)
+    repo_interface = alias(source=ConfigRepo, provides=core.config.ConfigRepoI)
     service = provide(core.config.ConfigService)
 
 
@@ -121,32 +118,6 @@ class JobProvider(Provider):
 
     task_runner_terminator = provide(TaskRunnerTerminator)
     executor_terminator = provide(ExecutorTerminator)
-
-    @provide
-    def termination_signaller(
-        self,
-        task_runner_mode: TaskRunnerMode,
-        repo: core.action.job.JobRepoI,
-        executor_terminator: ExecutorTerminator,
-        task_runner_terminator: TaskRunnerTerminator,
-    ) -> TerminationSignaller:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return IndirectRepoTerminationSignaller(repo)
-
-            case TaskRunnerMode.INSTANT:
-                return DirectOSTerminationSignaller(
-                    task_runner_terminator=task_runner_terminator, executor_terminator=executor_terminator
-                )
-
-    @provide
-    def task_starter(self, task_runner_mode: TaskRunnerMode) -> TaskStarter:
-        match task_runner_mode:
-            case TaskRunnerMode.SCHEDULLER:
-                return lambda _: None
-
-            case TaskRunnerMode.INSTANT:
-                return start_task
 
 
 class WizardProvider(Provider):
@@ -163,12 +134,17 @@ class BundleProvider(Provider):
     def parsers(self) -> core.bundle.parsing.BundleParsers:
         # imported lazily: parser schemas are pydantic-heavy and only needed when parsing a bundle
         from core.bundle._parsing import v_2_1 as v_2_1_parsing
+        from core.bundle._parsing import v_2_2 as v_2_2_parsing
 
         v_2_1 = (
             core.bundle.VersionInfo(tag="2.1", status=core.bundle.ContractVersionStatus.SUPPORTED),
             v_2_1_parsing.Parser(),
         )
-        return [v_2_1]
+        v_2_2 = (
+            core.bundle.VersionInfo(tag="2.2", status=core.bundle.ContractVersionStatus.SUPPORTED),
+            v_2_2_parsing.Parser(),
+        )
+        return [v_2_1, v_2_2]
 
     @provide
     def available_contract_versions(
@@ -195,6 +171,7 @@ class ConcernProvider(Provider):
     scope = Scope.APP
 
     repo = provide(ConcernRepo, provides=ConcernRepoI)
+    distribution_scenarios = provide(ConcernDistributionScenarios)
 
 
 class ProviderProvider(Provider):
@@ -239,6 +216,7 @@ class ScenariosProvider(Provider):
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
     status_scenarios = provide(StatusScenarios)
+    status_scenarios_interface = alias(source=StatusScenarios, provides=StatusScenariosI)
     rbac_scenarios = provide(RBACScenarios)
     fill_wizard_step_spec = provide(
         FillWizardStepSpecLegacy,
@@ -246,7 +224,9 @@ class ScenariosProvider(Provider):
     )
     retrieve_start_impossible_reason = provide(RetrieveStartImpossibleReason)
     config_scenarios = provide(ConfigScenarios)
+    concern_scenarios = provide(ConcernScenarios)
     before_upgrade_scenarios = provide(BeforeUpgradeScenarios)
+    bundle_switch = provide(BundleSwitch)
 
 
 class LogsServiceProvider(Provider):
@@ -275,10 +255,10 @@ class UseCaseProvider(Provider):
 
     create_cluster = provide(CreateCluster)
     create_provider = provide(CreateHostprovider)
+    create_host = provide(CreateHost)
 
-    # APP scope is required to inject these into `ExecutionTargetFactory` (`service_manage` internal script)
+    # APP scope is required to inject it into the `service_manage` internal script
     add_services = provide(CreateServicesFromPrototypes, scope=Scope.APP)
-    manage_cluster_services = provide(ManageClusterServices, scope=Scope.APP)
     delete_service = provide(DeleteService)
     delete_service_from_api = provide(DeleteServiceFromAPI)
 
@@ -289,6 +269,8 @@ class UseCaseProvider(Provider):
     )
 
     upgrade_object = provide(UpgradeObject)
+    # APP scope is required to inject it into the `bundle_revert` internal script
+    revert_upgrade = provide(RevertUpgrade, scope=Scope.APP)
     upgrade = provide_all(
         ResetBeforeUpgradeCluster,
         ResetBeforeUpgradeProvider,

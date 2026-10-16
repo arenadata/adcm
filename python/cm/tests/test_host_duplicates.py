@@ -13,8 +13,8 @@
 from pathlib import Path
 
 from core.cluster import ClusterService
+from core.config import ConfigService
 from core.types import ActionTargetDescriptor, ADCMCoreType
-from infra.services import get_config_service
 from rbac.scenarios import RBACScenarios
 from tests.base import BaseTestCase
 from use_cases.transition.host.duplicate import create_duplicate
@@ -48,11 +48,16 @@ class TestHostDuplicateBugs(WithDishkaContainer, BaseTestCase):
             host_id=self.host.pk,
             name="dup",
             cluster_id=self.cluster.pk,
-            config_service=get_config_service(),
+            config_service=self.uc.container.get(ConfigService),
             rbac_scenarios=RBACScenarios(),
             status_scenarios=StatusScenarios(cluster_service=self.uc.container.get(ClusterService)),
         )
 
         target = ActionTargetDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)
 
-        get_inventory_data(target=target, is_host_action=False, cluster_service=self.uc.container.get(ClusterService))
+        get_inventory_data(
+            target=target,
+            is_host_action=False,
+            cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(ConfigService),
+        )

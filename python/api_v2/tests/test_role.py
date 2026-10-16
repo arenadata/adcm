@@ -87,7 +87,7 @@ class TestRole(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.assertDictEqual(
-            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.;", "level": "error"}
+            response.json(), {"code": "BAD_REQUEST", "desc": "children - This field is required.", "level": "error"}
         )
 
     def test_create_already_exists_failed(self):
@@ -223,8 +223,8 @@ class TestRole(ADCMDjangoAPISuite):
         }
         items_found = {
             "display_name": (1, 1, 0),
-            "type": (6, None, 72),
-            "categories": (36, None, 22),
+            "type": (6, None, 73),
+            "categories": (37, None, 22),
         }
         for filter_name, (correct_value, partial_value, wrong_value) in filters.items():
             exact_items_found, partial_items_found, wrong_items_found = items_found[filter_name]

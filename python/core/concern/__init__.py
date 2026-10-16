@@ -9,3 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from core.concern.repo import ConcernRepoI
+from core.concern.types import (
+    ConcernCause,
+    ConcernDraft,
+    ConcernInfo,
+    ConcernRelatedObjects,
+    ConcernTarget,
+    ConcernType,
+)
+
+__all__ = [
+    "ConcernCause",
+    "ConcernDraft",
+    "ConcernInfo",
+    "ConcernRelatedObjects",
+    "ConcernRepoI",
+    "ConcernTarget",
+    "ConcernType",
+]
