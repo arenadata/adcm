@@ -134,12 +134,17 @@ class BundleProvider(Provider):
     def parsers(self) -> core.bundle.parsing.BundleParsers:
         # imported lazily: parser schemas are pydantic-heavy and only needed when parsing a bundle
         from core.bundle._parsing import v_2_1 as v_2_1_parsing
+        from core.bundle._parsing import v_2_2 as v_2_2_parsing
 
         v_2_1 = (
             core.bundle.VersionInfo(tag="2.1", status=core.bundle.ContractVersionStatus.SUPPORTED),
             v_2_1_parsing.Parser(),
         )
-        return [v_2_1]
+        v_2_2 = (
+            core.bundle.VersionInfo(tag="2.2", status=core.bundle.ContractVersionStatus.SUPPORTED),
+            v_2_2_parsing.Parser(),
+        )
+        return [v_2_1, v_2_2]
 
     @provide
     def available_contract_versions(
