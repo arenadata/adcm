@@ -21,7 +21,8 @@ import sys
 import logging.config
 
 from application.loggers import scheduler_logging_config_from_env
-from core.action.scheduler import Clock
+from core.action.scheduler import BusyAwareLimiter, Clock, FixedRateLimiter, Limiter
+from core.result import Fail, Success
 from dishka import make_container
 
 sys.path.append("/adcm/python")
@@ -38,26 +39,32 @@ logger = logging.getLogger("scheduler.main")
 
 
 class Iteration(Protocol):
-    def do(self) -> None: ...
+    def do(self) -> Success | Fail:
+        """
+        Success when the pass did some work, Fail when it found nothing to do
+        """
+        ...
 
 
 @dataclass(slots=True)
 class SchedulerLoop:
     iteration: Iteration
-    clock: Clock
+    limiter: Limiter
     component_name: str
     logger: logging.Logger
 
     def run_in_loop(self) -> None:
         self.logger.info("%s started (pid: %s)", self.component_name, os.getpid())
 
+        outcome: Success | Fail = Fail("Not started")
         while True:
-            self.clock.sleep_until_next_tick()
+            self.limiter.tick(outcome)
 
             try:
-                self.iteration.do()
-            except Exception:  # noqa: BLE001
+                outcome = self.iteration.do()
+            except Exception as error:  # noqa: BLE001
                 self.logger.exception("%s iteration failed", self.component_name)
+                outcome = Fail(error)
 
 
 def main() -> None:
@@ -70,19 +77,19 @@ def main() -> None:
 
     monitor = SchedulerLoop(
         iteration=container.get(Monitor),
-        clock=Clock(period=timedelta(seconds=settings.job_monitor_poll_interval)),
+        limiter=FixedRateLimiter(clock=Clock(period=timedelta(seconds=settings.job_monitor_poll_interval))),
         component_name="Monitor",
         logger=logging.getLogger("scheduler.monitor"),
     )
     launcher = SchedulerLoop(
         iteration=container.get(Launcher),
-        clock=Clock(period=timedelta(seconds=settings.job_launch_poll_interval)),
+        limiter=BusyAwareLimiter(clock=Clock(period=timedelta(seconds=settings.job_launch_poll_interval))),
         component_name="Launcher",
         logger=logging.getLogger("scheduler.launcher"),
     )
     killer = SchedulerLoop(
         iteration=container.get(Killer),
-        clock=Clock(period=timedelta(seconds=settings.job_termination_poll_interval)),
+        limiter=FixedRateLimiter(clock=Clock(period=timedelta(seconds=settings.job_termination_poll_interval))),
         component_name="Killer",
         logger=logging.getLogger("scheduler.killer"),
     )

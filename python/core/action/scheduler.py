@@ -20,6 +20,7 @@ from typing import Literal, Protocol, TypeAlias
 import time
 
 from core.action.types import ExecutionStatus, JobShortInfo, TaskRunnerEnvironment, TaskShortInfo, WorkerInfo
+from core.result import Fail, Success
 from core.shortcuts import UTC
 from core.types import PID, JobID, TaskID
 
@@ -46,6 +47,40 @@ class Clock:
 
         # it will be more precise to use until next tick, but simply calculating now is or for now
         self.next_tick_after = self.now() + self.period
+
+
+class Limiter(Protocol):
+    def tick(self, outcome: Success | Fail) -> None:
+        """
+        Blocks until the next pass may start, judging by the outcome of the previous pass
+        """
+        ...
+
+
+@dataclass(slots=True)
+class FixedRateLimiter:
+    """
+    Next pass starts on the next tick, whatever the previous pass did
+    """
+
+    clock: Clock
+
+    def tick(self, outcome: Success | Fail) -> None:  # noqa: ARG002
+        self.clock.sleep_until_next_tick()
+
+
+@dataclass(slots=True)
+class BusyAwareLimiter:
+    """
+    Next pass starts at once after a pass that did some work, otherwise on the next tick:
+    e.g. task scheduled by one launcher pass is queued by the next one without waiting a whole tick
+    """
+
+    clock: Clock
+
+    def tick(self, outcome: Success | Fail) -> None:
+        if not outcome:
+            self.clock.sleep_until_next_tick()
 
 
 class Terminator(Protocol):

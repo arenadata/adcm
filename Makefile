@@ -6,7 +6,7 @@ SELENOID_PORT ?= 4444
 ADCM_VERSION = "3.1.0-dev"
 PY_FILES = python dev/linters conf/adcm/python_scripts
 
-.PHONY: build unittests test-integrations pretty lint version
+.PHONY: build build-redos unittests test-integrations pretty lint version
 
 define uv_sync
 uv sync --inexact --group $(1)
@@ -43,7 +43,10 @@ exit $$TEST_EXIT
 endef
 
 build:
-	@docker build --platform=linux/amd64 . -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+	@docker build --platform=linux/amd64 . -f Dockerfile -t $(APP_IMAGE):$(APP_TAG) --build-arg ADCM_VERSION=$(ADCM_VERSION)
+
+build-redos:
+	@docker build --platform=linux/amd64 . -f Dockerfile.redos -t $(APP_IMAGE):$(APP_TAG)-redos8 --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
 	# celery_worker exclude is ignored, but it's a failsafe in case discovery is changed,
