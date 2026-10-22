@@ -94,6 +94,9 @@ class ClusterRepo(ClusterRepoI):
         # only cluster, service or component can have AHG
         return cast(ClusterObjectDesc, Descriptor(id=object_id, type=model_name_to_core_type(model_name)))
 
+    def get_components_constraints(self, component_ids: Iterable[ComponentID]) -> dict[ComponentID, list]:
+        return dict(Component.objects.values_list("id", "prototype__constraint").filter(id__in=component_ids))
+
     def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
         field = "_maintenance_mode"
         if target.type == ADCMCoreType.HOST:

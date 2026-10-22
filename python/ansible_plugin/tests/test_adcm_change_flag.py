@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections.abc import Collection
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, lower_all_flags, raise_flag
 from cm.models import Component, ConcernItem, Service
@@ -74,7 +74,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         ) = self.execute_plugin_patched(task, arguments)
 
         raise_flag_mock.assert_called_once_with(flag=flag, on_objects=targets)
-        update_hierarchy_for_flag_mock.assert_called_once_with(flag=flag, on_objects=targets)
+        update_hierarchy_for_flag_mock.assert_called_once_with(flag=flag, on_objects=targets, cluster_service=ANY)
         lower_flag_mock.assert_not_called()
         lower_all_flags_mock.assert_not_called()
 

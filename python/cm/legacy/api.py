@@ -87,7 +87,11 @@ def check_license(prototype: Prototype) -> None:
 
 
 def add_host_provider(
-    prototype: Prototype, name: str, config_service: core.config.ConfigService, description: str = ""
+    prototype: Prototype,
+    name: str,
+    config_service: core.config.ConfigService,
+    cluster_service: ClusterService,
+    description: str = "",
 ):
     if prototype.type != "provider":
         raise_adcm_ex("OBJ_TYPE_ERROR", f"Prototype type should be provider, not {prototype.type}")
@@ -102,7 +106,9 @@ def add_host_provider(
         if object_configuration_has_issue(provider, config_service=config_service):
             concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
             concern_id = concern.id
-            related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+            related_objects = distribute_concern_on_related_objects(
+                owner=provider_cod, concern_id=concern_id, cluster_service=cluster_service
+            )
 
     if concern_id:
         notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
@@ -232,7 +238,9 @@ def remove_host_from_cluster(host: Host, cluster_service: ClusterService, rbac_s
     return host
 
 
-def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[ConcernID | None, ConcernRelatedObjects]:
+def raise_outdated_config_flag_if_required(
+    object_: MainObject, cluster_service: ClusterService
+) -> tuple[ConcernID | None, ConcernRelatedObjects]:
     if object_.state == "created" or not object_.prototype.flag_autogeneration.get("enable_outdated_config", False):
         return None, {}
 
@@ -247,7 +255,9 @@ def raise_outdated_config_flag_if_required(object_: MainObject) -> tuple[Concern
         concern_id = ConcernItem.objects.values_list("id", flat=True).get(
             name=flag.name, type=ConcernType.FLAG, owner_id=object_.id, owner_type=object_.content_type
         )
-        return concern_id, distribute_concern_on_related_objects(owner=owner, concern_id=concern_id)
+        return concern_id, distribute_concern_on_related_objects(
+            owner=owner, concern_id=concern_id, cluster_service=cluster_service
+        )
 
     return None, {}
 
@@ -422,7 +432,9 @@ class DataForMultiBind(TypedDict):
     export_id: dict[Literal["cluster_id", "service_id"], int]
 
 
-def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataForMultiBind]):
+def multi_bind(
+    cluster: Cluster, service: Service | None, bind_list: list[DataForMultiBind], cluster_service: ClusterService
+):
     check_bind_post(bind_list=bind_list)
     import_obj = get_bind_obj(cluster=cluster, service=service)
     old_bind = {}
@@ -493,7 +505,9 @@ def multi_bind(cluster: Cluster, service: Service | None, bind_list: list[DataFo
         delete_issue(owner=import_target, cause=ConcernCause.IMPORT)
     elif retrieve_issue(owner=import_target, cause=ConcernCause.IMPORT) is None:
         concern = create_issue(owner=import_target, cause=ConcernCause.IMPORT)
-        related_objects = distribute_concern_on_related_objects(owner=import_target, concern_id=concern.id)
+        related_objects = distribute_concern_on_related_objects(
+            owner=import_target, concern_id=concern.id, cluster_service=cluster_service
+        )
         on_commit(func=partial(notify_about_new_concern, concern_id=concern.id, related_objects=related_objects))
 
     return get_import(cluster=cluster, service=service)

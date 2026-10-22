@@ -21,6 +21,7 @@ from adcm.permissions import (
 from cm.legacy.api import multi_bind
 from cm.models import Cluster, PrototypeImport, Service
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from dishka import FromDishka
 from django.db.transaction import atomic
 from rest_framework.request import Request
@@ -73,7 +74,14 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
 
     @atomic
     @inject
-    def create(self, request, *_, status_scenarios: FromDishka[StatusScenarios], **__):
+    def create(
+        self,
+        request,
+        *_,
+        status_scenarios: FromDishka[StatusScenarios],
+        cluster_service: FromDishka[ClusterService],
+        **__,
+    ):
         obj = self.get_object_and_check_perm(request=request)
         serializer = self.get_serializer(data=request.data, many=True, context={"request": request, "cluster": obj})
         serializer.is_valid(raise_exception=True)
@@ -83,5 +91,6 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
             cluster=cluster,
             service=service,
             bind_list=cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj),
+            cluster_service=cluster_service,
         )
         return Response(get_imports(obj=obj, status_scenarios=status_scenarios), status=HTTP_201_CREATED)

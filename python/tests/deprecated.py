@@ -51,6 +51,7 @@ from core.action.job import (
 )
 from core.action.job.errors import TaskCreateError
 from core.action.operations import to_rich_jobs
+from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
@@ -107,6 +108,7 @@ class BusinessLogicMixin(BundleLogicMixin):
             hosts=[host.pk],
             status_service=cls.uc.container.get(StatusScenarios),
             rbac_scenarios=cls.uc.container.get(RBACScenarios),
+            cluster_service=cls.uc.container.get(ClusterService),
         )
         # `perform_host_to_cluster_map` updates the DB without touching the passed-in ORM instance,
         # unlike the old `add_host_to_cluster` it replaces — refresh it in place so callers that don't

@@ -982,6 +982,7 @@ class HostClusterViewSet(
         *_,
         status_scenarios: FromDishka[StatusScenarios],
         rbac_scenarios: FromDishka[RBACScenarios],
+        cluster_service: FromDishka[ClusterService],
         **kwargs,
     ):
         cluster = get_object_for_user(
@@ -1003,6 +1004,7 @@ class HostClusterViewSet(
             ],
             status_service=status_scenarios,
             rbac_scenarios=rbac_scenarios,
+            cluster_service=cluster_service,
         )
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)

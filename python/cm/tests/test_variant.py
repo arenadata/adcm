@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster import ClusterService
 from core.config import ConfigService
 from tests.base import BaseTestCase
 
@@ -33,10 +34,12 @@ def cook_cluster():
     return Cluster.objects.create(prototype=proto, name="Blue Tiber")
 
 
-def cook_provider(config_service: ConfigService):
+def cook_provider(config_service: ConfigService, cluster_service: ClusterService):
     bundle = Bundle.objects.create(name="SSH", version="1.0")
     provider_prototype = Prototype.objects.create(type="provider", bundle=bundle)
-    provider = add_host_provider(provider_prototype, "SSHone", config_service=config_service)
+    provider = add_host_provider(
+        provider_prototype, "SSHone", config_service=config_service, cluster_service=cluster_service
+    )
     Prototype.objects.create(bundle=bundle, type="host")
 
     return provider
@@ -77,7 +80,10 @@ class TestVariantBuiltIn(BaseTestCase):
 
     def test_host_in_cluster(self):
         cluster = cook_cluster()
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
 
@@ -91,7 +97,10 @@ class TestVariantBuiltIn(BaseTestCase):
         cluster = cook_cluster()
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         limits = {"source": {"type": "builtin", "name": "host_in_cluster"}}
@@ -120,7 +129,10 @@ class TestVariantBuiltIn(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         host_3 = self.uc.add_host(provider=provider, fqdn="h12")
@@ -249,7 +261,10 @@ class TestVariantHost(BaseTestCase):
 
     def test_host_in_cluster(self):
         cluster = cook_cluster()
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         self.uc.add_host_to_cluster(cluster, host_1)
         hosts = variant_host(obj=cluster, args={"predicate": "in_cluster", "args": []})
@@ -260,7 +275,10 @@ class TestVariantHost(BaseTestCase):
         cluster = cook_cluster()
         service = cook_service(cluster)
         component = cook_component(cluster, service, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         self.uc.add_host_to_cluster(cluster, host_1)
 
@@ -284,7 +302,10 @@ class TestVariantHost(BaseTestCase):
         component = cook_component(cluster, service, "Server")
         service_2 = cook_service(cluster, "Gett")
         component_2 = cook_component(cluster, service_2, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         host_3 = self.uc.add_host(provider=provider, fqdn="h12")
@@ -319,7 +340,10 @@ class TestVariantHost(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         self.uc.add_host_to_cluster(cluster, host_1)
@@ -359,7 +383,10 @@ class TestVariantHost(BaseTestCase):
         component_2 = cook_component(cluster, service, "Node")
         service_2 = cook_service(cluster, "Gett")
         component_3 = cook_component(cluster, service_2, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         host_3 = self.uc.add_host(provider=provider, fqdn="h12")
@@ -405,7 +432,10 @@ class TestVariantHost(BaseTestCase):
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         host_3 = self.uc.add_host(provider=provider, fqdn="h12")
@@ -451,7 +481,10 @@ class TestVariantHost(BaseTestCase):
         component_1 = cook_component(cluster, service, "Server")
         component_2 = cook_component(cluster, service, "Node")
         component_3 = cook_component(cluster, service, "Secondary")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         host_3 = self.uc.add_host(provider=provider, fqdn="h12")
@@ -520,7 +553,10 @@ class TestVariantHost(BaseTestCase):
 
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         self.uc.add_host_to_cluster(cluster, host_1)
@@ -539,7 +575,10 @@ class TestVariantHost(BaseTestCase):
 
         service = cook_service(cluster)
         component_1 = cook_component(cluster, service, "Server")
-        provider = cook_provider(config_service=self.uc.container.get(ConfigService))
+        provider = cook_provider(
+            config_service=self.uc.container.get(ConfigService),
+            cluster_service=self.uc.container.get(ClusterService),
+        )
         host_1 = self.uc.add_host(provider=provider, fqdn="h10")
         host_2 = self.uc.add_host(provider=provider, fqdn="h11")
         self.uc.add_host_to_cluster(cluster, host_1)

@@ -18,6 +18,7 @@ from cm.legacy.services.concern.distribution import distribute_concern_from_prov
 from cm.legacy.services.host import repo
 from cm.models import Cluster, Host
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ADCMCoreType, ClusterID, Descriptor, HostDesc, HostID, HostName
 from django.db.transaction import atomic
@@ -32,6 +33,7 @@ def create_duplicate(
     name: HostName,
     rbac_scenarios: RBACScenarios,
     status_scenarios: StatusScenarios,
+    cluster_service: ClusterService,
     cluster_id: ClusterID | None = None,
 ) -> HostDuplicateID:
     with atomic():
@@ -55,6 +57,7 @@ def create_duplicate(
                     hosts=[duplicate.pk],
                     status_service=status_scenarios,
                     rbac_scenarios=rbac_scenarios,
+                    cluster_service=cluster_service,
                 )
             except Cluster.DoesNotExist as e:
                 raise AdcmEx("CLUSTER_NOT_FOUND") from e

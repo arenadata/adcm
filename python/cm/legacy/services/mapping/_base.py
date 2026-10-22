@@ -200,7 +200,10 @@ def _change_host_component_mapping(
 
     # updates of related entities
     added, removed = _update_concerns(
-        old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
+        old_topology=current_topology,
+        new_topology=new_topology,
+        bundle_restrictions=bundle_restrictions,
+        cluster_service=cluster_service,
     )
     ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
     ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
@@ -276,7 +279,10 @@ def _retrieve_delta_from_new_mapping(
 
 
 def _update_concerns(
-    old_topology: ClusterTopology, new_topology: ClusterTopology, bundle_restrictions: BundleRestrictions
+    old_topology: ClusterTopology,
+    new_topology: ClusterTopology,
+    bundle_restrictions: BundleRestrictions,
+    cluster_service: ClusterService,
 ) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
     cluster = CoreObjectDescriptor(id=old_topology.cluster_id, type=ADCMCoreType.CLUSTER)
     if not cluster_mapping_has_issue(cluster_id=cluster.id, bundle_restrictions=bundle_restrictions):
@@ -284,7 +290,7 @@ def _update_concerns(
     elif retrieve_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT) is None:
         create_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT)
 
-    added, removed = redistribute_issues_and_flags(topology=new_topology)
+    added, removed = redistribute_issues_and_flags(topology=new_topology, cluster_service=cluster_service)
 
     lock = retrieve_lock_on_object(object_=cluster)
     if lock:

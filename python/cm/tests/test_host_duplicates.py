@@ -51,6 +51,7 @@ class TestHostDuplicateBugs(WithDishkaContainer, BaseTestCase):
             config_service=self.uc.container.get(ConfigService),
             rbac_scenarios=RBACScenarios(),
             status_scenarios=StatusScenarios(cluster_service=self.uc.container.get(ClusterService)),
+            cluster_service=self.uc.container.get(ClusterService),
         )
 
         target = ActionTargetDescriptor(id=self.cluster.pk, type=ADCMCoreType.CLUSTER)

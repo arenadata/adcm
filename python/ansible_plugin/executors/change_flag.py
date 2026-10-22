@@ -22,6 +22,7 @@ from cm.legacy.services.concern.flags import (
     update_hierarchy_for_flag,
 )
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.db.transaction import atomic
 from pydantic import field_validator
@@ -121,7 +122,9 @@ class ADCMChangeFlagPluginExecutor(ADCMAnsiblePluginExecutor[ChangeFlagArguments
 
                 changed = raise_flag(flag=flag, on_objects=targets)
                 if changed:
-                    added = update_hierarchy_for_flag(flag=flag, on_objects=targets)
+                    added = update_hierarchy_for_flag(
+                        flag=flag, on_objects=targets, cluster_service=self._container.get(ClusterService)
+                    )
                     status_scenarios = self._container.get(StatusScenarios)
                     status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed={})
             case ChangeFlagOperation.DOWN:
