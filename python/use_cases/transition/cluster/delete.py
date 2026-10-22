@@ -38,6 +38,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.converters import named_mapping_from_topology
 from core.legacy.bundle.types import MissingServiceRequiresViolation
 from core.legacy.cluster.types import ClusterTopology
@@ -61,6 +62,7 @@ class DeleteService:
     # copied from cm.legacy.api.delete_service
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(self, service: Service) -> None:
         service_pk = service.pk
@@ -87,7 +89,9 @@ class DeleteService:
         elif retrieve_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT) is None:
             concern = create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
             concern_id = concern.pk
-            related_objects = distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern_id)
+            related_objects = distribute_concern_on_related_objects(
+                owner=cluster_cod, concern_id=concern_id, cluster_service=self.cluster_service
+            )
 
         keep_objects = defaultdict(set)
         for task in TaskLog.objects.filter(

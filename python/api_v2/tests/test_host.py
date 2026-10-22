@@ -557,6 +557,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h2_dup = Host.objects.get(
@@ -566,6 +567,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
@@ -592,6 +594,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h2_dup = Host.objects.get(
@@ -601,6 +604,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
 
@@ -641,6 +645,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h1_dup_2 = Host.objects.get(
@@ -650,6 +655,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         hosts_to_add = (h1_dup, h1_dup_2)
@@ -814,6 +820,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         host_duplicate_named_as_host_2 = Host.objects.get(
@@ -823,6 +830,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
 
@@ -837,6 +845,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 hosts=[host_duplicate_named_as_host_2.pk],
                 status_service=notify,
                 rbac_scenarios=RBACScenarios(),
+                cluster_service=self.container.get(ClusterService),
             )
 
             candidates = self.get_host_candidates(self.cluster_1)
@@ -853,7 +862,11 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
 
         with self.subTest("exclude by original host add"):
             perform_host_to_cluster_map(
-                cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify, rbac_scenarios=RBACScenarios()
+                cluster_id=self.cluster_2.pk,
+                hosts=[host_1.pk],
+                status_service=notify,
+                rbac_scenarios=RBACScenarios(),
+                cluster_service=self.container.get(ClusterService),
             )
 
             candidates = self.get_host_candidates(self.cluster_2)

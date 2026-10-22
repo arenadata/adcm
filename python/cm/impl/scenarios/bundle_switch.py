@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
+from core.cluster import ClusterService
 from core.config import ConfigService
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor
@@ -75,6 +76,7 @@ class BundleSwitch:
     config_service: ConfigService
     config_scenarios: ConfigScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(self, target: Cluster | Provider, upgrade: Upgrade) -> None:
         match target:
@@ -149,7 +151,9 @@ class BundleSwitch:
 
     def _update_cluster_concerns(self, cluster: Cluster) -> ConcernMaps:
         recalculate_concerns_on_cluster_upgrade(cluster=cluster, config_service=self.config_service)
-        return redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+        return redistribute_issues_and_flags(
+            topology=retrieve_cluster_topology(cluster.pk), cluster_service=self.cluster_service
+        )
 
     def _switch_services(self, cluster: Cluster, upgrade: Upgrade) -> None:
         """
@@ -251,7 +255,9 @@ class BundleSwitch:
 
         if clusters_for_redistribution:
             for topology in retrieve_multiple_clusters_topology(cluster_ids=clusters_for_redistribution):
-                added_, removed_ = redistribute_issues_and_flags(topology=topology)
+                added_, removed_ = redistribute_issues_and_flags(
+                    topology=topology, cluster_service=self.cluster_service
+                )
                 _merge_concern_maps(target=added, source=added_)
                 _merge_concern_maps(target=removed, source=removed_)
 
@@ -266,7 +272,9 @@ class BundleSwitch:
             return
 
         concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
-        related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern.pk)
+        related_objects = distribute_concern_on_related_objects(
+            owner=provider_cod, concern_id=concern.pk, cluster_service=self.cluster_service
+        )
         for core_type, object_ids in related_objects.items():
             for object_id in object_ids:
                 added[core_type][object_id].add(concern.pk)

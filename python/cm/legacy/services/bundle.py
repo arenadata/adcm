@@ -13,6 +13,7 @@
 from collections import defaultdict, deque
 from pathlib import Path
 
+from core.cluster import parse_constraint
 from core.legacy.bundle.types import (
     BundleRestrictions,
     ComponentRestrictionOwner,
@@ -20,7 +21,6 @@ from core.legacy.bundle.types import (
     ServiceDependencies,
     ServiceRestrictionOwner,
 )
-from core.legacy.concern.checks import parse_constraint
 from core.types import BundleID, ComponentNameKey
 
 from cm.models import ObjectType, Prototype

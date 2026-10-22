@@ -11,11 +11,11 @@
 # limitations under the License.
 
 from collections import deque
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import NamedTuple, TypeAlias
+from typing import TypeAlias
 
+from core.cluster import Constraint
 from core.types import ComponentNameKey, ServiceName, ServiceNameKey
 
 ServiceRestrictionOwner: TypeAlias = ServiceNameKey
@@ -39,20 +39,6 @@ class MappingRestrictionViolation:
 class MissingServiceRequiresViolation:
     required_service: ServiceName
     dependant_object: ServiceRestrictionOwner | ComponentRestrictionOwner
-
-
-HostsAmount: TypeAlias = int
-
-
-# Constraints - Requirements On Mapped Hosts Amount
-
-
-SupportedConstraintFormat: TypeAlias = tuple[str] | tuple[HostsAmount | str, HostsAmount | str]
-
-
-class Constraint(NamedTuple):
-    internal: SupportedConstraintFormat
-    checks: tuple[Callable[[HostsAmount, HostsAmount], bool], ...]
 
 
 # Bundle Restrictions

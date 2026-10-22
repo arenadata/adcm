@@ -17,7 +17,7 @@ from typing import cast
 from core.action import Task
 from core.action.job import JobRepoI, TaskUpdateDTO
 from core.action.types import RichJob
-from core.cluster import ClusterService
+from core.cluster import ClusterService, ClusterTopology
 from core.concern.operations import (
     build_id_chain,
     build_task_concern,
@@ -31,6 +31,7 @@ from core.scenarios.status import StatusScenariosI
 from core.types import (
     ADCMCoreType,
     ClusterID,
+    ComponentID,
     ConcernID,
     CoreObjectDescriptor,
     ExtraActionTargetType,
@@ -80,6 +81,12 @@ class ConcernDistributionScenarios:
                     raise ValueError(message)
 
                 topology = self.cluster_service.retrieve_topology(cluster_id=cluster_id)
+                if owner.type == ADCMCoreType.COMPONENT and self._is_unmapped_optional_component(
+                    component_id=owner.id, topology=topology
+                ):
+                    # concerns of unmapped optional component shouldn't affect anything except component itself
+                    return {ADCMCoreType.COMPONENT: {owner.id}}
+
                 return detect_concern_distribution(topology=topology, owner=owner, concern_type=concern_type)
 
             case ADCMCoreType.HOST:
@@ -92,6 +99,12 @@ class ConcernDistributionScenarios:
             case _:
                 message = f"Concern distribution isn't implemented for {owner.type}"
                 raise NotImplementedError(message)
+
+    def _is_unmapped_optional_component(self, *, component_id: ComponentID, topology: ClusterTopology) -> bool:
+        if topology.get_service_by_component(component_id).components[component_id].hosts:
+            return False
+
+        return bool(self.cluster_service.retrieve_optional_components(component_ids=(component_id,)))
 
     def _detect_provider_concern_distribution(self, *, provider_id: ProviderID) -> ConcernRelatedObjects:
         # a provider's hosts can be spread across several clusters (or none) at once, so this groups them by

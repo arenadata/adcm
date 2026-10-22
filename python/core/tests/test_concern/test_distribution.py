@@ -238,6 +238,36 @@ class TestConcernDistributionScenario(TestCase):
             dict(result), detect_concern_distribution(topology=topology, owner=component(11), concern_type=LOCK)
         )
 
+    def test_unmapped_optional_component_owner_affects_only_itself(self) -> None:
+        topology = build_cluster_topology(cluster_id=1, mapping=[(1, 11, 100)], unmapped_components=[(1, 12)])
+        cluster_repo = FakeClusterRepo(topologies={1: topology}, constraints={12: [0, "+"]})
+        scenario = build_scenario(FakeProviderRepo(), cluster_repo)
+
+        for concern_type in ConcernType:
+            with self.subTest(concern_type.value):
+                result = scenario.detect_concern_distribution(
+                    owner=component(12), concern_type=concern_type, cluster_id=1
+                )
+
+                self.assertDictEqual(dict(result), {COMPONENT: {12}})
+
+    def test_unmapped_required_component_owner_delegates_to_operations(self) -> None:
+        topology = build_cluster_topology(cluster_id=1, mapping=[(1, 11, 100)], unmapped_components=[(1, 12)])
+        cluster_repo = FakeClusterRepo(topologies={1: topology}, constraints={12: [1]})
+        scenario = build_scenario(FakeProviderRepo(), cluster_repo)
+
+        for concern_type in ConcernType:
+            with self.subTest(concern_type.value):
+                result = scenario.detect_concern_distribution(
+                    owner=component(12), concern_type=concern_type, cluster_id=1
+                )
+
+                self.assertDictEqual(
+                    dict(result),
+                    detect_concern_distribution(topology=topology, owner=component(12), concern_type=concern_type),
+                )
+                self.assertIn(CLUSTER, result)
+
     def test_host_owner_with_cluster_id_delegates_to_hosts_concern_distribution(self) -> None:
         topology = build_cluster_topology(cluster_id=1, mapping=[(1, 11, 100)])
         scenario = build_scenario(FakeProviderRepo(), FakeClusterRepo(topologies={1: topology}))

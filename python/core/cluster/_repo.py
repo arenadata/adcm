@@ -21,6 +21,7 @@ from core.types import (
     ClusterID,
     ClusterObjectDesc,
     ComponentDesc,
+    ComponentID,
     HostDesc,
     MaintenanceModeOfObjects,
     MaintenanceModeState,
@@ -43,6 +44,8 @@ class ClusterRepoI(Protocol):
     ) -> MaintenanceModeOfObjects: ...
 
     def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc: ...
+
+    def get_components_constraints(self, component_ids: Iterable[ComponentID]) -> dict[ComponentID, list]: ...
 
     def set_maintenance_mode(
         self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState

@@ -371,6 +371,7 @@ class HostViewSet(
         config_service: FromDishka[ConfigService],
         rbac_scenarios: FromDishka[RBACScenarios],
         status_scenarios: FromDishka[StatusScenarios],
+        cluster_service: FromDishka[ClusterService],
         **__,
     ):
         serializer = self.get_serializer(data=request.data)
@@ -389,6 +390,7 @@ class HostViewSet(
             config_service=config_service,
             rbac_scenarios=rbac_scenarios,
             status_scenarios=status_scenarios,
+            cluster_service=cluster_service,
         )
 
         duplicate = Host.objects.get(id=duplicate_id)

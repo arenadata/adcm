@@ -107,8 +107,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             cluster=self.cluster, entries=((self.host_1, self.component), (self.host_2, self.component))
         )
 
-    @staticmethod
-    def bind_objects(*entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
+    def bind_objects(self, *entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
         for import_object, export_objects in entries:
             multibind_data: list[DataForMultiBind] = []
 
@@ -125,9 +124,19 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 multibind_data.append({"import_id": int(proto_import.pk), "export_id": export_entry})
 
             if isinstance(import_object, Cluster):
-                multi_bind(cluster=import_object, service=None, bind_list=multibind_data)
+                multi_bind(
+                    cluster=import_object,
+                    service=None,
+                    bind_list=multibind_data,
+                    cluster_service=self.uc.container.get(ClusterService),
+                )
             else:
-                multi_bind(cluster=import_object.cluster, service=import_object, bind_list=multibind_data)
+                multi_bind(
+                    cluster=import_object.cluster,
+                    service=import_object,
+                    bind_list=multibind_data,
+                    cluster_service=self.uc.container.get(ClusterService),
+                )
 
     def change_config_partial(self, target: ADCMModel) -> None:
         self.uc.change_config(

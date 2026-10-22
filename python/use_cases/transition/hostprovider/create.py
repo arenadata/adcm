@@ -26,6 +26,7 @@ from cm.logger import logger
 from cm.models import Cluster, ConcernCause, Host, Prototype, Provider
 from cm.transition.concern import create_and_distribute_hostcomponent_concern_on_add_host_to_cluster
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, ProviderID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
@@ -40,6 +41,7 @@ class CreateHostprovider:
     config_service: core.config.ConfigService
     status_scenarios: StatusScenarios
     available_contract_versions: core.bundle.AvailableContractVersions
+    cluster_service: ClusterService
 
     @convert_bundle_errors_to_adcm_ex
     def do(self, prototype: Prototype, name: str, description: str) -> ProviderID:
@@ -64,7 +66,9 @@ class CreateHostprovider:
             if object_configuration_has_issue(provider, config_service=self.config_service):
                 concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
                 concern_id = concern.pk
-                related_objects = distribute_concern_on_related_objects(owner=provider_cod, concern_id=concern_id)
+                related_objects = distribute_concern_on_related_objects(
+                    owner=provider_cod, concern_id=concern_id, cluster_service=self.cluster_service
+                )
 
         if concern_id:
             self.status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
@@ -77,6 +81,7 @@ class CreateHost:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(self, hostprovider: Provider, name: str, cluster: Cluster | None, description: str = "") -> HostID:
         with atomic():
@@ -117,7 +122,7 @@ class CreateHost:
 
             if cluster is not None:
                 concern_id, related_objects = create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
-                    cluster=cluster
+                    cluster=cluster, cluster_service=self.cluster_service
                 )
 
             # Re apply policies

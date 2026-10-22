@@ -128,6 +128,7 @@ class UseCases:
             hosts=[host.pk],
             status_service=self.container.get(StatusScenarios),
             rbac_scenarios=self.container.get(RBACScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         # `perform_host_to_cluster_map` updates the DB without touching the passed-in ORM instance,
         # unlike the old `add_host_to_cluster` it replaces — refresh it in place so callers that don't

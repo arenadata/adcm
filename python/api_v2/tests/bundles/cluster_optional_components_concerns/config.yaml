@@ -1,0 +1,38 @@
+---
+- type: cluster
+  name: optional_components_concerns
+  version: 1
+  contract_version: '2.1'
+  venv: '2.16'
+
+- type: service
+  name: main
+  version: 1
+  components:
+    optional:
+      flag_autogeneration: &flags
+        enable_outdated_config: true
+      config: &config
+        - name: field
+          type: integer
+          required: true
+      actions: &actions
+        dummy:
+          masking: null
+          scripts:
+            - name: dummy
+              script: ./action.yaml
+              script_type: ansible
+    optional_limited:
+      constraint: [0, 1]
+      flag_autogeneration: *flags
+      config: *config
+    required_single:
+      constraint: [1]
+      flag_autogeneration: *flags
+      config: *config
+      actions: *actions
+    required_at_least_one:
+      constraint: [1, +]
+      flag_autogeneration: *flags
+      config: *config

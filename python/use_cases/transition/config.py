@@ -19,6 +19,7 @@ from cm.legacy.services.concern import delete_issue
 from cm.legacy.services.job.run import update_related_configs
 from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog, MainObject
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
@@ -48,6 +49,7 @@ class UpdateConfigurationOfObject:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(
         self,
@@ -83,7 +85,9 @@ class UpdateConfigurationOfObject:
             delete_issue(owner=owner_descriptor, cause=ConcernCause.CONFIG)
             # flag on ADCM can't be raised
             if not isinstance(owner, ADCM) and result.has_changed:
-                concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
+                concern_id, related_objects = raise_outdated_config_flag_if_required(
+                    object_=owner, cluster_service=self.cluster_service
+                )
             self.rbac_scenarios.apply_policy_for_new_config(
                 config_object=owner, config_log=_get_config_log(id_=main_config_log_id)
             )
@@ -102,6 +106,7 @@ class UpdateConfigurationOfHostGroup:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(
         self,
@@ -146,7 +151,9 @@ class UpdateConfigurationOfHostGroup:
             delete_issue(owner=owner_descriptor, cause=ConcernCause.CONFIG)
             # flag on ADCM can't be raised
             if not isinstance(owner, ADCM) and result.has_changed:
-                concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
+                concern_id, related_objects = raise_outdated_config_flag_if_required(
+                    object_=owner, cluster_service=self.cluster_service
+                )
             self.rbac_scenarios.apply_policy_for_new_config(config_object=owner, config_log=_get_config_log(config_id))
 
             # see why it's in here in main config save

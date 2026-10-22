@@ -360,7 +360,7 @@ class RevertUpgrade:
                 bundle_id=old_bundle_id
             ),
         )
-        _add_import_issues(cluster=cluster)
+        _add_import_issues(cluster=cluster, cluster_service=self.cluster_service)
 
     def _revert_services(self, cluster: Cluster, old_bundle_id: BundleID, before_upgrade: ClusterBeforeUpgrade) -> None:
         """
@@ -550,7 +550,7 @@ def _delete_objects_of_upgraded_bundle(cluster: Cluster, upgraded_bundle: Bundle
     Component.objects.filter(cluster=cluster, prototype__bundle=upgraded_bundle).delete()
 
 
-def _add_import_issues(cluster: Cluster) -> None:
+def _add_import_issues(cluster: Cluster, cluster_service: ClusterService) -> None:
     """Rechecks imports of potentially affected objects, since restored binds can violate import rules"""
 
     concerns_created = False
@@ -563,4 +563,4 @@ def _add_import_issues(cluster: Cluster) -> None:
             concerns_created = True
 
     if concerns_created:
-        redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+        redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk), cluster_service=cluster_service)

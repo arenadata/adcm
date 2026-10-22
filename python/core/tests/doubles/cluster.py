@@ -19,6 +19,7 @@ from core.types import (
     ClusterID,
     ClusterObjectDesc,
     ComponentDesc,
+    ComponentID,
     HostDesc,
     MaintenanceModeOfObjects,
     MaintenanceModeState,
@@ -29,6 +30,7 @@ from core.types import (
 @dataclass(slots=True)
 class FakeClusterRepo(ClusterRepoI):
     topologies: dict[ClusterID, ClusterTopology] = field(default_factory=dict)
+    constraints: dict[ComponentID, list] = field(default_factory=dict)
 
     def get_topology_for_cluster(self, cluster_id: ClusterID) -> ClusterTopology:
         return self.topologies[cluster_id]
@@ -47,6 +49,9 @@ class FakeClusterRepo(ClusterRepoI):
     def get_ahg_owner(self, ahg_id: ActionHostGroupID) -> ClusterObjectDesc:
         _ = ahg_id
         raise NotImplementedError
+
+    def get_components_constraints(self, component_ids: Iterable[ComponentID]) -> dict[ComponentID, list]:
+        return {component_id: self.constraints[component_id] for component_id in component_ids}
 
     def set_maintenance_mode(self, target: ServiceDesc | ComponentDesc | HostDesc, value: MaintenanceModeState) -> bool:
         _ = target, value

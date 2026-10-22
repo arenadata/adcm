@@ -17,6 +17,7 @@ from itertools import chain
 from operator import itemgetter
 from typing import TypeAlias
 
+from core.cluster import ClusterService
 from core.concern.types import ConcernRelatedObjects
 from core.legacy.cluster.types import ClusterTopology
 from core.types import (
@@ -55,7 +56,7 @@ ProviderHostMap: TypeAlias = dict[ProviderID, set[HostID]]
 
 
 def redistribute_issues_and_flags(
-    topology: ClusterTopology,
+    topology: ClusterTopology, cluster_service: ClusterService
 ) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
     """
     Calculate state of concern-object links and update state in database accordingly.
@@ -90,7 +91,16 @@ def redistribute_issues_and_flags(
     # to ensure they aren't deleted/added
     provider_hierarchy_concerns = objects_concerns.get(ADCMCoreType.HOST, {})
     full_distribution = _calculate_concerns_distribution_for_topology(
-        topology=topology, objects_concerns=objects_concerns
+        topology=topology,
+        objects_concerns=objects_concerns,
+        isolated_components=cluster_service.retrieve_optional_components(
+            component_ids=tuple(
+                component_id
+                for service_topology in topology.services.values()
+                for component_id, component_topology in service_topology.components.items()
+                if not component_topology.hosts
+            )
+        ),
     )
     added, removed = _find_distribution_difference(
         old=_retrieve_current_concerns_distribution(
@@ -135,8 +145,12 @@ def _retrieve_concerns_of_objects_in_topology(
 
 
 def _calculate_concerns_distribution_for_topology(
-    topology: ClusterTopology, objects_concerns: OwnObjectConcernMap
+    topology: ClusterTopology, objects_concerns: OwnObjectConcernMap, isolated_components: set[ComponentID]
 ) -> AffectedObjectConcernMap:
+    """
+    Concerns of `isolated_components` aren't "pushed" further than component itself
+    """
+
     concern_links: dict[ADCMCoreType, dict[int, set[int]]] = defaultdict(lambda: defaultdict(set))
 
     cluster_own_concerns: set[int] = objects_concerns.get(ADCMCoreType.CLUSTER, {}).get(topology.cluster_id, set())
@@ -164,7 +178,8 @@ def _calculate_concerns_distribution_for_topology(
             concern_links[ADCMCoreType.COMPONENT][component_id] = (
                 cluster_own_concerns | concerns_from_service | concerns_from_component | concerns_from_hosts
             )
-            concern_links[ADCMCoreType.SERVICE][service_id] |= concerns_from_component | concerns_from_hosts
+            if component_id not in isolated_components:
+                concern_links[ADCMCoreType.SERVICE][service_id] |= concerns_from_component | concerns_from_hosts
 
         concern_links[ADCMCoreType.CLUSTER][topology.cluster_id] |= concern_links[ADCMCoreType.SERVICE][service_id]
 
@@ -269,12 +284,16 @@ def _update_db_concerns_state(added: AffectedObjectConcernMap, removed: Affected
 # PUBLIC distribute_concern_on_related_objects
 
 
-def detect_concern_distribution(owner: CoreObjectDescriptor, concern_type: ConcernType) -> ConcernRelatedObjects:
+def detect_concern_distribution(
+    owner: CoreObjectDescriptor, concern_type: ConcernType, cluster_service: ClusterService
+) -> ConcernRelatedObjects:
     """
     Compute which objects a concern of `concern_type` owned by `owner` should be linked to.
     Read-only: nothing is persisted.
     """
-    distribution_targets = _find_concern_distribution_targets(owner=owner)
+
+    distribution_targets = _find_concern_distribution_targets(owner=owner, cluster_service=cluster_service)
+
     if owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT) and concern_type in (
         ConcernType.LOCK,
         ConcernType.ISSUE,
@@ -284,16 +303,22 @@ def detect_concern_distribution(owner: CoreObjectDescriptor, concern_type: Conce
     return distribution_targets
 
 
-def distribute_concern_on_related_objects(owner: CoreObjectDescriptor, concern_id: ConcernID) -> ConcernRelatedObjects:
+def distribute_concern_on_related_objects(
+    owner: CoreObjectDescriptor, concern_id: ConcernID, cluster_service: ClusterService
+) -> ConcernRelatedObjects:
     concern_type = ConcernItem.objects.values_list("type", flat=True).get(pk=concern_id)
-    distribution_targets = detect_concern_distribution(owner=owner, concern_type=ConcernType(concern_type))
+    distribution_targets = detect_concern_distribution(
+        owner=owner, concern_type=ConcernType(concern_type), cluster_service=cluster_service
+    )
 
     _add_concern_links_to_objects_in_db(targets=distribution_targets, concern_id=concern_id)
 
     return distribution_targets
 
 
-def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRelatedObjects:
+def _find_concern_distribution_targets(
+    owner: CoreObjectDescriptor, cluster_service: ClusterService
+) -> ConcernRelatedObjects:
     """
     Find objects that should be affected by appeared concern on given objects considering HC.
     """
@@ -322,13 +347,16 @@ def _find_concern_distribution_targets(owner: CoreObjectDescriptor) -> ConcernRe
             )
 
         case ADCMCoreType.COMPONENT:
+            host_ids = set(HostComponent.objects.values_list("host_id", flat=True).filter(component_id=owner.id))
+            if not host_ids and cluster_service.retrieve_optional_components(component_ids=(owner.id,)):
+                # concerns of unmapped optional component shouldn't affect anything except component itself
+                return targets
+
             cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=owner.id)
 
             targets[ADCMCoreType.CLUSTER].add(cluster_id)
             targets[ADCMCoreType.SERVICE].add(service_id)
-            targets[ADCMCoreType.HOST] |= set(
-                HostComponent.objects.values_list("host_id", flat=True).filter(component_id=owner.id)
-            )
+            targets[ADCMCoreType.HOST] |= host_ids
 
         case ADCMCoreType.HOST:
             hc_records = tuple(

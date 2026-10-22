@@ -15,6 +15,7 @@ from unittest.mock import patch
 from cm.converters import orm_object_to_core_type
 from cm.models import Component, Host, Prototype
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from rbac.scenarios import RBACScenarios
 from tests.suites import ADCMPluginExecutorSuite
 from use_cases.transition.host.duplicate import create_duplicate
@@ -112,6 +113,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
 
         task = self.prepare_task(owner=host, name="dummy")

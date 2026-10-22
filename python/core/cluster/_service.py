@@ -13,11 +13,12 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from core.cluster._constraint import is_mapping_required, parse_constraint
 from core.cluster._maintenance_mode import calculate_maintenance_mode_for_cluster_objects
 from core.cluster._operations import find_children_excluding_hosts
 from core.cluster._repo import ClusterRepoI
 from core.cluster._types import ClusterTopology
-from core.types import ClusterID, ClusterObjectDesc, MaintenanceModeOfObjects
+from core.types import ClusterID, ClusterObjectDesc, ComponentID, MaintenanceModeOfObjects
 
 
 @dataclass(slots=True)
@@ -32,6 +33,14 @@ class ClusterService:
 
     def retrieve_related_cluster_id(self, object_: ClusterObjectDesc) -> ClusterID:
         return self.repo.get_related_cluster_id(object_=object_)
+
+    def retrieve_optional_components(self, component_ids: Iterable[ComponentID]) -> set[ComponentID]:
+        """Find components that aren't required to be mapped (based on constraint)"""
+        return {
+            component_id
+            for component_id, constraint in self.repo.get_components_constraints(component_ids=component_ids).items()
+            if not is_mapping_required(parse_constraint(constraint))
+        }
 
     def find_objects_in_hierarchy(
         self, start_from: ClusterObjectDesc, topology: ClusterTopology

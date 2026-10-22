@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from core.action.job import JobShortFilter
 from core.action.operations import to_rich_job
+from core.cluster import ClusterService
 from core.concern.operations import build_id_chain, build_task_concern
 from core.concern.types import ConcernTarget
 from core.config import ConfigService
@@ -423,6 +424,7 @@ class TestConcernsRedistribution(GenericTestCase):
                 [self.host.id],
                 status_service=notify,
                 rbac_scenarios=RBACScenarios(),
+                cluster_service=self.uc.container.get(ClusterService),
             )
 
         self.host.refresh_from_db()

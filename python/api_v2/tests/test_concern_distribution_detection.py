@@ -43,6 +43,7 @@
 
 from cm.legacy.services.concern.distribution import detect_concern_distribution
 from cm.models import ConcernType
+from core.cluster import ClusterService
 from core.concern.types import ConcernType as CoreConcernType
 from core.scenarios.concern import ConcernDistributionScenarios
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -502,7 +503,9 @@ class TestConcernDistributionDetection(ADCMDjangoAPISuite):
         # already know — the scenario itself no longer resolves this for SERVICE/COMPONENT/HOST
         cluster_id = getattr(self, cluster_attr).pk if cluster_attr is not None else None
 
-        result = detect_concern_distribution(owner=owner, concern_type=concern_type)
+        result = detect_concern_distribution(
+            owner=owner, concern_type=concern_type, cluster_service=self.container.get(ClusterService)
+        )
         self.assertDictEqual(dict(result), expected, "legacy detection mismatch")
 
         scenario = self.container.get(ConcernDistributionScenarios)

@@ -15,6 +15,7 @@ from collections.abc import Collection
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.status import notify
 from cm.models import Host
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import model_validator
 from rbac.scenarios import RBACScenarios
@@ -97,6 +98,7 @@ class ADCMAddHostToClusterPluginExecutor(ADCMAnsiblePluginExecutor[AddHostToClus
             hosts=[host_id],
             status_service=notify,
             rbac_scenarios=rbac_scenarios,
+            cluster_service=self._container.get(ClusterService),
         )
 
         return CallResult(value=None, changed=True, error=None)
