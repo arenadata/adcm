@@ -95,7 +95,8 @@ RUN microdnf update -y && \
         runit \
         shadow-utils \
         sshpass \
-        wget && \
+        wget \
+        which && \
     microdnf clean all && \
     rm -rf /var/cache/dnf
 RUN rpm -e --nodeps python3 python3-libs
