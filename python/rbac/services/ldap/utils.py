@@ -32,10 +32,10 @@ def str_join_attr_list(ldap_attributes: LDAPAttributes, target_attr: str, sort: 
 def get_ldap_settings() -> LDAPSettings:
     config, attr = adcm_config_attr(config_id=get_adcm_config_id())
 
-    if not config["ldap_integration"]["active"]:
+    if not attr["ldap_integration"]["active"]:
         raise LDAPConfigurationError("LDAP integration is disabled")
 
-    ldap_config = attr["ldap_integration"]
+    ldap_config = config["ldap_integration"]
     ldap_config["ldap_password"] = ansible_decrypt(msg=ldap_config["ldap_password"])
     ldap_config["group_dn_adcm_admin"] = [group_dn.lower() for group_dn in ldap_config["group_dn_adcm_admin"] or []]
 
