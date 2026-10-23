@@ -232,6 +232,7 @@ class BundleInfo(NamedTuple):
     #
     # should point to directory with `config.yaml` where task owner is defined
     config_dir: Path
+    contract_version: str
 
 
 class RelatedObjects(NamedTuple):

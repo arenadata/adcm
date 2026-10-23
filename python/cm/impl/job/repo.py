@@ -126,7 +126,7 @@ class JobRepo(JobRepoI):
     def get_task(self, id: int) -> Task:  # noqa: A002
         try:
             task_record: TaskLog = (
-                TaskLog.objects.select_related("action__prototype").prefetch_related("task_object").get(id=id)
+                TaskLog.objects.select_related("action__prototype__bundle").prefetch_related("task_object").get(id=id)
             )
         except ObjectDoesNotExist:
             message = f"Can't find task identified by {id}"
@@ -142,11 +142,16 @@ class JobRepo(JobRepoI):
             target_ = NamedActionObject(
                 id=target.pk, type=orm_object_to_action_target_type(object_=target), name=target.name
             )
+            contract_version = action_prototype.bundle.contract_version
             if action_prototype.type == "adcm":
-                bundle = BundleInfo(root=settings.BASE_DIR / "conf" / "adcm", config_dir=Path())
+                bundle = BundleInfo(
+                    root=settings.BASE_DIR / "conf" / "adcm", config_dir=Path(), contract_version=contract_version
+                )
             else:
                 bundle = BundleInfo(
-                    root=settings.BUNDLE_DIR / action_prototype.bundle.hash, config_dir=Path(action_prototype.path)
+                    root=settings.BUNDLE_DIR / action_prototype.bundle.hash,
+                    config_dir=Path(action_prototype.path),
+                    contract_version=contract_version,
                 )
 
         return Task(
