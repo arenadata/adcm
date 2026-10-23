@@ -27,7 +27,7 @@ from core.types import ADCMMessageError
 from typing_extensions import Self
 
 from cm.errors import AdcmEx
-from cm.legacy.utils import get_env_with_venv_path
+from cm.legacy.utils import get_env_with_venv_path, get_venv_dir_name
 
 
 class InternalScriptResult(NamedTuple):
@@ -76,11 +76,12 @@ class AnsibleProcessExecutor(ProcessExecutor):
 
     def _get_environment_variables(self) -> dict:
         env = super()._get_environment_variables()
-        env = get_env_with_venv_path(venv=self._config.venv, existing_env=env)
+        venv_dir = get_venv_dir_name(venv=self._config.venv, contract_version=self._config.bundle.contract_version)
+        env = get_env_with_venv_path(venv=venv_dir, existing_env=env)
         # According to ADCM-4975 we now always use `ansible.cfg` from job's run directory
         env["DJANGO_SETTINGS_MODULE"] = "adcm.settings_setups.plugin"
         env["ANSIBLE_CONFIG"] = str(self._config.work_dir / "ansible.cfg")
-        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{self._config.venv}/collections"
+        env["ANSIBLE_COLLECTIONS_PATH"] = f"/venv/{venv_dir}/collections"
 
         return env
 
@@ -98,8 +99,9 @@ class PythonProcessExecutor(ProcessExecutor):
 
     def _get_environment_variables(self) -> dict:
         env = super()._get_environment_variables()
+        venv_dir = get_venv_dir_name(venv=self._config.venv, contract_version=self._config.bundle.contract_version)
 
-        return get_env_with_venv_path(venv=self._config.venv, existing_env=env)
+        return get_env_with_venv_path(venv=venv_dir, existing_env=env)
 
 
 class InternalExecutor(Executor, WithErrOutLogsMixin):

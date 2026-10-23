@@ -1,7 +1,8 @@
 # The ansible environments are built and published by the ansible-environments repo; this
 # build layers ADCM's own dependencies onto them rather than assembling its own venvs.
-ARG ANSIBLE_216_IMAGE=hub.adsw.io/ansible/ansible:2.16.4-python3.10-musl-develop
-ARG ANSIBLE_221_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-musl-develop
+ARG ANSIBLE_216_MUSL_IMAGE=hub.adsw.io/ansible/ansible:2.16.4-python3.10-musl-release-2-1-0
+ARG ANSIBLE_221_MUSL_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-musl-release-2-1-0
+ARG ANSIBLE_221_GLIBC_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-glibc-release-2-1-0
 
 FROM golang:1.26 AS go_builder
 COPY ./go /code
@@ -46,7 +47,7 @@ RUN /python/cpython-3.12-linux-x86_64-musl/bin/python3.12 -m pip uninstall -y --
 
 # Only ADCM's own dependencies are layered onto each tree. They are needed because the
 # arenadata.adcm plugins run under these interpreters and import adcm/cm, which pulls Django.
-FROM ${ANSIBLE_216_IMAGE} AS env_216
+FROM ${ANSIBLE_216_MUSL_IMAGE} AS env_216_musl
 
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=cache,id=uv-adcm-2.16,target=/root/.cache/uv,sharing=locked \
@@ -64,7 +65,25 @@ from importlib.metadata import version; \
 print('ansible', ansible.__version__, '| django', django.__version__)"
 
 
-FROM ${ANSIBLE_221_IMAGE} AS env_221
+FROM ${ANSIBLE_221_MUSL_IMAGE} AS env_221_musl
+
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,id=uv-adcm-2.21,target=/root/.cache/uv,sharing=locked \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    UV_PYTHON_DOWNLOADS=0 \
+    uv export --locked --no-emit-project --only-group adcm-plugins \
+        --no-emit-package ansible-core --no-emit-package resolvelib \
+        --format requirements.txt --python 3.12 -o /tmp/adcm-layer.txt && \
+    UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=0 \
+    uv pip install --python /venv/2.21-musl/bin/python -r /tmp/adcm-layer.txt && \
+    /venv/2.21-musl/bin/python -c "\
+import ansible, django; \
+from importlib.metadata import version; \
+print('ansible', ansible.__version__, '| django', django.__version__)"
+
+
+FROM ${ANSIBLE_221_GLIBC_IMAGE} AS env_221_glibc
 
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=cache,id=uv-adcm-2.21,target=/root/.cache/uv,sharing=locked \
@@ -119,11 +138,13 @@ COPY --from=go_builder --chown=adcm:adcm /code/bin/runstatus /adcm/go/bin/runsta
 COPY --from=ui_builder --chown=adcm:adcm /wwwroot /adcm/wwwroot
 COPY --from=python_builder --chown=adcm:adcm /python /python
 COPY --from=python_builder --chown=adcm:adcm ${ADCM_VENV} ${ADCM_VENV}
-COPY --from=env_216 --chown=adcm:adcm /venv/2.16 /venv/2.16
-COPY --from=env_221 --chown=adcm:adcm /venv/2.21 /venv/2.21
+COPY --from=env_216_musl --chown=adcm:adcm /venv/2.16 /venv/2.16
+COPY --from=env_221_musl --chown=adcm:adcm /venv/2.21-musl /venv/2.21-musl
+COPY --from=env_221_glibc --chown=adcm:adcm /venv/2.21 /venv/2.21
 COPY --chown=adcm:adcm conf /adcm/conf
 COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm/plugins /usr/share/ansible/plugins
 COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm /venv/2.16/collections/ansible_collections/arenadata/adcm
+COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm /venv/2.21-musl/collections/ansible_collections/arenadata/adcm
 COPY --chown=adcm:adcm python/ansible_collections/arenadata/adcm /venv/2.21/collections/ansible_collections/arenadata/adcm
 COPY --chown=adcm:adcm python /adcm/python
 
@@ -146,11 +167,10 @@ RUN for name in python3.13 python3.12 python3.11 python3.10 python3 python; do \
     done && \
     command -v python3.10 python3 python && \
     ${ADCM_VENV}/bin/python -m compileall -q -j 0 /adcm/python && \
-    /venv/2.16/bin/python -m compileall -q -j 0 /venv/2.16/collections/ansible_collections/arenadata/adcm && \
-    /venv/2.21/bin/python -m compileall -q -j 0 /venv/2.21/collections/ansible_collections/arenadata/adcm && \
-    find /adcm/python -type d -name "__pycache__" -exec chown -R adcm:adcm {} + && \
-    find /venv/2.16/collections/ansible_collections/arenadata/adcm -type d -name "__pycache__" -exec chown -R adcm:adcm {} + && \
-    find /venv/2.21/collections/ansible_collections/arenadata/adcm -type d -name "__pycache__" -exec chown -R adcm:adcm {} +
+    for env in 2.16 2.21-musl 2.21; do \
+        /venv/${env}/bin/python -m compileall -q -j 0 /venv/${env}/collections/ansible_collections/arenadata/adcm || exit 1; \
+    done && \
+    find /adcm/python /venv/*/collections/ansible_collections/arenadata/adcm -type d -name "__pycache__" -exec chown -R adcm:adcm {} +
 
 # Hand only the runtime-writable paths to the non-root user; the enabled ssl vhost
 # is written to /adcm/data (see make_nginx_default_config).

@@ -45,6 +45,21 @@ def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, Object
     return {object_.pk: object_ for object_ in objects}
 
 
+# Temporary, while musl and glibc ansible environments coexist, see NOTES.md "Ansible environments per bundle contract"
+VENVS_WITH_MUSL_BUILD = frozenset(("2.21",))
+
+
+def get_venv_dir_name(venv: str, contract_version: str) -> str:
+    if venv not in VENVS_WITH_MUSL_BUILD:
+        return venv
+
+    major, minor, *_ = (int(part) for part in contract_version.split("."))
+    if (major, minor) >= (2, 2):
+        return venv
+
+    return f"{venv}-musl"
+
+
 def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
