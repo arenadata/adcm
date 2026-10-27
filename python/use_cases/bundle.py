@@ -57,6 +57,12 @@ class ParseBundleFromRequest:
 
                 with localize_error(f"Bundle from {archive.name}"):
                     root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=unpacking_info.root)
+                    # ADCM-8528: bundle existence must be checked before contract and min ADCM version checks.
+                    # Archive in downloads, bundle dir and hash are checked on unpacking;
+                    # name-version-edition is checked here, since it's only known from root entries.
+                    # Duplicates IntegrityError handling in `BundleRepo.save_definitions`, but relying on it
+                    # would mean validating contract and ADCM versions after saving definitions.
+                    self.bundle_service.check_bundle_not_uploaded(entries=root_entries)
                     parsing_meta, definitions = self.bundle_service.parse_to_definitions(
                         entries=root_entries, bundle_root=unpacking_info.root
                     )

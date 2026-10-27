@@ -1,6 +1,6 @@
 # group name "twin" is used on different levels
 - type: cluster
-  name: script_groups_cluster
+  name: script_groups_cluster_invalid
   version: "1"
   contract_version: "2.1"
   venv: "2.21"

@@ -20,6 +20,7 @@ from core.action.types import JobSpecV1
 from core.bundle import LicenseError, parsing
 from core.bundle._contract_version import check_contract_version_supported, is_contract_version_supported
 from core.bundle._definitions import DefinitionsMap, PrototypeMetaInfo
+from core.bundle._errors import BundleProcessingError
 from core.bundle._files import get_config_files
 from core.bundle._reader import read_root_entries_from_yaml_file
 from core.bundle._repo import BundleRepoI
@@ -92,6 +93,18 @@ class BundleService:
         config_files = get_config_files(bundle_root)
         root_entries = map(read_root_entries_from_yaml_file, config_files)
         return list(chain.from_iterable(root_entries))
+
+    def check_bundle_not_uploaded(self, entries: Collection[parsing.RootEntry]) -> None:
+        bundle_info = parsing.extract_bundle_info(entries)
+        if bundle_info is None:
+            return
+
+        existing = self.repo.find_existing_bundle_by_info(bundle_info)
+        if existing:
+            raise BundleProcessingError(
+                f"Bundle already exists. Name: {existing.name}, "
+                f"version: {existing.version}, edition: {existing.edition}",
+            )
 
     def parse_to_definitions(
         self,

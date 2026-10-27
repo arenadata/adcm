@@ -16,7 +16,12 @@
 # Import them explicitly at the point of use: `from core.bundle._parsing import v_2_1`.
 
 from core.bundle._contract_version import is_contract_version_supported
-from core.bundle._parsing.restrictions import check_adcm_min_version, extract_parsing_meta, pick_suitable_parser
+from core.bundle._parsing.restrictions import (
+    check_adcm_min_version,
+    extract_bundle_info,
+    extract_parsing_meta,
+    pick_suitable_parser,
+)
 from core.bundle._parsing.types import (
     BundleParser,
     BundleParsers,
@@ -32,6 +37,7 @@ __all__ = [
     "RootEntry",
     "VersionTag",
     "check_adcm_min_version",
+    "extract_bundle_info",
     "extract_parsing_meta",
     "is_contract_version_supported",
     "pick_suitable_parser",
