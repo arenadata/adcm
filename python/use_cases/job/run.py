@@ -296,7 +296,12 @@ class FinalizeTask:
                 #   Now since we read task after all jobs are finished, it __should__ work nicely,
                 #   but if it fails, investigate why.
                 if task_result == ExecutionStatus.SUCCESS and task.action.hc_acl:
-                    set_hostcomponent(task=task, cluster_service=self.cluster_service, logger=logger)
+                    set_hostcomponent(
+                        task=task,
+                        cluster_service=self.cluster_service,
+                        status_scenarios=self.status_scenarios,
+                        logger=logger,
+                    )
 
             if task.target:
                 update_object_maintenance_mode(

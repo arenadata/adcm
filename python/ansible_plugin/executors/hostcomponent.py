@@ -17,6 +17,7 @@ from typing import Any, Literal
 from cm.legacy.api import get_hc
 from cm.legacy.services.mapping import change_host_component_mapping
 from cm.models import Cluster, Component, Host, JobLog
+from cm.transition.status import StatusScenarios
 from core.action import TaskMappingDelta
 from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -132,6 +133,7 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
             cluster_id=cluster.id,
             bundle_id=cluster.prototype.bundle_id,
             cluster_service=self._container.get(ClusterService),
+            status_scenarios=self._container.get(StatusScenarios),
             mapping_delta=TaskMappingDelta(add=mapping_add, remove=mapping_remove),
         )
 

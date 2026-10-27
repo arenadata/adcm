@@ -34,6 +34,7 @@ from cm.models import (
     Provider,
     TaskLog,
 )
+from cm.transition.status import StatusScenarios
 from core.action import UNFINISHED_STATUSES, ExecutionStatus, TaskRunnerEnvironment
 from core.files.directories import ADCMBundleDir
 from core.secrets import Secret, SecretsBackend
@@ -120,7 +121,7 @@ def remove_orphan_and_local_locks():
     ).delete()
 
 
-def recheck_issues(config_service: core.config.ConfigService):
+def recheck_issues(config_service: core.config.ConfigService, status_scenarios: StatusScenarios):
     """
     Drop old issues and re-check from scratch
     Could slow down startup process
@@ -128,7 +129,7 @@ def recheck_issues(config_service: core.config.ConfigService):
     ConcernItem.objects.filter(type=ConcernType.ISSUE).delete()
     for model in [ADCM, Cluster, Provider]:
         for obj in model.objects.order_by("id"):
-            update_hierarchy_issues(obj, config_service=config_service)
+            update_hierarchy_issues(obj, config_service=config_service, status_scenarios=status_scenarios)
 
 
 def init(container: dishka.Container, adcm_conf_file: Path | None = None):
@@ -149,7 +150,10 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
 
     container.get(bundle.InitOrUpgradeADCM).do(alternative_adcm_dir=adcm_conf_file)
 
-    recheck_issues(config_service=container.get(core.config.ConfigService))
+    recheck_issues(
+        config_service=container.get(core.config.ConfigService),
+        status_scenarios=container.get(StatusScenarios),
+    )
 
     logger.info("ADCM DB is initialized")
 

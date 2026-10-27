@@ -46,7 +46,6 @@ from cm.legacy.services.concern import delete_issue
 from cm.legacy.services.concern.checks import object_configuration_has_issue
 from cm.legacy.services.concern.distribution import redistribute_issues_and_flags
 from cm.legacy.services.mapping import set_host_component_mapping
-from cm.legacy.services.status import notify
 from cm.legacy.services.transition.types import (
     ActionHostGroupInfo,
     BundleHash,
@@ -72,6 +71,7 @@ from cm.models import (
     Provider,
     Service,
 )
+from cm.transition.status import StatusScenarios
 
 # IMPORTANT
 #
@@ -104,6 +104,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
     with di_container() as container:
         config_service = container.get(core.config.ConfigService)
         rbac_scenarios = container.get(RBACScenarios)
+        status_scenarios = container.get(StatusScenarios)
         cluster_service = container.get(ClusterService)
 
         report("Host Providers discovery/creation")
@@ -119,6 +120,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
                 providers=missing_providers,
                 bundles=bundles,
                 config_service=config_service,
+                status_scenarios=status_scenarios,
                 cluster_service=cluster_service,
             )
 
@@ -128,6 +130,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
             providers=providers,
             config_service=config_service,
             rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
         )
 
         report("Cluster creation")
@@ -140,6 +143,7 @@ def load(data: TransitionPayload, report: Callable[[str], None] = print) -> Clus
             create_cluster_use_case=container.get(CreateCluster),
             add_services_use_case=container.get(CreateServicesFromPrototypes),
             rbac_scenarios=rbac_scenarios,
+            status_scenarios=status_scenarios,
             cluster_service=cluster_service,
         )
 
@@ -171,6 +175,7 @@ def create_new_providers(
     providers: Iterable[ProviderInfo],
     bundles: BundleHashIDMap,
     config_service: core.config.ConfigService,
+    status_scenarios: StatusScenarios,
     cluster_service: ClusterService,
 ) -> ProviderNameIDsMap:
     provider_protos: dict[BundleHash, Prototype] = {}
@@ -188,6 +193,7 @@ def create_new_providers(
             name=provider_info.name,
             description=provider_info.description,
             config_service=config_service,
+            status_scenarios=status_scenarios,
             cluster_service=cluster_service,
         )
         result[provider_info.name] = (new_provider.pk, bundle_id)
@@ -201,6 +207,7 @@ def create_new_hosts(
     providers: ProviderNameIDsMap,
     config_service: core.config.ConfigService,
     rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
 ) -> tuple[HostNameIDMap, HostsInMM]:
     result = {}
 
@@ -215,6 +222,7 @@ def create_new_hosts(
             cluster=None,
             rbac_scenarios=rbac_scenarios,
             config_service=config_service,
+            status_scenarios=status_scenarios,
         )
         result[host_info.name] = host.id
         _restore_state(target=host, condition=host_info.condition, config_service=config_service)
@@ -237,6 +245,7 @@ def create_cluster(
     config_service: core.config.ConfigService,
     ahg_service: ActionHostGroupService,
     rbac_scenarios: RBACScenarios,
+    status_scenarios: StatusScenarios,
     cluster_service: ClusterService,
 ) -> ClusterID:
     bundle_id = bundles[cluster.bundle]
@@ -264,7 +273,7 @@ def create_cluster(
     perform_host_to_cluster_map(
         cluster_id=cluster_object.id,
         hosts=hosts.values(),
-        status_service=notify,
+        status_scenarios=status_scenarios,
         rbac_scenarios=rbac_scenarios,
         cluster_service=cluster_service,
     )
@@ -321,7 +330,11 @@ def create_cluster(
             )
 
         set_host_component_mapping(
-            cluster_id=cluster_object.id, bundle_id=bundle_id, new_mapping=mapping, cluster_service=cluster_service
+            cluster_id=cluster_object.id,
+            bundle_id=bundle_id,
+            new_mapping=mapping,
+            cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
         )
 
     if services_in_mm:

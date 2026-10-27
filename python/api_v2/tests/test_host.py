@@ -15,7 +15,6 @@ import secrets
 
 from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.status import notify
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
@@ -843,7 +842,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             perform_host_to_cluster_map(
                 cluster_id=self.cluster_1.pk,
                 hosts=[host_duplicate_named_as_host_2.pk],
-                status_service=notify,
+                status_scenarios=self.uc.container.get(StatusScenarios),
                 rbac_scenarios=RBACScenarios(),
                 cluster_service=self.container.get(ClusterService),
             )
@@ -864,7 +863,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             perform_host_to_cluster_map(
                 cluster_id=self.cluster_2.pk,
                 hosts=[host_1.pk],
-                status_service=notify,
+                status_scenarios=self.uc.container.get(StatusScenarios),
                 rbac_scenarios=RBACScenarios(),
                 cluster_service=self.container.get(ClusterService),
             )

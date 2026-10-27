@@ -215,6 +215,7 @@ class ScenariosProvider(Provider):
 
     initialize_adcm = provide(InitializeADCMLegacy, provides=InitializeADCM)
     upgrade_adcm = provide(UpgradeADCMLegacy, provides=UpgradeADCM)
+
     status_scenarios = provide(StatusScenarios)
     status_scenarios_interface = alias(source=StatusScenarios, provides=StatusScenariosI)
     rbac_scenarios = provide(RBACScenarios)

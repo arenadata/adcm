@@ -51,6 +51,7 @@ from cm.legacy.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.legacy.services.job.run.audit import audit_task_finish
+from cm.transition.status import StatusScenarios
 
 NO_PROCESS_PID = 0
 
@@ -368,8 +369,12 @@ class JobSequenceRunner(TaskRunner):
             self._update_owner_state(task=finished_task, owner=owner, state_changes=state_changes)
 
         if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
-            cluster_service = self._container.get(ClusterService)
-            set_hostcomponent(task=finished_task, cluster_service=cluster_service, logger=self._logger)
+            set_hostcomponent(
+                task=finished_task,
+                cluster_service=self._container.get(ClusterService),
+                status_scenarios=self._container.get(StatusScenarios),
+                logger=self._logger,
+            )
 
     def _update_owner_state(self, task: Task, owner: CoreObjectDescriptor, state_changes: StateChanges) -> None:
         state = state_changes.state

@@ -19,6 +19,7 @@ from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.legacy.services.mapping import change_host_component_mapping_no_lock, check_nothing, lock_cluster_mapping
 from cm.models import Process, ProcessStep, Prototype
+from cm.transition.status import StatusScenarios
 from core.action import AssociatedProcess, HcAclRule, Task, TaskMappingDelta
 from core.action.types import HcApplyScript
 from core.cluster import ClusterService
@@ -32,6 +33,7 @@ from use_cases.internal_scripts.common import build_result_message
 @dataclass(slots=True)
 class HcApplyInternalScript:
     cluster_service: ClusterService
+    status_scenarios: StatusScenarios
 
     def do(self, task: Task, script: HcApplyScript, job_id: JobID) -> InternalScriptResult:
         _ = job_id
@@ -92,6 +94,7 @@ class HcApplyInternalScript:
                     bundle_id=bundle_id,
                     mapping_delta=delta_part,
                     cluster_service=self.cluster_service,
+                    status_scenarios=self.status_scenarios,
                     checks_func=check_nothing,
                 )
 

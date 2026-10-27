@@ -37,7 +37,6 @@ from cm.legacy.issue import (
 )
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.concern.checks import object_has_required_services_issue_orm_version, object_imports_has_issue
-from cm.legacy.services.status import notify
 from cm.models import (
     ADCMEntity,
     Bundle,
@@ -50,6 +49,7 @@ from cm.models import (
     Service,
 )
 from cm.tests.utils import gen_cluster, gen_job_log, gen_service, gen_task_log, generate_hierarchy
+from cm.transition.status import StatusScenarios
 
 mock_issue_check_map = {
     ConcernCause.CONFIG: lambda x: True,
@@ -74,7 +74,7 @@ class CreateIssueTest(GenericTestCase):
         """Test if new issue is propagated to all affected objects"""
 
         issue_type = ConcernCause.CONFIG
-        add_issue_on_linked_objects(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type, status_scenarios=self.uc.container.get(StatusScenarios))
         own_issue = self.cluster.get_own_issue(issue_type)
 
         self.assertIsNotNone(own_issue)
@@ -89,8 +89,10 @@ class CreateIssueTest(GenericTestCase):
         """Test if issue could not be added more than once"""
 
         issue_type = ConcernCause.CONFIG
-        add_issue_on_linked_objects(self.cluster, issue_type)
-        add_issue_on_linked_objects(self.cluster, issue_type)  # create twice
+        add_issue_on_linked_objects(self.cluster, issue_type, status_scenarios=self.uc.container.get(StatusScenarios))
+        add_issue_on_linked_objects(
+            self.cluster, issue_type, status_scenarios=self.uc.container.get(StatusScenarios)
+        )  # create twice
         for node in self.tree.get_directly_affected(self.tree.built_from):
             concerns = list(node.value.concerns.all())
 
@@ -101,8 +103,8 @@ class CreateIssueTest(GenericTestCase):
 
         issue_type_1 = ConcernCause.CONFIG
         issue_type_2 = ConcernCause.IMPORT
-        add_issue_on_linked_objects(self.cluster, issue_type_1)
-        add_issue_on_linked_objects(self.cluster, issue_type_2)
+        add_issue_on_linked_objects(self.cluster, issue_type_1, status_scenarios=self.uc.container.get(StatusScenarios))
+        add_issue_on_linked_objects(self.cluster, issue_type_2, status_scenarios=self.uc.container.get(StatusScenarios))
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
 
         self.assertIsNotNone(own_issue_1)
@@ -124,7 +126,7 @@ class CreateIssueTest(GenericTestCase):
         """Test if new object in hierarchy inherits existing issues"""
 
         issue_type = ConcernCause.CONFIG
-        add_issue_on_linked_objects(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type, status_scenarios=self.uc.container.get(StatusScenarios))
         cluster_issue = self.cluster.get_own_issue(issue_type)
         Service.objects.filter(cluster=self.cluster).delete()
         Prototype.objects.filter(bundle=self.cluster.prototype.bundle, type="service").update(required=True)
@@ -133,7 +135,11 @@ class CreateIssueTest(GenericTestCase):
 
         self.assertListEqual(list(new_service.concerns.all()), [])
 
-        update_hierarchy_issues(new_service, config_service=self.uc.container.get(ConfigService))
+        update_hierarchy_issues(
+            new_service,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         new_service_issues = [i.id for i in new_service.concerns.all()]
 
         self.assertIn(cluster_issue.id, new_service_issues)
@@ -142,7 +148,11 @@ class CreateIssueTest(GenericTestCase):
         service_prototype = Prototype.objects.create(
             type="service", bundle=self.cluster.prototype.bundle, required=True, name="required service"
         )
-        update_hierarchy_issues(obj=self.cluster, config_service=self.uc.container.get(ConfigService))
+        update_hierarchy_issues(
+            obj=self.cluster,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         cluster_issue = self.cluster.concerns.filter(cause=ConcernCause.SERVICE).first()
         self.assertEqual(cluster_issue.cause, ConcernCause.SERVICE)
         self.assertEqual(cluster_issue.reason["placeholder"]["target"]["name"], service_prototype.name)
@@ -195,7 +205,7 @@ class RemoveIssueTest(GenericTestCase):
 
     def test_single_issue(self):
         issue_type = ConcernCause.CONFIG
-        add_issue_on_linked_objects(self.cluster, issue_type)
+        add_issue_on_linked_objects(self.cluster, issue_type, status_scenarios=self.uc.container.get(StatusScenarios))
 
         remove_issue(self.cluster, issue_type)
 
@@ -209,8 +219,8 @@ class RemoveIssueTest(GenericTestCase):
     def test_few_issues(self):
         issue_type_1 = ConcernCause.CONFIG
         issue_type_2 = ConcernCause.IMPORT
-        add_issue_on_linked_objects(self.cluster, issue_type_1)
-        add_issue_on_linked_objects(self.cluster, issue_type_2)
+        add_issue_on_linked_objects(self.cluster, issue_type_1, status_scenarios=self.uc.container.get(StatusScenarios))
+        add_issue_on_linked_objects(self.cluster, issue_type_2, status_scenarios=self.uc.container.get(StatusScenarios))
 
         remove_issue(self.cluster, issue_type_1)
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
@@ -311,7 +321,11 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Not_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        recheck_issues(cluster1, config_service=self.uc.container.get(ConfigService))
+        recheck_issues(
+            cluster1,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
@@ -323,7 +337,11 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
-        recheck_issues(cluster1, config_service=self.uc.container.get(ConfigService))
+        recheck_issues(
+            cluster1,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         issue = cluster1.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)
@@ -337,7 +355,11 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Non_Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        recheck_issues(service, config_service=self.uc.container.get(ConfigService))
+        recheck_issues(
+            service,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNotNone(issue)
@@ -351,7 +373,11 @@ class TestImport(GenericTestCase):
         _, _, cluster2 = self.cook_cluster("Monitoring", "Cluster2")
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
-        recheck_issues(service, config_service=self.uc.container.get(ConfigService))
+        recheck_issues(
+            service,
+            config_service=self.uc.container.get(ConfigService),
+            status_scenarios=self.uc.container.get(StatusScenarios),
+        )
         issue = service.get_own_issue(ConcernCause.IMPORT)
 
         self.assertIsNone(issue)
@@ -369,7 +395,6 @@ class TestConcernsRedistribution(GenericTestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         super().setUpTestData()
-
         cls.hierarchy = generate_hierarchy(bind_to_cluster=False)
         cls.cluster = cls.hierarchy["cluster"]
         cls.service = cls.hierarchy["service"]
@@ -378,7 +403,9 @@ class TestConcernsRedistribution(GenericTestCase):
         cls.host = cls.hierarchy["host"]
 
         for object_ in cls.hierarchy.values():
-            add_issue_on_linked_objects(object_, ConcernCause.CONFIG)
+            add_issue_on_linked_objects(
+                object_, ConcernCause.CONFIG, status_scenarios=cls.uc.container.get(StatusScenarios)
+            )
             tree = Tree(object_)
             cls.add_lock(
                 owner=object_, affected_objects=map(attrgetter("value"), tree.get_all_affected(node=tree.built_from))
@@ -408,7 +435,11 @@ class TestConcernsRedistribution(GenericTestCase):
         lock = ConcernRepo().create(draft)
 
         for obj in affected_objects:
-            add_concern_to_object(object_=obj, concern=ConcernItem.objects.get(id=lock))
+            add_concern_to_object(
+                object_=obj,
+                concern=ConcernItem.objects.get(id=lock),
+                status_scenarios=cls.uc.container.get(StatusScenarios),
+            )
 
     def test_map_host_to_cluster(self) -> None:
         concerns_before = self.host.concerns.all()
@@ -422,7 +453,7 @@ class TestConcernsRedistribution(GenericTestCase):
             perform_host_to_cluster_map(
                 self.cluster.id,
                 [self.host.id],
-                status_service=notify,
+                status_scenarios=self.uc.container.get(StatusScenarios),
                 rbac_scenarios=RBACScenarios(),
                 cluster_service=self.uc.container.get(ClusterService),
             )
