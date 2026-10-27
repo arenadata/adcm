@@ -24,6 +24,7 @@ from cm.legacy.services.mapping import (
     lock_cluster_mapping,
 )
 from cm.models import Cluster, ObjectType, Prototype, Service
+from cm.transition.status import StatusScenarios
 from core.action import ServiceManageServiceEntry, Task, TaskMappingDelta, TaskOwner
 from core.action.types import ServiceManageScript
 from core.cluster import ClusterService
@@ -54,6 +55,7 @@ class ServiceManageInternalScript:
     update_configuration_from_job: UpdateConfigurationFromJob
     cluster_service: ClusterService
     config_repo: ConfigRepoI
+    status_scenarios: StatusScenarios
 
     def do(self, task: Task, script: ServiceManageScript, job_id: JobID) -> InternalScriptResult:
         owner, cluster_id, entries = _parse_service_manage_arguments(task=task, script=script)
@@ -113,6 +115,7 @@ class ServiceManageInternalScript:
                     bundle_id=bundle_id,
                     mapping_delta=mapping_delta,
                     cluster_service=self.cluster_service,
+                    status_scenarios=self.status_scenarios,
                     checks_func=check_for_action_mapping,
                 )
                 mapping_changed = True

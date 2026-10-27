@@ -126,7 +126,7 @@ class UseCases:
         perform_host_to_cluster_map(
             cluster_id=cluster.pk,
             hosts=[host.pk],
-            status_service=self.container.get(StatusScenarios),
+            status_scenarios=self.container.get(StatusScenarios),
             rbac_scenarios=self.container.get(RBACScenarios),
             cluster_service=self.container.get(ClusterService),
         )
@@ -154,6 +154,7 @@ class UseCases:
             bundle_id=cluster.bundle_id,
             new_mapping=(HostComponentEntry(host_id=host.pk, component_id=component.pk) for host, component in entries),
             cluster_service=self.container.get(ClusterService),
+            status_scenarios=self.container.get(StatusScenarios),
         )
         return list(HostComponent.objects.filter(cluster_id=cluster.pk))
 

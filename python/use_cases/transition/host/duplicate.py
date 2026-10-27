@@ -55,7 +55,7 @@ def create_duplicate(
                 cluster.perform_host_to_cluster_map(
                     cluster_id=cluster_id,
                     hosts=[duplicate.pk],
-                    status_service=status_scenarios,
+                    status_scenarios=status_scenarios,
                     rbac_scenarios=rbac_scenarios,
                     cluster_service=cluster_service,
                 )

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
 from contextlib import contextmanager
 from operator import itemgetter
 from pathlib import Path
@@ -21,7 +20,6 @@ from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.mapping import set_host_component_mapping
 from cm.models import (
     ADCM,
     Action,
@@ -32,7 +30,6 @@ from cm.models import (
     Cluster,
     Component,
     Host,
-    HostComponent,
     JobLog,
     JobStatus,
     Provider,
@@ -52,7 +49,6 @@ from core.action.job import (
 from core.action.job.errors import TaskCreateError
 from core.action.operations import to_rich_jobs
 from core.cluster import ClusterService
-from core.legacy.cluster.types import HostComponentEntry
 from core.legacy.rbac.dto import UserCreateDTO
 from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
@@ -106,7 +102,7 @@ class BusinessLogicMixin(BundleLogicMixin):
         perform_host_to_cluster_map(
             cluster_id=cluster.pk,
             hosts=[host.pk],
-            status_service=cls.uc.container.get(StatusScenarios),
+            status_scenarios=cls.uc.container.get(StatusScenarios),
             rbac_scenarios=cls.uc.container.get(RBACScenarios),
             cluster_service=cls.uc.container.get(ClusterService),
         )
@@ -116,15 +112,6 @@ class BusinessLogicMixin(BundleLogicMixin):
         host.refresh_from_db(fields=["cluster"])
 
         return host
-
-    @staticmethod
-    def set_hostcomponent(cluster: Cluster, entries: Iterable[tuple[Host, Component]]) -> list[HostComponent]:
-        set_host_component_mapping(
-            cluster_id=cluster.id,
-            bundle_id=cluster.bundle_id,
-            new_mapping=(HostComponentEntry(host_id=host.id, component_id=component.id) for host, component in entries),
-        )
-        return list(HostComponent.objects.filter(cluster_id=cluster.id))
 
     @staticmethod
     def get_non_existent_pk(model: type[ADCMEntity | ADCMModel | User | Role | Group | Policy]):

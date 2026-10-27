@@ -28,9 +28,8 @@ def create_host(
     cluster: Cluster | None,
     rbac_scenarios: RBACScenarios,
     config_service: core.config.ConfigService,
-    status_scenarios: StatusScenarios | None = None,
+    status_scenarios: StatusScenarios,
 ) -> Host:
-    status_scenarios = status_scenarios or StatusScenarios()
     host_prototype = Prototype.objects.get(type=ObjectType.HOST, bundle_id=bundle_id)
     check_license(prototype=host_prototype)
 

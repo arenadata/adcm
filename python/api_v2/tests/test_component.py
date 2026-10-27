@@ -15,6 +15,7 @@ from unittest.mock import patch
 from cm.legacy.issue import add_concern_to_object
 from cm.models import Action, Component, ConcernType, MaintenanceMode, TaskLog
 from cm.tests.utils import gen_concern_item
+from cm.transition.status import StatusScenarios
 from core.status import FullStatusMap
 from core.types import TaskID
 from rest_framework.status import HTTP_200_OK, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
@@ -51,9 +52,10 @@ class TestComponentAPI(ADCMDjangoAPISuite):
         concern_1 = gen_concern_item(ConcernType.LOCK, owner=self.cluster_1)
         concern_2 = gen_concern_item(ConcernType.ISSUE, owner=self.service_1)
         concern_3 = gen_concern_item(ConcernType.FLAG, owner=self.component_1)
-        add_concern_to_object(object_=self.component_1, concern=concern_1)
-        add_concern_to_object(object_=self.component_1, concern=concern_2)
-        add_concern_to_object(object_=self.component_1, concern=concern_3)
+        status_scenarios = self.container.get(StatusScenarios)
+        add_concern_to_object(object_=self.component_1, concern=concern_1, status_scenarios=status_scenarios)
+        add_concern_to_object(object_=self.component_1, concern=concern_2, status_scenarios=status_scenarios)
+        add_concern_to_object(object_=self.component_1, concern=concern_3, status_scenarios=status_scenarios)
 
         response = self.client.v2[self.component_1].get()
 

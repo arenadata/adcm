@@ -69,7 +69,7 @@ class TestAuthorizationAudit(ADCMDjangoAPISuite):
             ),
             new_password="newtestpassword",
             new_user_groups=None,
-            status_scenarios=SkipStatusScenarios(cluster_service=None),
+            status_scenarios=SkipStatusScenarios(cluster_service=None, concern_repo=None),
         )
 
         self.client.defaults["HTTP_AUTHORIZATION"] = f"Token {token}"

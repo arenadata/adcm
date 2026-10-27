@@ -15,6 +15,7 @@ from collections.abc import Collection, Generator, Iterable
 from typing import Protocol
 
 from core.cluster import ClusterService
+from core.concern.types import ConcernRelatedObjects
 from core.legacy.cluster.operations import (
     HostClusterDBProtocol,
     SearchConditions,
@@ -27,12 +28,19 @@ from core.legacy.cluster.types import (
     HostClusterPair,
     HostComponentEntry,
 )
-from core.types import ClusterID, HostID, MaintenanceModeOfObjects, MaintenanceModeState, ObjectMM, ShortObjectInfo
+from core.types import (
+    ClusterID,
+    ConcernID,
+    HostID,
+    MaintenanceModeOfObjects,
+    MaintenanceModeState,
+    ObjectMM,
+    ShortObjectInfo,
+)
 from django.db.models import F, Q
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 
-from cm.legacy.status_api import notify_about_new_concern
 from cm.models import Cluster, Component, Host, HostComponent, Service
 
 
@@ -113,14 +121,16 @@ class ClusterDB(HostClusterDBProtocol):
         return result
 
 
-class _StatusServerService(Protocol):
+class _StatusScenarios(Protocol):
     def reset_hc_map(self) -> None: ...
+
+    def notify_about_new_concern(self, concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None: ...
 
 
 def perform_host_to_cluster_map(
     cluster_id: int,
     hosts: Collection[int],
-    status_service: _StatusServerService,
+    status_scenarios: _StatusScenarios,
     rbac_scenarios: RBACScenarios,
     cluster_service: ClusterService,
 ) -> Collection[int]:
@@ -138,10 +148,10 @@ def perform_host_to_cluster_map(
         rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 
     # Update hc map in Status Server
-    status_service.reset_hc_map()
+    status_scenarios.reset_hc_map()
     # Send events
     if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+        status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     return hosts
 

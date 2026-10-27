@@ -29,6 +29,7 @@ from cm.models import (
     Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.transition.status import StatusScenarios
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -108,6 +109,9 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         )
 
     def bind_objects(self, *entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
+        status_scenarios = self.uc.container.get(StatusScenarios)
+        cluster_service = self.uc.container.get(ClusterService)
+
         for import_object, export_objects in entries:
             multibind_data: list[DataForMultiBind] = []
 
@@ -128,14 +132,16 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     cluster=import_object,
                     service=None,
                     bind_list=multibind_data,
-                    cluster_service=self.uc.container.get(ClusterService),
+                    status_scenarios=status_scenarios,
+                    cluster_service=cluster_service,
                 )
             else:
                 multi_bind(
                     cluster=import_object.cluster,
                     service=import_object,
                     bind_list=multibind_data,
-                    cluster_service=self.uc.container.get(ClusterService),
+                    status_scenarios=status_scenarios,
+                    cluster_service=cluster_service,
                 )
 
     def change_config_partial(self, target: ADCMModel) -> None:

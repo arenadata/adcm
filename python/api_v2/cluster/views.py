@@ -597,7 +597,14 @@ class ClusterViewSet(
         filter_backends=[],
     )
     @inject
-    def mapping(self, request: Request, *args, cluster_service: FromDishka[ClusterService], **kwargs) -> Response:  # noqa: ARG002
+    def mapping(
+        self,
+        request: Request,
+        *_,
+        cluster_service: FromDishka[ClusterService],
+        status_scenarios: FromDishka[StatusScenarios],
+        **__,
+    ) -> Response:
         cluster = self.get_object()
 
         check_custom_perm(
@@ -644,7 +651,11 @@ class ClusterViewSet(
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster.prototype_id)
 
         set_host_component_mapping(
-            cluster_id=cluster_id, bundle_id=bundle_id, new_mapping=new_mapping_entries, cluster_service=cluster_service
+            cluster_id=cluster_id,
+            bundle_id=bundle_id,
+            new_mapping=new_mapping_entries,
+            cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
         )
 
         return Response(
@@ -1002,7 +1013,7 @@ class HostClusterViewSet(
                 entry["host_id"]
                 for entry in (serializer.validated_data if multiple_hosts else [serializer.validated_data])
             ],
-            status_service=status_scenarios,
+            status_scenarios=status_scenarios,
             rbac_scenarios=rbac_scenarios,
             cluster_service=cluster_service,
         )
