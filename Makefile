@@ -55,7 +55,7 @@ unittests:
 
 test-integrations:
 	# `tests.integrations` has no `__init__.py`, so its test packages have to be pointed at directly
-	$(call run_tests,tests.integrations.celery)
+	$(call run_tests,tests.integrations.celery tests.integrations.locks)
 
 pretty:
 	$(call uv_sync,lint)
