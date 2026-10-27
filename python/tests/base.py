@@ -44,6 +44,7 @@ class WithPreparedFSAndInitADCM(django.test.SimpleTestCase, WithIndependentDirec
         super().setUpClass()
 
         cls._create_directories_on_fs()
+        cls._clean_directories()
 
         cls.base_dir = Path(__file__).parent.parent.parent
 

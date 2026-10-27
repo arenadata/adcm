@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from shutil import rmtree
 from typing import Any, Final, Literal, TypeVar
 import json
 import datetime
@@ -286,7 +287,16 @@ class ADCMDjangoAPISuiteNoBundles(
     def setUp(self) -> None:
         super().setUp()
 
+        self._remove_unregistered_bundle_dirs()
+
         self.client.login(username="admin", password="admin")
+
+    def _remove_unregistered_bundle_dirs(self) -> None:
+        # DB is rolled back after each test, but bundle dirs on FS aren't
+        registered_hashes = set(Bundle.objects.values_list("hash", flat=True))
+        for bundle_dir in self.directories.bundles.iterdir():
+            if bundle_dir.is_dir() and bundle_dir.name not in registered_hashes:
+                rmtree(bundle_dir)
 
 
 class ADCMDjangoAPISuite(ADCMDjangoAPISuiteNoBundles):

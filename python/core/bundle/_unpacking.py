@@ -53,17 +53,16 @@ def unpack_bundle(archive: Path, bundles_dir: Path, files_dir: Path, repo: Bundl
     bundle_hash = get_hash_safe(archive)
     info = BundleUnpackingInfo(hash=bundle_hash, root=bundles_dir / bundle_hash)
 
-    if info.root.is_dir():
-        existing = repo.find_existing_bundle(info.hash)
-        if existing:
-            raise BundleProcessingError(
-                f"Bundle already exists. Name: {existing.name}, "
-                f"version: {existing.version}, edition: {existing.edition}",
-            )
+    existing = repo.find_existing_bundle(info.hash)
+    if existing:
+        raise BundleProcessingError(
+            f"Bundle already exists. Name: {existing.name}, version: {existing.version}, edition: {existing.edition}",
+        )
 
-        logger.warning(
-            f"There is no bundle with hash {info.hash} in DB, "
-            "but there is a dir on disk with this hash. Dir will be overwritten.",
+    if info.root.is_dir():
+        raise BundleProcessingError(
+            f"Bundle already exists: bundle with the same content is found at {info.root}, "
+            "but it isn't registered in ADCM",
         )
 
     untar_safe(to=info.root, tar_from=archive)

@@ -24,7 +24,7 @@ from tests.suites import ADCMDjangoAPISuite
 
 class TestImport(ADCMDjangoAPISuite):
     def setUp(self) -> None:
-        self.client.login(username="admin", password="admin")
+        super().setUp()
 
         self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         self.test_user = self.uc.create_user(**self.test_user_credentials)
