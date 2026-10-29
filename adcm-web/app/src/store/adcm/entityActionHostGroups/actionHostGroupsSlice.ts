@@ -6,6 +6,7 @@ import { LoadState } from '@models/loadState';
 import type { AdcmActionHostGroup } from '@models/adcm/actionHostGroup';
 import type { GetActionHostGroupsActionPayload } from './actionHostGroups.types';
 import { services } from './actionHostGroupsSlice.constants';
+import { loadDynamicActions } from '@store/adcm/entityDynamicActions/dynamicActionsSlice';
 
 type AdcmActionHostGroupsState = {
   actionHostGroups: AdcmActionHostGroup[];
@@ -25,6 +26,13 @@ const loadActionHostGroupsFromBackend = createAsyncThunk(
       } = thunkAPI.getState();
 
       const batch = await service.getActionHostGroups({ ...entityArgs, filter, paginationParams });
+
+      // load actions with the same entityArgs as groups, groups from the store can belong to the previous entity
+      if (batch.results.length) {
+        const actionHostGroupIds = batch.results.map(({ id }) => id);
+        thunkAPI.dispatch(loadDynamicActions({ entityType, entityArgs, actionHostGroupIds }));
+      }
+
       return batch;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
