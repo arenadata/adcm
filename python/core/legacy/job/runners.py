@@ -23,6 +23,8 @@ from core.action.types import (
     AnsibleScript,
     ConfigApplyScript,
     HcApplyScript,
+    HostGroupManageScript,
+    HostManageScript,
     InternalScript,
     JobShortInfo,
     PythonScript,
@@ -115,7 +117,14 @@ class ExecutionTargetFactory:
                 return self.ansible(script=script, task=task, job=job.runtime, configuration=configuration)
             case PythonScript() as script:
                 return self.python(script=script, task=task, job=job.runtime, configuration=configuration)
-            case (SimpleInternalScript() | HcApplyScript() | ConfigApplyScript() | ServiceManageScript()) as script:
+            case (
+                SimpleInternalScript()
+                | HcApplyScript()
+                | ConfigApplyScript()
+                | ServiceManageScript()
+                | HostManageScript()
+                | HostGroupManageScript()
+            ) as script:
                 return self.internal(script=script, task=task, job=job.runtime, configuration=configuration)
             case _:
                 message = f"Can't convert job of type {job.spec.script.type}"
