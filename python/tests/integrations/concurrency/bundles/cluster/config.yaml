@@ -1,0 +1,72 @@
+# Jobs for branches called directly by tests (see `test_examples.py`): jobs aren't run,
+# they only give branches what they get at runtime (task, job's id and config).
+#
+# Environment scenarios expect:
+# - services `service_1` and `service_2` are added, `service_3` and `service_4` aren't;
+# - host `host-1` is added to the cluster (it's referenced by `adcm_hc` calls).
+
+- type: cluster
+  name: concurrency_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  config: &config
+    - name: first
+      type: string
+      required: false
+    - name: second
+      type: string
+      required: false
+
+  actions:
+    jobs_for_branches:
+      masking:
+      scripts: &jobs_for_branches
+        - name: first
+          script_type: ansible
+          script: ./noop.yaml
+        - name: second
+          script_type: ansible
+          script: ./noop.yaml
+
+    # for `hc_apply`, which applies mapping passed on action's run
+    jobs_for_branches_with_hc_acl:
+      masking:
+      hc_acl:
+        - service: service_1
+          component: component_1
+          action: add
+        - service: service_2
+          component: component_1
+          action: add
+      scripts: *jobs_for_branches
+
+- type: service
+  name: service_1
+  version: "1"
+  config: *config
+  components:
+    component_1:
+    component_2:
+
+- type: service
+  name: service_2
+  version: "1"
+  config: *config
+  components:
+    component_1:
+
+- type: service
+  name: service_3
+  version: "1"
+  config: *config
+  components:
+    component_1:
+
+- type: service
+  name: service_4
+  version: "1"
+  config: *config
+  components:
+    component_1:
