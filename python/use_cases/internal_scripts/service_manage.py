@@ -30,7 +30,8 @@ from core.cluster import ClusterService
 from core.config import ConfigRepoI
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.types import ADCMCoreType, BundleID, ClusterID, JobID, PrototypeID
+from core.locks import LockRepoI
+from core.types import ADCMCoreType, BundleID, ClusterID, Descriptor, JobID, PrototypeID
 from django.db.transaction import atomic
 
 from use_cases.internal_scripts.common import build_result_message
@@ -54,6 +55,7 @@ class ServiceManageInternalScript:
     update_configuration_from_job: UpdateConfigurationFromJob
     cluster_service: ClusterService
     config_repo: ConfigRepoI
+    lock_repo: LockRepoI
 
     def do(self, task: Task, script: ServiceManageScript, job_id: JobID) -> InternalScriptResult:
         owner, cluster_id, entries = _parse_service_manage_arguments(task=task, script=script)
@@ -63,6 +65,7 @@ class ServiceManageInternalScript:
         mapping_changed = False
 
         with atomic():
+            self.lock_repo.register_lock_on_object_waiting(target=Descriptor(id=cluster_id, type=ADCMCoreType.CLUSTER))
             # TODO: remove cast when `core.legacy.cluster.types.ClusterTopology`
             #  and `core.cluster._types.ClusterTopology` are united
             topology = cast(ClusterTopology, self.cluster_service.retrieve_topology(cluster_id=cluster_id))

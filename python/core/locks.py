@@ -12,13 +12,16 @@
 
 from typing import Protocol
 
-from core.types import ClusterDesc
+from core.types import Descriptor
 
 
 class LockRepoI(Protocol):
-    def register_lock_on_object_waiting(self, target: ClusterDesc) -> None:
+    def register_lock_on_object_waiting(self, target: Descriptor, *, aspect: str | None = None) -> None:
         """
         Take an exclusive lock on `target`.
         Releasing lock is out of scope.
+
+        To lock "whole object" leave `aspect=None`, otherwise specify.
+        Availability of specific target type and type-aspect pair is implementation specific.
         """
         ...
