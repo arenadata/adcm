@@ -82,11 +82,11 @@ const getNodeClassName = (
   isSelected: boolean,
   isBeforeFailedNode: boolean,
 ) => {
-  const isReadonly = (node.data as ConfigurationArray | ConfigurationObject | ConfigurationField).isReadonly;
+  const { isReadonly, isAdvanced } = node.data as ConfigurationArray | ConfigurationObject | ConfigurationField;
   const isDropPlaceholder = node.data.type === 'dropPlaceholder';
 
   return cn(s.collapseNode, {
-    [s.collapseNode_advanced]: !hasError && node.data.fieldSchema.adcmMeta?.isAdvanced,
+    [s.collapseNode_advanced]: !hasError && isAdvanced,
     [s.collapseNode_beforeFailed]: isBeforeFailedNode,
     [s.collapseNode_failed]: hasError,
     [s.collapseNode_disabled]: !hasError && isReadonly,
