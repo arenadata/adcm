@@ -1,18 +1,25 @@
-import {
-  type AdcmDynamicActionDetails,
-  AdcmHostComponentMapRuleAction,
-  type AdcmHostShortView,
-  AdcmMaintenanceMode,
-  type AdcmMappingComponent,
-  type AdcmMappingComponentService,
-  type HostId,
+import type {
+  AdcmDynamicActionDetails,
+  AdcmHostShortView,
+  AdcmMappingComponent,
+  AdcmMappingComponentService,
+  HostId,
 } from '@models/adcm';
+import { AdcmHostComponentMapRuleAction, AdcmMaintenanceMode } from '@models/adcm';
 import type { ComponentAvailabilityErrors, ServiceMapping } from '@pages/cluster/ClusterMapping/ClusterMapping.types';
 import { sortBy } from '@utils/arrayUtils.ts';
 import { componentsMappingSortByName } from '@pages/cluster/ClusterMapping/ClusterMapping.utils.ts';
+import {
+  ADD_NOT_ALLOWED,
+  HOST_MM,
+  MAPPING_NOT_ALLOWED,
+  REMOVE_NOT_ALLOWED,
+} from '@utils/mapping/componentHostRelations';
+
+type ActionDetailsWithMapRules = Pick<AdcmDynamicActionDetails, 'hostComponentMapRules'>;
 
 export const getComponentMapActions = (
-  actionDetails: AdcmDynamicActionDetails,
+  actionDetails: ActionDetailsWithMapRules,
   service: AdcmMappingComponentService,
   component: AdcmMappingComponent,
 ) => {
@@ -34,7 +41,7 @@ export const checkComponentActionsMappingAvailability = (
   const result: ComponentAvailabilityErrors = {};
 
   if (allowActions.size === 0) {
-    result.componentNotAvailableError = 'Mapping is not allowed in action configuration';
+    result.componentNotAvailableError = MAPPING_NOT_ALLOWED;
   }
 
   return result;
@@ -52,11 +59,11 @@ export const checkHostActionsMappingAvailability = (
   if (initiallyMappedHosts.has(host.id)) return undefined;
 
   if (!allowActions.has(AdcmHostComponentMapRuleAction.Add)) {
-    return 'Adding host is not allowed in the action configuration';
+    return ADD_NOT_ALLOWED;
   }
 
   if (host.maintenanceMode !== AdcmMaintenanceMode.Off) {
-    return 'Maintenance mode on the host must be Off';
+    return HOST_MM;
   }
 
   return undefined;
@@ -74,13 +81,13 @@ export const checkHostActionsUnmappingAvailability = (
   if (!initiallyMappedHosts.has(host.id)) return undefined;
 
   if (!allowActions.has(AdcmHostComponentMapRuleAction.Remove)) {
-    return 'Removing host is not allowed in the action configuration';
+    return REMOVE_NOT_ALLOWED;
   }
 
   return undefined;
 };
 
-const extendComponentsMapping = (serviceMapping: ServiceMapping[], actionDetails: AdcmDynamicActionDetails) => {
+const extendComponentsMapping = (serviceMapping: ServiceMapping[], actionDetails: ActionDetailsWithMapRules) => {
   return serviceMapping.flatMap(({ service, componentsMapping }) =>
     componentsMapping.map((componentMapping) => {
       const component = componentMapping.component;
@@ -96,7 +103,7 @@ const extendComponentsMapping = (serviceMapping: ServiceMapping[], actionDetails
 
 export const sortExtendedComponentsMapping = (
   serviceMapping: ServiceMapping[],
-  actionDetails: AdcmDynamicActionDetails,
+  actionDetails: ActionDetailsWithMapRules,
 ) => {
   const extendedMapping = extendComponentsMapping(serviceMapping, actionDetails);
 

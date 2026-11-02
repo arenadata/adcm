@@ -10,6 +10,7 @@ export interface ActionWizardMappingToolbarProps {
   onHostModeChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onFilterChange: (filter: Partial<MappingFilter>) => void;
   onSortDirectionChange: (sortDirection: SortDirection) => void;
+  forceShowHostsSwitch?: boolean;
 }
 
 const ActionWizardMappingToolbar = ({
@@ -19,6 +20,7 @@ const ActionWizardMappingToolbar = ({
   onHostModeChange,
   onFilterChange,
   // onSortDirectionChange,
+  forceShowHostsSwitch = false,
 }: ActionWizardMappingToolbarProps) => {
   const handleFilterHostsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({
@@ -59,8 +61,7 @@ const ActionWizardMappingToolbar = ({
           onChange={handleFilterComponentsChange}
           className={s.actionWizardMappingToolbar__searchInput}
         />
-        {false && (
-          /* hiding switcher temporarly */
+        {forceShowHostsSwitch && (
           <Switch
             className={s.hostsModeSwitch}
             size="small"

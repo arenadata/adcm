@@ -25,7 +25,11 @@
     "@constants": "<rootDir>/src/constants",
     "@store": "<rootDir>/src/store/",
     "@pages\/(.+)": "<rootDir>/src/components/pages/$1",
-    "@models\/adcm": "<rootDir>/src/models/adcm/index.ts",
-    "@utils\/(.+)": "<rootDir>/src/utils/$1"
+    "@models/adcm": "<rootDir>/src/models/adcm/index.ts",
+    "@models\/(.+)": "<rootDir>/src/models/$1",
+    "@utils\/(.+)": "<rootDir>/src/utils/$1",
+    "^@uikit/(.+)$": "<rootDir>/src/components/uikit/$1",
+    "^@uikit$": "<rootDir>/src/components/uikit/index.ts",
+    "@commonComponents\/(.+)": "<rootDir>/src/components/common/$1"
   }
 }
