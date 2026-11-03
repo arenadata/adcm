@@ -193,6 +193,9 @@ const getIsReadonly = (
   return fieldSchema.readOnly || parentNodeData.isReadonly;
 };
 
+const getIsAdvanced = (fieldSchema: SchemaDefinition, parentNode: ConfigurationNode) =>
+  Boolean(fieldSchema.adcmMeta?.isAdvanced) || parentNode.data.isAdvanced;
+
 const getNodeProps = (
   fieldName: string,
   fieldSchema: SchemaDefinition,
@@ -219,12 +222,14 @@ const getNodeProps = (
   const isCleanable = !isReadonly && isNullable;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
   const isDraggable = !isReadonly && isArrayItem;
+  const isAdvanced = getIsAdvanced(fieldSchema, parentNode);
 
   return {
     title,
     isArrayItem,
     isRequiredField,
     isReadonly,
+    isAdvanced,
     isCleanable,
     isDeletable,
     isDraggable,
@@ -282,6 +287,7 @@ const buildRootNode = (
       isNullable: false,
       isDeletable: false,
       isReadonly: isReadOnly,
+      isAdvanced: false,
       isCleanable: false,
       isDraggable: false,
       objectType: 'structure',
@@ -437,7 +443,7 @@ const buildObjectNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
+  const { title, isReadonly, isAdvanced, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -458,6 +464,7 @@ const buildObjectNode = (
       isCleanable,
       isDeletable,
       isReadonly,
+      isAdvanced,
       isDraggable,
       objectType: 'map',
       defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
@@ -497,7 +504,7 @@ const buildSelectableObjectNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
+  const { title, isReadonly, isAdvanced, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -520,6 +527,7 @@ const buildSelectableObjectNode = (
       isCleanable,
       isDeletable,
       isReadonly,
+      isAdvanced,
       isDraggable,
       defaultValue: getDefaultValue(fieldName, fieldSchema, parentNode.data.fieldSchema) as JSONObject,
       value: fieldValue,
@@ -603,7 +611,7 @@ const buildFieldNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
+  const { title, isReadonly, isAdvanced, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -626,6 +634,7 @@ const buildFieldNode = (
       isCleanable,
       isDeletable,
       isReadonly,
+      isAdvanced,
       isDraggable,
       fieldAttributes,
     },
@@ -691,7 +700,7 @@ const buildArrayNode = (
   const key = buildKey(path);
   const fieldAttributes = attributes[key];
 
-  const { title, isReadonly, isCleanable, isDeletable, isDraggable } = getNodeProps(
+  const { title, isReadonly, isAdvanced, isCleanable, isDeletable, isDraggable } = getNodeProps(
     fieldName,
     fieldSchema,
     isNullable,
@@ -710,6 +719,7 @@ const buildArrayNode = (
       fieldSchema,
       isNullable,
       isReadonly,
+      isAdvanced,
       isCleanable,
       isDeletable,
       isDraggable,
@@ -822,6 +832,7 @@ const buildUnknownNode = (
       isCleanable: false,
       isDeletable: false,
       isReadonly: true,
+      isAdvanced: getIsAdvanced(fieldSchema, parentNode),
       isDraggable: false,
     },
   };

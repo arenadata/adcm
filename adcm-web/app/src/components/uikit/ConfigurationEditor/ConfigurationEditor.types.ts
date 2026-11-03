@@ -18,6 +18,7 @@ export type ConfigurationField = {
   isDeletable: boolean;
   isCleanable: boolean;
   isReadonly: boolean;
+  isAdvanced: boolean;
   isDraggable: boolean;
 };
 
@@ -40,6 +41,7 @@ export type ConfigurationObject = {
   path: ConfigurationNodePath;
   isDeletable: boolean;
   isReadonly: boolean;
+  isAdvanced: boolean;
   isCleanable: boolean;
   objectType: 'map' | 'structure';
   defaultValue?: JSONObject;
@@ -59,6 +61,7 @@ export type ConfigurationSelectableObject = {
   path: ConfigurationNodePath;
   isDeletable: boolean;
   isReadonly: boolean;
+  isAdvanced: boolean;
   isCleanable: boolean;
   defaultValue?: JSONObject;
   value: JSONValue;
@@ -83,6 +86,7 @@ export type ConfigurationArray = {
   fieldAttributes?: FieldAttributes;
   path: ConfigurationNodePath;
   isReadonly: boolean;
+  isAdvanced: boolean;
   isDeletable: boolean;
   isCleanable: boolean;
   defaultValue?: JSONPrimitive;
