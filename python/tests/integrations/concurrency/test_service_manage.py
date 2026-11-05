@@ -12,6 +12,7 @@
 
 
 from cm.models import Action, Service
+from core.action.job import LaunchOptions
 from core.action.types import (
     ScriptType,
     ServiceManageScript,
@@ -20,7 +21,6 @@ from core.action.types import (
 )
 from django.test import tag
 from pydantic import TypeAdapter
-from tests.deprecated import LaunchOptions
 from tests.integrations.concurrency.base import HOST_FQDN_1, HOST_FQDN_2, ConcurrencyBasicTestCase
 from tests.integrations.concurrency.parallel import SyncedCall, run_concurrently
 from tests.integrations.concurrency.utils import internal_script, prepare_script_group

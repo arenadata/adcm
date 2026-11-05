@@ -13,10 +13,10 @@
 
 from ansible_plugin.executors.hostcomponent import ADCMHostComponentPluginExecutor
 from cm.models import Action, Component
+from core.action.job import LaunchOptions
 from core.action.types import HcAclRule, HcApplyScript, HcApplyScriptParams, ScriptType
 from core.legacy.cluster.types import HostComponentEntry
 from django.test import tag
-from tests.deprecated import LaunchOptions
 from tests.integrations.concurrency.base import HOST_FQDN_1, HOST_FQDN_2, ConcurrencyBasicTestCase
 from tests.integrations.concurrency.parallel import SyncedCall, run_concurrently
 from tests.integrations.concurrency.utils import internal_script, plugin, prepare_script_group
