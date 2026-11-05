@@ -79,12 +79,12 @@ def plugin(executor_type: type[ADCMAnsiblePluginExecutor], arguments: dict) -> B
             runtime_vars = prepare_plugin_runtime_vars(job=job, container=scope)
 
         def call_plugin() -> Any:
-            start_branch()
-
             with container() as scope:
                 executor = prepare_plugin_executor(
                     executor_type=executor_type, call_arguments=arguments, call_context=runtime_vars, container=scope
                 )
+
+                start_branch()
                 result = executor.execute()
 
             if result.error is not None:
@@ -102,9 +102,8 @@ def internal_script(script_type: type[InternalScriptRunner[ScriptT]], script: Sc
 
     def prepare(task: Task, job: RichJob, container: dishka.Container) -> BranchCall:
         def call_internal_script() -> InternalScriptResult:
-            start_branch()
-
             with container() as scope, atomic():
+                start_branch()
                 result = scope.get(script_type).do(task=task, script=script, job_id=job.runtime.id)
 
             if result.code != 0:

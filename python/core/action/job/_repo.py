@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Collection, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol, TypeAlias
@@ -239,14 +239,6 @@ class JobRepoI(Protocol):
 
     def update_job(self, id: int, data: JobUpdateDTO) -> None:  # noqa: A002
         ...
-
-    # NEED REVIEW, maybe belongs to service layer + separate repo for objects
-    def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None: ...
-
-    # NEED REVIEW, maybe belongs to service layer + separate repo for objects
-    def update_owner_multi_states(
-        self, owner: CoreObjectDescriptor, add_multi_states: Collection[str], remove_multi_states: Collection[str]
-    ) -> None: ...
 
     # misc
 
