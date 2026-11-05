@@ -16,6 +16,7 @@ from operator import itemgetter
 from pathlib import Path
 import tarfile
 
+from api_v2.generic.action.views import ScheduleTask
 from cm.converters import orm_object_to_core_descriptor
 from cm.impl.config.convert import convert_attr_to_adcm_meta
 from cm.legacy.services.action_host_group import ActionHostGroupRepo, ActionHostGroupService, CreateDTO
@@ -23,6 +24,7 @@ from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.legacy.services.mapping import set_host_component_mapping
 from cm.legacy.utils import deep_merge
 from cm.models import (
+    Action,
     ActionHostGroup,
     Bundle,
     Cluster,
@@ -36,6 +38,7 @@ from cm.models import (
     Prototype,
     Provider,
     Service,
+    TaskLog,
 )
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
@@ -52,9 +55,11 @@ from rbac.scenarios import RBACScenarios
 from rbac.services.group import create as create_group
 from rbac.services.user import perform_user_creation
 from use_cases.bundle import AcceptLicense, ParseBundleFromRequest
+from use_cases.dto import RunActionDTO
 from use_cases.transition.cluster.create import CreateCluster, CreateServicesFromPrototypes
 from use_cases.transition.config import UpdateConfigurationOfHostGroup, UpdateConfigurationOfObject
 from use_cases.transition.hostprovider.create import CreateHost, CreateHostprovider
+from use_cases.transition.job.schedule import ActionTarget
 import dishka
 
 
@@ -278,6 +283,10 @@ class UseCases:
             accept_license.do(prototype=prototype)
 
         prototype.refresh_from_db(fields=["license"])
+
+    def schedule_task(self, action: Action, target: ActionTarget, payload: RunActionDTO) -> TaskLog:
+        with self.container() as container:
+            return container.get(ScheduleTask).do(action_orm=action, target=target, payload=payload)
 
 
 # Utilities
