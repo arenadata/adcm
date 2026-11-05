@@ -19,8 +19,6 @@ from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
-    update_task_flag_concern,
-    update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run.audit import audit_task_finish
@@ -92,7 +90,7 @@ class StartTask:
         jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
         first_job = jobs_by_key[first_key]
 
-        self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
+        self.concern_scenarios.create_job_concern(task=task, first_job=first_job, execution_plan=plan)
 
         return self.process_starter.start(
             task_id=task_id, code_dir=self.directories.code, log_dir=self.directories.logs
@@ -123,6 +121,7 @@ class SetTaskToRunning:
 @dataclass(slots=True)
 class RunJob:
     repo: JobRepoI
+    concern_scenarios: ConcernScenarios
     target_factory: ExecutionTargetFactory
     cluster_service: ClusterService
     config_service: ConfigService
@@ -170,12 +169,7 @@ class RunJob:
             )
             self.repo.update_job(id=job_id, data=to_update)
 
-            # it's enough to detect the function once (as the delete one),
-            # but implementation of such a thing is better be done with thoughfull concerns refactoring
-            if task.is_blocking:
-                update_task_lock_concern(job_id=job_id)
-            else:
-                update_task_flag_concern(job_id=job_id)
+            self.concern_scenarios.update_job_concern(task=task, job=job, execution_plan=plan)
 
         result = executor.wait_finished().result
 

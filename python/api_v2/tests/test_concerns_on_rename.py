@@ -142,7 +142,9 @@ class TestConcernsOnRename(GenericTestCase):
         plan = job_repo.get_execution_plan(task_id=task_orm.pk)
         job = next(iter(job_repo.find_jobs_short(JobShortFilter(ids=[job_orm.pk]))))
         concern_id = self.container.get(ConcernScenarios).create_job_concern(
-            task=job_repo.get_task(id=task_orm.pk), first_job=to_rich_job(spec=plan, job=job)
+            task=job_repo.get_task(id=task_orm.pk),
+            first_job=to_rich_job(spec=plan, job=job),
+            execution_plan=plan,
         )
 
         return ConcernItem.objects.get(id=concern_id)

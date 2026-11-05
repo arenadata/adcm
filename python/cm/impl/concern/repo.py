@@ -22,12 +22,12 @@ from core.concern.types import (
     ConcernRelatedObjects,
     ConcernType,
 )
-from core.types import ADCMCoreType, ClusterDesc, ConcernID, CoreObjectDescriptor, HostDesc
+from core.types import ADCMCoreType, ClusterDesc, ConcernID, CoreObjectDescriptor, HostDesc, TaskID
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 
 from cm.converters import core_type_to_model, model_name_to_core_type
-from cm.models import ConcernItem
+from cm.models import ConcernItem, TaskLog
 
 # Name of an object may be stored only in the placeholder describing concern's own owner:
 # all the other placeholders point at a prototype, an action or a job,
@@ -46,6 +46,14 @@ WHERE concern.owner_id = %(owner_id)s
   AND concern.owner_type_id = %(owner_type_id)s
   AND concern.reason -> 'placeholder' -> {_OWNER_PLACEHOLDER} ->> 'name' = %(previous_name)s
 RETURNING concern.id
+"""  # noqa: S608
+
+# Update only when the stored job name differs from the new name
+_UPDATE_JOB_CONCERN_NAME: Final = f"""
+UPDATE {ConcernItem._meta.db_table}
+SET reason = jsonb_set(reason, '{{placeholder,job,name}}', to_jsonb(%(name)s::text))
+WHERE id = %(concern_id)s
+  AND reason -> 'placeholder' -> 'job' ->> 'name' IS DISTINCT FROM %(name)s
 """  # noqa: S608
 
 
@@ -129,3 +137,29 @@ class ConcernRepo(ConcernRepoI):
             )
             for concern in concerns
         )
+
+    def find_concern_id(
+        self, *, owner: CoreObjectDescriptor, name: str, concern_type: ConcernType, cause: ConcernCause | None
+    ) -> ConcernID | None:
+        owner_model = core_type_to_model(core_type=owner.type)
+        return (
+            ConcernItem.objects.filter(
+                type=concern_type.value,
+                cause=cause.value if cause is not None else None,
+                name=name,
+                owner_id=owner.id,
+                owner_type=ContentType.objects.get_for_model(owner_model),
+            )
+            .values_list("id", flat=True)
+            .first()
+        )
+
+    def update_job_concern_name(self, concern_id: ConcernID, name: str) -> None:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                _UPDATE_JOB_CONCERN_NAME,
+                {"concern_id": concern_id, "name": name},
+            )
+
+    def get_lock_concern_id_from_task(self, task_id: TaskID) -> ConcernID | None:
+        return TaskLog.objects.filter(id=task_id).values_list("lock_id", flat=True).first()
