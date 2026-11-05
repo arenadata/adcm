@@ -333,7 +333,7 @@ def schedule_task(
     jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
     first_job = jobs_by_key[first_key]
 
-    concern_scenarios.create_job_concern(task=task, first_job=first_job)
+    concern_scenarios.create_job_concern(task=task, first_job=first_job, execution_plan=plan)
 
     launcher_logger.info(f"Task #{task_id} scheduled to {env_type} queuer")
 

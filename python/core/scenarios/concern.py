@@ -16,16 +16,18 @@ from typing import cast
 
 from core.action import Task
 from core.action.job import JobRepoI, TaskUpdateDTO
-from core.action.types import RichJob
+from core.action.job.operations import is_job_in_parallel_group
+from core.action.types import JobSpecV1, RichJob
 from core.cluster import ClusterService, ClusterTopology
 from core.concern.operations import (
+    build_flag_name,
     build_id_chain,
     build_task_concern,
     detect_concern_distribution,
     detect_hosts_concern_distribution,
 )
 from core.concern.repo import ConcernRepoI
-from core.concern.types import ConcernRelatedObjects, ConcernTarget, ConcernType
+from core.concern.types import ConcernCause, ConcernRelatedObjects, ConcernTarget, ConcernType
 from core.provider import ProviderService
 from core.scenarios.status import StatusScenariosI
 from core.types import (
@@ -140,28 +142,9 @@ class ConcernScenarios:
     status_scenarios: StatusScenariosI
     concern_distribution: ConcernDistributionScenarios
 
-    def create_job_concern(self, *, task: Task, first_job: RichJob) -> ConcernID:
-        if task.target is None:
-            message = f"Task #{task.id} has no target, can't create concern"
-            raise RuntimeError(message)
-
-        if isinstance(task.target.type, ExtraActionTargetType):
-            # action host groups aren't real concern owners — the object the group (and its action) belongs to
-            # is the task's owner, no extra lookup needed
-            if task.owner is None:
-                message = f"Task #{task.id} targets an action host group but has no owner, can't create concern"
-                raise RuntimeError(message)
-
-            owner = task.owner
-        else:
-            owner = task.target
-
-        # `owner.type` is always `ADCMCoreType`: `task.owner.type` is declared as such, and `task.target.type`
-        # is narrowed by the `isinstance` check above in the `else` branch
-        target = ConcernTarget(
-            id=owner.id, type=cast(ADCMCoreType, owner.type), name=owner.name, id_chain=build_id_chain(task.selector)
-        )
-        draft = build_task_concern(task=task, job=first_job, target=target)
+    def create_job_concern(self, *, task: Task, first_job: RichJob, execution_plan: JobSpecV1) -> ConcernID:
+        target = self._task_target(task)
+        draft = build_task_concern(task=task, job=first_job, target=target, execution_plan=execution_plan)
 
         # `task.owner` already carries the cluster the task is running against (`None` for a host that isn't
         # linked to one) via `related_objects`, straight from the DB — covers CLUSTER/SERVICE/COMPONENT owners
@@ -184,3 +167,45 @@ class ConcernScenarios:
         self.status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
         return concern_id
+
+    def update_job_concern(self, *, task: Task, job: RichJob, execution_plan: JobSpecV1) -> None:
+        target = self._task_target(task)
+
+        if task.is_blocking:
+            concern_id = self.concern_repo.get_lock_concern_id_from_task(task_id=task.id)
+        else:
+            concern_id = self.concern_repo.find_concern_id(
+                owner=target.as_descriptor,
+                name=build_flag_name(task.name),
+                concern_type=ConcernType.FLAG,
+                cause=ConcernCause.JOB,
+            )
+
+        if concern_id is None:
+            return
+
+        is_parallel = is_job_in_parallel_group(spec_key=job.runtime.spec_key, plan=execution_plan)
+        job_name = task.display_name if is_parallel else job.spec.names.display
+        # the repo query skips the update if the stored job name already matches
+        self.concern_repo.update_job_concern_name(
+            concern_id=concern_id,
+            name=job_name,
+        )
+
+    def _task_target(self, task: Task) -> ConcernTarget:
+        if task.target is None:
+            message = f"Task #{task.id} has no target, can't create concern"
+            raise RuntimeError(message)
+
+        if isinstance(task.target.type, ExtraActionTargetType):
+            if task.owner is None:
+                message = f"Task #{task.id} targets an action host group but has no owner, can't create concern"
+                raise RuntimeError(message)
+            owner = task.owner
+        else:
+            owner = task.target
+        # `owner.type` is always `ADCMCoreType`: `task.owner.type` is declared as such, and `task.target.type`
+        # is narrowed by the `isinstance` check above in the `else` branch
+        return ConcernTarget(
+            id=owner.id, type=cast(ADCMCoreType, owner.type), name=owner.name, id_chain=build_id_chain(task.selector)
+        )

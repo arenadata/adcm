@@ -520,7 +520,7 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        self.assertEqual(len(response.data), 7)
 
         self.client.login(**test_user_credentials)
         response = self.client.v2[cluster_as_cluster_one, "actions"].get()

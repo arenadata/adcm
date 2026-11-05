@@ -31,6 +31,7 @@ from core.legacy.job.runners import (
     TaskRunner,
 )
 from core.result import Fail
+from core.scenarios.concern import ConcernScenarios
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -42,8 +43,6 @@ from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
-    update_task_flag_concern,
-    update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run._task_finalizers import (
@@ -133,7 +132,7 @@ class JobSequenceRunner(TaskRunner):
 
     def run(self, task_id: int):
         with self._container():
-            task, configured_jobs = self._configure(task_id=task_id)
+            task, execution_plan, configured_jobs = self._configure(task_id=task_id)
             self._start(task_id=task_id)
 
             for job, target in configured_jobs:
@@ -144,7 +143,7 @@ class JobSequenceRunner(TaskRunner):
                 task = self._get_updated_task(task=task)
                 self._prepare_job_environment(task=task, job=job, target=target)
 
-                job_result = self._execute_job(task=task, job=job, target=target)
+                job_result = self._execute_job(task=task, job=job, target=target, execution_plan=execution_plan)
 
                 if not self._should_proceed(last_job_result=job_result):
                     break
@@ -175,7 +174,7 @@ class JobSequenceRunner(TaskRunner):
 
             self._finish(task=task, state_changes=state_changes)
 
-    def _configure(self, task_id: int) -> tuple[Task, tuple[tuple[RichJob, ExecutionTarget], ...]]:
+    def _configure(self, task_id: int) -> tuple[Task, JobSpecV1, tuple[tuple[RichJob, ExecutionTarget], ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
 
         task = self._repo.get_task(id=task_id)
@@ -184,13 +183,13 @@ class JobSequenceRunner(TaskRunner):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
-        _, jobs_in_order = self._get_plan_with_jobs_in_order(task_id=task_id)
+        execution_plan, jobs_in_order = self._get_plan_with_jobs_in_order(task_id=task_id)
 
         configured_jobs = tuple(
             (job, self._target_factory(task=task, job=job, configuration=self._settings)) for job in jobs_in_order
         )
 
-        return task, configured_jobs
+        return task, execution_plan, configured_jobs
 
     def _get_plan_with_jobs_in_order(self, task_id: int) -> tuple[JobSpecV1, tuple[RichJob, ...]]:
         plan = self._repo.get_execution_plan(task_id=task_id)
@@ -238,7 +237,9 @@ class JobSequenceRunner(TaskRunner):
                 config_service=config_service,
             )
 
-    def _execute_job(self, task: Task, job: RichJob, target: ExecutionTarget) -> ExecutionStatus:
+    def _execute_job(
+        self, task: Task, job: RichJob, target: ExecutionTarget, execution_plan: JobSpecV1
+    ) -> ExecutionStatus:
         if task.owner:
             create_related_configs(
                 job_id=job.runtime.id, owner=task.owner, config_repo=self._container.get(ConfigRepoI)
@@ -258,12 +259,7 @@ class JobSequenceRunner(TaskRunner):
             ),
         )
 
-        # it's enough to detect the function once (as the delete one),
-        # but implementation of such a thing is better be done with thoughfull concerns refactoring
-        if task.is_blocking:
-            update_task_lock_concern(job_id=job.runtime.id)
-        else:
-            update_task_flag_concern(job_id=job.runtime.id)
+        self._container.get(ConcernScenarios).update_job_concern(task=task, job=job, execution_plan=execution_plan)
 
         result = target.executor.wait_finished().result
         # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,

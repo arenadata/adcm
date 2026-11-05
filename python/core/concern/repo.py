@@ -13,8 +13,8 @@
 from collections.abc import Collection
 from typing import Protocol, TypeAlias
 
-from core.concern.types import ConcernDraft, ConcernInfo, ConcernRelatedObjects
-from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc, ObjectID
+from core.concern.types import ConcernCause, ConcernDraft, ConcernInfo, ConcernRelatedObjects, ConcernType
+from core.types import ADCMCoreType, ClusterDesc, ConcernID, CoreObjectDescriptor, HostDesc, ObjectID, TaskID
 
 # concerns of an owner grouped by objects those concerns are shown on
 ConcernDistribution: TypeAlias = dict[ADCMCoreType, dict[ObjectID, set[ConcernID]]]
@@ -51,3 +51,19 @@ class ConcernRepoI(Protocol):
         ...
 
     def get_concerns_info(self, concern_ids: Collection[ConcernID]) -> tuple[ConcernInfo, ...]: ...
+
+    def find_concern_id(
+        self, *, owner: CoreObjectDescriptor, name: str, concern_type: ConcernType, cause: ConcernCause | None
+    ) -> ConcernID | None:
+        """
+        Find a concern ID by its owner, name, type, and cause.
+        """
+        ...
+
+    def update_job_concern_name(self, concern_id: ConcernID, name: str) -> None:
+        """Update the job name"""
+        ...
+
+    def get_lock_concern_id_from_task(self, task_id: TaskID) -> ConcernID | None:
+        """Return the concern id stored on a task."""
+        ...

@@ -53,6 +53,68 @@
         - name: action
           script: ./playbook.yaml
           script_type: ansible
+    concern_sequential_plan:
+      display_name: Concern sequential plan
+      states: *id001
+      scripts:
+        - name: sequential_first
+          display_name: Sequential first
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: sequential_second
+          display_name: Sequential second
+          script: ./playbook.yaml
+          script_type: ansible
+    concern_mixed_plan:
+      display_name: Concern mixed plan
+      states: *id001
+      scripts:
+        - name: before_parallel
+          display_name: Before parallel
+          script: ./playbook.yaml
+          script_type: ansible
+        - group: parallel
+          name: parallel_jobs
+          scripts:
+            - name: parallel_first
+              display_name: Parallel first
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_second
+              display_name: Parallel second
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_third
+              display_name: Parallel third
+              script: ./playbook.yaml
+              script_type: ansible
+        - name: after_parallel
+          display_name: After parallel
+          script: ./playbook.yaml
+          script_type: ansible
+    concern_parallel_first_plan:
+      display_name: Concern parallel first plan
+      states: *id001
+      scripts:
+        - group: parallel
+          name: parallel_jobs
+          scripts:
+            - name: parallel_first
+              display_name: Parallel first
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_second
+              display_name: Parallel second
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_third
+              display_name: Parallel third
+              script: ./playbook.yaml
+              script_type: ansible
+        - name: after_parallel
+          display_name: After parallel
+          script: ./playbook.yaml
+          script_type: ansible
     with_config:
       description: Action with configuration parameters
       config:

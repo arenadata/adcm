@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from collections.abc import Iterable
+from itertools import product
 from pathlib import Path
+from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
 from cm.legacy.services.concern import create_issue
@@ -41,7 +43,9 @@ from cm.models import (
 from core.cluster import ClusterService
 from core.concern.repo import ConcernRepoI
 from core.concern.types import ConcernType as CoreConcernType
-from core.scenarios.concern import ConcernDistributionScenarios
+from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
+from core.spec.keys import is_part_of_group, to_full_key
+from core.spec.types import FullSpecKey
 from core.tools import convert_keys_to_camel_case
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from core.types import MaintenanceModeState as MM  # noqa: N814
@@ -56,6 +60,34 @@ from rest_framework.status import (
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
 from unittest_parametrize import param, parametrize
+
+PARALLEL_CONCERN_ACTION_CASES = (
+    param(
+        "concern_parallel_first_plan",
+        "Concern parallel first plan",
+        [
+            "Concern parallel first plan",
+            "Concern parallel first plan",
+            "Concern parallel first plan",
+            "After parallel",
+        ],
+        True,
+        id="parallel",
+    ),
+    param(
+        "concern_mixed_plan",
+        "Before parallel",
+        [
+            "Before parallel",
+            "Concern mixed plan",
+            "Concern mixed plan",
+            "Concern mixed plan",
+            "After parallel",
+        ],
+        False,
+        id="mixed",
+    ),
+)
 
 
 class TestConcernsResponse(ADCMDjangoAPISuite):
@@ -115,6 +147,42 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         )
 
         self.assertDictEqual(concern, converted_concern)
+
+    def run_action_and_get_task_concern(self, action: Action, blocking: bool) -> tuple[TaskLog, ConcernItem]:
+        response = self.client.v2[self.cluster_1, "actions", action, "run"].post(data={"shouldBlockObject": blocking})
+        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
+
+        task = TaskLog.objects.get(id=response.json()["id"])
+        self.task_runner().schedule_task(task.pk)
+        concern = self.cluster_1.concerns.get(cause=ConcernCause.JOB)
+
+        return task, concern
+
+    def run_task_and_collect_concern_reasons(
+        self, task: TaskLog, concern: ConcernItem
+    ) -> list[tuple[FullSpecKey, dict]]:
+        """
+        Run the task and capture its concern reason after each job starts
+        """
+
+        snapshots = []
+        update_concern = self.container.get(ConcernScenarios).update_job_concern
+
+        def update_concern_and_capture_reason(_scenarios, *, task, job, execution_plan) -> None:
+            """
+            Update the concern for a started job and capture its reason
+            """
+
+            update_concern(task=task, job=job, execution_plan=execution_plan)
+            concern.refresh_from_db()
+            snapshots.append((job.runtime.spec_key, concern.reason))
+
+        with patch.object(
+            ConcernScenarios, "update_job_concern", autospec=True, side_effect=update_concern_and_capture_reason
+        ):
+            self.task_runner().launch_task(task.pk)
+
+        return snapshots
 
     def test_required_service_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
@@ -584,6 +652,72 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
+    @parametrize("blocking", [True, False], ids=["lock_concern", "flag_concern"])
+    def test_concern_reason_in_sequential_execution_plan(self, blocking: bool) -> None:
+        action = Action.objects.get(prototype=self.cluster_1.prototype, name="concern_sequential_plan")
+        task, concern = self.run_action_and_get_task_concern(action, blocking=blocking)
+
+        expected_type = ConcernType.LOCK if blocking else ConcernType.FLAG
+        self.assertEqual(concern.type, expected_type)
+        self.assertEqual(concern.reason["placeholder"]["job"]["name"], "Sequential first")
+
+        snapshots = self.run_task_and_collect_concern_reasons(task, concern)
+
+        actual_job_names = [reason["placeholder"]["job"]["name"] for _, reason in snapshots]
+        expected_job_names = ["Sequential first", "Sequential second"]
+        self.assertListEqual(actual_job_names, expected_job_names)
+
+    @parametrize(
+        (
+            "action_name",
+            "expected_initial_name",
+            "expected_plan_job_names",
+            "check_initial_reason_unchanged",
+            "blocking",
+        ),
+        [
+            param(
+                *action_case.args,
+                blocking,
+                id=f"{action_case.id}_{'lock_concern' if blocking else 'flag_concern'}",
+            )
+            for action_case, blocking in product(PARALLEL_CONCERN_ACTION_CASES, (True, False))
+        ],
+    )
+    def test_concern_reason_in_parallel_execution_plan(
+        self,
+        blocking: bool,
+        action_name: str,
+        expected_initial_name: str,
+        expected_plan_job_names: list[str],
+        check_initial_reason_unchanged: bool,
+    ) -> None:
+        parallel_group_spec_key = to_full_key("/parallel_jobs")
+        action = Action.objects.get(prototype=self.cluster_1.prototype, name=action_name)
+        expected_concern_type = ConcernType.LOCK if blocking else ConcernType.FLAG
+        task, concern = self.run_action_and_get_task_concern(action, blocking=blocking)
+        initial_reason = concern.reason
+
+        # Blocking tasks create a lock, non-blocking tasks create a flag
+        self.assertEqual(concern.type, expected_concern_type)
+        # The initial reason names the first job, or the task when the plan starts in parallel
+        self.assertEqual(initial_reason["placeholder"]["job"]["name"], expected_initial_name)
+
+        snapshots = self.run_task_and_collect_concern_reasons(task, concern)
+
+        parallel_reasons = [
+            reason for key, reason in snapshots if is_part_of_group(key=key, group=parallel_group_spec_key)
+        ]
+        # Every parallel job shows the task name and keeps the same reason throughout the group
+        self.assertEqual(len(parallel_reasons), 3)
+        self.assertTrue(all(reason["placeholder"]["job"]["name"] == task.display_name for reason in parallel_reasons))
+        self.assertTrue(all(reason == parallel_reasons[0] for reason in parallel_reasons))
+        if check_initial_reason_unchanged:
+            self.assertEqual(parallel_reasons[0], initial_reason)
+        # The complete sequence of reasons follows the execution plan
+        actual_plan_job_names = [reason["placeholder"]["job"]["name"] for _, reason in snapshots]
+        self.assertListEqual(actual_plan_job_names, expected_plan_job_names)
 
     def test_permissions_to_delete_concern_item(self):
         cluster = self.cluster_1

@@ -173,6 +173,7 @@ class ConcernProvider(Provider):
     scope = Scope.APP
 
     repo = provide(ConcernRepo, provides=ConcernRepoI)
+    lock_repo = provide(LockRepo, provides=LockRepoI)
     distribution_scenarios = provide(ConcernDistributionScenarios)
 
 
