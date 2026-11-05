@@ -23,10 +23,22 @@
     jobs_for_branches:
       masking:
       scripts: &jobs_for_branches
-        - name: first
+        - name: s_1
           script_type: ansible
           script: ./noop.yaml
-        - name: second
+        - name: s_2
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_3
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_4
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_5
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_6
           script_type: ansible
           script: ./noop.yaml
 
@@ -36,6 +48,9 @@
       hc_acl:
         - service: service_1
           component: component_1
+          action: add
+        - service: service_1
+          component: component_2
           action: add
         - service: service_2
           component: component_1
@@ -48,6 +63,7 @@
   config: *config
   components:
     component_1:
+      constraint: [0, 1]
     component_2:
 
 - type: service
