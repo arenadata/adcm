@@ -406,6 +406,30 @@
       type: integer
       default: 100
 
+- name: adcm_8527
+  type: service
+  version: '1.0'
+  config:
+    - name: check_config_path
+      type: string
+      default: /etc/check/check.yml
+    - name: binary_folder
+      type: string
+      default: /usr/bin
+    - name: common_auth
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: username
+          type: string
+          default: superman
+          ansible_options:
+            unsafe: true
+        - name: password
+          type: password
+          default: "!234567Qwer"
+
 - name: adcm_7586
   type: service
   version: '14'

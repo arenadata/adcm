@@ -17,13 +17,13 @@ from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
 
 from cm.impl.bundle.context import ActionArgs, TaskArgs
-from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     ADCM,
     Action,
     ConfigLog,
     MaintenanceMode,
 )
+from cm.tests.utils import decrypt_secrets
 from cm.transition.ansible import ansible_decrypt
 
 
