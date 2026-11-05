@@ -21,6 +21,7 @@ from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR
+from core.locks import LockRepoI
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
@@ -178,6 +179,7 @@ class UpdateConfigurationFromJob:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    lock_repo: LockRepoI
 
     def do(
         self,
@@ -191,6 +193,7 @@ class UpdateConfigurationFromJob:
         owner_orm: ADCMEntity,
     ) -> tuple[list[core.config.ChangeRequest], HasChanged]:
         with atomic():
+            self.lock_repo.register_lock_on_object_waiting(target=owner, aspect="config")
             specification, defaults = self.config_service.retrieve_specification_with_defaults(owner=owner)
             changes = convert(changes_input, specification)
 

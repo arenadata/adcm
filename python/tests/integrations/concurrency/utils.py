@@ -117,6 +117,27 @@ def internal_script(script_type: type[InternalScriptRunner[ScriptT]], script: Sc
     return prepare
 
 
+def prepare_config_branches_for_service(
+    factory: Callable[[str, str], Branch],
+    value: str,
+    branch_count: int,
+    initial_config: dict[str, str],
+    service_name: str,
+) -> tuple[tuple[Branch, ...], dict[str, str]]:
+    """Build branches updating field_1 through field_{branch_count} of one service.
+
+    Return the branches and expected final config without executing them or changing initial_config.
+    """
+    expected = initial_config.copy()
+    branches = []
+    for i in range(1, branch_count + 1):
+        key = f"field_{i}"
+        branches.append(factory(key, service_name))
+        expected[key] = value
+
+    return tuple(branches), expected
+
+
 def prepare_script_group(
     task_id: TaskID, container: dishka.Container, branches: Sequence[Branch]
 ) -> tuple[BranchCall, ...]:

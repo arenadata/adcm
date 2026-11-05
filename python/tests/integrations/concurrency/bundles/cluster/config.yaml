@@ -70,6 +70,50 @@
           action: add
       scripts: *jobs_for_branches
 
+    config_parallel:
+      masking:
+      scripts:
+        - group: parallel
+          name: configs
+          scripts: &config_branches
+            - name: change_field_1
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_2
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_3
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_4
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_5
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_6
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_7
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_8
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_9
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_10
+              script_type: ansible
+              script: ./noop.yaml
+
+    config_sequential:
+      masking:
+      scripts:
+        - group: sequential
+          name: configs
+          scripts: *config_branches
+
 - type: service
   name: service_1
   version: "1"
@@ -99,3 +143,41 @@
   config: *config
   components:
     component_1:
+
+- type: service
+  name: config_update_service
+  version: "1"
+  config:
+    - name: field_1
+      type: string
+      default: initial
+    - name: field_2
+      type: string
+      default: initial
+    - name: field_3
+      type: string
+      default: initial
+    - name: field_4
+      type: string
+      default: initial
+    - name: field_5
+      type: string
+      default: initial
+    - name: field_6
+      type: string
+      default: initial
+    - name: field_7
+      type: string
+      default: initial
+    - name: field_8
+      type: string
+      default: initial
+    - name: field_9
+      type: string
+      default: initial
+    - name: field_10
+      type: string
+      default: initial
+    - name: field_11
+      type: string
+      default: initial
