@@ -49,6 +49,7 @@ from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
 from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import ExecutionTargetFactory, ExternalSettings, RunnerEnvironment
+from core.object.repo import ObjectRepoI
 from core.result import Fail, Success
 from core.scenarios.concern import ConcernScenarios
 from core.settings import Directories
@@ -216,6 +217,7 @@ class RunJob:
 @dataclass(slots=True)
 class FinalizeTask:
     job_repo: JobRepoI
+    object_repo: ObjectRepoI
     notifier: EventNotifier
     status_scenarios: StatusScenarios
     cluster_service: ClusterService
@@ -325,12 +327,12 @@ class FinalizeTask:
             logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
-            self.job_repo.update_owner_state(owner=owner, state=state)
+            self.object_repo.set_state(object_=owner, state=state)
 
-        self.job_repo.update_owner_multi_states(
-            owner=owner,
-            add_multi_states=state_changes.multi_state_set,
-            remove_multi_states=state_changes.multi_state_unset,
+        self.object_repo.update_multi_state(
+            object_=owner,
+            add=state_changes.multi_state_set,
+            remove=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:

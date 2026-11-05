@@ -30,6 +30,7 @@ from core.legacy.job.runners import (
     RunnerRuntime,
     TaskRunner,
 )
+from core.object.repo import ObjectRepoI
 from core.result import Fail
 from core.scenarios.concern import ConcernScenarios
 from core.types import (
@@ -82,6 +83,7 @@ class JobSequenceRunner(TaskRunner):
         target_factory: ExecutionTargetFactory,
         settings: ExternalSettings,
         repo: JobRepoI,
+        object_repo: ObjectRepoI,
         executor_terminator: ExecutorTerminator,
         environment: RunnerEnvironment,
     ):
@@ -91,6 +93,7 @@ class JobSequenceRunner(TaskRunner):
         self._status_server = status_server
         self._logger = logger
         self._executor_terminator = executor_terminator
+        self._object_repo = object_repo
 
         self._container = container
 
@@ -374,12 +377,12 @@ class JobSequenceRunner(TaskRunner):
             self._logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
-            self._repo.update_owner_state(owner=owner, state=state)
+            self._object_repo.set_state(object_=owner, state=state)
 
-        self._repo.update_owner_multi_states(
-            owner=owner,
-            add_multi_states=state_changes.multi_state_set,
-            remove_multi_states=state_changes.multi_state_unset,
+        self._object_repo.update_multi_state(
+            object_=owner,
+            add=state_changes.multi_state_set,
+            remove=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:

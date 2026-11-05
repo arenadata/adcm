@@ -38,7 +38,7 @@ _TYPE_ASPECT_MAP: Final = {
     ADCMCoreType.HOST: _SHARED_ASPECT_CODES,
     ADCMCoreType.CLUSTER: {
         **_SHARED_ASPECT_CODES,
-        "002": "mapping",
+        "mapping": "002",
     },
     ADCMCoreType.SERVICE: _SHARED_ASPECT_CODES,
     ADCMCoreType.COMPONENT: _SHARED_ASPECT_CODES,

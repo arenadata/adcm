@@ -47,6 +47,7 @@ from core.action.types import (
     ServiceManageScript,
     ServiceManageScriptParams,
     ServiceManageServiceEntry,
+    SimpleInternalScript,
     TypeBasedConfigApplyTarget,
 )
 from core.types import TaskID
@@ -65,6 +66,7 @@ from tests.integrations.concurrency.utils import (
 from tests.integrations.constants import INTEGRATION_TESTS_TAG
 from tests.suites import GenericTransactionTestCase
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
+from use_cases.internal_scripts.before_upgrade_clean import BeforeUpgradeCleanInternalScript
 from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
 from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
 from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
@@ -76,6 +78,7 @@ HOST_FQDN: Final = "host-1"
 # actions whose tasks give branches their jobs
 JOBS_ACTION: Final = "jobs_for_branches"
 JOBS_WITH_HC_ACL_ACTION: Final = "jobs_for_branches_with_hc_acl"
+JOBS_THREE_ACTION: Final = "jobs_for_branches_three"
 
 PLUGIN_VALUE: Final = "from adcm_config"
 INTERNAL_SCRIPT_VALUE: Final = "from config_apply"
@@ -90,6 +93,13 @@ def set_multi_state(state: str) -> Branch:
 
 def set_state(state: str) -> Branch:
     return plugin(ADCMStatePluginExecutor, {"type": "cluster", "state": state})
+
+
+def clean_before_upgrade() -> Branch:
+    return internal_script(
+        BeforeUpgradeCleanInternalScript,
+        SimpleInternalScript(type=ScriptType.INTERNAL, path="before_upgrade_clean", params=None),
+    )
 
 
 def change_config_by_plugin(key: str, service_name: str | None = None) -> Branch:
@@ -191,12 +201,16 @@ SCENARIOS: Final = {
     ),
     # different services are added with config changes
     "service_manage": Scenario(branches=(add_service("service_3"), add_service("service_4"))),
+    # `before_upgrade_clean` runs alongside state and multi-state changes of the cluster
+    "before_upgrade_clean_with_state_and_multi_state": Scenario(
+        branches=(clean_before_upgrade(), set_multi_state("first"), set_state("changed")),
+        jobs_action=JOBS_THREE_ACTION,
+    ),
 }
 SCENARIO_PARAMS: Final = [param(scenario, id=scenario) for scenario in SCENARIOS]
 
 
-@tag(INTEGRATION_TESTS_TAG)
-class TestScenarioBranches(ParametrizedTestCase, GenericTransactionTestCase):
+class BaseScenarioTestCase(GenericTransactionTestCase):
     client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
     client_class = ADCMTestClient
     # errors of branches are compared as is, their messages shouldn't be cut
@@ -252,6 +266,9 @@ class TestScenarioBranches(ParametrizedTestCase, GenericTransactionTestCase):
 
         return prepare_script_group(task_id=task_id, container=self.container, branches=definition.branches)
 
+
+@tag(INTEGRATION_TESTS_TAG)
+class TestScenarioBranches(ParametrizedTestCase, BaseScenarioTestCase):
     @staticmethod
     def call_and_catch(call: BranchCall) -> Exception | None:
         """Error of the call, so it's reported the same way as errors of `run_concurrently`"""

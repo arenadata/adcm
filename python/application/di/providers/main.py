@@ -27,6 +27,7 @@ from cm.impl.job.repo import JobClaimer, JobRepo
 from cm.impl.locks.repo import LockRepo
 from cm.impl.logs.repo import LogsRepo
 from cm.impl.metrics.repo import ClusterMetricsRepo
+from cm.impl.object.repo import ObjectRepo
 from cm.impl.provider.repo import ProviderRepo
 from cm.impl.scenarios.adcm import InitializeADCMLegacy, UpgradeADCMLegacy
 from cm.impl.scenarios.bundle_switch import BundleSwitch
@@ -46,6 +47,7 @@ from core.dynamic_bundle.render import BundleRenderer
 from core.dynamic_bundle.types import ContextGathererI
 from core.files.local import LocalPathResolver
 from core.locks import LockRepoI
+from core.object.repo import ObjectRepoI
 from core.scenarios.adcm import DefaultURL, InitializeADCM, UpgradeADCM
 from core.scenarios.cluster import BeforeUpgradeScenarios
 from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
@@ -308,6 +310,12 @@ class ADCMProvider(Provider):
     scope = Scope.APP
 
     repo = provide(ADCMRepo, provides=core.adcm.ADCMRepoI)
+
+
+class ObjectProvider(Provider):
+    scope = Scope.APP
+
+    repo = provide(ObjectRepo, provides=ObjectRepoI)
 
 
 class LockProvider(Provider):

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from collections import defaultdict
-from collections.abc import Collection, Generator, Iterable
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
@@ -356,22 +356,6 @@ class JobRepo(JobRepoI):
         )
 
     # update
-
-    def update_owner_state(self, owner: CoreObjectDescriptor, state: str) -> None:
-        core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(state=state)
-
-    def update_owner_multi_states(
-        self, owner: CoreObjectDescriptor, add_multi_states: Collection[str], remove_multi_states: Collection[str]
-    ) -> None:
-        current_multi_state: dict = (
-            core_type_to_model(core_type=owner.type).objects.values_list("_multi_state", flat=True).get(id=owner.id)
-        )
-
-        current_multi_state |= dict.fromkeys(add_multi_states, 1)
-        for remove_key in remove_multi_states:
-            current_multi_state.pop(remove_key, None)
-
-        core_type_to_model(core_type=owner.type).objects.filter(id=owner.id).update(_multi_state=current_multi_state)
 
     def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
         TaskLog.objects.filter(id=task_id).update(

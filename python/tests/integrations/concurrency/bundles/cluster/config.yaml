@@ -42,6 +42,19 @@
           script_type: ansible
           script: ./noop.yaml
 
+    jobs_for_branches_three:
+      masking:
+      scripts:
+        - name: first
+          script_type: ansible
+          script: ./noop.yaml
+        - name: second
+          script_type: ansible
+          script: ./noop.yaml
+        - name: third
+          script_type: ansible
+          script: ./noop.yaml
+
     # for `hc_apply`, which applies mapping passed on action's run
     jobs_for_branches_with_hc_acl:
       masking:
