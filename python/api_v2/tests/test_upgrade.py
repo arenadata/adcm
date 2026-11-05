@@ -28,6 +28,7 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+from cm.transition.ansible import ansible_decrypt
 from core.types import TaskID
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import (
@@ -141,7 +142,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
     def test_cluster_list_upgrades_success(self):
         response = self.client.v2[self.cluster_1, "upgrades"].get()
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(len(response.json()), 8)
+        self.assertEqual(len(response.json()), 9)
 
         for upgrade in response.json():
             self.assertIn("bundle", upgrade)
@@ -486,8 +487,8 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
     def test_list_upgrades_permission_success(self):
         permission_cases = (
-            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 8),
-            (self.cluster_1, [], "ADCM User", 8),
+            (self.cluster_1, self.cluster_1, "Upgrade cluster bundle", 9),
+            (self.cluster_1, [], "ADCM User", 9),
             (self.provider, [], "ADCM User", 3),
             (self.provider, self.provider, "Upgrade provider bundle", 3),
         )
@@ -603,6 +604,32 @@ class TestUpgrade(ADCMDjangoAPISuite):
         config = ConfigLog.objects.get(id=service.config.current)
         expected_config = {"pick_me": {"b": {"b1": 100}}, "with_default": {"a": {"a1": "wow"}}}
         self.assertEqual(config.config, expected_config)
+
+    def test_adcm_8527_apply_config_from_before_upgrade_with_ansible_json_values(self):
+        cluster = self.cluster_1
+        self.accept_license_of_first_service()
+        service = self.uc.add_services_to_cluster(["adcm_8527"], cluster=cluster)[0]
+        upgrade = Upgrade.objects.get(name="with_scripts_adcm_8527", bundle=self.cluster_upgrade.bundle)
+
+        response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
+
+        launched_task = response.json()["id"]
+        self.task_runner().launch_task(launched_task)
+
+        task_status = TaskLog.objects.values_list("status", flat=True).get(id=launched_task)
+        self.assertEqual(task_status, "success")
+
+        service.refresh_from_db(fields=["config"])
+        config = ConfigLog.objects.get(id=service.config.current)
+        check_cluster = config.config["check_cluster"]
+        common_auth = check_cluster["common_auth"]
+
+        self.assertEqual(check_cluster["check_config_path"], "/etc/check/check.yml")
+        self.assertEqual(check_cluster["binary_folder"], "/usr/bin")
+        self.assertEqual(common_auth["username"], "superman")
+        self.assertEqual(ansible_decrypt(common_auth["password"]), "!234567Qwer")
+        self.assertTrue(config.attr["check_cluster/common_auth"]["active"])
 
     def test_adcm_8031_template_error_throws_500(self):
         upgrade = Upgrade.objects.get(name="adcm_8031_upgrade")

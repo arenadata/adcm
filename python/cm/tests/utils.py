@@ -13,6 +13,7 @@
 from uuid import uuid4
 
 from core.action import ScriptType
+from core.config import decode_ansible_json_special_values
 from django.utils import timezone
 
 from cm.errors import AdcmEx
@@ -37,6 +38,11 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.scripts import build_plan, build_script_spec
+from cm.transition.ansible import ansible_decrypt
+
+
+def decrypt_secrets(source: dict) -> dict:
+    return decode_ansible_json_special_values(source, decrypt=ansible_decrypt)
 
 
 def gen_name(prefix: str):

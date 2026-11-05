@@ -19,7 +19,6 @@ import core
 from cm.converters import model_name_to_core_type
 from cm.legacy.api import DataForMultiBind, multi_bind
 from cm.legacy.services.job.context import get_imports_for_inventory, get_inventory_data
-from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     ADCMModel,
@@ -29,6 +28,7 @@ from cm.models import (
     Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.tests.utils import decrypt_secrets
 from cm.transition.status import StatusScenarios
 
 

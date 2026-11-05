@@ -1,0 +1,23 @@
+- name: switch
+  script_type: internal
+  script: bundle_switch
+
+- name: migrate check config
+  script_type: internal
+  script: config_apply
+  params:
+    changes:
+      - object:
+          type: service
+          service_name: adcm_8527
+        parameters:
+          - key: "check_cluster/check_config_path"
+            value: "{{ services.adcm_8527.before_upgrade.config.check_config_path }}"
+          - key: "check_cluster/binary_folder"
+            value: "{{ services.adcm_8527.before_upgrade.config.binary_folder }}"
+          - key: "check_cluster/common_auth"
+            value: true
+          - key: "check_cluster/common_auth/username"
+            value: "{{ services.adcm_8527.before_upgrade.config.common_auth.username }}"
+          - key: "check_cluster/common_auth/password"
+            value: "{{ services.adcm_8527.before_upgrade.config.common_auth.password }}"

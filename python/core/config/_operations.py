@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from functools import partial, reduce
 from itertools import chain, filterfalse
 from pathlib import Path
-from typing import Any, Final, Literal, TypeAlias, TypeVar
+from typing import Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from core.config import _yspec, spec
 from core.config._config import (
@@ -70,6 +70,9 @@ from core.result import Fail, Success, is_fail
 
 # Constants
 
+ANSIBLE_VAULT_MARKER: Final = "__ansible_vault"
+ANSIBLE_UNSAFE_MARKER: Final = "__ansible_unsafe"
+
 _FORBIDDEN_YSPEC_RULES: Final = frozenset({"one_of", "dict_key_selection", "set", "none", "any"})
 
 # Types
@@ -100,6 +103,9 @@ ChangesToApply = list[ChangeRequest]
 T = TypeVar("T")
 
 _StrToStr: TypeAlias = Callable[[str], str]
+
+_AnsibleJsonValue: TypeAlias = None | bool | int | float | str | list | dict
+_AnsibleJsonObject: TypeAlias = dict[str, _AnsibleJsonValue]
 
 _FileParameterIdentifier: TypeAlias = str
 """
@@ -571,6 +577,26 @@ def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "att
     return {"diff": diff, "attr_diff": attr_diff}
 
 
+def decode_ansible_json_special_values(value: _AnsibleJsonObject, *, decrypt: _StrToStr) -> _AnsibleJsonObject:
+    return cast(_AnsibleJsonObject, _decode_ansible_json_special_value(value, decrypt=decrypt))
+
+
+def _decode_ansible_json_special_value(value: _AnsibleJsonValue, *, decrypt: _StrToStr) -> _AnsibleJsonValue:
+    if isinstance(value, dict):
+        if ANSIBLE_VAULT_MARKER in value:
+            return decrypt(value[ANSIBLE_VAULT_MARKER])
+
+        if ANSIBLE_UNSAFE_MARKER in value:
+            return value[ANSIBLE_UNSAFE_MARKER]
+
+        return {key: _decode_ansible_json_special_value(item, decrypt=decrypt) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [_decode_ansible_json_special_value(item, decrypt=decrypt) for item in value]
+
+    return value
+
+
 # Utilities
 
 
@@ -938,14 +964,14 @@ def _set_none(_: Any) -> None:
 
 def _to_ansible_vault_dict_if_is_non_empty_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:
     if is_non_empty_string(value):
-        return {"__ansible_vault": value}
+        return {ANSIBLE_VAULT_MARKER: value}
 
     return value
 
 
 def _to_ansible_unsafe_dict_if_is_str(value: T) -> dict[Literal["__ansible_unsafe"], str] | T:
     if is_str(value):
-        return {"__ansible_unsafe": value}
+        return {ANSIBLE_UNSAFE_MARKER: value}
 
     return value
 
