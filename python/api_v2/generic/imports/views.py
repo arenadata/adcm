@@ -91,6 +91,7 @@ class ImportViewSet(ADCMGenericViewSet, ABC):
             cluster=cluster,
             service=service,
             bind_list=cook_data_for_multibind(validated_data=serializer.validated_data, obj=obj),
+            status_scenarios=status_scenarios,
             cluster_service=cluster_service,
         )
         return Response(get_imports(obj=obj, status_scenarios=status_scenarios), status=HTTP_201_CREATED)

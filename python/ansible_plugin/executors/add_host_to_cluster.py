@@ -13,8 +13,8 @@
 from collections.abc import Collection
 
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.status import notify
 from cm.models import Host
+from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from pydantic import model_validator
@@ -92,12 +92,11 @@ class ADCMAddHostToClusterPluginExecutor(ADCMAnsiblePluginExecutor[AddHostToClus
             # at this point it can't be None due to validation => raising instead of returning
             raise PluginRuntimeError(message="Failed to detect what host to add")
 
-        rbac_scenarios = self._container.get(RBACScenarios)
         perform_host_to_cluster_map(
             cluster_id=runtime.vars.context.cluster_id,
             hosts=[host_id],
-            status_service=notify,
-            rbac_scenarios=rbac_scenarios,
+            status_scenarios=self._container.get(StatusScenarios),
+            rbac_scenarios=self._container.get(RBACScenarios),
             cluster_service=self._container.get(ClusterService),
         )
 

@@ -16,7 +16,7 @@ from adcm_version import compare_adcm_versions
 
 from core.bundle._errors import BundleParsingError
 from core.bundle._parsing.types import BundleParser, ParsingMeta, RootEntry, VersionTag
-from core.bundle._types import VersionInfo
+from core.bundle._types import ExistingBundleInfo, VersionInfo
 
 
 def extract_parsing_meta(entries: Collection[RootEntry]) -> ParsingMeta:
@@ -35,6 +35,17 @@ def extract_parsing_meta(entries: Collection[RootEntry]) -> ParsingMeta:
                 meta.adcm_min_version = adcm_min_version
 
     return meta
+
+
+def extract_bundle_info(entries: Collection[RootEntry]) -> ExistingBundleInfo | None:
+    for entry in entries:
+        data = entry.data
+        if data.get("type") in {"cluster", "provider"} and "name" in data and "version" in data:
+            return ExistingBundleInfo(
+                name=str(data["name"]), version=str(data["version"]), edition=str(data.get("edition", "community"))
+            )
+
+    return None
 
 
 def pick_suitable_parser(version: VersionTag, parsers: Iterable[tuple[VersionInfo, BundleParser]]) -> BundleParser:

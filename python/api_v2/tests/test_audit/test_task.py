@@ -137,12 +137,31 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
 
     def test_terminate_job_success(self):
         task, job = self.simulate_running_task(object_=self.cluster_1, action=self.cluster_action)
+        job.display_name = "Subjob To Skip"
+        job.save(update_fields=["display_name"])
 
         response = self.client.v2[job, "terminate"].post(data={})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.check_last_audit_record(
-            operation_name=f"{self.cluster_action.display_name} terminated",
+            operation_name="Subjob To Skip terminated",
+            operation_type="update",
+            operation_result="success",
+            **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
+            user__username="admin",
+        )
+
+    def test_terminate_job_without_display_name_success(self):
+        task, job = self.simulate_running_task(object_=self.cluster_1, action=self.cluster_action)
+        job.name = "subjob_to_skip"
+        job.display_name = ""
+        job.save(update_fields=["name", "display_name"])
+
+        response = self.client.v2[job, "terminate"].post(data={})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        self.check_last_audit_record(
+            operation_name="Job terminated",
             operation_type="update",
             operation_result="success",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -171,7 +190,7 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
         self.check_last_audit_record(
-            operation_name=f"{self.component_action.display_name} terminated",
+            operation_name=f"{job.display_name or 'Job'} terminated",
             operation_type="update",
             operation_result="denied",
             **self.prepare_audit_object_arguments(expected_object=self.component),
@@ -228,7 +247,7 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
-            operation_name=f"{self.cluster_action.display_name} terminated",
+            operation_name=f"{job.display_name or 'Job'} terminated",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=self.cluster_1),
@@ -259,7 +278,7 @@ class TestTaskAudit(TaskTestMixin, ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
         self.check_last_audit_record(
-            operation_name=f"{self.component_action.display_name} terminated",
+            operation_name=f"{job.display_name or 'Job'} terminated",
             operation_type="update",
             operation_result="fail",
             **self.prepare_audit_object_arguments(expected_object=None),

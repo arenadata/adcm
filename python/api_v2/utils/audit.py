@@ -659,15 +659,7 @@ def set_job_name(
     result: Result | None,  # noqa: ARG001
     exception: Exception | None,  # noqa: ARG001
 ) -> None:
-    job_name = (
-        JobLog.objects.select_related("task__action")
-        .values_list("task__action__display_name", flat=True)
-        .filter(id=call_arguments["pk"])
-        .first()
-    )
-
-    if job_name is None:
-        job_name = "Job"
+    job_name = JobLog.objects.values_list("display_name", flat=True).filter(id=call_arguments["pk"]).first() or "Job"
 
     context.name = context.name.format(job_name=job_name).strip()
 

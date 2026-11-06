@@ -97,6 +97,7 @@ class RevertUpgrade:
     cluster_service: ClusterService
     before_upgrade_scenarios: BeforeUpgradeScenarios
     create_services: CreateServicesFromPrototypes
+    status_scenarios: StatusScenarios
 
     def do(self, target: Cluster | Provider) -> None:
         old_bundle_id: BundleID
@@ -439,6 +440,7 @@ class RevertUpgrade:
             bundle_id=old_bundle_id,
             new_mapping=new_mapping,
             cluster_service=self.cluster_service,
+            status_scenarios=self.status_scenarios,
             checks_func=check_nothing,
         )
 

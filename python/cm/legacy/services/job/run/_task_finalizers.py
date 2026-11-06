@@ -32,6 +32,7 @@ from cm.models import (
     TaskLog,
     get_object_cluster,
 )
+from cm.transition.status import StatusScenarios
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
 #  try to rework functions like `save_hc` also, because they rely on API v1 input
@@ -43,7 +44,7 @@ class WithIDAndCoreType(Protocol):
     type: ADCMCoreType
 
 
-def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logger):
+def set_hostcomponent(task: Task, cluster_service: ClusterService, status_scenarios: StatusScenarios, logger: Logger):
     task_object = TaskLog.objects.prefetch_related("task_object").get(id=task.id).task_object
 
     cluster = get_object_cluster(task_object)
@@ -60,6 +61,7 @@ def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logge
         bundle_id=cluster.prototype.bundle_id,
         mapping_delta=task.hostcomponent.mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=check_nothing,
     )
 

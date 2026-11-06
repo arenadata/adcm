@@ -1,6 +1,6 @@
 # script takes key "0-step" by its position and name, group takes the same key by its name
 - type: cluster
-  name: script_groups_cluster
+  name: script_groups_cluster_invalid
   version: "1"
   contract_version: "2.1"
   venv: "2.21"

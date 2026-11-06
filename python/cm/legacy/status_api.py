@@ -10,26 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
-from core.tools import convert_keys_to_camel_case
-from core.types import (
-    ADCMCoreType,
-    ClusterID,
-    ConcernID,
-    CoreObjectDescriptor,
-    ObjectID,
-)
+from core.types import ClusterID, CoreObjectDescriptor
 from django.conf import settings
 from requests import Response
 import requests
 
 from cm.converters import core_type_to_model
 from cm.errors import HTTP_200_OK, HTTP_201_CREATED
-from cm.impl.concern.repo import ConcernRepo
-from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
 from cm.logger import logger
 from cm.models import ADCMEntity
 
@@ -125,13 +115,6 @@ def send_concern_delete_event(object_id: int, object_type: str, concern_id: int)
     )
 
 
-def send_delete_service_event(service_id: int) -> Response | None:
-    return post_event(
-        event=EventTypes.DELETE_SERVICE,
-        object_id=service_id,
-    )
-
-
 def send_host_component_map_update_event(cluster_id: ClusterID) -> None:
     post_event(event=EventTypes.UPDATE_HOSTCOMPONENTMAP, object_id=cluster_id)
 
@@ -184,98 +167,4 @@ def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
         event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
         object_id=object_.pk,
         changes=changes,
-    )
-
-
-def get_raw_status(url: str) -> int:
-    response = api_request(method="get", url=url)
-    if response is None:
-        return settings.EMPTY_REQUEST_STATUS_CODE
-
-    try:
-        json_data = response.json()
-    except ValueError:
-        return settings.VALUE_ERROR_STATUS_CODE
-
-    if "status" in json_data:
-        return json_data["status"]
-    return settings.EMPTY_STATUS_STATUS_CODE
-
-
-def notify_about_redistributed_concerns(
-    added: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
-    removed: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
-) -> None:
-    added_concerns = tuple(added)
-    # get repo directly cause we want to avoid unexpected imports
-    # need to remove notify_*_concerns functions to StatusService ( ADCM-8508 )
-    concern_repo = ConcernRepo()
-
-    serialized_concerns = {
-        concern.id: convert_keys_to_camel_case(
-            value={
-                "id": concern.id,
-                "type": concern.type.value,
-                "reason": concern.reason,
-                "is_blocking": concern.blocking,
-                "cause": concern.cause.value if concern.cause else None,
-                "owner": {
-                    "id": concern.owner.id,
-                    "type": concern.owner.type.value,
-                },
-            }
-        )
-        for concern in concern_repo.get_concerns_info(concern_ids={concern_id for _, _, concern_id in added_concerns})
-    }
-
-    for core_type, object_id, concern_id in removed:
-        post_event(
-            event=f"delete_{fix_object_type(type_=core_type.value)}_concern",
-            object_id=object_id,
-            changes={"id": concern_id},
-        )
-
-    for core_type, object_id, concern_id in added_concerns:
-        concern = serialized_concerns.get(concern_id)
-        if concern:
-            post_event(
-                event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=core_type.value)),
-                object_id=object_id,
-                changes=concern,
-            )
-
-
-def notify_about_new_concern(
-    concern_id: ConcernID,
-    related_objects: ConcernRelatedObjects,
-) -> None:
-    notify_about_redistributed_concerns(
-        added=(
-            (core_type, object_id, concern_id)
-            for core_type, object_ids in related_objects.items()
-            for object_id in object_ids
-        ),
-        removed=(),
-    )
-
-
-def notify_about_redistributed_concerns_from_maps(
-    added: AffectedObjectConcernMap,
-    removed: AffectedObjectConcernMap,
-):
-    """
-    Convenience function to call `notify_about_redistributed_concerns` based on input of `redistribute_issues_and_flags`
-    """
-    return notify_about_redistributed_concerns(
-        added=_flatten_concerns_map(added),
-        removed=_flatten_concerns_map(removed),
-    )
-
-
-def _flatten_concerns_map(concerns_map: AffectedObjectConcernMap) -> Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]]:
-    return (
-        (core_type, object_id, concern_id)
-        for core_type, objects in concerns_map.items()
-        for object_id, concerns in objects.items()
-        for concern_id in concerns
     )

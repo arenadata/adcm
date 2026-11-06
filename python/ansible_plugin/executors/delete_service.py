@@ -14,6 +14,7 @@ from collections.abc import Collection
 
 from cm.legacy.services.mapping import check_nothing, lock_cluster_mapping, set_host_component_mapping_no_lock
 from cm.models import ClusterBind, HostComponent, Prototype, Service
+from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
 from core.legacy.cluster.types import HostComponentEntry
 from core.types import ADCMCoreType, CoreObjectDescriptor
@@ -83,6 +84,7 @@ class ADCMDeleteServicePluginExecutor(ADCMAnsiblePluginExecutor[DeleteServiceArg
                 bundle_id=bundle_id,
                 new_mapping=new_mapping,
                 cluster_service=self._container.get(ClusterService),
+                status_scenarios=self._container.get(StatusScenarios),
                 checks_func=check_nothing,
             )
 

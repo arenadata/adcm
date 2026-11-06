@@ -13,6 +13,7 @@
 from pathlib import Path
 
 from core.cluster import ClusterService
+from core.concern.repo import ConcernRepoI
 from core.config import ConfigService
 from core.types import ActionTargetDescriptor, ADCMCoreType
 from rbac.scenarios import RBACScenarios
@@ -50,7 +51,10 @@ class TestHostDuplicateBugs(WithDishkaContainer, BaseTestCase):
             cluster_id=self.cluster.pk,
             config_service=self.uc.container.get(ConfigService),
             rbac_scenarios=RBACScenarios(),
-            status_scenarios=StatusScenarios(cluster_service=self.uc.container.get(ClusterService)),
+            status_scenarios=StatusScenarios(
+                cluster_service=self.uc.container.get(ClusterService),
+                concern_repo=self.uc.container.get(ConcernRepoI),
+            ),
             cluster_service=self.uc.container.get(ClusterService),
         )
 

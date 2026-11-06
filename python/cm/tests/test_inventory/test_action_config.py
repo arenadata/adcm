@@ -31,11 +31,11 @@ from cm.converters import model_name_to_core_type
 from cm.impl.job.repo import JobRepo
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
-from cm.legacy.utils import decrypt_secrets
 from cm.models import Action, Component, ConcernItem, TaskLog
 from cm.tests.scripts import retrieve_rich_jobs
 from cm.tests.test_action_host_group import ScheduleTask
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.tests.utils import decrypt_secrets
 from cm.transition.ansible import ansible_decrypt
 
 

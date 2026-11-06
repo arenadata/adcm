@@ -223,6 +223,14 @@ class BundleRepo(bundle.BundleRepoI):
         row = Bundle.objects.filter(hash=hash_).values_list("name", "version", "edition").first()
         return bundle.ExistingBundleInfo(*row) if row else None
 
+    def find_existing_bundle_by_info(self, info: bundle.ExistingBundleInfo) -> bundle.ExistingBundleInfo | None:
+        row = (
+            Bundle.objects.filter(name=info.name, version=info.version, edition=info.edition)
+            .values_list("name", "version", "edition")
+            .first()
+        )
+        return bundle.ExistingBundleInfo(*row) if row else None
+
     def retrieve_adcm_verification_public_key_path(self, files_dir: Path) -> Path:
         adcm_id = ADCM.objects.values_list("id", flat=True).get()
         return files_dir / f"adcm.{adcm_id}.global.verification_public_key"

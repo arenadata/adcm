@@ -53,8 +53,9 @@ from cm.legacy.services.concern.locks import retrieve_lock_on_object
 from cm.legacy.services.config_host_group import ConfigHostGroupRepo
 from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
+from cm.legacy.status_api import send_host_component_map_update_event
 from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
+from cm.transition.status import StatusScenarios
 
 
 class PerformMappingChecks(Protocol):
@@ -103,6 +104,7 @@ def set_host_component_mapping(
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
@@ -112,6 +114,7 @@ def set_host_component_mapping(
             bundle_id=bundle_id,
             new_mapping=new_mapping,
             cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
             checks_func=checks_func,
         )
 
@@ -121,6 +124,7 @@ def set_host_component_mapping_no_lock(
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     new_mapping = tuple(new_mapping)
@@ -130,6 +134,7 @@ def set_host_component_mapping_no_lock(
         bundle_id=bundle_id,
         mapping_delta=mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=checks_func,
     )
 
@@ -139,6 +144,7 @@ def change_host_component_mapping(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
@@ -148,6 +154,7 @@ def change_host_component_mapping(
             bundle_id=bundle_id,
             mapping_delta=mapping_delta,
             cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
             checks_func=checks_func,
         )
 
@@ -157,6 +164,7 @@ def change_host_component_mapping_no_lock(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     _change_host_component_mapping(
@@ -164,6 +172,7 @@ def change_host_component_mapping_no_lock(
         bundle_id=bundle_id,
         mapping_delta=mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=checks_func,
     )
 
@@ -178,6 +187,7 @@ def _change_host_component_mapping(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
     # prepare
@@ -213,7 +223,7 @@ def _change_host_component_mapping(
     reset_hc_map()
     reset_objects_in_mm(cluster_service=cluster_service)
     send_host_component_map_update_event(cluster_id=cluster_id)
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+    status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
 

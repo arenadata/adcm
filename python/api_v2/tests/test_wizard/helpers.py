@@ -32,6 +32,7 @@ from cm.models import (
     ProcessStepInput,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -123,12 +124,12 @@ class WizardProcessHelpers:
     def clear_hostcomponent_mapping(self, cluster_id: int) -> None:
         HostComponent.objects.filter(cluster_id=cluster_id).delete()
 
-    def add_issue_and_concern_to_object(self, object_, cause: ConcernCause):
+    def add_issue_and_concern_to_object(self, object_, cause: ConcernCause, status_scenarios: StatusScenarios):
         issue = create_issue(
             owner=CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_descriptor(object_).type),
             cause=cause,
         )
-        add_concern_to_object(object_=object_, concern=issue)
+        add_concern_to_object(object_=object_, concern=issue, status_scenarios=status_scenarios)
         return issue
 
     def delete_concern_by_name(self, object_, name: str) -> None:

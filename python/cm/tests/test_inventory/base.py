@@ -29,7 +29,6 @@ from cm.converters import model_name_to_core_type
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.job._utils import construct_delta_for_task
 from cm.legacy.services.job.context import get_inventory_data
-from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     ADCM,
     Action,
@@ -39,6 +38,7 @@ from cm.models import (
     Host,
     MaintenanceMode,
 )
+from cm.tests.utils import decrypt_secrets
 
 TemplatesData: TypeAlias = Mapping[tuple[str, ...], tuple[Path, Mapping[str, Any]]]
 MappingEntry: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], int]

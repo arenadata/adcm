@@ -26,7 +26,7 @@ from cm.legacy.services.concern.checks import (
     object_imports_has_issue,
     service_requirements_has_issue,
 )
-from cm.legacy.status_api import notify_about_new_concern, send_concern_delete_event
+from cm.legacy.status_api import send_concern_delete_event
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
@@ -35,6 +35,7 @@ from cm.models import (
     ConcernType,
     ObjectType,
 )
+from cm.transition.status import StatusScenarios
 
 _issue_check_map = {
     ConcernCause.IMPORT: object_imports_has_issue,
@@ -57,7 +58,7 @@ _prototype_issue_map = {
 }
 
 
-def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
+def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause, status_scenarios: StatusScenarios) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     object_cod = CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))
     object_own_issue = retrieve_issue(owner=object_cod, cause=issue_cause)
@@ -67,7 +68,7 @@ def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> N
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
 
     for node in affected_nodes:
-        add_concern_to_object(object_=node.value, concern=issue)
+        add_concern_to_object(object_=node.value, concern=issue, status_scenarios=status_scenarios)
 
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
@@ -78,7 +79,9 @@ def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     issue.delete()
 
 
-def recheck_issues(obj: ADCMEntity, config_service: core.config.ConfigService) -> None:
+def recheck_issues(
+    obj: ADCMEntity, config_service: core.config.ConfigService, status_scenarios: StatusScenarios
+) -> None:
     """Re-check for object's type-specific issues"""
     issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
     for issue_cause in issue_causes:
@@ -88,17 +91,19 @@ def recheck_issues(obj: ADCMEntity, config_service: core.config.ConfigService) -
             else _issue_check_map[issue_cause](obj)
         )
         if has_issue:
-            add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause)
+            add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause, status_scenarios=status_scenarios)
         else:
             remove_issue(obj=obj, issue_cause=issue_cause)
 
 
-def update_hierarchy_issues(obj: ADCMEntity, config_service: core.config.ConfigService) -> None:
+def update_hierarchy_issues(
+    obj: ADCMEntity, config_service: core.config.ConfigService, status_scenarios: StatusScenarios
+) -> None:
     """Update issues on all directly connected objects"""
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
     for node in affected_nodes:
-        recheck_issues(obj=node.value, config_service=config_service)
+        recheck_issues(obj=node.value, config_service=config_service, status_scenarios=status_scenarios)
 
 
 def update_issues_and_flags_after_deleting() -> None:
@@ -116,7 +121,7 @@ def update_issues_and_flags_after_deleting() -> None:
                 unlink_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
 
 
-def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None, status_scenarios: StatusScenarios) -> None:
     if not concern or getattr(concern, "id", None) is None:
         return
 
@@ -127,7 +132,7 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
 
     on_commit(
         func=partial(
-            notify_about_new_concern,
+            status_scenarios.notify_about_new_concern,
             concern_id=concern.id,
             related_objects={orm_object_to_core_type(object_): {object_.id}},
         )

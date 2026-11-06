@@ -14,8 +14,10 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from core.cluster import ClusterService
+from core.concern.repo import ConcernRepoI
 from core.scenarios.status import StatusScenariosI
-from core.types import ConcernID, CoreObjectDescriptor, Descriptor, HostID
+from core.tools import convert_keys_to_camel_case
+from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor, Descriptor, HostID, ObjectID
 from requests import Response
 
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
@@ -37,19 +39,13 @@ from cm.legacy.services.status.notify import (
     update_all as legacy_update_all,
 )
 from cm.legacy.status_api import (
-    get_raw_status as legacy_get_raw_status,
-)
-from cm.legacy.status_api import (
-    notify_about_new_concern as legacy_notify_about_new_concern,
-)
-from cm.legacy.status_api import (
-    notify_about_redistributed_concerns_from_maps as legacy_notify_about_redistributed_concerns_from_maps,
+    EventTypes,
+    api_request,
+    fix_object_type,
+    post_event,
 )
 from cm.legacy.status_api import (
     send_config_creation_event as legacy_send_config_creation_event,
-)
-from cm.legacy.status_api import (
-    send_delete_service_event as legacy_send_delete_service_event,
 )
 from cm.legacy.status_api import (
     send_object_update_event as legacy_send_object_update_event,
@@ -62,16 +58,32 @@ from cm.legacy.status_api import (
 )
 from cm.models import ADCMEntity
 
+EMPTY_REQUEST_STATUS_CODE = 32
+VALUE_ERROR_STATUS_CODE = 8
+EMPTY_STATUS_STATUS_CODE = 4
+
 
 @dataclass(slots=True)
 class StatusScenarios(StatusScenariosI):
     cluster_service: ClusterService
+    concern_repo: ConcernRepoI
 
     def retrieve_status_map(self) -> FullStatusMap:
         return legacy_retrieve_status_map()
 
     def get_raw_status(self, url: str) -> int:
-        return legacy_get_raw_status(url=url)
+        response = api_request(method="get", url=url)
+        if response is None:
+            return EMPTY_REQUEST_STATUS_CODE
+
+        try:
+            json_data = response.json()
+        except ValueError:
+            return VALUE_ERROR_STATUS_CODE
+
+        if "status" in json_data:
+            return json_data["status"]
+        return EMPTY_STATUS_STATUS_CODE
 
     def send_object_update_event(self, obj_id: int, obj_type: str, changes: dict) -> None:
         legacy_send_object_update_event(obj_id=obj_id, obj_type=obj_type, changes=changes)
@@ -90,17 +102,68 @@ class StatusScenarios(StatusScenariosI):
         legacy_send_prototype_and_state_update_event(object_=object_)
 
     def send_delete_service_event(self, service_id: int) -> Response | None:
-        return legacy_send_delete_service_event(service_id=service_id)
+        return post_event(event=EventTypes.DELETE_SERVICE, object_id=service_id)
 
     def notify_about_redistributed_concerns_from_maps(
         self,
         added: AffectedObjectConcernMap,
         removed: AffectedObjectConcernMap,
     ) -> None:
-        legacy_notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+        self._notify_about_redistributed_concerns(
+            added=_flatten_concerns_map(added),
+            removed=_flatten_concerns_map(removed),
+        )
 
     def notify_about_new_concern(self, concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
-        legacy_notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+        self._notify_about_redistributed_concerns(
+            added=(
+                (core_type, object_id, concern_id)
+                for core_type, object_ids in related_objects.items()
+                for object_id in object_ids
+            ),
+            removed=(),
+        )
+
+    def _notify_about_redistributed_concerns(
+        self,
+        added: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
+        removed: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
+    ) -> None:
+        added_concerns = tuple(added)
+        serialized_concerns = {
+            concern.id: convert_keys_to_camel_case(
+                value={
+                    "id": concern.id,
+                    "type": concern.type.value,
+                    "reason": concern.reason,
+                    "is_blocking": concern.blocking,
+                    "cause": concern.cause.value if concern.cause else None,
+                    "owner": {
+                        "id": concern.owner.id,
+                        "type": concern.owner.type.value,
+                    },
+                }
+            )
+            for concern in self.concern_repo.get_concerns_info(
+                concern_ids={concern_id for _, _, concern_id in added_concerns}
+            )
+        }
+
+        for core_type, object_id, concern_id in removed:
+            post_event(
+                event=f"delete_{fix_object_type(type_=core_type.value)}_concern",
+                object_id=object_id,
+                changes={"id": concern_id},
+            )
+
+        for core_type, object_id, concern_id in added_concerns:
+            concern = serialized_concerns.get(concern_id)
+            if concern:
+                post_event(
+                    event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=core_type.value)),
+                    object_id=object_id,
+                    changes=concern,
+                )
 
     def update_all(self) -> None:
         legacy_update_all(cluster_service=self.cluster_service)
@@ -122,3 +185,12 @@ class StatusScenarios(StatusScenariosI):
 
     def _sync_objects_in_mm(self) -> Response | None:
         return legacy_reset_objects_in_mm(cluster_service=self.cluster_service)
+
+
+def _flatten_concerns_map(concerns_map: AffectedObjectConcernMap) -> Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]]:
+    return (
+        (core_type, object_id, concern_id)
+        for core_type, objects in concerns_map.items()
+        for object_id, concerns in objects.items()
+        for concern_id in concerns
+    )

@@ -31,6 +31,7 @@ from cm.models import (
     ProcessStep,
 )
 from cm.tests.scripts import build_plan, build_script_spec
+from cm.transition.status import StatusScenarios
 from core.dynamic_bundle.types import ContextGathererI
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
@@ -164,7 +165,11 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                 self.assertEqual(response.json()["processes"][0]["syncKey"], str(process.sync_key))
 
     def test_wizard_action_run_with_object_concern_success(self):
-        self.add_issue_and_concern_to_object(object_=self.cluster_1, cause=ConcernCause.CONFIG)
+        self.add_issue_and_concern_to_object(
+            object_=self.cluster_1,
+            cause=ConcernCause.CONFIG,
+            status_scenarios=self.container.get(StatusScenarios),
+        )
 
         action = self.get_object_action_with_process(self.cluster_1)
         response = self.start_process_r(target=self.cluster_1, action=action, expected_status=HTTP_409_CONFLICT)

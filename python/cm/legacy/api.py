@@ -41,9 +41,6 @@ from cm.legacy.services.concern.distribution import (
 from cm.legacy.services.concern.flags import BuiltInFlag, raise_flag
 from cm.legacy.services.concern.locks import get_lock_on_object
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
-from cm.legacy.status_api import (
-    notify_about_new_concern,
-)
 from cm.legacy.utils import obj_ref
 from cm.logger import logger
 from cm.models import (
@@ -67,6 +64,7 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.transition.status import StatusScenarios
 
 # There's no good place to place it for now.
 # Since it's more about API than `cm.legacy.services.job`, it'll live here.
@@ -90,6 +88,7 @@ def add_host_provider(
     prototype: Prototype,
     name: str,
     config_service: core.config.ConfigService,
+    status_scenarios: StatusScenarios,
     cluster_service: ClusterService,
     description: str = "",
 ):
@@ -105,13 +104,13 @@ def add_host_provider(
         concern_id = None
         if object_configuration_has_issue(provider, config_service=config_service):
             concern = create_issue(owner=provider_cod, cause=ConcernCause.CONFIG)
-            concern_id = concern.id
+            concern_id = concern.pk
             related_objects = distribute_concern_on_related_objects(
                 owner=provider_cod, concern_id=concern_id, cluster_service=cluster_service
             )
 
-    if concern_id:
-        notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
+    if isinstance(concern_id, int):
+        status_scenarios.notify_about_new_concern(concern_id=concern_id, related_objects=related_objects)
 
     logger.info("host provider #%s %s is added", provider.pk, provider.name)
 
@@ -433,7 +432,11 @@ class DataForMultiBind(TypedDict):
 
 
 def multi_bind(
-    cluster: Cluster, service: Service | None, bind_list: list[DataForMultiBind], cluster_service: ClusterService
+    cluster: Cluster,
+    service: Service | None,
+    bind_list: list[DataForMultiBind],
+    status_scenarios: StatusScenarios,
+    cluster_service: ClusterService,
 ):
     check_bind_post(bind_list=bind_list)
     import_obj = get_bind_obj(cluster=cluster, service=service)
@@ -508,7 +511,13 @@ def multi_bind(
         related_objects = distribute_concern_on_related_objects(
             owner=import_target, concern_id=concern.id, cluster_service=cluster_service
         )
-        on_commit(func=partial(notify_about_new_concern, concern_id=concern.id, related_objects=related_objects))
+        on_commit(
+            func=partial(
+                status_scenarios.notify_about_new_concern,
+                concern_id=concern.id,
+                related_objects=related_objects,
+            )
+        )
 
     return get_import(cluster=cluster, service=service)
 

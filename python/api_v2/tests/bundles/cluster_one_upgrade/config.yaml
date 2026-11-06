@@ -91,6 +91,14 @@
           type: jinja2
         file:
           path: ./adcm_7807_upgrade_scripts.j2
+    - name: with_scripts_adcm_8527
+      versions: *from_1_to_2
+      states: *available_any
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./adcm_8527_upgrade_scripts.j2
     - name: adcm_8031_upgrade
       versions: *from_1_to_2
       scripts_template:
@@ -190,3 +198,25 @@
       type: selection_group
       default: a
       subs: *id006
+
+- name: adcm_8527
+  type: service
+  version: '2.0'
+  config:
+    - name: check_cluster
+      type: group
+      subs:
+        - name: check_config_path
+          type: string
+        - name: binary_folder
+          type: string
+        - name: common_auth
+          type: group
+          activatable: true
+          active: false
+          subs:
+            - name: username
+              type: string
+              pattern: '^[a-zA-Z0-9~!@#$%\^&*()_+=[\]\\{}|;:,./<>?-]*$'
+            - name: password
+              type: password
