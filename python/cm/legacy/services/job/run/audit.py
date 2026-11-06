@@ -20,7 +20,7 @@ from core.types import ADCMCoreType
 def audit_task_finish(task: Task, task_result: ExecutionStatus, name_splitter: NameHalfSplitter) -> None:
     audit_context = OperationAuditContext(
         signature=AuditSignature(id="Action completion", type=AuditLogOperationType.UPDATE),
-        default_name=f"{task.action.display_name} {'upgrade' if task.action.is_upgrade else 'action'} completed",
+        default_name=f"{task.display_name} {'upgrade' if task.action.is_upgrade else 'action'} completed",
         retrieve_object=ignore_object_search,
         custom_hooks=Hooks(),
         name_splitter=name_splitter,
