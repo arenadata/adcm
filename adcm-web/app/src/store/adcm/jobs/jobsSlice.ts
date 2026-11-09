@@ -4,6 +4,8 @@ import type { AdcmJob } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
+import { updateIfExists } from '@utils/objectUtils';
 
 interface AdcmJobsState {
   jobs: AdcmJob[];
@@ -70,6 +72,14 @@ const jobsSlice = createSlice({
       })
       .addCase(loadJobsFromBackend.rejected, (state) => {
         state.jobs = [];
+      })
+      .addCase(wsActions.update_task, (state, action) => {
+        const { id, changes } = action.payload.object;
+        state.jobs = updateIfExists<AdcmJob>(
+          state.jobs,
+          (job) => job.id === id,
+          () => changes,
+        );
       });
   },
 });

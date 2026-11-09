@@ -5,6 +5,7 @@ import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
 import { showError } from '@store/notificationsSlice';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmJobState {
   job?: AdcmJob;
@@ -61,6 +62,12 @@ const jobSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(loadFromBackend.fulfilled, (state, action) => {
       state.job = action.payload;
+    });
+    builder.addCase(wsActions.update_task, (state, action) => {
+      const { id, changes } = action.payload.object;
+      if (state.job?.id === id) {
+        state.job = { ...state.job, ...changes };
+      }
     });
   },
 });
