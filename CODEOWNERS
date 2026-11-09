@@ -1,4 +1,4 @@
-/adcm-web/ @v.remizov @npp @i.kuzmin @v.paskov @d.bardin @k.fedorenko @a.latunov
+/adcm-web/ @arenadata/teams/frontend/core
 /data/ @arenadata/teams/python/adcm
 /conf/ @arenadata/teams/python/adcm
 /go/ @arenadata/teams/python/adcm
