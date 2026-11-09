@@ -77,6 +77,7 @@ const InlinePrimitiveFieldControl = ({
           isReadonly={isReadonly}
           autoFocus={autoFocus}
           suggestions={fieldSchema.adcmMeta?.stringExtra?.suggestions}
+          isVirtualized
           onChange={handleStringChange}
         />
       );
@@ -115,7 +116,7 @@ const InlinePrimitiveFieldControl = ({
           value={value}
           onChange={handleEnumChange}
           options={enumOptions}
-          isSearchable={false}
+          isVirtualized
           placeholder={INLINE_ENUM_PLACEHOLDER}
           disabled={isReadonly}
           autoFocus={autoFocus}

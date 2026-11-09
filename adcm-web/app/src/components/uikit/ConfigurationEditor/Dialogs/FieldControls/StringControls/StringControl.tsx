@@ -41,6 +41,7 @@ const StringControl = ({
   };
 
   const stringValue = (value as string) ?? '';
+  const suggestions = fieldSchema.adcmMeta?.stringExtra?.suggestions;
 
   return (
     <ConfigurationField
@@ -50,11 +51,12 @@ const StringControl = ({
       onResetToDefault={onResetToDefault}
       error={error}
     >
-      {fieldSchema.adcmMeta?.stringExtra?.suggestions ? (
+      {suggestions ? (
         <InputWithAutocomplete
           value={stringValue}
           disabled={isReadonly}
-          suggestions={fieldSchema.adcmMeta.stringExtra.suggestions}
+          suggestions={suggestions}
+          isVirtualized
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
