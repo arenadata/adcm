@@ -12,6 +12,7 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Any
 
 from core.cluster import ClusterService
 from core.concern.repo import ConcernRepoI
@@ -20,6 +21,7 @@ from core.tools import convert_keys_to_camel_case
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor, Descriptor, HostID, ObjectID
 from requests import Response
 
+from cm.converters import core_type_to_model
 from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
 from cm.legacy.services.status.client import FullStatusMap
 from cm.legacy.services.status.client import retrieve_status_map as legacy_retrieve_status_map
@@ -51,12 +53,10 @@ from cm.legacy.status_api import (
     send_object_update_event as legacy_send_object_update_event,
 )
 from cm.legacy.status_api import (
-    send_prototype_and_state_update_event as legacy_send_prototype_and_state_update_event,
-)
-from cm.legacy.status_api import (
     send_task_status_update_event as legacy_send_task_status_update_event,
 )
-from cm.models import ADCMEntity
+from cm.legacy.upgrade import get_upgrade
+from cm.models import ADCMEntity, Cluster, Provider
 
 EMPTY_REQUEST_STATUS_CODE = 32
 VALUE_ERROR_STATUS_CODE = 8
@@ -98,8 +98,30 @@ class StatusScenarios(StatusScenariosI):
     def send_task_status_update_event(self, task_id: int, status: str) -> None:
         legacy_send_task_status_update_event(task_id=task_id, status=status)
 
-    def send_prototype_and_state_update_event(self, object_: ADCMEntity) -> None:
-        legacy_send_prototype_and_state_update_event(object_=object_)
+    def send_prototype_and_state_update_event(self, object_: ADCMEntity | CoreObjectDescriptor) -> None:
+        entity: ADCMEntity
+        if isinstance(object_, CoreObjectDescriptor):
+            entity = core_type_to_model(core_type=object_.type).objects.select_related("prototype").get(id=object_.id)
+        else:
+            entity = object_
+
+        changes: dict[str, Any] = {
+            "state": entity.state,
+            "prototype": {
+                "id": entity.prototype.pk,
+                "name": entity.prototype.name,
+                "displayName": entity.prototype.display_name,
+                "version": entity.prototype.version,
+            },
+        }
+        if isinstance(entity, Cluster | Provider):
+            changes["isUpgradable"] = bool(get_upgrade(obj=entity))
+
+        self.send_object_update_event(
+            obj_id=entity.pk,
+            obj_type=fix_object_type(type_=entity.prototype.type),
+            changes=changes,
+        )
 
     def send_delete_service_event(self, service_id: int) -> Response | None:
         return post_event(event=EventTypes.DELETE_SERVICE, object_id=service_id)

@@ -230,10 +230,6 @@ class SkipStatusScenarios(StatusScenarios):
         get_status_scenarios_manager().inc_call("send_task_status_update_event")
         return
 
-    def send_prototype_and_state_update_event(self, object_: ADCMEntity) -> None:  # noqa: ARG002
-        get_status_scenarios_manager().inc_call("send_prototype_and_state_update_event")
-        return
-
     def send_delete_service_event(self, service_id: int) -> Response | None:  # noqa: ARG002
         get_status_scenarios_manager().inc_call("send_delete_service_event")
         return

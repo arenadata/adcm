@@ -353,7 +353,7 @@ class FinalizeTask:
         )
 
         if task.action.is_upgrade:
-            self.notifier.send_prototype_update_event(object_=owner)
+            self.status_scenarios.send_prototype_and_state_update_event(object_=owner)
         else:
             self.notifier.send_update_event(object_=owner, changes={"state": state})
 
