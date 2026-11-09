@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { ActionMenu, Dialog, IconButton, Select } from '@uikit';
 
@@ -8,6 +8,9 @@ export default {
   title: 'uikit/Select',
   argTypes: {
     isSearchable: {
+      control: { type: 'boolean' },
+    },
+    isVirtualized: {
       control: { type: 'boolean' },
     },
     noneLabel: {
@@ -50,14 +53,22 @@ const options = [
 
 type SingleSelectExampleProps = {
   isSearchable?: boolean;
+  isVirtualized?: boolean;
   noneLabel?: string;
 };
-const SingleSelectExample: React.FC<SingleSelectExampleProps> = ({ isSearchable, noneLabel }) => {
+const SingleSelectExample: React.FC<SingleSelectExampleProps> = ({ isSearchable, isVirtualized, noneLabel }) => {
   const [value, setValue] = useState<number | null>(options[0].value);
 
   return (
     <div style={{ padding: 30, display: 'flex', alignItems: 'center' }}>
-      <Select value={value} onChange={setValue} options={options} isSearchable={isSearchable} noneLabel={noneLabel} />
+      <Select
+        value={value}
+        onChange={setValue}
+        options={options}
+        isSearchable={isSearchable}
+        isVirtualized={isVirtualized}
+        noneLabel={noneLabel}
+      />
     </div>
   );
 };
@@ -65,12 +76,58 @@ const SingleSelectExample: React.FC<SingleSelectExampleProps> = ({ isSearchable,
 export const SingleSelect: Story = {
   args: {
     isSearchable: false,
+    isVirtualized: false,
     noneLabel: undefined,
   },
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  render: ({ isSearchable, noneLabel }) => {
-    return <SingleSelectExample isSearchable={isSearchable} noneLabel={noneLabel} />;
+  render: ({ isSearchable, isVirtualized, noneLabel }) => {
+    return <SingleSelectExample isSearchable={isSearchable} isVirtualized={isVirtualized} noneLabel={noneLabel} />;
+  },
+};
+
+const LARGE_OPTIONS_COUNT = 5000;
+
+type VirtualizedSelectExampleProps = {
+  isSearchable?: boolean;
+};
+
+const VirtualizedSelectExample: React.FC<VirtualizedSelectExampleProps> = ({ isSearchable = true }) => {
+  const largeOptions = useMemo(
+    () =>
+      Array.from({ length: LARGE_OPTIONS_COUNT }, (_, index) => ({
+        value: index,
+        label: `table_${index.toString().padStart(4, '0')}_long_option_name`,
+      })),
+    [],
+  );
+  const [value, setValue] = useState<number | null>(null);
+
+  return (
+    <div style={{ padding: 30, width: 320 }}>
+      <p style={{ marginBottom: 12 }}>
+        {LARGE_OPTIONS_COUNT.toLocaleString()} options, <code>isVirtualized</code>
+      </p>
+      <Select
+        value={value}
+        onChange={setValue}
+        options={largeOptions}
+        isSearchable={isSearchable}
+        isVirtualized
+        placeholder="Select table"
+      />
+    </div>
+  );
+};
+
+export const VirtualizedSelect: Story = {
+  args: {
+    isSearchable: true,
+  },
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  render: ({ isSearchable }) => {
+    return <VirtualizedSelectExample isSearchable={isSearchable} />;
   },
 };
 

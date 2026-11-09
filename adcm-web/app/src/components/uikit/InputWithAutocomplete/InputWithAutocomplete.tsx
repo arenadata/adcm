@@ -1,17 +1,24 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import type { InputProps } from '@uikit/Input/Input';
 import Input from '@uikit/Input/Input';
 import Popover from '@uikit/Popover/Popover';
 import { createChangeEvent } from '@utils/handlerUtils';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
-import s from './InputWithAutocomplete.module.scss';
-import cn from 'classnames';
+import { SuggestionsList } from './SuggestionsList/SuggestionsList';
 
 export interface InputWithAutoCompleteProps extends InputProps {
   suggestions: string[];
+  isVirtualized?: boolean;
 }
 
-const InputWithAutoComplete = ({ suggestions, value, onChange, onFocus, ...restProps }: InputWithAutoCompleteProps) => {
+const InputWithAutoComplete = ({
+  suggestions,
+  isVirtualized = false,
+  value,
+  onChange,
+  onFocus,
+  ...restProps
+}: InputWithAutoCompleteProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -25,14 +32,14 @@ const InputWithAutoComplete = ({ suggestions, value, onChange, onFocus, ...restP
     onFocus?.(e);
   };
 
-  const handleSelectSuggestion = (e: React.MouseEvent<HTMLLIElement>) => {
-    const newValue = e.currentTarget.dataset.suggestion;
-    if (newValue) {
+  const handleSelectSuggestion = useCallback(
+    (suggestion: string) => {
       const changeEvent = createChangeEvent(inputRef.current);
-      changeEvent.target.value = newValue;
+      changeEvent.target.value = suggestion;
       onChange?.(changeEvent);
-    }
-  };
+    },
+    [onChange],
+  );
 
   return (
     <>
@@ -46,18 +53,11 @@ const InputWithAutoComplete = ({ suggestions, value, onChange, onFocus, ...restP
         offset={8}
       >
         <PopoverPanelDefault>
-          <ul className={cn(s.suggestionsList, 'scroll')}>
-            {filteredSuggestions.map((suggestion) => (
-              <li
-                key={suggestion}
-                className={s.suggestion}
-                data-suggestion={suggestion}
-                onClick={handleSelectSuggestion}
-              >
-                {suggestion}
-              </li>
-            ))}
-          </ul>
+          <SuggestionsList
+            suggestions={filteredSuggestions}
+            onSelect={handleSelectSuggestion}
+            isVirtualized={isVirtualized}
+          />
         </PopoverPanelDefault>
       </Popover>
     </>

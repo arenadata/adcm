@@ -17,6 +17,17 @@
 
 .suggestionsList {
   overflow: auto;
+
+  &_virtual {
+    box-sizing: border-box;
+    overflow-x: hidden;
+
+    .suggestion {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
 }
 
 .suggestion {
@@ -27,7 +38,9 @@
 
   border-radius: 5px;
 
-  transition: color 250ms, background-color 250ms;
+  transition:
+    color 250ms,
+    background-color 250ms;
 
   background: var(--suggestion-background);
   color: var(--suggestion-color);
