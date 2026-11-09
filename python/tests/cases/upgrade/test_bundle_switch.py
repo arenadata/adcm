@@ -42,11 +42,12 @@ from cm.models import (
     TaskLog,
     Upgrade,
 )
+from cm.transition.status import StatusScenarios
 from rbac.models import Role
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_409_CONFLICT
 from unittest_parametrize import param, parametrize
 
-from tests.dependencies import get_status_scenarios_manager
+from tests.dependencies import StatusEventCall, get_status_scenarios_manager
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuiteNoBundles
 
 BUNDLES_DIR: Final = Path(__file__).parent / "bundles" / "bundle_switch"
@@ -87,6 +88,14 @@ def get_config_issue(owner: MainObject) -> ConcernItem:
     return ConcernItem.objects.get(
         type=ConcernType.ISSUE, cause=ConcernCause.CONFIG, owner_id=owner.pk, owner_type=owner.content_type
     )
+
+
+def get_prototype_update_events(target: Cluster | Provider) -> list[StatusEventCall]:
+    return [
+        event
+        for event in get_status_scenarios_manager().send_object_update_event_calls
+        if event.obj_id == target.pk and "prototype" in event.changes
+    ]
 
 
 class TestClusterBundleSwitch(ADCMDjangoAPISuiteNoBundles):
@@ -331,9 +340,21 @@ class TestClusterBundleSwitch(ADCMDjangoAPISuiteNoBundles):
         self.assertEqual(self.cluster.state, expected_state)
 
     def test_api_upgrade_sends_prototype_and_state_update_event(self) -> None:
+        cluster = Cluster.objects.get(pk=self.cluster.pk)
+        status_scenarios = self.uc.container.get(StatusScenarios)
+
+        status_scenarios.send_prototype_and_state_update_event(object_=cluster)
+
+        [event] = get_prototype_update_events(target=cluster)
+        self.assertTrue(event.changes["isUpgradable"])
+
+        get_status_scenarios_manager().reset()
+
         run_upgrade(self, target=self.cluster, upgrade=self.upgrades["api"])
 
-        self.assertEqual(get_status_scenarios_manager().get_calls("send_prototype_and_state_update_event"), 1)
+        [event] = get_prototype_update_events(target=self.cluster)
+        self.assertEqual(event.obj_type, "cluster")
+        self.assertFalse(event.changes["isUpgradable"])
 
     def test_config_issue_on_new_required_param_without_default(self) -> None:
         run_upgrade(self, target=self.cluster, upgrade=self.upgrades_to_required_param["api"])
@@ -392,6 +413,10 @@ class TestProviderBundleSwitch(ADCMDjangoAPISuiteNoBundles):
             Host.objects.filter(provider=self.provider).values_list("id", "prototype"),
             [(self.host_1.pk, self.host_prototype_v2.pk), (self.host_2.pk, self.host_prototype_v2.pk)],
         )
+
+        [event] = get_prototype_update_events(target=self.provider)
+        self.assertEqual(event.obj_type, "hostprovider")
+        self.assertFalse(event.changes["isUpgradable"])
 
     @parametrize("path", BY_PATH)
     def test_config_adaptation(self, path: str) -> None:
