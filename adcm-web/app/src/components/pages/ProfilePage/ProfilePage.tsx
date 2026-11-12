@@ -2,11 +2,10 @@ import PageSection from '@commonComponents/PageSection/PageSection';
 import type React from 'react';
 import { useEffect } from 'react';
 import s from './ProfilePage.module.scss';
-import { Button, FormField, FormFieldsContainer, LabeledField, Text } from '@uikit';
+import { Button, Checkbox, FormField, InputPassword, LabeledField, Text } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { getProfile } from '@store/adcm/profile/profileSlice';
 import { useChangePasswordForm } from './useChangePasswordForm';
-import InputPassword from '@uikit/InputPassword/InputPassword';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -16,7 +15,7 @@ const ProfilePage = () => {
     dispatch(getProfile());
   }, [dispatch]);
 
-  const { formData, submitForm, onChangeFormData, isValid, errors } = useChangePasswordForm();
+  const { formData, submitForm, onChangeFormData, canSubmit, errors } = useChangePasswordForm();
 
   const handleCurrentPasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChangeFormData({ currentPassword: event.target.value });
@@ -31,39 +30,73 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className={s.profilePage}>
-      <PageSection title={'User information'} isExpandDefault={true}>
-        <div className={s.profilePageInformation}>
-          <LabeledField label="User">
-            <Text variant="h4">{profile.username}</Text>
+    <div>
+      <PageSection title="User information" isExpandDefault>
+        <div className={`${s.profilePageGrid} ${s.profilePageInformation}`}>
+          <LabeledField label="User Name">
+            <Text variant="h4" className={s.profilePageValue}>
+              {profile.username}
+            </Text>
           </LabeledField>
 
-          <LabeledField label="Email">
-            <Text variant="h4">{profile.email}</Text>
+          <LabeledField label="E-mail">
+            <Text variant="h4" className={s.profilePageValue}>
+              {profile.email}
+            </Text>
+          </LabeledField>
+
+          <LabeledField label="First Name">
+            <Text variant="h4" className={s.profilePageValue}>
+              {profile.firstName}
+            </Text>
+          </LabeledField>
+
+          <LabeledField label="Last Name">
+            <Text variant="h4" className={s.profilePageValue}>
+              {profile.lastName}
+            </Text>
           </LabeledField>
         </div>
+
+        {!!profile.id && (
+          <Checkbox
+            className={s.profilePageAdministrator}
+            label="ADCM administrator"
+            checked={profile.isSuperUser}
+            readOnly
+          />
+        )}
       </PageSection>
 
-      <PageSection title={'Password'} isExpandDefault={true}>
-        <FormFieldsContainer className={s.profilePagePassword}>
+      <PageSection
+        title="Password"
+        isExpandDefault
+        headerActions={
+          <Button onClick={submitForm} disabled={!canSubmit}>
+            Save
+          </Button>
+        }
+      >
+        <div className={s.profilePageGrid}>
           <FormField label="Current password" error={errors.currentPassword}>
             <InputPassword
               value={formData.currentPassword}
               onChange={handleCurrentPasswordChange}
-              placeholder="Password"
-              areAsterisksShown={!errors.currentPassword}
+              placeholder="Type password"
             />
           </FormField>
-          <FormField label="New password" error={errors.newPassword}>
+
+          <FormField className={s.profilePageNewPassword} label="New password" error={errors.newPassword}>
             <InputPassword
               value={formData.newPassword}
               onChange={handleNewPasswordChange}
               placeholder="Type new password"
             />
           </FormField>
+
           <FormField
             className={s.profilePageConfirmPassword}
-            label="Confirm password"
+            label="Confirm new password"
             error={errors.confirmNewPassword}
           >
             <InputPassword
@@ -72,11 +105,7 @@ const ProfilePage = () => {
               placeholder="Type new password"
             />
           </FormField>
-        </FormFieldsContainer>
-
-        <Button className={s.buttonChangePassword} onClick={submitForm} disabled={!isValid}>
-          Save
-        </Button>
+        </div>
       </PageSection>
     </div>
   );

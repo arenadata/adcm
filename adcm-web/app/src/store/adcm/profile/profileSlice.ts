@@ -4,16 +4,19 @@ import type { AdcmProfileChangePassword, AdcmProfileUser } from '@models/adcm/pr
 import { createSlice } from '@reduxjs/toolkit';
 import { showError, showSuccess } from '@store/notificationsSlice';
 import { createAsyncThunk } from '@store/redux';
-import { logout } from '@store/authSlice';
+import { logout, setProfile } from '@store/authSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 
 interface AdcmProfileState {
   profile: AdcmProfileUser;
+  isProfileLoading: boolean;
 }
 
 const getProfile = createAsyncThunk('adcm/profile', async (_arg, thunkAPI) => {
   try {
-    return await AdcmProfileApi.getProfile();
+    const profile = await AdcmProfileApi.getProfile();
+    thunkAPI.dispatch(setProfile(profile));
+    return profile;
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }
@@ -35,6 +38,7 @@ const changePassword = createAsyncThunk(
 
 const createInitialState = (): AdcmProfileState => ({
   profile: {} as AdcmProfileUser,
+  isProfileLoading: true,
 });
 
 const profileSlice = createSlice({
@@ -42,8 +46,15 @@ const profileSlice = createSlice({
   initialState: createInitialState(),
   reducers: {},
   extraReducers: (builder) => {
+    builder.addCase(getProfile.pending, (state) => {
+      state.isProfileLoading = true;
+    });
     builder.addCase(getProfile.fulfilled, (state, action) => {
       state.profile = action.payload;
+      state.isProfileLoading = false;
+    });
+    builder.addCase(getProfile.rejected, (state) => {
+      state.isProfileLoading = false;
     });
   },
 });
