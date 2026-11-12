@@ -25,6 +25,7 @@ from django.conf import settings
 from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 from tests.deprecated import TaskTestMixin
 from tests.suites import ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
 
 
 class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
@@ -61,6 +62,26 @@ class TestJob(TaskTestMixin, ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(response.data["id"], job.pk)
+
+    @parametrize(
+        ("executor", "expected_environment"),
+        [
+            param({}, None, id="not_queued"),
+            param({"environment": "local", "worker_id": 100}, "local", id="local"),
+            param({"environment": "celery", "worker_id": "some-celery-id"}, "celery", id="celery"),
+        ],
+    )
+    def test_job_retrieve_parent_task_execution_environment_success(
+        self, executor: dict, expected_environment: str | None
+    ):
+        task, job = self.simulate_finished_task(object_=self.service, action=self.service_action)
+        task.executor = executor
+        task.save(update_fields=["executor"])
+
+        response = self.client.v2[job].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["parentTask"]["executionEnvironment"], expected_environment)
 
     def test_job_retrieve_not_found_fail(self):
         self.simulate_finished_task(object_=self.component, action=self.component_action)
