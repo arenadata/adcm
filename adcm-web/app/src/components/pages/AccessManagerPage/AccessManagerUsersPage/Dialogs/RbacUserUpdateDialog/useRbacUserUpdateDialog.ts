@@ -2,7 +2,8 @@ import { useDispatch, useForm, useStore } from '@hooks';
 import { closeUserUpdateDialog, loadGroups, updateUser } from '@store/adcm/users/usersActionsSlice';
 import type { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
-import { isEmailValid, required } from '@utils/validationsUtils';
+import { isEmailValid, required, stringLengthValidator } from '@utils/validationsUtils';
+import { getProfile } from '@store/adcm/profile/profileSlice';
 
 const initialFormData: RbacUserFormData = {
   username: '',
@@ -22,6 +23,7 @@ export const useRbacUserUpdateDialog = () => {
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
+  const isProfileLoading = useStore((s) => s.adcm.profile.isProfileLoading);
   const isOpen = !!user;
   const isPersonalDataEditForbidden = user?.type === 'ldap';
   const userGroups = groups.length > 0 ? groups : user ? user.groups : [];
@@ -31,6 +33,7 @@ export const useRbacUserUpdateDialog = () => {
 
   useEffect(() => {
     if (isOpen) {
+      dispatch(getProfile());
       dispatch(loadGroups());
     } else {
       setFormData(initialFormData);
@@ -53,13 +56,14 @@ export const useRbacUserUpdateDialog = () => {
 
   useEffect(() => {
     setErrors({
-      password:
-        formData.password.length === 0 ||
-        (formData.password.length >= authSettings.minPasswordLength &&
-          formData.password.length <= authSettings.maxPasswordLength)
-          ? undefined
-          : `Password should be greater than ${authSettings.minPasswordLength - 1}
-            and less than ${authSettings.maxPasswordLength + 1}`,
+      password: formData.password
+        ? stringLengthValidator(
+            formData.password,
+            'Password',
+            authSettings?.minPasswordLength,
+            authSettings?.maxPasswordLength,
+          )
+        : undefined,
       firstName: required(formData.firstName) ? undefined : 'First Name field is required',
       lastName: required(formData.lastName) ? undefined : 'Last Name field is required',
       confirmPassword:
@@ -99,7 +103,7 @@ export const useRbacUserUpdateDialog = () => {
     isOpen,
     groups: userGroups,
     onChangeFormData: handleChangeFormData,
-    isValid: isValid && !isUpdating,
+    isValid: isValid && !isUpdating && !isProfileLoading && !!authSettings,
     formData,
     onClose: handleClose,
     onSubmit: handleCreate,

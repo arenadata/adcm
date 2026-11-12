@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useForm, useStore } from '@hooks';
 import { changePassword } from '@store/adcm/profile/profileSlice';
-import { required } from '@utils/validationsUtils';
+import { required, stringLengthValidator } from '@utils/validationsUtils';
 
 interface ChangePasswordFormData {
   currentPassword: string;
@@ -15,23 +15,22 @@ const initialFormData: ChangePasswordFormData = {
   confirmNewPassword: '',
 };
 
-const passwordMinMaxValidator = (passwordFieldLabel: string, password: string, minValue: number, maxValue: number) => {
-  if (password.length === 0) return;
-
-  return password.length >= minValue && password.length <= maxValue
-    ? undefined
-    : `The ${passwordFieldLabel} should be greater than ${minValue - 1} 
-  and less than ${maxValue + 1}`;
-};
-
 export const useChangePasswordForm = () => {
   const dispatch = useDispatch();
-  const minPasswordLength = useStore((s) => s.auth.profile.authSettings.minPasswordLength);
-  const maxPasswordLength = useStore((s) => s.auth.profile.authSettings.maxPasswordLength);
+  const authSettings = useStore((s) => s.auth.profile.authSettings);
+  const isProfileLoading = useStore((s) => s.adcm.profile.isProfileLoading);
+  const minPasswordLength = authSettings?.minPasswordLength;
+  const maxPasswordLength = authSettings?.maxPasswordLength;
 
   const { formData, setFormData, errors, setErrors, isValid } = useForm<ChangePasswordFormData>(initialFormData);
+  const isFormEmpty = !formData.currentPassword && !formData.newPassword && !formData.confirmNewPassword;
 
   useEffect(() => {
+    if (isFormEmpty) {
+      setErrors({});
+      return;
+    }
+
     setErrors({
       currentPassword:
         required(formData.newPassword) && !required(formData.currentPassword)
@@ -39,23 +38,28 @@ export const useChangePasswordForm = () => {
           : undefined,
       newPassword:
         (required(formData.newPassword) ? undefined : 'New password field is required') ||
-        passwordMinMaxValidator('new password', formData.newPassword, minPasswordLength, maxPasswordLength),
+        stringLengthValidator(formData.newPassword, 'New password', minPasswordLength, maxPasswordLength),
       confirmNewPassword:
         formData.newPassword === formData.confirmNewPassword
           ? undefined
           : 'The new and the confirm passwords should match',
     });
-  }, [formData, minPasswordLength, maxPasswordLength, setErrors]);
+  }, [formData, isFormEmpty, minPasswordLength, maxPasswordLength, setErrors]);
 
   const submitForm = useCallback(() => {
-    const { currentPassword, newPassword } = formData;
+    const { currentPassword, newPassword, confirmNewPassword } = formData;
+
+    if (isFormEmpty || !required(currentPassword) || !required(newPassword) || newPassword !== confirmNewPassword) {
+      return;
+    }
+
     dispatch(
       changePassword({
         currentPassword,
         newPassword,
       }),
     );
-  }, [formData, dispatch]);
+  }, [formData, isFormEmpty, dispatch]);
 
   const handleChangeFormData = (changes: Partial<ChangePasswordFormData>) => {
     setFormData({
@@ -65,7 +69,7 @@ export const useChangePasswordForm = () => {
   };
 
   return {
-    isValid,
+    canSubmit: !!authSettings && !isProfileLoading && !isFormEmpty && isValid,
     errors,
     formData,
     submitForm,

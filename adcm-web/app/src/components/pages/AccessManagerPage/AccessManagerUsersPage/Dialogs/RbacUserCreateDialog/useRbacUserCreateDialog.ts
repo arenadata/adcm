@@ -2,7 +2,8 @@ import { useDispatch, useStore, useForm } from '@hooks';
 import { closeUserCreateDialog, createUser, loadGroups } from '@store/adcm/users/usersActionsSlice';
 import type { RbacUserFormData } from '@pages/AccessManagerPage/AccessManagerUsersPage/RbacUserForm/RbacUserForm.types';
 import { useEffect } from 'react';
-import { isEmailValid, isNameUniq, required } from '@utils/validationsUtils';
+import { isEmailValid, isNameUniq, required, stringLengthValidator } from '@utils/validationsUtils';
+import { getProfile } from '@store/adcm/profile/profileSlice';
 
 const initialFormData: RbacUserFormData = {
   username: '',
@@ -23,6 +24,7 @@ export const useRbacUserCreateDialog = () => {
   const groups = useStore((s) => s.adcm.usersActions.relatedData.groups);
   const authSettings = useStore((s) => s.auth.profile.authSettings);
   const isCurrentUserSuperUser = useStore((s) => s.auth.profile.isSuperUser);
+  const isProfileLoading = useStore((s) => s.adcm.profile.isProfileLoading);
 
   const { formData, handleChangeFormData, setFormData, errors, setErrors, isValid } =
     useForm<RbacUserFormData>(initialFormData);
@@ -39,11 +41,12 @@ export const useRbacUserCreateDialog = () => {
           : 'User with the same username already exists'),
       password:
         (required(formData.password) ? undefined : 'Password field is required') ||
-        (formData.password.length >= authSettings.minPasswordLength &&
-        formData.password.length <= authSettings.maxPasswordLength
-          ? undefined
-          : `Password should be greater than ${authSettings.minPasswordLength - 1}
-          and less than ${authSettings.maxPasswordLength + 1}`),
+        stringLengthValidator(
+          formData.password,
+          'Password',
+          authSettings?.minPasswordLength,
+          authSettings?.maxPasswordLength,
+        ),
       firstName: required(formData.firstName) ? undefined : 'First Name field is required',
       lastName: required(formData.lastName) ? undefined : 'Last Name field is required',
       confirmPassword:
@@ -54,6 +57,7 @@ export const useRbacUserCreateDialog = () => {
 
   useEffect(() => {
     if (isOpen) {
+      dispatch(getProfile());
       dispatch(loadGroups());
     } else {
       setFormData(initialFormData);
@@ -86,7 +90,7 @@ export const useRbacUserCreateDialog = () => {
     isOpen,
     groups,
     onChangeFormData: handleChangeFormData,
-    isValid: isValid && !isCreating,
+    isValid: isValid && !isCreating && !isProfileLoading && !!authSettings,
     formData,
     onClose: handleClose,
     onSubmit: handleCreate,
