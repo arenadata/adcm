@@ -37,9 +37,7 @@ const EditActionHostGroupDialog = ({
       onAction={handleAction}
       onCancel={onClose}
       isActionDisabled={!isValid}
-      isDialogControlsOnTop
-      width="100%"
-      height="100%"
+      width="860px"
       className={s.actionHostGroupDialog}
     >
       <ActionHostGroupDialogForm

@@ -1,16 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useStore, useDispatch } from '@hooks';
+import { useMemo, useCallback } from 'react';
+import { useDispatch, useForm, useStore } from '@hooks';
 import { addClusterHostsWithUpdate, loadHostCandidates } from '@store/adcm/cluster/hosts/hostsActionsSlice';
 import { useParams } from 'react-router-dom';
-import type { AddClusterHostsPayload } from '@models/adcm';
 
-interface CreateClusterHostsPayload extends Omit<AddClusterHostsPayload, 'clusterId'> {
-  selectedHostIds: number[];
+interface CreateClusterHostsPayload {
+  selectedHostIds: Set<number>;
 }
 
-const initialFormData: CreateClusterHostsPayload = {
-  selectedHostIds: [],
-};
+const createInitialFormData = (): CreateClusterHostsPayload => ({
+  selectedHostIds: new Set(),
+});
 
 export const useCreateClusterHostsForm = () => {
   const dispatch = useDispatch();
@@ -23,23 +22,23 @@ export const useCreateClusterHostsForm = () => {
     return hostCandidates?.map(({ name, id }) => ({ value: id, label: name }));
   }, [hostCandidates]);
 
-  const [formData, setFormData] = useState<CreateClusterHostsPayload>(initialFormData);
+  const { formData, setFormData, handleChangeFormData } =
+    useForm<CreateClusterHostsPayload>(createInitialFormData());
 
   const isValid = useMemo(() => {
-    const { selectedHostIds } = formData;
-    return selectedHostIds.length > 0;
-  }, [formData]);
+    return formData.selectedHostIds.size > 0;
+  }, [formData.selectedHostIds]);
 
   const resetForm = useCallback(() => {
-    setFormData(initialFormData);
-  }, []);
+    setFormData(createInitialFormData());
+  }, [setFormData]);
 
   const submit = useCallback(() => {
     const { selectedHostIds } = formData;
-    if (selectedHostIds.length > 0) {
+    if (selectedHostIds.size > 0) {
       dispatch(
         addClusterHostsWithUpdate({
-          selectedHostIds,
+          selectedHostIds: [...selectedHostIds],
           clusterId,
         }),
       );
@@ -50,11 +49,8 @@ export const useCreateClusterHostsForm = () => {
     dispatch(loadHostCandidates(clusterId));
   }, [dispatch]);
 
-  const handleChangeFormData = (changes: Partial<CreateClusterHostsPayload>) => {
-    setFormData({
-      ...formData,
-      ...changes,
-    });
+  const handleFormDataChange = (changes: Partial<CreateClusterHostsPayload>) => {
+    handleChangeFormData(changes);
   };
 
   return {
@@ -62,7 +58,7 @@ export const useCreateClusterHostsForm = () => {
     formData,
     resetForm,
     submit,
-    onChangeFormData: handleChangeFormData,
+    onChangeFormData: handleFormDataChange,
     loadRelatedData,
     relatedData: {
       hostCandidatesOptions,

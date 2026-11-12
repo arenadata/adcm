@@ -2,11 +2,13 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  height: 100%;
+  min-height: 0;
 
   &__leftPanel {
-    --list-transfer-panel-title-color: var(--text-green-color);
+    --list-transfer-panel-title-color: var(--text-txt-h-contrast, var(--main-colors-color-hight-contrast));
   }
   &__rightPanel {
-    --list-transfer-panel-title-color: var(--text-accent-color);
+    --list-transfer-panel-title-color: var(--text-green-color);
   }
 }

@@ -1,9 +1,24 @@
 import { useDispatch, useStore } from '@hooks';
-import { DialogV2, FormFieldsContainer } from '@uikit';
+import { DialogV2 } from '@uikit';
 import { closeCreateDialog } from '@store/adcm/cluster/hosts/hostsActionsSlice';
-import MultiSelectPanel from '@uikit/Select/MultiSelect/MultiSelectPanel/MultiSelectPanel';
+import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { useCreateClusterHostsForm } from '@pages/cluster/ClusterHosts/ClusterHostsActionsDialogs/AddClusterHostsDialog/useAddClusterHostsDialog';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import type { ListTransferItem } from '@uikit/ListTransfer/ListTransfer.types';
+import s from './AddClusterHostsDialog.module.scss';
+
+const availableHostsPanel = {
+  title: 'Available hosts',
+  searchPlaceholder: 'Search',
+  actionButtonLabel: 'Select filtered',
+};
+
+const selectedHostsPanel = {
+  title: 'Selected hosts',
+  searchPlaceholder: 'Search',
+  actionButtonLabel: 'Remove filtered',
+};
 
 const AddClusterHostsDialog = () => {
   const dispatch = useDispatch();
@@ -27,7 +42,14 @@ const AddClusterHostsDialog = () => {
     }
   }, [isOpenDialog, resetForm, loadRelatedData]);
 
-  const handleClusterHostsChange = (value: number[]) => {
+  const srcList = useMemo<ListTransferItem[]>(() => {
+    return hostCandidatesOptions.map(({ value, label }) => ({ key: value, label }));
+  }, [hostCandidatesOptions]);
+
+  const selectedHostIds = formData.selectedHostIds;
+  const hasHostCandidates = hostCandidatesOptions.length > 0;
+
+  const handleClusterHostsChange = (value: Set<number>) => {
     onChangeFormData({ selectedHostIds: value });
   };
 
@@ -43,20 +65,28 @@ const AddClusterHostsDialog = () => {
         onCancel={handleCloseDialog}
         isActionDisabled={!isValid}
         actionButtonLabel="Add"
+        width={hasHostCandidates ? '860px' : undefined}
+        className={s.addClusterHostsDialog}
       >
-        <FormFieldsContainer>
-          {hostCandidatesOptions.length > 0 && (
-            <MultiSelectPanel
-              options={hostCandidatesOptions}
-              value={formData.selectedHostIds}
-              onChange={handleClusterHostsChange}
-              checkAllLabel="All hosts"
-              searchPlaceholder="Search hosts"
-              isSearchable={true}
-            />
-          )}
-          {hostCandidatesOptions.length === 0 && <div>No available hosts found</div>}
-        </FormFieldsContainer>
+        {hasHostCandidates && (
+          <ListTransfer
+            srcList={srcList}
+            destKeys={selectedHostIds}
+            onChangeDest={handleClusterHostsChange}
+            srcOptions={availableHostsPanel}
+            destOptions={selectedHostsPanel}
+            className={s.addClusterHostsDialog__listTransfer}
+          />
+        )}
+        {!hasHostCandidates && (
+          <div>
+            There are no available hosts. Create new hosts on the{' '}
+            <Link className="text-link" to="/hosts" onClick={handleCloseDialog}>
+              “Hosts”
+            </Link>{' '}
+            page.
+          </div>
+        )}
       </DialogV2>
     )
   );

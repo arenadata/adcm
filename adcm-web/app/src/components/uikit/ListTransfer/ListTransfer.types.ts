@@ -1,7 +1,6 @@
 export type ListTransferItem = {
   key: number;
   label: string;
-  isInclude?: boolean;
 };
 
 export interface ListTransferPanelOptions {
@@ -13,6 +12,4 @@ export interface ListTransferPanelOptions {
 export interface ListTransferItemOptions {
   item: ListTransferItem;
   onReplace: (key: ListTransferItem['key']) => void;
-  onSelect: (key: ListTransferItem['key'], isSelected: boolean) => void;
-  isSelected?: boolean;
 }

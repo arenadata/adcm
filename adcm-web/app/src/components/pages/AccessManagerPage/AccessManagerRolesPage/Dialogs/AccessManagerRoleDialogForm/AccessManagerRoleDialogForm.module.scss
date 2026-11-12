@@ -1,22 +1,8 @@
-:global {
-  body.theme-dark {
-    --role-permissions-list-bg-color: var(--color-xdark-new);
-    --role-all-permissions-title-color: var(--color-xgreen-saturated);
-    --role-selected-permissions-title-color: var(--color-xwhite-off);
-  }
-
-  body.theme-light {
-    --role-permissions-list-bg-color: var(--color-xgray-alt);
-    --role-all-permissions-title-color: var(--color-xgreen);
-    --role-selected-permissions-title-color: var(--color-xdark);
-  }
-}
-
 .roleDialogForm {
-  // do not remove, only way to calculate proper list height
-  --list-transfer-list-max-height: calc(100vh - 510px);
   display: grid;
+  flex: 1;
   height: 100%;
+  min-height: 0;
   grid-template-rows: min-content 1fr;
 
   &__column {
@@ -41,10 +27,6 @@
 }
 
 .roleDialog {
-  display: grid;
-  // dialog title - min-content
-  // dialog header control panel - min-content
-  // dialog body - 1fr (100% - title - panel)
-  grid-template-rows: min-content min-content 1fr;
+  background: var(--surfaces-sf-one);
   max-height: 100%;
 }
