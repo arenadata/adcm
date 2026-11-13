@@ -15,6 +15,11 @@ export enum AdcmJobStatus {
   Scheduled = 'scheduled',
 }
 
+export enum AdcmTaskExecutionEnvironment {
+  Local = 'local',
+  Celery = 'celery',
+}
+
 export enum AdcmJobObjectType {
   Adcm = 'adcm',
   Cluster = 'cluster',
@@ -47,6 +52,7 @@ export interface AdcmJob {
   endTime: string | null;
   isTerminatable: boolean;
   description: string | null;
+  executionEnvironment?: AdcmTaskExecutionEnvironment | null;
   childJobs: AdcmSubJob[];
   action: {
     id: number;
@@ -120,10 +126,6 @@ export interface AdcmJobsFilter {
   jobName?: string;
   objectName?: string;
   status?: AdcmJobStatus;
-}
-
-export interface AdcmRestartJobPayload {
-  id: number;
 }
 
 export type AdcmExecutionPlanJobKind = 'job';

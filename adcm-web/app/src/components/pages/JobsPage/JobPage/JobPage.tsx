@@ -20,7 +20,14 @@ const JobPage = () => {
   const executionPlan = useStore(({ adcm }) => adcm.job.executionPlan);
   const [viewMode, setViewMode] = useState<JobViewMode>('table');
   const jobDisplayName = job?.displayName ?? '';
-  const showCeleryWorkersNote = useMemo(() => shouldShowCeleryWorkersNote(executionPlan), [executionPlan]);
+  const showCeleryWorkersNote = useMemo(
+    () =>
+      shouldShowCeleryWorkersNote({
+        plan: executionPlan,
+        executionEnvironment: job?.executionEnvironment,
+      }),
+    [executionPlan, job?.executionEnvironment],
+  );
 
   useRequestJob();
 
