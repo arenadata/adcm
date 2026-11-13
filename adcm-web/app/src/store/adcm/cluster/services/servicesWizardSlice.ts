@@ -4,6 +4,7 @@ import type { AdcmActionProcessStep, AdcmActionWizardProcess, AdcmWizardJobsData
 import { AdcmWizardStepType, AdcmWizardStepStates } from '@models/adcm/wizard';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { resolveProcessOnWizardOpen } from '@utils/wizardProcessUtils';
 import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
 import type {
   AdcmHostShortView,
@@ -103,8 +104,9 @@ const getProcessOnActionClick = createAsyncThunk(
         actionId,
         processId,
       );
-
-      return process;
+      return await resolveProcessOnWizardOpen(process, () =>
+        AdcmClusterServicesApi.createServiceActionWizardProcess(clusterId, serviceId, actionId),
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

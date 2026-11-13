@@ -4,6 +4,7 @@ import { AdcmClusterMappingApi, AdcmJobsApi, type RequestError } from '@api';
 import { AdcmClustersApi } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { resolveProcessOnWizardOpen } from '@utils/wizardProcessUtils';
 import {
   type AdcmActionProcessStep,
   type AdcmActionWizardProcess,
@@ -96,8 +97,9 @@ const getProcessOnActionClick = createAsyncThunk(
   async ({ clusterId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const process = await AdcmClustersApi.getClusterActionWizardProcess(clusterId, actionId, processId);
-
-      return process;
+      return await resolveProcessOnWizardOpen(process, () =>
+        AdcmClustersApi.createClusterActionWizardProcess(clusterId, actionId),
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);

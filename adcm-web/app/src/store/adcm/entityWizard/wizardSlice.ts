@@ -22,6 +22,7 @@ import { showError } from '@store/notificationsSlice';
 import { arrayToHash } from '@utils/arrayUtils';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
+import { resolveProcessOnWizardOpen } from '@utils/wizardProcessUtils';
 import { entities } from './constants/wizardSlice.constants';
 import type { AdcmGetProcessPayload, AdcmGetStepPayload, AdcmGetStepsPayload } from './types/wizardSlice.types';
 import { isCancelledError } from '@api/httpClient/HttpClient';
@@ -75,12 +76,24 @@ const getProcess = createAsyncThunk(
 
 const getProcessOnActionClick = createAsyncThunk(
   'adcm/entityWizard/getProcessOnActionClick',
-  async ({ entityType, entityArgs, ...rest }: AdcmGetProcessPayload, thunkAPI) => {
+  async ({ entityType, entityArgs, actionId, processId, actionHostGroupId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const entity = entities[entityType];
 
-      const process = await entity.getProcess({ ...entityArgs, ...rest });
-      return process;
+      const process = await entity.getProcess({
+        ...entityArgs,
+        actionId,
+        processId,
+        actionHostGroupId,
+      });
+
+      return await resolveProcessOnWizardOpen(process, () =>
+        entity.createProcess({
+          ...entityArgs,
+          actionId,
+          actionHostGroupId,
+        }),
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
