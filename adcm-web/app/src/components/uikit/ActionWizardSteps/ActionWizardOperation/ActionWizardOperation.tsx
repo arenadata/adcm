@@ -35,7 +35,14 @@ const ActionWizardOperation = ({ job, subJobLog, executionPlan = null }: ActionW
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const handleNodeAction = useExecutionGraphNodeAction();
 
-  const showCeleryWorkersNote = useMemo(() => shouldShowCeleryWorkersNote(executionPlan), [executionPlan]);
+  const showCeleryWorkersNote = useMemo(
+    () =>
+      shouldShowCeleryWorkersNote({
+        plan: executionPlan,
+        executionEnvironment: job.executionEnvironment,
+      }),
+    [executionPlan, job.executionEnvironment],
+  );
 
   const handleExpandClick = (id: number) => {
     setExpandableRows((prev) => ({

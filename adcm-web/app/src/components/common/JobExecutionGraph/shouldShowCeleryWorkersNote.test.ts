@@ -1,4 +1,4 @@
-import { AdcmJobStatus } from '@models/adcm';
+import { AdcmJobStatus, AdcmTaskExecutionEnvironment } from '@models/adcm';
 import type { AdcmTaskExecutionPlan } from '@models/adcm';
 import { shouldShowCeleryWorkersNote } from './shouldShowCeleryWorkersNote';
 
@@ -78,16 +78,44 @@ const withParallelPlan: AdcmTaskExecutionPlan = {
 };
 
 describe('shouldShowCeleryWorkersNote', () => {
-  it('hides for null or flat job list', () => {
-    expect(shouldShowCeleryWorkersNote(null)).toBe(false);
-    expect(shouldShowCeleryWorkersNote(flatPlan)).toBe(false);
+  it('hides for null plan or missing environment', () => {
+    expect(shouldShowCeleryWorkersNote({ plan: null, executionEnvironment: AdcmTaskExecutionEnvironment.Local })).toBe(
+      false,
+    );
+    expect(shouldShowCeleryWorkersNote({ plan: withParallelPlan })).toBe(false);
+    expect(shouldShowCeleryWorkersNote({ plan: withParallelPlan, executionEnvironment: null })).toBe(false);
   });
 
-  it('shows when plan has nested groups and no parallel', () => {
-    expect(shouldShowCeleryWorkersNote(sequentialOnlyPlan)).toBe(true);
+  it('hides for flat or sequential-only plans even on local', () => {
+    expect(
+      shouldShowCeleryWorkersNote({
+        plan: flatPlan,
+        executionEnvironment: AdcmTaskExecutionEnvironment.Local,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowCeleryWorkersNote({
+        plan: sequentialOnlyPlan,
+        executionEnvironment: AdcmTaskExecutionEnvironment.Local,
+      }),
+    ).toBe(false);
   });
 
-  it('hides when plan already has parallel groups', () => {
-    expect(shouldShowCeleryWorkersNote(withParallelPlan)).toBe(false);
+  it('shows when plan has parallel and environment is local', () => {
+    expect(
+      shouldShowCeleryWorkersNote({
+        plan: withParallelPlan,
+        executionEnvironment: AdcmTaskExecutionEnvironment.Local,
+      }),
+    ).toBe(true);
+  });
+
+  it('hides when plan has parallel but environment is celery', () => {
+    expect(
+      shouldShowCeleryWorkersNote({
+        plan: withParallelPlan,
+        executionEnvironment: AdcmTaskExecutionEnvironment.Celery,
+      }),
+    ).toBe(false);
   });
 });
