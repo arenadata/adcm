@@ -4,7 +4,7 @@
   "displayName": "check_numeric_min_max_param",
   "description": "",
   "startImpossibleReason": null,
-  "isAllowToTerminate": false,
+  "isAllowToTerminate": true,
   "hostComponentMapRules": [],
   "disclaimer": "",
   "configuration": {

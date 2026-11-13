@@ -157,7 +157,7 @@ def _convert_group(group_spec: GroupSpec, children: list[_ConvertedNode]) -> _Co
         start_time=dates.start,
         end_time=dates.finish,
         duration=dates.duration,
-        is_terminatable=True,
+        is_terminatable=any(node_.is_terminatable for node_, *_ in children),
         kind=group_spec.type,
         children=tuple(node for node, *_ in children),
     )

@@ -441,6 +441,7 @@ class TestWizardActionProcessExecution(ADCMDjangoAPISuite, APIV2Mixin, WizardPro
                     "sleep_script",
                     display_name="Sleep",
                     path="wizard_jinja/scripts/sleep.yaml",
+                    terminatable=True,
                 ),
             ),
         }

@@ -858,7 +858,7 @@ class AbstractAction(ADCMModel):
     multi_state_on_fail_unset = models.JSONField(default=list)
 
     hostcomponentmap = models.JSONField(default=list)
-    allow_to_terminate = models.BooleanField(default=False)
+    allow_to_terminate = models.BooleanField(default=True)
     host_action = models.BooleanField(default=False)
     allow_for_action_host_group = models.BooleanField(default=False)
     allow_in_maintenance_mode = models.BooleanField(default=False)
