@@ -27,8 +27,7 @@ const UA_RULES = [
  * @param userAgent - Raw User-Agent string from audit log
  * @returns Formatted string like "Chrome 154.0.0.0" or "Unknown Browser"
  */
-export function getShortBrowserName(userAgent: string ): string {
-
+export function getShortBrowserName(userAgent: string): string {
   for (const rule of UA_RULES) {
     const match = userAgent.match(rule.regex);
     const version = match?.[1];

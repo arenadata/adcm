@@ -28,3 +28,4 @@ export * from './settings';
 export * from './bundle';
 export * from './common';
 export * from './actionHostGroup';
+export * from './wizard';

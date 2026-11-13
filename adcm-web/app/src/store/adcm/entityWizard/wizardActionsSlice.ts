@@ -16,6 +16,7 @@ import type {
 } from './types/wizardSlice.types';
 import { entities } from './constants/wizardSlice.constants';
 import { createAsyncThunk } from '@store/redux';
+import { isWizardProcessOnFirstStep, shouldShowContinueProcessModal } from '@utils/wizardProcessUtils';
 
 const createProcess = createAsyncThunk(
   'adcm/wizardActions/createProcess',
@@ -223,8 +224,15 @@ const wizardActionsSlice = createSlice({
     });
     builder.addCase(getProcessOnActionClick.fulfilled, (state, action) => {
       const process = action.payload;
-      if (process && process.currentStep !== process.stages[0].steps[0].id) {
+      if (!process) {
+        return;
+      }
+
+      if (shouldShowContinueProcessModal(process)) {
         state.wizardDialog.isContinueProcessModal = true;
+      } else if (isWizardProcessOnFirstStep(process)) {
+        state.wizardDialog.process = process;
+        state.wizardDialog.processId = process.id;
       }
     });
   },

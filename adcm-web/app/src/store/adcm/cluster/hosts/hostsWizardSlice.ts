@@ -4,6 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterHostsApi, AdcmClusterMappingApi, AdcmJobsApi, type RequestError } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { resolveProcessOnWizardOpen } from '@utils/wizardProcessUtils';
 import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
 import type {
   AdcmHostShortView,
@@ -93,8 +94,9 @@ const getProcessOnActionClick = createAsyncThunk(
   async ({ clusterId, hostId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const process = await AdcmClusterHostsApi.getHostActionWizardProcess(clusterId, hostId, actionId, processId);
-
-      return process;
+      return await resolveProcessOnWizardOpen(process, () =>
+        AdcmClusterHostsApi.createHostActionWizardProcess(clusterId, hostId, actionId),
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
