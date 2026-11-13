@@ -49,7 +49,7 @@ const SubJobRow: React.FC<SubJobRowProps> = ({ subJob, onAction }) => {
           />
           <JobActionIconButton
             icon="g1-graph-stop"
-            label="Terminate the subjob"
+            label="Stop the subjob"
             disabled={!isStopEnabled}
             onClick={handleStopClick}
             data-test="subjob-stop"

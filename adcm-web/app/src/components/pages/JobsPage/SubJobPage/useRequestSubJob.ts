@@ -5,6 +5,15 @@ import { defaultDebounceDelay } from '@constants';
 import { getSubJob, refreshSubJob, cleanupSubJob } from '@store/adcm/jobs/subJobSlice';
 import { AdcmJobStatus } from '@models/adcm';
 
+const unfinishedStatuses = new Set([
+  AdcmJobStatus.Created,
+  AdcmJobStatus.Queued,
+  AdcmJobStatus.Scheduled,
+  AdcmJobStatus.Running,
+  AdcmJobStatus.Terminating,
+  AdcmJobStatus.Revoking,
+]);
+
 export const useRequestSubJob = () => {
   const dispatch = useDispatch();
   const { subJobId } = useParams();
@@ -43,10 +52,8 @@ export const useRequestSubJob = () => {
     }
   }, defaultDebounceDelay);
 
-  const isSubJobInProgress =
-    subJob?.status === AdcmJobStatus.Running ||
-    subJob?.status === AdcmJobStatus.Terminating ||
-    subJob?.status === AdcmJobStatus.Revoking;
+  // Skip/Stop depend on the subjob status, so poll until it finishes (not only while running).
+  const isSubJobUnfinished = subJob ? unfinishedStatuses.has(subJob.status) : false;
 
-  useRequestTimer(debounceGetData, debounceRefreshData, isSubJobInProgress ? requestFrequency : 0, [subJobId]);
+  useRequestTimer(debounceGetData, debounceRefreshData, isSubJobUnfinished ? requestFrequency : 0, [subJobId]);
 };
