@@ -233,7 +233,7 @@ def collect_scripts_specs(definitions: DefinitionsMap) -> dict[str, JobSpecV1]:
 # Expected specs
 
 
-def build_expected_spec(*, terminatable: bool = False, with_bundle_switch: bool = False) -> JobSpecV1:
+def build_expected_spec(*, terminatable: bool = True, with_bundle_switch: bool = False) -> JobSpecV1:
     """Spec `GROUPED_SCRIPTS` are expected to be parsed to"""
 
     # absent display names are expected to be filled with names on conversion

@@ -131,6 +131,9 @@ def _propagate_attributes(definitions: dict[BundleDefinitionKey, dict]) -> None:
             for upgrade in definition.get("upgrade") or ():
                 _propagate("venv", source=definition, target=upgrade)
 
+                for script in iterate_scripts(upgrade.get("scripts") or ()):
+                    _propagate("allow_to_terminate", source=upgrade, target=script)
+
 
 def _propagate(key: str, source: dict, target: dict) -> None:
     if target.get(key) is None:

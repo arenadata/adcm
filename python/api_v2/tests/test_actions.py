@@ -33,8 +33,9 @@ from cm.models import (
     Provider,
     Service,
     TaskLog,
+    Upgrade,
 )
-from core.action import ExecutionStatus
+from core.action import ExecutionStatus, ScriptType
 from core.action.operations import ActionStartImpossibleReason
 from core.cluster import ClusterService
 from core.config import ConfigService
@@ -371,8 +372,8 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
             },
         )
 
-    def test_adcm_4535_job_cant_be_terminated_success(self) -> None:
-        non_terminatable_status = ExecutionStatus.QUEUED
+    def test_adcm_4535_job_in_final_status_cant_be_terminated(self) -> None:
+        non_terminatable_status = ExecutionStatus.SUCCESS
 
         self.add_host_to_cluster(cluster=self.cluster, host=self.host_1)
         allowed_action = Action.objects.filter(display_name="cluster_host_action_allowed").first()
@@ -539,6 +540,75 @@ class TestActionsFiltering(ADCMDjangoAPISuite):
         self.assertTrue(all("displayName" in entry for entry in data))
         actual_actions = sorted(entry["displayName"] for entry in data)
         self.assertListEqual(actual_actions, sorted(expected_actions))
+
+
+class TestAllowToTerminate(ADCMDjangoAPISuite):
+    """ADCM-8022"""
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.bundle = cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_allow_to_terminate")
+        cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name="Cluster allow_to_terminate")
+
+    def get_action(self, name: str) -> Action:
+        return Action.objects.get(name=name, prototype=self.cluster.prototype)
+
+    def run_action(self, action: Action) -> int:
+        response = self.client.v2[self.cluster, "actions", action, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        return response.json()["id"]
+
+    def test_internal_script_is_never_terminatable(self) -> None:
+        action = self.get_action("internal_action")
+        # action-level flag is true, but internal scripts are always non-terminatable
+        self.assertTrue(action.allow_to_terminate)
+
+        (spec,) = parse_execution_plan(action.scripts).scripts.values()
+        self.assertEqual(spec.script.type, ScriptType.INTERNAL)
+        self.assertFalse(spec.details.terminatable)
+
+        task_id = self.run_action(action)
+        job = JobLog.objects.get(task_id=task_id)
+        self.assertFalse(job.allow_to_terminate)
+
+        response = self.client.v2[job, "terminate"].post(data={})
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(
+            response.json(),
+            {
+                "code": "NOT_ALLOWED_TERMINATION",
+                "level": "error",
+                "desc": f"Job #{job.id} termination is not allowed due to action definition",
+            },
+        )
+
+    def test_explicit_allow_to_terminate_is_used(self) -> None:
+        self.assertTrue(self.get_action("true_action").allow_to_terminate)
+        self.assertFalse(self.get_action("false_action").allow_to_terminate)
+
+        self.assertTrue(Upgrade.objects.get(name="true_upgrade", bundle=self.bundle).action.allow_to_terminate)
+        self.assertFalse(Upgrade.objects.get(name="false_upgrade", bundle=self.bundle).action.allow_to_terminate)
+
+    def test_allow_to_terminate_defaults_to_true(self) -> None:
+        self.assertTrue(self.get_action("default_action").allow_to_terminate)
+        self.assertTrue(Upgrade.objects.get(name="default_upgrade", bundle=self.bundle).action.allow_to_terminate)
+
+    def test_jobs_terminatable_except_internal(self) -> None:
+        task_id = self.run_action(self.get_action("mixed_action"))
+
+        jobs = {job.name: job.allow_to_terminate for job in JobLog.objects.filter(task_id=task_id)}
+        self.assertTrue(jobs["ansible_step"])
+        self.assertFalse(jobs["internal_step"])
+
+        task_response = (self.client.v2 / "tasks" / task_id).get()
+        self.assertEqual(task_response.status_code, HTTP_200_OK)
+
+        api_jobs = {job["name"]: job["isTerminatable"] for job in task_response.json()["childJobs"]}
+        self.assertTrue(api_jobs["ansible_step"])
+        self.assertFalse(api_jobs["internal_step"])
 
 
 class TestActionWithTemplates(ADCMDjangoAPISuite):

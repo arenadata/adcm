@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from adcm.serializers import EmptySerializer
-from cm.models import JobLog, JobStatus, TaskLog
+from cm.models import JobLog, TaskLog
+from core.action.job.operations import is_terminatable_status
+from core.action.types import ExecutionStatus
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
@@ -92,7 +94,7 @@ class TaskSerializer(ModelSerializer):
     @staticmethod
     def get_is_terminatable(obj: TaskLog) -> bool:
         allow_to_terminate = obj.action.allow_to_terminate if obj.action else False
-        is_active_status = obj.status in {JobStatus.CREATED, JobStatus.RUNNING}
+        is_active_status = is_terminatable_status(ExecutionStatus(obj.status))
 
         return allow_to_terminate and is_active_status
 

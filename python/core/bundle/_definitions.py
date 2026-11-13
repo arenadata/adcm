@@ -103,7 +103,8 @@ class ActionDefinition:
     venv: Literal["2.16", "2.21"] = "2.16"
 
     # Allowed operations
-    allow_to_terminate: bool = False
+    # `allow_to_terminate` is deprecated and defaults to `True`
+    allow_to_terminate: bool = True
     allow_for_action_host_group: bool = False
     allow_in_maintenance_mode: bool = False
 

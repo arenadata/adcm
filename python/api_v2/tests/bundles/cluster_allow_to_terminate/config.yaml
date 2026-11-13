@@ -1,0 +1,103 @@
+---
+- type: cluster
+  name: cluster_allow_to_terminate
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  actions:
+    default_action:
+      states:
+        available: any
+      scripts:
+        - name: default_action
+          script: ./playbook.yaml
+          script_type: ansible
+
+    true_action:
+      allow_to_terminate: true
+      states:
+        available: any
+      scripts:
+        - name: true_action
+          script: ./playbook.yaml
+          script_type: ansible
+
+    false_action:
+      allow_to_terminate: false
+      states:
+        available: any
+      scripts:
+        - name: false_action
+          script: ./playbook.yaml
+          script_type: ansible
+
+    internal_action:
+      allow_to_terminate: true
+      states:
+        available: any
+      hc_acl: []
+      scripts:
+        - name: internal_action
+          script: hc_apply
+          script_type: internal
+          params:
+            rules: []
+
+    mixed_action:
+      states:
+        available: any
+      hc_acl: []
+      scripts:
+        - name: ansible_step
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: internal_step
+          script: hc_apply
+          script_type: internal
+          params:
+            rules: []
+
+  upgrade:
+    - name: default_upgrade
+      versions:
+        min: "0.9"
+        max: "1.0"
+      states:
+        available: any
+      scripts:
+        - name: run
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+
+    - name: true_upgrade
+      allow_to_terminate: true
+      versions:
+        min: "0.9"
+        max: "1.0"
+      states:
+        available: any
+      scripts:
+        - name: run
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+
+    - name: false_upgrade
+      allow_to_terminate: false
+      versions:
+        min: "0.9"
+        max: "1.0"
+      states:
+        available: any
+      scripts:
+        - name: run
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: switch
+          script: bundle_switch
+          script_type: internal

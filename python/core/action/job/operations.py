@@ -32,6 +32,7 @@ TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, 
 # CREATED is the one unfinished status that says nothing is going on yet, so it's never "in progress"
 _IN_PROGRESS_STATUSES = frozenset(UNFINISHED_STATUSES).difference((ExecutionStatus.CREATED,))
 _FAILURE_STATUSES = frozenset((ExecutionStatus.FAILED, ExecutionStatus.BROKEN))
+_TERMINATABLE_STATUSES = frozenset({ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED, ExecutionStatus.RUNNING})
 
 
 def calculate_task_final_status(
@@ -164,7 +165,7 @@ def aggregate_group_dates(children: Sequence[RuntimeDates]) -> RuntimeDates:
 
 
 def is_terminatable_status(status: ExecutionStatus) -> bool:
-    return status in (ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED, ExecutionStatus.RUNNING)
+    return status in _TERMINATABLE_STATUSES
 
 
 def _calculate_level_status(
