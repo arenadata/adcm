@@ -1,0 +1,125 @@
+$disclosure-width: 32px;
+$connector-width: 12px;
+$card-width: 320px;
+$node-width: $disclosure-width + $connector-width + $card-width;
+$node-height: 48px;
+$control-size: 32px;
+
+.root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: $node-width;
+  box-sizing: border-box;
+}
+
+.disclosure {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: $control-size;
+  height: $control-size;
+}
+
+.expandToggle {
+  box-sizing: border-box;
+  width: $control-size;
+  height: $control-size;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control, 4px);
+  background: var(--bg-quaternary-soft);
+  color: var(--icon-primary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-quaternary-strong);
+  }
+}
+
+.connector {
+  flex-shrink: 0;
+  width: $connector-width;
+  height: 0;
+
+  &_linked {
+    border-top: var(--border-width-subtle, 1px) solid var(--border-default);
+  }
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--inner-gap-relaxed, 8px);
+  width: $card-width;
+  min-width: $card-width;
+  max-width: $card-width;
+  height: $node-height;
+  padding: var(--panel-padding-sm, 8px);
+  border-radius: var(--radius-control, 4px);
+  border: var(--border-width-default, 2px) solid var(--border-default);
+  background: var(--bg-secondary-soft);
+  box-sizing: border-box;
+  cursor: pointer;
+
+  &_success {
+    border-color: var(--border-sucess-default);
+  }
+
+  &_failed {
+    border-color: var(--border-danger-default);
+  }
+
+  &_running {
+    border-color: var(--border-info-default);
+  }
+
+  &_created,
+  &_queued,
+  &_scheduled,
+  &_revoked,
+  &_aborted {
+    border-color: var(--border-default);
+  }
+}
+
+.titleWrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--caption-1-size);
+  line-height: var(--line-height-200);
+  font-weight: var(--weight-regular, 400);
+  color: var(--text-link-default);
+}
+
+.duration {
+  flex-shrink: 0;
+  font-size: var(--caption-1-size);
+  line-height: var(--line-height-200);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--inner-gap-relaxed, 8px);
+  margin-left: 2px;
+}
+
+.handle {
+  opacity: 0;
+}

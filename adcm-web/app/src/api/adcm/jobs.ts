@@ -1,6 +1,13 @@
 import { httpClient } from '@api/httpClient';
 import type { PaginationParams, SortParams } from '@models/table';
-import type { Batch, AdcmJobsFilter, AdcmSubJobLogItem, AdcmJob, AdcmSubJobDetails } from '@models/adcm';
+import type {
+  Batch,
+  AdcmJobsFilter,
+  AdcmSubJobLogItem,
+  AdcmJob,
+  AdcmSubJobDetails,
+  AdcmTaskExecutionPlan,
+} from '@models/adcm';
 import qs from 'qs';
 import { prepareQueryParams } from '@utils/apiUtils';
 
@@ -22,6 +29,17 @@ export class AdcmJobsApi {
 
   public static async stopJob(id: number) {
     await httpClient.post(`/api/v2/tasks/${id}/terminate/`);
+  }
+
+  public static async getTaskExecutionPlan(taskId: number) {
+    const response = await httpClient.get<AdcmTaskExecutionPlan>(
+      `/api/v2/internal/unstable/tasks/${taskId}/execution-plan/`,
+    );
+    return response.data;
+  }
+
+  public static async stopJobGroup(taskId: number, groupName: string) {
+    await httpClient.post(`/api/v2/tasks/${taskId}/terminate/`, { group: groupName });
   }
 
   // Sub jobs (backend jobs)

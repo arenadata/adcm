@@ -125,3 +125,37 @@ export interface AdcmJobsFilter {
 export interface AdcmRestartJobPayload {
   id: number;
 }
+
+export type AdcmExecutionPlanJobKind = 'job';
+export type AdcmExecutionPlanGroupKind = 'sequential' | 'parallel';
+
+export interface AdcmExecutionPlanJobNode {
+  kind: AdcmExecutionPlanJobKind;
+  id: number;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  isTerminatable: boolean;
+}
+
+export interface AdcmExecutionPlanGroupNode {
+  kind: AdcmExecutionPlanGroupKind;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  isTerminatable: boolean;
+  children: AdcmExecutionPlanNode[];
+}
+
+export type AdcmExecutionPlanNode = AdcmExecutionPlanJobNode | AdcmExecutionPlanGroupNode;
+
+export interface AdcmTaskExecutionPlan {
+  version: number;
+  children: AdcmExecutionPlanNode[];
+}

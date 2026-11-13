@@ -1,0 +1,29 @@
+$control-size: 32px;
+
+.button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: $control-size;
+  height: $control-size;
+  min-width: $control-size;
+  min-height: $control-size;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-control, 4px);
+  background: var(--bg-quaternary-soft);
+  color: var(--icon-primary);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-quaternary-strong);
+    color: var(--icon-primary);
+  }
+
+  &:disabled {
+    background: var(--bg-disabled-soft);
+    color: var(--icon-disabled);
+    cursor: not-allowed;
+  }
+}

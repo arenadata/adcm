@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createAsyncThunk } from '@store/redux';
-import type { AdcmJob } from '@models/adcm';
+import type { AdcmJob, AdcmTaskExecutionPlan } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
@@ -9,6 +9,7 @@ import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmJobState {
   job?: AdcmJob;
+  executionPlan: AdcmTaskExecutionPlan | null;
   isLoading: boolean;
 }
 
@@ -20,15 +21,29 @@ const loadFromBackend = createAsyncThunk('adcm/job/loadFromBackend', async (id: 
   }
 });
 
+const loadExecutionPlanFromBackend = createAsyncThunk(
+  'adcm/job/loadExecutionPlanFromBackend',
+  async (id: number, thunkAPI) => {
+    try {
+      return await AdcmJobsApi.getTaskExecutionPlan(id);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const getJob = createAsyncThunk('adcm/job/getJob', async (id: number, thunkAPI) => {
   thunkAPI.dispatch(setIsLoading(true));
   const startDate = new Date();
-  await thunkAPI
-    .dispatch(loadFromBackend(id))
-    .unwrap()
-    .catch(() => {
-      thunkAPI.dispatch(showError({ message: 'Job not found' }));
-    });
+  await Promise.all([
+    thunkAPI
+      .dispatch(loadFromBackend(id))
+      .unwrap()
+      .catch(() => {
+        thunkAPI.dispatch(showError({ message: 'Job not found' }));
+      }),
+    thunkAPI.dispatch(loadExecutionPlanFromBackend(id)),
+  ]);
 
   executeWithMinDelay({
     startDate,
@@ -40,11 +55,12 @@ const getJob = createAsyncThunk('adcm/job/getJob', async (id: number, thunkAPI) 
 });
 
 const refreshJob = createAsyncThunk('adcm/job/refreshJob', async (id: number, thunkAPI) => {
-  thunkAPI.dispatch(loadFromBackend(id));
+  await Promise.all([thunkAPI.dispatch(loadFromBackend(id)), thunkAPI.dispatch(loadExecutionPlanFromBackend(id))]);
 });
 
 const createInitialState = (): AdcmJobState => ({
   job: undefined,
+  executionPlan: null,
   isLoading: true,
 });
 
@@ -62,6 +78,12 @@ const jobSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(loadFromBackend.fulfilled, (state, action) => {
       state.job = action.payload;
+    });
+    builder.addCase(loadExecutionPlanFromBackend.fulfilled, (state, action) => {
+      state.executionPlan = action.payload;
+    });
+    builder.addCase(loadExecutionPlanFromBackend.rejected, (state) => {
+      state.executionPlan = null;
     });
     builder.addCase(wsActions.update_task, (state, action) => {
       const { id, changes } = action.payload.object;
