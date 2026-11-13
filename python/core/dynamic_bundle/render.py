@@ -150,7 +150,7 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
         #  But decrypting 192 secret fields takes about 1.8 seconds. See bundle from ADCM-7481.
         #  It seems we can optimize this. I think that for template rendering,
         #  we may not encrypt the fields when preparing the context in order to decrypt them later.
-        decrypted_context = _decrypt_secrets(encrypted_context, decrypt=self.secrets.decrypt)
+        decrypted_context = config.decode_ansible_json_special_values(encrypted_context, decrypt=self.secrets.decrypt)
 
         template_environment = templates.RendererEnv(discovery_root=bundle_root)
         renderer = templates.get_renderer(template=template, environment=template_environment)
@@ -171,26 +171,3 @@ class BundleRenderer(Generic[CtxAT, CtxTT]):
             raise bundle.BundleParsingError(message)
 
         return rendered_data
-
-
-def _decrypt_secrets(source: dict, decrypt: config.DecryptFunc) -> dict:
-    """
-    Decrypt secrets in source that are in "ansible" format
-    """
-
-    result = {}
-
-    for key, value in source.items():
-        if isinstance(value, dict):
-            if "__ansible_vault" in value:
-                result[key] = decrypt(value["__ansible_vault"])
-            else:
-                result[key] = _decrypt_secrets(value, decrypt=decrypt)
-        elif isinstance(value, list):
-            result[key] = [
-                entry if not isinstance(entry, dict) else _decrypt_secrets(entry, decrypt=decrypt) for entry in value
-            ]
-        else:
-            result[key] = value
-
-    return result

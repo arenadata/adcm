@@ -61,8 +61,6 @@ class EventNotifier(Protocol):
 
     def send_task_status_update_event(self, task_id: int, status: str) -> Any: ...
 
-    def send_prototype_update_event(self, object_: CoreObjectDescriptor) -> Any: ...
-
 
 class StatusServerInteractor(Protocol):
     def reset_objects_in_mm(self, cluster_service: ClusterService) -> Any: ...
@@ -392,7 +390,7 @@ class JobSequenceRunner(TaskRunner):
         )
 
         if task.action.is_upgrade:
-            self._notifier.send_prototype_update_event(object_=owner)
+            self._container.get(StatusScenarios).send_prototype_and_state_update_event(object_=owner)
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 

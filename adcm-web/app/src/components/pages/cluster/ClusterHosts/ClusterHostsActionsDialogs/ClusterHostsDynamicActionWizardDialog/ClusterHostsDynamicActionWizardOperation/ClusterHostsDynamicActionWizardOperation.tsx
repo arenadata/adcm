@@ -18,13 +18,13 @@ const ClusterHostsDynamicActionWizardOperation = ({ step }: ClusterHostsDynamicA
     return null;
   }
 
-  const { job, subJobLog } = jobsData[stepId];
+  const { job, subJobLog, executionPlan } = jobsData[stepId];
 
   if (!job || !subJobLog) {
     return null;
   }
 
-  return <ActionWizardOperation job={job} subJobLog={subJobLog} />;
+  return <ActionWizardOperation job={job} subJobLog={subJobLog} executionPlan={executionPlan} />;
 };
 
 export default ClusterHostsDynamicActionWizardOperation;

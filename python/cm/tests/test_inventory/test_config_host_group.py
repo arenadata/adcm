@@ -16,13 +16,13 @@ from core.types import CoreObjectDescriptor
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.services.job.context import get_inventory_data
-from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     Component,
     Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.tests.utils import decrypt_secrets
 
 
 class TestCHGsInInventory(BaseInventoryTestCase):

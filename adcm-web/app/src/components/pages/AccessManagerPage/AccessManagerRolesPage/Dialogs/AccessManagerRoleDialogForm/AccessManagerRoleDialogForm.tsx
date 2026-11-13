@@ -14,7 +14,7 @@ const availablePermissionsPanel = {
 const selectedPermissionsPanel = {
   title: 'Selected permissions',
   searchPlaceholder: 'Search permissions',
-  actionButtonLabel: 'Remove selected',
+  actionButtonLabel: 'Remove filtered',
 };
 
 interface AccessManagerRoleDialogFormProps {

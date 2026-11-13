@@ -7,6 +7,7 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterServiceComponentsApi, type RequestError } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage, isErrorConflict } from '@utils/httpResponseUtils';
+import { isWizardProcessOnFirstStep, shouldShowContinueProcessModal } from '@utils/wizardProcessUtils';
 import { createSlice } from '@reduxjs/toolkit';
 import {
   cleanupClusterServiceComponentsWizard,
@@ -248,8 +249,15 @@ const serviceComponentsWizardActionsSlice = createSlice({
     });
     builder.addCase(getProcessOnActionClick.fulfilled, (state, action) => {
       const process = action.payload;
-      if (process && process.currentStep !== process.stages[0].steps[0].id) {
+      if (!process) {
+        return;
+      }
+
+      if (shouldShowContinueProcessModal(process)) {
         state.wizardDialog.isContinueProcessModal = true;
+      } else if (isWizardProcessOnFirstStep(process)) {
+        state.wizardDialog.process = process;
+        state.wizardDialog.processId = process.id;
       }
     });
   },

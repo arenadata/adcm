@@ -17,6 +17,7 @@ from core.config import _operations as operations
 from core.config import _pattern as pattern
 from core.config import _yspec as yspec
 from core.config._errors import DefaultFileMissingError, ConfigOperationError
+from core.config._operations import decode_ansible_json_special_values
 from core.config._config import (
     flat_to_nested,
     get_by_full_name,
@@ -96,6 +97,7 @@ __all__ = [
     "Violations",
     "change_by_full_name",
     "change_by_full_name_skip_missing",
+    "decode_ansible_json_special_values",
     "files",
     "flat_to_nested",
     "get_by_full_name",

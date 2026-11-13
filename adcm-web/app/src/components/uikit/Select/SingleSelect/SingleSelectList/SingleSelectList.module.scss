@@ -23,6 +23,17 @@
 
 .singleSelectList {
   overflow: auto;
+
+  &_virtual {
+    box-sizing: border-box;
+    overflow-x: hidden;
+
+    .singleSelectListItem {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
 }
 
 .singleSelectListItem {

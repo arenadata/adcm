@@ -14,7 +14,7 @@ const SingleSelectListItem = <T,>({ onSelect, option, className, children }: Sin
   };
 
   return (
-    <li className={className} onClick={handleClick}>
+    <div className={className} onClick={handleClick} title={option.label}>
       <FlexGroup gap="8px">
         {children}
 
@@ -24,7 +24,7 @@ const SingleSelectListItem = <T,>({ onSelect, option, className, children }: Sin
           </Tooltip>
         )}
       </FlexGroup>
-    </li>
+    </div>
   );
 };
 

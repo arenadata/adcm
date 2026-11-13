@@ -28,16 +28,15 @@ const ListTransfer: React.FC<ListTransferProps> = ({
   destError,
   className,
 }) => {
+  const { actionButtonLabel: srcActionButtonLabel = 'Select filtered', ...srcPanelOptions } = srcOptions ?? {};
+  const { actionButtonLabel: destActionButtonLabel = 'Remove filtered', ...destPanelOptions } = destOptions ?? {};
+
   const srcList = useMemo(() => {
-    return incomingList.map((item) => {
-      const newItem = { ...item };
-      newItem.isInclude = destKeys.has(item.key);
-      return newItem;
-    });
+    return incomingList.filter(({ key }) => !destKeys.has(key));
   }, [incomingList, destKeys]);
 
   const destList = useMemo(() => {
-    return incomingList.filter((item) => destKeys.has(item.key));
+    return incomingList.filter(({ key }) => destKeys.has(key));
   }, [incomingList, destKeys]);
 
   const handleAppendToDest = (list: ListTransferItem['key'][]) => {
@@ -64,7 +63,8 @@ const ListTransfer: React.FC<ListTransferProps> = ({
     <div className={cn(s.listTransfer, className)}>
       <ListTransferPanel
         title="Primary"
-        {...srcOptions}
+        {...srcPanelOptions}
+        actionButtonLabel={srcActionButtonLabel}
         list={srcList}
         onAction={handleAppendToDest}
         ItemComponent={ListTransferItemSrc}
@@ -73,7 +73,8 @@ const ListTransfer: React.FC<ListTransferProps> = ({
       />
       <ListTransferPanel
         title="Secondary"
-        {...destOptions}
+        {...destPanelOptions}
+        actionButtonLabel={destActionButtonLabel}
         list={destList}
         onAction={handleRemoveFromDest}
         ItemComponent={ListTransferItemDest}

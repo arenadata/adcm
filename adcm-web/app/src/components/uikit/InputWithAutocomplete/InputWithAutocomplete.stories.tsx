@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { InputWithAutoCompleteProps } from './InputWithAutocomplete';
 import InputWithAutocomplete from './InputWithAutocomplete';
 import type { Meta, StoryObj } from '@storybook/react';
@@ -10,6 +10,9 @@ export default {
   argTypes: {
     suggestions: {
       description: 'Suggestions',
+    },
+    isVirtualized: {
+      control: { type: 'boolean' },
     },
     disabled: {
       description: 'Disabled',
@@ -50,6 +53,39 @@ export const InputWithAutocompleteStory: Story = {
   args: {
     placeholder: 'Some placeholder',
     suggestions: ['One', 'Two', 'three'],
+    isVirtualized: false,
   },
   render: (args) => <InputWithAutocompleteStoryWithHooks {...args} />,
+};
+
+const LARGE_SUGGESTIONS_COUNT = 5000;
+
+const VirtualizedInputWithAutocompleteExample = () => {
+  const suggestions = useMemo(
+    () =>
+      Array.from({ length: LARGE_SUGGESTIONS_COUNT }, (_, index) => {
+        return `table_${index.toString().padStart(4, '0')}_long_suggestion_name`;
+      }),
+    [],
+  );
+  const [value, setValue] = useState('');
+
+  return (
+    <div style={{ padding: 30, width: 360 }}>
+      <p style={{ marginBottom: 12 }}>
+        {LARGE_SUGGESTIONS_COUNT.toLocaleString()} suggestions, <code>isVirtualized</code>
+      </p>
+      <InputWithAutocomplete
+        value={value}
+        suggestions={suggestions}
+        isVirtualized
+        placeholder="Select table"
+        onChange={(event) => setValue(event.target.value)}
+      />
+    </div>
+  );
+};
+
+export const VirtualizedInputWithAutocomplete: Story = {
+  render: () => <VirtualizedInputWithAutocompleteExample />,
 };

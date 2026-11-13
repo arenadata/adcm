@@ -1,37 +1,16 @@
-import type { ChangeEvent } from 'react';
 import type React from 'react';
-import { Checkbox, IconButton, Tag } from '@uikit';
+import { Checkbox } from '@uikit';
 import type { ListTransferItemOptions } from '@uikit/ListTransfer/ListTransfer.types';
+import s from './ListTransferItem.module.scss';
 
-const ListTransferItemDest: React.FC<ListTransferItemOptions> = ({
-  item: { key, label },
-  onSelect,
-  onReplace,
-  isSelected = false,
-}) => {
-  const handleChecked = (event: ChangeEvent<HTMLInputElement>) => {
-    onSelect(key, event.target.checked);
-  };
-  const handleRemove = () => {
-    onReplace(key);
-  };
-
+const ListTransferItemDest: React.FC<ListTransferItemOptions> = ({ item: { key, label }, onReplace }) => {
   return (
-    <Tag
-      startAdornment={<Checkbox checked={isSelected} onChange={handleChecked} />}
-      endAdornment={
-        <IconButton
-          //
-          icon="g1-remove"
-          variant="secondary"
-          size={20}
-          onClick={handleRemove}
-          title="Remove"
-        />
-      }
-    >
-      {label}
-    </Tag>
+    <Checkbox
+      className={s.listTransferItem}
+      checked={true}
+      onChange={() => onReplace(key)}
+      label={label}
+    />
   );
 };
 export default ListTransferItemDest;

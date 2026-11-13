@@ -3,6 +3,7 @@ import cn from 'classnames';
 import type { JSONPrimitive } from '@models/json';
 import Popover from '@uikit/Popover/Popover';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
+import { SuggestionsList } from '@uikit/InputWithAutocomplete/SuggestionsList/SuggestionsList';
 import {
   getInlineStringDisplayText,
   getInlineStringEditValue,
@@ -10,7 +11,6 @@ import {
 } from './InlineAutoSize.utils';
 import { filterInlineStringSuggestions } from './InlinePrimitiveFieldControl.utils';
 import s from './InlinePrimitiveFieldControl.module.scss';
-import suggestionsStyles from '@uikit/InputWithAutocomplete/InputWithAutocomplete.module.scss';
 import { EMPTY_ARRAY } from '@constants';
 
 export interface InlineAutoSizeStringControlProps {
@@ -19,6 +19,7 @@ export interface InlineAutoSizeStringControlProps {
   isReadonly?: boolean;
   autoFocus?: boolean;
   suggestions?: string[];
+  isVirtualized?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -28,6 +29,7 @@ const InlineAutoSizeStringControl = ({
   isReadonly = false,
   autoFocus = false,
   suggestions,
+  isVirtualized = false,
   onChange,
 }: InlineAutoSizeStringControlProps) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -65,7 +67,7 @@ const InlineAutoSizeStringControl = ({
     if (hasSuggestions) {
       setIsSuggestionsOpen(true);
     }
-  }, []);
+  }, [hasSuggestions]);
 
   const handleTextareaBlur = useCallback(() => {
     setIsFocused(false);
@@ -77,13 +79,8 @@ const InlineAutoSizeStringControl = ({
   }, []);
 
   const handleSelectSuggestion = useCallback(
-    (event: React.MouseEvent<HTMLLIElement>) => {
-      const nextValue = event.currentTarget.dataset.suggestion;
-      if (nextValue === undefined) {
-        return;
-      }
-
-      handleValueChange(nextValue);
+    (suggestion: string) => {
+      handleValueChange(suggestion);
       textareaRef.current?.focus();
     },
     [handleValueChange],
@@ -135,18 +132,11 @@ const InlineAutoSizeStringControl = ({
           initialFocus={textareaRef}
         >
           <PopoverPanelDefault>
-            <ul className={cn(suggestionsStyles.suggestionsList, 'scroll')}>
-              {filteredSuggestions.map((suggestion) => (
-                <li
-                  key={suggestion}
-                  className={suggestionsStyles.suggestion}
-                  data-suggestion={suggestion}
-                  onClick={handleSelectSuggestion}
-                >
-                  {suggestion}
-                </li>
-              ))}
-            </ul>
+            <SuggestionsList
+              suggestions={filteredSuggestions}
+              onSelect={handleSelectSuggestion}
+              isVirtualized={isVirtualized}
+            />
           </PopoverPanelDefault>
         </Popover>
       )}

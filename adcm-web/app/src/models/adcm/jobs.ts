@@ -15,6 +15,11 @@ export enum AdcmJobStatus {
   Scheduled = 'scheduled',
 }
 
+export enum AdcmTaskExecutionEnvironment {
+  Local = 'local',
+  Celery = 'celery',
+}
+
 export enum AdcmJobObjectType {
   Adcm = 'adcm',
   Cluster = 'cluster',
@@ -47,6 +52,7 @@ export interface AdcmJob {
   endTime: string | null;
   isTerminatable: boolean;
   description: string | null;
+  executionEnvironment?: AdcmTaskExecutionEnvironment | null;
   childJobs: AdcmSubJob[];
   action: {
     id: number;
@@ -122,6 +128,36 @@ export interface AdcmJobsFilter {
   status?: AdcmJobStatus;
 }
 
-export interface AdcmRestartJobPayload {
+export type AdcmExecutionPlanJobKind = 'job';
+export type AdcmExecutionPlanGroupKind = 'sequential' | 'parallel';
+
+export interface AdcmExecutionPlanJobNode {
+  kind: AdcmExecutionPlanJobKind;
   id: number;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  isTerminatable: boolean;
+}
+
+export interface AdcmExecutionPlanGroupNode {
+  kind: AdcmExecutionPlanGroupKind;
+  name: string;
+  displayName: string;
+  status: AdcmJobStatus;
+  startTime: string | null;
+  endTime: string | null;
+  duration: number | null;
+  isTerminatable: boolean;
+  children: AdcmExecutionPlanNode[];
+}
+
+export type AdcmExecutionPlanNode = AdcmExecutionPlanJobNode | AdcmExecutionPlanGroupNode;
+
+export interface AdcmTaskExecutionPlan {
+  version: number;
+  children: AdcmExecutionPlanNode[];
 }

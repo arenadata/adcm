@@ -161,13 +161,7 @@ class RunJob:
 
             create_related_configs(job_id=job_id, owner=task.owner, config_repo=self.config_repo)  # pyright: ignore[reportArgumentType]
 
-            executor.execute()
-
-            to_update = JobUpdateDTO(
-                pid=getattr(execute_target.executor.process, "pid", NO_PROCESS_PID),
-                status=ExecutionStatus.RUNNING,
-                start_date=environment.now(),
-            )
+            to_update = JobUpdateDTO(status=ExecutionStatus.RUNNING, start_date=environment.now())
             self.repo.update_job(id=job_id, data=to_update)
 
             # it's enough to detect the function once (as the delete one),
@@ -176,6 +170,20 @@ class RunJob:
                 update_task_lock_concern(job_id=job_id)
             else:
                 update_task_flag_concern(job_id=job_id)
+
+        try:
+            # Executor launch moved outside of transaction,
+            # so internal scripts won't have one extra layer of transaction and go through CREATED->RUNNING->FINAL flow.
+            # Yet pid association is now moved in time, so it's possible to have RUNNING without pid.
+
+            executor.execute()
+            to_update = JobUpdateDTO(pid=getattr(execute_target.executor.process, "pid", NO_PROCESS_PID))
+            self.repo.update_job(id=job_id, data=to_update)
+        except:
+            to_update = JobUpdateDTO(status=ExecutionStatus.BROKEN)
+            self.repo.update_job(id=job_id, data=to_update)
+
+            raise
 
         result = executor.wait_finished().result
 
@@ -345,7 +353,7 @@ class FinalizeTask:
         )
 
         if task.action.is_upgrade:
-            self.notifier.send_prototype_update_event(object_=owner)
+            self.status_scenarios.send_prototype_and_state_update_event(object_=owner)
         else:
             self.notifier.send_update_event(object_=owner, changes={"state": state})
 

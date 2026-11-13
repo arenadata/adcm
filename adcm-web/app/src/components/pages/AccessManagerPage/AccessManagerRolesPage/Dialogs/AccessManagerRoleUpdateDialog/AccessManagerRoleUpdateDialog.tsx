@@ -14,7 +14,7 @@ const AccessManagerRoleUpdateDialog = () => {
         onAction={onUpdate}
         onCancel={onClose}
         isActionDisabled={!isValid}
-        isDialogControlsOnTop
+        isFullHeight
         width="100%"
         height="100%"
         className={s.roleDialog}

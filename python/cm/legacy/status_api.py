@@ -18,10 +18,8 @@ from django.conf import settings
 from requests import Response
 import requests
 
-from cm.converters import core_type_to_model
 from cm.errors import HTTP_200_OK, HTTP_201_CREATED
 from cm.logger import logger
-from cm.models import ADCMEntity
 
 
 class EventTypes:
@@ -143,28 +141,3 @@ def send_object_update_event(obj_id: int, obj_type: str, changes: dict) -> None:
 
 def send_task_status_update_event(task_id: int, status: str) -> None:
     post_event(event=EventTypes.UPDATE.format("task"), object_id=task_id, changes={"status": status})
-
-
-def send_prototype_update_event(object_: CoreObjectDescriptor) -> None:
-    # todo inplace request, no need in the whole object
-    send_prototype_and_state_update_event(
-        core_type_to_model(core_type=object_.type).objects.select_related("prototype").get(id=object_.id)
-    )
-
-
-def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
-    changes = {
-        "state": object_.state,
-        "prototype": {
-            "id": object_.prototype.pk,
-            "name": object_.prototype.name,
-            "displayName": object_.prototype.display_name,
-            "version": object_.prototype.version,
-        },
-    }
-
-    post_event(
-        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
-        changes=changes,
-    )

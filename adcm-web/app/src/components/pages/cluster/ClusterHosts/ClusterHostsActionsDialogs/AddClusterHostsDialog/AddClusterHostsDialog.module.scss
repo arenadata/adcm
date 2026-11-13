@@ -1,0 +1,7 @@
+.addClusterHostsDialog.addClusterHostsDialog {
+  background: var(--surfaces-sf-one);
+}
+
+.addClusterHostsDialog__listTransfer.addClusterHostsDialog__listTransfer {
+  height: min(660px, calc(100vh - 210px));
+}

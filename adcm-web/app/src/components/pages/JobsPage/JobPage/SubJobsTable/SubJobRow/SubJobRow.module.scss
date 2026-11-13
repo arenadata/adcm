@@ -13,4 +13,10 @@
     color: var(--job-page-table-subjobs-name-color) !important;
     font-weight: 500;
   }
+
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--inner-gap-relaxed, 8px);
+  }
 }
