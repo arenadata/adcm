@@ -1,19 +1,32 @@
 import type React from 'react';
 import { Link } from 'react-router-dom';
-import { AdcmJobStatus, type AdcmSubJob } from '@models/adcm';
+import type { AdcmSubJob } from '@models/adcm';
 import JobsStatusCell from '@commonComponents/Table/Cells/JobsStatusCell/JobsStatusCell';
+import { JobActionIconButton } from '@commonComponents/job/JobActionIconButton/JobActionIconButton';
+import { getJobTerminateActions } from '@commonComponents/job/jobTerminateActions';
 import s from './SubJobRow.module.scss';
-import { IconButton, TableRow, TableCell } from '@uikit';
+import { TableRow, TableCell } from '@uikit';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import { orElseGet } from '@utils/checkUtils';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
+import type { SubJobTerminateMode } from '@store/adcm/jobs/subJobsActionsSlice';
 
 interface SubJobRowProps {
   subJob: AdcmSubJob;
-  handleStopClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onAction: (subJob: AdcmSubJob, mode: SubJobTerminateMode) => void;
 }
 
-const SubJobRow: React.FC<SubJobRowProps> = ({ subJob, handleStopClick }) => {
+const SubJobRow: React.FC<SubJobRowProps> = ({ subJob, onAction }) => {
+  const { isSkipEnabled, isStopEnabled } = getJobTerminateActions(subJob);
+
+  const handleSkipClick = () => {
+    onAction(subJob, 'skip');
+  };
+
+  const handleStopClick = () => {
+    onAction(subJob, 'stop');
+  };
+
   return (
     <TableRow>
       <JobsStatusCell status={subJob.status} className={s.subJobRow__subJobName}>
@@ -26,14 +39,22 @@ const SubJobRow: React.FC<SubJobRowProps> = ({ subJob, handleStopClick }) => {
       <DateTimeCell value={subJob.startTime ?? undefined} />
       <DateTimeCell value={subJob.endTime ?? undefined} />
       <TableCell hasIconOnly align="center">
-        <IconButton
-          icon="g1-skip"
-          title="Skip the subjob"
-          size={32}
-          onClick={handleStopClick}
-          disabled={!subJob.isTerminatable || subJob.status !== AdcmJobStatus.Running}
-          data-subjobid={subJob.id}
-        />
+        <div className={s.subJobRow__actions}>
+          <JobActionIconButton
+            icon="g1-graph-skip"
+            label="Skip the subjob"
+            disabled={!isSkipEnabled}
+            onClick={handleSkipClick}
+            data-test="subjob-skip"
+          />
+          <JobActionIconButton
+            icon="g1-graph-stop"
+            label="Terminate the subjob"
+            disabled={!isStopEnabled}
+            onClick={handleStopClick}
+            data-test="subjob-stop"
+          />
+        </div>
       </TableCell>
     </TableRow>
   );

@@ -1,0 +1,35 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.viewToggle {
+  margin-bottom: 12px;
+}
+
+.graphNote {
+  margin-bottom: 12px;
+}
+
+.graphPanel {
+  width: 100%;
+}
+
+.graphFallback {
+  padding: 24px;
+  color: var(--text-secondary);
+}
+
+.subJobRow {
+  &__subJobName {
+    font-weight: 500;
+  }
+
+  &__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--inner-gap-relaxed, 8px);
+  }
+}

@@ -197,8 +197,19 @@ const loadJobFromBackend = createAsyncThunk(
   },
 );
 
+const loadExecutionPlanFromBackend = createAsyncThunk(
+  'adcm/clusterServicesWizard/loadExecutionPlanFromBackend',
+  async (arg: loadJobPayload, thunkAPI) => {
+    try {
+      return await AdcmJobsApi.getTaskExecutionPlan(arg.jobId);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const getJob = createAsyncThunk('adcm/clusterServicesWizard/getJob', async (arg: loadJobPayload, thunkAPI) => {
-  await thunkAPI.dispatch(loadJobFromBackend(arg));
+  await Promise.all([thunkAPI.dispatch(loadJobFromBackend(arg)), thunkAPI.dispatch(loadExecutionPlanFromBackend(arg))]);
 });
 
 interface loadSubJobLogPayload {
@@ -425,6 +436,20 @@ const clusterServicesWizardSlice = createSlice({
       const id = action.meta.arg.stepId;
       if (id && state.jobsData[id]) {
         state.jobsData[id].job = undefined;
+      }
+    });
+    builder.addCase(loadExecutionPlanFromBackend.fulfilled, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id) {
+        const jobData = state.jobsData[id] ?? (state.jobsData[id] = {});
+        jobData.executionPlan = action.payload;
+      }
+    });
+    builder.addCase(loadExecutionPlanFromBackend.rejected, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id) {
+        const jobData = state.jobsData[id] ?? (state.jobsData[id] = {});
+        jobData.executionPlan = null;
       }
     });
     builder.addCase(loadSubJobLogFromBackend.fulfilled, (state, action) => {

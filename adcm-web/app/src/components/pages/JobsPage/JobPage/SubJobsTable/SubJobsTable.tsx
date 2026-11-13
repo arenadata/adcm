@@ -1,12 +1,11 @@
-import type React from 'react';
 import { useCallback, forwardRef } from 'react';
 import { Table } from '@uikit';
 import { useDispatch, useStore } from '@hooks';
 import { columns } from './SubJobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import type { SortParams } from '@uikit/types/list.types';
-import { openStopDialog } from '@store/adcm/jobs/subJobsActionsSlice';
-import { orElseGet } from '@utils/checkUtils';
+import { openStopDialog, type SubJobTerminateMode } from '@store/adcm/jobs/subJobsActionsSlice';
+import type { AdcmSubJob } from '@models/adcm';
 import SubJobRow from './SubJobRow/SubJobRow';
 import s from './SubJobsTable.module.scss';
 
@@ -16,14 +15,9 @@ const SubJobsTable = forwardRef<HTMLTableElement>((_, ref) => {
   const job = useStore((s) => s.adcm.job.job);
   const isLoading = useStore((s) => s.adcm.job.isLoading);
 
-  const handleStopClick = useCallback(
-    ({ currentTarget }: React.MouseEvent<HTMLButtonElement>) => {
-      // eslint want that jobId (in camelCase), but JSX demands set data attributes in lowercase
-      // eslint-disable-next-line spellcheck/spell-checker
-      const subJobId = orElseGet(currentTarget.dataset.subjobid, Number, null);
-      if (subJobId) {
-        dispatch(openStopDialog(subJobId));
-      }
+  const handleAction = useCallback(
+    (subJob: AdcmSubJob, mode: SubJobTerminateMode) => {
+      dispatch(openStopDialog({ id: subJob.id, mode, displayName: subJob.displayName }));
     },
     [dispatch],
   );
@@ -45,7 +39,7 @@ const SubJobsTable = forwardRef<HTMLTableElement>((_, ref) => {
       onSorting={handleSorting}
     >
       {job?.childJobs?.map((subJob) => (
-        <SubJobRow key={subJob.id} subJob={subJob} handleStopClick={handleStopClick} />
+        <SubJobRow key={subJob.id} subJob={subJob} onAction={handleAction} />
       ))}
     </Table>
   );

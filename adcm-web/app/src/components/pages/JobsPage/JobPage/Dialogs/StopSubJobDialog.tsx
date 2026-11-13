@@ -8,38 +8,45 @@ const StopSubJobDialog: React.FC = () => {
   const dispatch = useDispatch();
   const { jobId: jobIdFromUrl } = useParams();
   const jobId = Number(jobIdFromUrl);
+  const subJobId = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.id);
+  const mode = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.mode);
+  const dialogDisplayName = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.displayName);
 
   const subJob = useStore(({ adcm }) => {
-    // when stop on SubJobPage
+    if (adcm.subJobsActions.stopDialog.id === null) {
+      return null;
+    }
+
     if (adcm.subJob.subJob?.id === adcm.subJobsActions.stopDialog.id) {
       return adcm.subJob.subJob;
     }
 
-    // when stop on JobPage
     return adcm.job.job?.childJobs.find(({ id }) => id === adcm.subJobsActions.stopDialog.id) ?? null;
   });
 
-  if (!subJob) return null;
+  if (subJobId === null) return null;
+
+  const isSkip = mode === 'skip';
+  const displayName = subJob?.displayName ?? dialogDisplayName ?? String(subJobId);
 
   const handleClose = () => {
     dispatch(closeStopDialog());
   };
 
   const handleConfirm = () => {
-    if (subJob?.id && jobId) {
-      dispatch(stopSubJobWithUpdate({ subJobId: subJob.id, jobId }));
+    if (subJobId && jobId) {
+      dispatch(stopSubJobWithUpdate({ subJobId, jobId }));
     }
   };
 
   return (
     <DialogV2
-      //
-      title={`Terminate the subjob "${subJob?.displayName}"`}
-      actionButtonLabel="Stop"
+      title={isSkip ? `Skip the subjob "${displayName}"` : `Terminate the subjob "${displayName}"`}
+      actionButtonLabel={isSkip ? 'Skip' : 'Stop'}
       onAction={handleConfirm}
       onCancel={handleClose}
     >
-      Selected subjob will be terminated
+      {isSkip ? 'Selected subjob will be skipped' : 'Selected subjob will be terminated'}
     </DialogV2>
   );
 };
