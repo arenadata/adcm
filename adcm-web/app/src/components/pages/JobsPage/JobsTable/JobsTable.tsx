@@ -5,12 +5,12 @@ import { columns } from './JobsTable.constants';
 import { setSortParams } from '@store/adcm/jobs/jobsTableSlice';
 import type { SortParams } from '@uikit/types/list.types';
 import { openStopDialog } from '@store/adcm/jobs/jobsActionsSlice';
-import { AdcmJobStatus } from '@models/adcm';
 import JobsStatusCell from '../../../common/Table/Cells/JobsStatusCell/JobsStatusCell';
 import { secondsToDuration } from '@utils/date/timeConvertUtils';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import JobObjectsCell from '@commonComponents/Table/Cells/JobObjectsCell/JobObjectsCell';
 import { orElseGet } from '@utils/checkUtils';
+import { isParentJobStopEnabled } from '@commonComponents/job/jobTerminateActions';
 
 const JobsTable = () => {
   const dispatch = useDispatch();
@@ -54,7 +54,7 @@ const JobsTable = () => {
                 title="Stop the job"
                 size={32}
                 onClick={handleStopClick(job.id)}
-                disabled={!job.isTerminatable || job.status !== AdcmJobStatus.Running}
+                disabled={!isParentJobStopEnabled(job)}
               />
             </TableCell>
           </TableRow>

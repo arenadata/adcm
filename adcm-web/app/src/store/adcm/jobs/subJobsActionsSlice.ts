@@ -5,6 +5,7 @@ import { createAsyncThunk } from '@store/redux';
 import { showError, showInfo } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
 import { getJob } from './jobSlice';
+import { refreshSubJob } from './subJobSlice';
 import { AdcmJobsApi } from '@api/adcm/jobs';
 
 export type SubJobTerminateMode = 'skip' | 'stop';
@@ -47,6 +48,11 @@ const stopSubJobWithUpdate = createAsyncThunk(
   async ({ subJobId, jobId }: StopSubJobWithUpdatePayload, thunkAPI) => {
     await thunkAPI.dispatch(stopSubJob(subJobId)).unwrap();
     thunkAPI.dispatch(getJob(jobId));
+
+    // the subjob page shows its own copy of the subjob, WS events don't update its status
+    if (thunkAPI.getState().adcm.subJob.subJob?.id === subJobId) {
+      thunkAPI.dispatch(refreshSubJob(subJobId));
+    }
   },
 );
 
