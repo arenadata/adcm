@@ -29,15 +29,22 @@ def audit_task_finish(task: Task, task_result: ExecutionStatus, name_splitter: N
         AuditLogOperationResult.SUCCESS if task_result == ExecutionStatus.SUCCESS else AuditLogOperationResult.FAIL
     )
 
-    # If object doesn't exist for some reason, we don't create it.
-    # Now action can't be launched avoiding audit.
-    # In case it will change, don't use `target.name`,
-    # use retrievers that create audit objects based on type and name
-    # in order to build correct audit names for service/component/action host group.
-    audit_context.object = AuditObject.objects.filter(
-        object_id=str(task.target.id),
-        object_type=AuditObjectType(task.target.type.value)
-        if task.target.type != ADCMCoreType.PROVIDER
-        else AuditObjectType.PROVIDER,
-    ).first()
+    # ADCM-8565
+    # Target/owner are nullable, since they can be deleted during action (e.g. delete service ansible plugin).
+    # They still can be present for some cases (if cached in memory before deletion),
+    # so it's incorrect to assume existence on field alone.
+    # I also put this check in here and not in caller code, because audit should be written regardless.
+    if task.target:
+        # If object doesn't exist for some reason, we don't create it.
+        # Now action can't be launched avoiding audit.
+        # In case it will change, don't use `target.name`,
+        # use retrievers that create audit objects based on type and name
+        # in order to build correct audit names for service/component/action host group.
+        audit_context.object = AuditObject.objects.filter(
+            object_id=str(task.target.id),
+            object_type=AuditObjectType(task.target.type.value)
+            if task.target.type != ADCMCoreType.PROVIDER
+            else AuditObjectType.PROVIDER,
+        ).first()
+
     audit_context.save()
