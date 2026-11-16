@@ -18,7 +18,8 @@ jobs' statuses are set as if they were executed, then the step is performed.
 from pathlib import Path
 from typing import Final
 
-from cm.models import Action, JobLog, TaskLog
+from ansible_plugin.executors.delete_service import ADCMDeleteServicePluginExecutor
+from cm.models import Action, Cluster, JobLog, Service, TaskLog
 from core.action import UNFINISHED_STATUSES, ExecutionStatus
 from core.legacy.job.runners import RunnerEnvironment
 from core.types import TaskID
@@ -56,8 +57,10 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         cls.cluster = cls.uc.add_cluster(bundle=cls.bundle, name="Task Result")
         cls.action = Action.objects.get(prototype=cls.cluster.prototype, name="with_parallel_tail")
 
-    def run_action(self) -> TaskID:
-        response = self.client.v2[self.cluster, "actions", self.action, "run"].post(data=RUN_ACTION_PAYLOAD)
+    def run_action(self, target: Cluster | Service | None = None, action: Action | None = None) -> TaskID:
+        run_on = target or self.cluster
+        action_to_run = action or self.action
+        response = self.client.v2[run_on, "actions", action_to_run, "run"].post(data=RUN_ACTION_PAYLOAD)
         self.assertEqual(response.status_code, HTTP_200_OK, response.json())
 
         return response.json()["id"]
@@ -201,3 +204,36 @@ class TestCeleryTaskFinalization(ADCMDjangoAPISuite):
         job.refresh_from_db()
         self.assertEqual(job.status, REVOKED.value)
         self.assertIsNone(job.start_date)
+
+    def test_adcm_8565_target_deletion_does_not_break(self) -> None:
+        service, *_ = self.uc.add_services_to_cluster(["todelete"], cluster=self.cluster)
+        action = Action.objects.get(name="dummy", prototype_id=service.prototype_id)
+
+        task_id = self.run_action(service, action)
+
+        # imitate successful plugin call
+        with self.container() as container:
+            job_id = JobLog.objects.values_list("id", flat=True).get(task_id=task_id)
+            executor = ADCMDeleteServicePluginExecutor(
+                arguments={},
+                runtime_vars={
+                    "context": {"type": "service", "cluster_id": self.cluster.pk, "service_id": service.pk},
+                    "job": {"id": job_id, "action": "dummy"},
+                },
+                container=container,
+            )
+            result = executor.execute()
+
+        self.assertIsNone(result.error)
+        self.assertTrue(result.changed)
+        self.assertFalse(Service.objects.filter(id=service.pk).exists())
+
+        self.execute_as(task_id, {PREPARE: SUCCESS})
+
+        self.finalize(task_id)
+
+        self.assert_task_status(task_id, SUCCESS)
+        audit = self.get_most_recent_audit_log()
+        self.assertIsNotNone(audit)
+        self.assertIsNone(audit.audit_object)
+        self.assertIn("dummy action completed", audit.operation_name)
