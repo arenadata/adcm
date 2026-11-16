@@ -12,10 +12,17 @@
 
 from datetime import timedelta
 
+from celery import Celery
 from core.action import TaskRunnerEnvironment
+from core.action.job import JobRepoI
 from core.action.scheduler import TaskMonitorRegistry, TaskQueuer, TerminatorRegistry
 from dishka import Provider, Scope, provide, provide_all
-from integrations.celery.scheduler import CeleryMonitorTrustGap, CeleryTaskMonitor, CeleryTaskQueuer, CeleryTerminator
+from integrations.celery.scheduler import (
+    CeleryMonitorTrustGap,
+    CeleryTaskMonitor,
+    CeleryTaskQueuer,
+    CeleryTerminator,
+)
 from integrations.local.scheduler import LocalTaskMonitor, LocalTaskQueuer, LocalTerminator
 from jobs.scheduler import repo as scheduler_repo
 from jobs.scheduler.settings import SchedulerSettings
@@ -32,9 +39,16 @@ class SchedulerProvider(Provider):
         Launcher,
         Killer,
         LocalTaskMonitor,
-        CeleryTaskMonitor,
         LocalTaskQueuer,
     )
+
+    @provide
+    def celery_task_monitor(
+        self, celery: Celery, job_repo: JobRepoI, trust_gap: CeleryMonitorTrustGap
+    ) -> CeleryTaskMonitor:
+        return CeleryTaskMonitor(
+            celery=celery, job_repo=job_repo, trust_gap=trust_gap, task_interruption_mode="all_jobs_lost"
+        )
 
     @provide
     def job_trust_gap(self, settings: SchedulerSettings) -> CeleryMonitorTrustGap:
