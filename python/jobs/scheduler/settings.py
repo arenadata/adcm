@@ -27,5 +27,4 @@ class SchedulerSettings(BaseSettings):
 
     # threshold to consider tasks dead when last job was finished more than this value ago (in seconds)
     job_inactivity_threshold: Annotated[int, Field(default=30, ge=1)]
-
     job_execution_environment: TaskRunnerEnvironment = TaskRunnerEnvironment.LOCAL
