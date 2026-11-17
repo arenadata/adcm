@@ -161,7 +161,6 @@ class JobRepo(JobRepoI):
             target=target_,
             owner=_get_task_owner(task_record=task_record),
             status=ExecutionStatus(task_record.status),
-            is_termination_allowed=task_record.action.allow_to_terminate,
             selector=task_record.selector,
             action=TaskActionInfo(
                 id=int(task_record.action_id),  # pyright: ignore[reportAttributeAccessIssue]
