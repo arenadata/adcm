@@ -81,7 +81,12 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
             process.id,
             data={
                 "method": ProcessOperationType.SUBMIT,
-                "params": {"step_id": operation_step_id, "process_sync_key": process.sync_key},
+                "params": {
+                    "stepId": operation_step_id,
+                    "processSyncKey": process.sync_key,
+                    # non standard options provided
+                    "operation": {"isVerbose": True, "shouldBlockObject": False},
+                },
             },
         )
 
@@ -104,6 +109,10 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
         self.assertEqual(process_step.step_spec, expected_spec)
 
         task = TaskLog.objects.get(action=self.process_action_of_cluster)
+
+        self.assertTrue(task.verbose)
+        self.assertFalse(task.is_blocking)
+
         input_ = ProcessStepInput.objects.get(step_id=operation_step_id)
 
         self.assertIsNone(input_.configuration)
