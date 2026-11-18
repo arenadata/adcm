@@ -228,13 +228,46 @@ class RunJob:
 
 
 @dataclass(slots=True)
+class UpdateCallingProcess:
+    job_repo: JobRepoI
+    complete_wizard_operation: CompleteWizardOperationStep
+
+    # It seems this is more of a scenario than a use case, for now it will stay here.
+    def do(self, process: CallingProcess, task: Task, task_owner: TaskOwner | None, task_status: ExecutionStatus):
+        from cm.legacy.services.action_process.types import ProcessContext
+        from cm.models import Action
+
+        if not (task_owner and task.target):
+            raise RuntimeError("Task has no owner/target")
+
+        owner = CoreObjectDescriptor(id=task_owner.id, type=task_owner.type)
+        target = ActionTargetDescriptor(id=task.target.id, type=task.target.type)
+        process_context = ProcessContext(
+            action=self.job_repo.get_action(id=task.action.id),
+            action_orm=Action.objects.get(id=task.action.id),
+            owner=owner,
+            owner_orm=core_type_to_model(owner.type).objects.get(id=owner.id),  # pyright: ignore[reportArgumentType]
+            target=target,
+            target_orm=action_target_type_to_model(target.type).objects.get(id=target.id),  # pyright: ignore[reportArgumentType]
+        )
+
+        self.complete_wizard_operation.do(
+            process_id=process.id,
+            process_sync_key=process.sync_key,
+            step_id=process.step_id,
+            process_context=process_context,
+            is_operation_success=task_status == ExecutionStatus.SUCCESS,
+        )
+
+
+@dataclass(slots=True)
 class FinalizeTask:
     job_repo: JobRepoI
     notifier: EventNotifier
     status_scenarios: StatusScenarios
     cluster_service: ClusterService
 
-    complete_wizard_operation: CompleteWizardOperationStep
+    update_calling_process: UpdateCallingProcess
 
     audit_name_splitter: NameHalfSplitter
 
@@ -277,7 +310,7 @@ class FinalizeTask:
             audit_task_finish(task=task, task_result=task_result, name_splitter=self.audit_name_splitter)
 
             if is_operation_step_task(task.action_process):
-                self._update_calling_process(
+                self.update_calling_process.do(
                     process=task.action_process,
                     task=task,
                     task_owner=task.owner,
@@ -357,38 +390,11 @@ class FinalizeTask:
         else:
             self.notifier.send_update_event(object_=owner, changes={"state": state})
 
-    def _update_calling_process(
-        self, process: CallingProcess, task: Task, task_owner: TaskOwner | None, task_status: ExecutionStatus
-    ) -> None:
-        from cm.legacy.services.action_process.types import ProcessContext
-        from cm.models import Action
-
-        if not (task_owner and task.target):
-            raise RuntimeError("Task has no owner/target")
-
-        owner = CoreObjectDescriptor(id=task_owner.id, type=task_owner.type)
-        target = ActionTargetDescriptor(id=task.target.id, type=task.target.type)
-        process_context = ProcessContext(
-            action=self.job_repo.get_action(id=task.action.id),
-            action_orm=Action.objects.get(id=task.action.id),
-            owner=owner,
-            owner_orm=core_type_to_model(owner.type).objects.get(id=owner.id),  # pyright: ignore[reportArgumentType]
-            target=target,
-            target_orm=action_target_type_to_model(target.type).objects.get(id=target.id),  # pyright: ignore[reportArgumentType]
-        )
-
-        self.complete_wizard_operation.do(
-            process_id=process.id,
-            process_sync_key=process.sync_key,
-            step_id=process.step_id,
-            process_context=process_context,
-            is_operation_success=task_status == ExecutionStatus.SUCCESS,
-        )
-
 
 @dataclass(slots=True)
 class MarkTaskBroken:
     repo: JobRepoI
+    update_calling_process: UpdateCallingProcess
 
     @atomic
     def do(
@@ -419,5 +425,10 @@ class MarkTaskBroken:
             delete_task_lock_concern(task_id=task_id)
         else:
             delete_task_flag_concern(task_id=task_id)
+
+        if is_operation_step_task(task.action_process):
+            self.update_calling_process.do(
+                process=task.action_process, task=task, task_owner=task.owner, task_status=new_status
+            )
 
         return Success(None)

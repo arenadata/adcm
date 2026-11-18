@@ -35,12 +35,14 @@ from cm.models import (
     TaskLog,
 )
 from cm.transition.status import StatusScenarios
-from core.action import UNFINISHED_STATUSES, ExecutionStatus, TaskRunnerEnvironment
+from core.action import UNFINISHED_STATUSES, TaskRunnerEnvironment
 from core.files.directories import ADCMBundleDir
+from core.legacy.job.runners import RunnerEnvironment
 from core.secrets import Secret, SecretsBackend
 from rbac.models import User
 from rest_framework.authtoken.models import Token
 from use_cases import bundle
+from use_cases.job.run import MarkTaskBroken
 import core
 
 TOKEN_LENGTH = 20
@@ -108,10 +110,12 @@ def clear_temp_tables():
     GroupCheckLog.objects.all().delete()
 
 
-def set_local_tasks_to_broken():
-    TaskLog.objects.filter(executor__environment=TaskRunnerEnvironment.LOCAL, status__in=UNFINISHED_STATUSES).update(
-        status=ExecutionStatus.BROKEN
-    )
+def set_local_tasks_to_broken(mark_handler: MarkTaskBroken, environment: RunnerEnvironment) -> None:
+    task_ids = TaskLog.objects.filter(
+        executor__environment=TaskRunnerEnvironment.LOCAL, status__in=UNFINISHED_STATUSES
+    ).values_list("id", flat=True)
+    for task_id in task_ids:
+        mark_handler.do(task_id, environment)
 
 
 def remove_orphan_and_local_locks():
@@ -142,7 +146,7 @@ def init(container: dishka.Container, adcm_conf_file: Path | None = None):
     status_user_token = secrets_backend.read(Secret.STATUS_SERVICE_ADCM_TOKEN)
     _ensure_status_user_token_set(user_id=user_id, token=status_user_token)
 
-    set_local_tasks_to_broken()
+    set_local_tasks_to_broken(container.get(MarkTaskBroken), container.get(RunnerEnvironment))
     remove_orphan_and_local_locks()
     clear_temp_tables()
 
