@@ -5940,6 +5940,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -7127,6 +7130,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -9162,6 +9168,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -10950,6 +10959,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -12233,6 +12245,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -13246,6 +13261,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:
@@ -14625,6 +14643,9 @@ paths:
                   params:
                     stepId: 1
                     processSyncKey: c0a71f0b-4a6b-489c-a352-cfba8d8c3c17
+                    operation:
+                      isVerbose: true
+                      shouldBlockObject: true
                 summary: Submit operation
               ResetOperation:
                 value:

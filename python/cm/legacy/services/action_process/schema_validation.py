@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from core.action import wizard
@@ -33,6 +34,12 @@ class Configuration(BaseModel):
     adcm_meta: dict = Field(default_factory=dict)
 
 
+@dataclass(slots=True)
+class Operation:
+    is_verbose: bool
+    should_block_object: bool
+
+
 class _SyncKeyParam(BaseModel):
     process_sync_key: UUID
 
@@ -44,7 +51,14 @@ class _StepIDParam(BaseModel):
 # Submit
 
 
-class SubmitOperationStepParams(_SyncKeyParam, _StepIDParam): ...
+class SubmitOperationStepParams(_SyncKeyParam, _StepIDParam):
+    # Setting default in here, because previous API allowed no `operations` - shouldn't break.
+    # Note that specifying default like that allows either full object specification or no object at all,
+    # yet still require from us to specify some sort of default in case no operation is set by requester.
+    # Putting default to object itself will allow partial object passing - probably it's not what we want.
+    operation: Annotated[
+        Operation, Field(default_factory=lambda: Operation(is_verbose=False, should_block_object=True))
+    ]
 
 
 class SubmitConfigurationStepParams(_SyncKeyParam, _StepIDParam):
