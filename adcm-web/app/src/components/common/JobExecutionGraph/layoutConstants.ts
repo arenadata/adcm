@@ -13,6 +13,7 @@ export const STATUS_ICON_SIZE = 10;
 export const ZOOM_DURATION_MS = 150;
 export const FIT_VIEW_PADDING = 0.3;
 export const GRAPH_CONTENT_PADDING_BOTTOM = 32;
+export const GRAPH_MIN_HEIGHT = 220;
 export const MIN_ZOOM = 0.2;
 export const MAX_ZOOM = 2;
 export const INITIAL_VIEWPORT = { x: 24, y: 24, zoom: 1 } as const;

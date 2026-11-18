@@ -6,7 +6,14 @@ import type { AdcmTaskExecutionPlan } from '@models/adcm';
 import { buildFlowGraph, getDefaultCollapsedIds, getPlanStructureKey } from './buildFlowGraph';
 import { JobExecutionGraphContext, type JobExecutionGraphNodeActionPayload } from './JobExecutionGraph.context';
 import GraphZoomControls from './GraphZoomControls/GraphZoomControls';
-import { GRAPH_CONTENT_PADDING_BOTTOM, INITIAL_VIEWPORT, MAX_ZOOM, MIN_ZOOM, NODE_HEIGHT } from './layoutConstants';
+import {
+  GRAPH_CONTENT_PADDING_BOTTOM,
+  GRAPH_MIN_HEIGHT,
+  INITIAL_VIEWPORT,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  NODE_HEIGHT,
+} from './layoutConstants';
 import { ExecutionGraphNode } from './nodes/ExecutionGraphNode';
 import type { ExecutionGraphNodeData } from './types';
 import s from './JobExecutionGraph.module.scss';
@@ -46,7 +53,7 @@ const JobExecutionGraph = ({
     for (const node of nodes) {
       maxBottom = Math.max(maxBottom, node.position.y + (node.height ?? NODE_HEIGHT));
     }
-    return maxBottom + INITIAL_VIEWPORT.y + GRAPH_CONTENT_PADDING_BOTTOM;
+    return Math.max(maxBottom + INITIAL_VIEWPORT.y + GRAPH_CONTENT_PADDING_BOTTOM, GRAPH_MIN_HEIGHT);
   }, [nodes]);
 
   const nodesWithSelection = useMemo(
