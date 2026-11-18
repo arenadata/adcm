@@ -5,6 +5,7 @@ import {
   AdcmWizardStepType,
   type AdcmActionProcessStep,
   AdcmWizardStepStates,
+  type AdcmWizardSubmitStepOptions,
 } from '@models/adcm/wizard';
 import { useDispatch, useStore } from '@hooks';
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
@@ -26,10 +27,6 @@ import { useEntityWizardDataContext } from '../EntityWizardContextProvider/Entit
 interface EntityDynamicActionWizardStepProps {
   stageNumber: number;
   onClose: () => void;
-}
-
-interface SubmitStepHandlerOptions {
-  isStepSkippable: boolean;
 }
 
 const EntityDynamicActionWizardStep: React.FC<EntityDynamicActionWizardStepProps> = ({
@@ -173,7 +170,7 @@ const EntityDynamicActionWizardStep: React.FC<EntityDynamicActionWizardStepProps
     }
   }, [dispatch, entityType, entityArgs, actionId, processId, selectedStep, actionHostGroup]);
 
-  const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
+  const handleSubmitStep = (stepType: string, options?: AdcmWizardSubmitStepOptions) => {
     if (!actionId || !process || !actionHostGroup) {
       return;
     }
@@ -216,6 +213,7 @@ const EntityDynamicActionWizardStep: React.FC<EntityDynamicActionWizardStepProps
           params: {
             stepId: process.currentStep,
             processSyncKey: process.syncKey,
+            operation: options?.operation,
           },
         },
       };

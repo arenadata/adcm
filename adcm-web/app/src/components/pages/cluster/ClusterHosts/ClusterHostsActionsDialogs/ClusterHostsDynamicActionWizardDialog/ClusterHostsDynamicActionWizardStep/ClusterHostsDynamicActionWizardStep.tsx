@@ -5,6 +5,7 @@ import {
   AdcmWizardStepType,
   type AdcmActionProcessStep,
   AdcmWizardStepStates,
+  type AdcmWizardSubmitStepOptions,
 } from '@models/adcm/wizard';
 import { useDispatch, useStore } from '@hooks';
 import ActionWizardSteps from '@uikit/ActionWizardSteps/ActionWizardSteps';
@@ -26,10 +27,6 @@ import ClusterHostsDynamicActionWizardOperation from '@pages/cluster/ClusterHost
 interface ClusterHostsDynamicActionWizardStepProps {
   stageNumber: number;
   onClose: () => void;
-}
-
-interface SubmitStepHandlerOptions {
-  isStepSkippable: boolean;
 }
 
 const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWizardStepProps> = ({
@@ -170,7 +167,7 @@ const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWiz
     }
   }, [dispatch, clusterId, hostId, actionId, processId, selectedStep]);
 
-  const handleSubmitStep = (stepType: string, options?: SubmitStepHandlerOptions) => {
+  const handleSubmitStep = (stepType: string, options?: AdcmWizardSubmitStepOptions) => {
     if (!clusterId || !hostId || !actionId || !process) {
       return;
     }
@@ -211,6 +208,7 @@ const ClusterHostsDynamicActionWizardStep: React.FC<ClusterHostsDynamicActionWiz
           params: {
             stepId: process.currentStep,
             processSyncKey: process.syncKey,
+            operation: options?.operation,
           },
         },
       };
