@@ -117,15 +117,15 @@ def add_host_provider(
     return provider
 
 
-def cancel_locking_tasks(obj: ADCMEntity, job_service: JobService, obj_deletion=False):
+def cancel_locking_tasks(obj: ADCMEntity, job_service: JobService) -> None:
     for lock in obj.concerns.filter(type=ConcernType.LOCK, owner_type=obj.content_type, owner_id=obj.id):
         for task in TaskLog.objects.filter(lock=lock):
-            _terminate_task(task_id=task.pk, job_service=job_service, obj_deletion=obj_deletion)
+            _terminate_task(task_id=task.pk, job_service=job_service)
 
 
-def _terminate_task(task_id: int, job_service: JobService, obj_deletion: bool) -> None:
+def _terminate_task(task_id: int, job_service: JobService) -> None:
     try:
-        job_service.terminate_task(task_id=task_id, force_allow_termination=obj_deletion)
+        job_service.terminate_task(task_id=task_id)
     except JobOperationError as e:
         raise AdcmEx("NOT_ALLOWED_TERMINATION", e.message) from None
 
@@ -139,7 +139,7 @@ def delete_host_provider(provider, job_service: JobService, cancel_tasks=True):
         )
 
     if cancel_tasks:
-        cancel_locking_tasks(provider, job_service=job_service, obj_deletion=True)
+        cancel_locking_tasks(provider, job_service=job_service)
 
     provider.delete()
     logger.info("host provider #%s is deleted", provider.pk)
@@ -159,7 +159,7 @@ def delete_host(
         )
 
     if cancel_tasks:
-        cancel_locking_tasks(obj=host, job_service=job_service, obj_deletion=True)
+        cancel_locking_tasks(obj=host, job_service=job_service)
 
     host_pk = host.pk
     host.delete()
@@ -199,7 +199,7 @@ def delete_cluster(cluster: Cluster, cluster_service: ClusterService, job_servic
     reset_objects_in_mm(cluster_service=cluster_service)
 
     for task in tasks:
-        _terminate_task(task_id=task.pk, job_service=job_service, obj_deletion=True)
+        _terminate_task(task_id=task.pk, job_service=job_service)
 
 
 def remove_host_from_cluster(host: Host, cluster_service: ClusterService, rbac_scenarios: RBACScenarios) -> Host:

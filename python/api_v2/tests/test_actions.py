@@ -610,6 +610,20 @@ class TestAllowToTerminate(ADCMDjangoAPISuite):
         self.assertTrue(api_jobs["ansible_step"])
         self.assertFalse(api_jobs["internal_step"])
 
+    def test_task_termination_ignores_allow_to_terminate(self) -> None:
+        # `allow_to_terminate` is deprecated and must not affect termination
+        action = self.get_action("false_action")
+        self.assertFalse(action.allow_to_terminate)
+
+        task_id = self.run_action(action)
+
+        task_response = (self.client.v2 / "tasks" / task_id).get()
+        self.assertEqual(task_response.status_code, HTTP_200_OK)
+        self.assertTrue(task_response.json()["isTerminatable"])
+
+        response = (self.client.v2 / "tasks" / task_id / "terminate").post(data={})
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
 
 class TestActionWithTemplates(ADCMDjangoAPISuite):
     maxDiff = None

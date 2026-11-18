@@ -59,12 +59,8 @@ class JobService:
         if logs:
             self.repo.create_logs(logs)
 
-    def terminate_task(self, task_id: TaskID, *, force_allow_termination: bool = False) -> None:
+    def terminate_task(self, task_id: TaskID) -> None:
         task = self.repo.get_task(task_id)
-
-        if not (force_allow_termination or task.is_termination_allowed):
-            message = f"Task #{task_id} termination is not allowed due to action definition"
-            raise JobValidationError(message)
 
         if not is_terminatable_status(task.status):
             message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"

@@ -301,9 +301,6 @@ class Task(BaseModel):
     on_fail: StateChanges
 
     is_blocking: bool
-    # currently it's action's property,
-    # but for similarity with job we'll put it in here
-    is_termination_allowed: bool
 
     description: str
 

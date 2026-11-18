@@ -156,7 +156,7 @@ class DeleteServiceFromAPI:
         ):
             raise error
 
-        cancel_locking_tasks(obj=service, job_service=self.job_service, obj_deletion=True)
+        cancel_locking_tasks(obj=service, job_service=self.job_service)
 
         if delete_action and (related_mapping_exists or service.state != "created"):
             self.schedule_task.do(action_orm=delete_action, target=service, payload=RunActionDTO())
