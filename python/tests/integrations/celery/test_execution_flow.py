@@ -79,11 +79,10 @@ from integrations.celery.tasks import (
     prepare_execution_plan,
 )
 from sqlalchemy import URL
+from tests.integrations.constants import CELERY_WORKER_TAG
 
 from celery import Celery, Task
 from celery.contrib.testing.worker import start_worker
-
-CELERY_WORKER_TAG = "celery_worker"
 
 START_PLAN_TASK_NAME = "adcm:tests:start-plan"
 

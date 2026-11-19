@@ -421,8 +421,9 @@ class TestConcernsRedistribution(GenericTestCase):
         # bare lock concern to hand-distribute itself, not the real distribution logic
         job_repo = JobRepo()
         task = job_repo.get_task(id=task_orm.pk)
+        execution_plan = job_repo.get_execution_plan(task_id=task_orm.pk)
         job = to_rich_job(
-            spec=job_repo.get_execution_plan(task_id=task_orm.pk),
+            spec=execution_plan,
             job=next(iter(job_repo.find_jobs_short(JobShortFilter(ids=[job_orm.pk])))),
         )
         target = ConcernTarget(
@@ -431,7 +432,7 @@ class TestConcernsRedistribution(GenericTestCase):
             name=task.target.name,
             id_chain=build_id_chain(task.selector),
         )
-        draft = build_task_concern(task=task, job=job, target=target)
+        draft = build_task_concern(task=task, job=job, target=target, execution_plan=execution_plan)
         lock = ConcernRepo().create(draft)
 
         for obj in affected_objects:

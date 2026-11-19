@@ -15,7 +15,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
 
 from cm.converters import CoreObject, core_type_to_model
-from cm.legacy.services.concern.messages import ConcernMessage, PlaceholderObjectsDTO, build_concern_reason
 from cm.models import (
     ADCM,
     ActionHostGroup,
@@ -25,7 +24,6 @@ from cm.models import (
     ConcernItem,
     ConcernType,
     Host,
-    JobLog,
     Provider,
     Service,
     TaskLog,
@@ -45,36 +43,6 @@ def retrieve_lock_on_object(object_: CoreObjectDescriptor) -> ConcernItem | None
     ).values_list("concernitem_id", flat=True)
 
     return ConcernItem.objects.filter(id__in=related_locks_qs).first()
-
-
-def update_task_lock_concern(job_id: ObjectID) -> None:
-    job = JobLog.objects.select_related("task").get(id=job_id)
-    concern_id = job.task.lock_id
-    if not concern_id:
-        return
-
-    owner = _get_task_owner(job.task)
-    if owner is None:
-        return
-
-    # it's not nessesary to re-build reason,
-    # but it's the most correct course for current implementation
-    updated_reason = _build_lock_reason(job=job, owner=owner)
-    ConcernItem.objects.filter(id=concern_id).update(reason=updated_reason)
-
-
-def update_task_flag_concern(job_id: ObjectID) -> None:
-    job = JobLog.objects.select_related("task").annotate(action_name=F("task__action__name")).get(id=job_id)
-    owner = _get_task_owner(job.task)
-    if owner is None:
-        return
-
-    concern = _detect_task_flag(owner=owner, action_name=job.action_name)
-    if not concern:
-        return
-
-    concern.reason = _build_flag_reason(job=job, owner=owner)
-    concern.save(update_fields=["reason"])
 
 
 def delete_task_lock_concern(task_id: ObjectID) -> None:
@@ -103,18 +71,6 @@ def delete_task_flag_concern(task_id: ObjectID) -> None:
 
 def _detect_name_for_flag(action_name: str) -> str:
     return f"adcm_running_job_{action_name}"
-
-
-def _build_lock_reason(job: JobLog, owner: CoreObject | ADCM) -> dict:
-    return build_concern_reason(
-        ConcernMessage.LOCKED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, target=owner)
-    )
-
-
-def _build_flag_reason(job: JobLog, owner: CoreObject | ADCM) -> dict:
-    return build_concern_reason(
-        ConcernMessage.FLAGGED_BY_JOB.template, placeholder_objects=PlaceholderObjectsDTO(job=job, source=owner)
-    )
 
 
 def _detect_task_flag(owner: CoreObject | ADCM, action_name: str) -> ConcernItem | None:

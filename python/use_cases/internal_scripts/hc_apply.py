@@ -23,7 +23,8 @@ from cm.transition.status import StatusScenarios
 from core.action import AssociatedProcess, HcAclRule, Task, TaskMappingDelta
 from core.action.types import HcApplyScript
 from core.cluster import ClusterService
-from core.types import ADCMCoreType, ClusterID, ComponentNameKey, JobID
+from core.locks import LockRepoI
+from core.types import ADCMCoreType, ClusterID, ComponentNameKey, Descriptor, JobID
 from django.db.models import Q
 from django.db.transaction import atomic
 
@@ -34,6 +35,7 @@ from use_cases.internal_scripts.common import build_result_message
 class HcApplyInternalScript:
     cluster_service: ClusterService
     status_scenarios: StatusScenarios
+    lock_repo: LockRepoI
 
     def do(self, task: Task, script: HcApplyScript, job_id: JobID) -> InternalScriptResult:
         _ = job_id
@@ -69,6 +71,9 @@ class HcApplyInternalScript:
 
         with_updates = False
         with atomic():
+            # locking whole object, because parallel manage service internal script shouldn't conflict
+            self.lock_repo.register_lock_on_object_waiting(target=Descriptor(id=cluster_id, type=ADCMCoreType.CLUSTER))
+            # second lock is legacy one that will intervene with possible API changes
             lock_cluster_mapping(cluster_id=cluster_id)
 
             if (

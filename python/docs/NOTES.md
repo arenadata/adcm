@@ -272,3 +272,33 @@ propagate the group error to adcm finalization. Finalization fails because the l
 in adcm, and its error handler marks the task and its unfinished jobs `BROKEN`.
 Thus, without monitoring, the adcm status change in this example happens only after the other parallel jobs finish;
 celery may detect the lost process earlier.
+
+## Explicit locks
+
+- Related tasks: ADCM-8345
+- Authors/editors: Egor Araslanov
+
+It was decided to have explicit database-based locks for operations performed within jobs: internal scripts and ansible plugins.
+
+Aim is to prevent random write conflicts changing them to strictly sequential operations.
+Note that API operations can still be performed in parallel to job ones and one another.
+
+Current lock is on transaction level, unleashed with commit/rollback.
+It's not a context manager for that reason exactly, which should a bit leakage between core and implementation, but it's considered ok.
+
+Interface is defined in `core.locks`, implementation in `cm.impl` with postgres-dependant `pg_advisory_xact_lock` usage.
+Since this lock requires 2 integers to specify namespace and some "lock id", we use following format `4TTCCC` to define namespace:
+- `4` - constant meaning Arenadata/ADCM (4-A)
+- `TT` - object type code as 2 decimal numbers:
+   - `0X` - reserved for "management"-level entities
+   - `10` - `ADCM`
+   - `11` - `Provider`
+   - `12` - `Host`
+   - `13` - `Cluster`
+   - `14` - `Service`
+   - `15` - `Component`
+- `CCC` - lock "aspect" code to allow multiple granual locks on given object (`000` - reserved for "whole object"), 
+  other codes can be checked in implementation
+
+Note that advisory locks doesn't mean any semantics in namespaces, format above is self-made,
+just "some sense" is added to it, so may be reworked later if required.

@@ -24,7 +24,7 @@ from core.action.types import (
     StateChanges,
 )
 from core.result import Fail, Success
-from core.spec.keys import level_keys_to_full_key
+from core.spec.keys import full_key_to_level_keys, level_keys_to_full_key
 from core.spec.types import FullSpecKey, LevelSpecKey
 
 TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, ExecutionStatus.ABORTED]
@@ -33,6 +33,20 @@ TaskCompletionStatus = Literal[ExecutionStatus.SUCCESS, ExecutionStatus.FAILED, 
 _IN_PROGRESS_STATUSES = frozenset(UNFINISHED_STATUSES).difference((ExecutionStatus.CREATED,))
 _FAILURE_STATUSES = frozenset((ExecutionStatus.FAILED, ExecutionStatus.BROKEN))
 _TERMINATABLE_STATUSES = frozenset({ExecutionStatus.CREATED, ExecutionStatus.SCHEDULED, ExecutionStatus.RUNNING})
+
+
+def is_job_in_parallel_group(spec_key: FullSpecKey, plan: JobSpecV1) -> bool:
+    """Return whether the job has a parallel group at any level of its ancestry."""
+
+    *group_keys, _ = full_key_to_level_keys(spec_key)
+    level = plan.hierarchy
+
+    for group_key in group_keys:
+        level = level.child_groups[group_key]
+        if level.rule == ExecutionStyle.PARALLEL:
+            return True
+
+    return False
 
 
 def calculate_task_final_status(

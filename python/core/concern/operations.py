@@ -18,11 +18,14 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from core.action import Task
-from core.action.types import RichJob
+from core.action.job.operations import is_job_in_parallel_group
+from core.action.types import JobSpecV1, RichJob
 from core.cluster import ClusterTopology
 from core.concern.types import ConcernCause, ConcernDraft, ConcernRelatedObjects, ConcernTarget, ConcernType
 from core.constants import ADCM_DELETE_SERVICE_ACTION_NAME
 from core.types import ADCMCoreType, CoreObjectDescriptor, HostID, TaskID
+
+_JOB_FLAG_NAME_PREFIX = "adcm_running_job_"
 
 
 def detect_hosts_concern_distribution(topology: ClusterTopology, host_ids: Iterable[HostID]) -> ConcernRelatedObjects:
@@ -113,18 +116,15 @@ def build_id_chain(selector: dict) -> dict:
     return {f"{type_name}_id": info["id"] for type_name, info in selector.items()}
 
 
-def build_task_concern(task: Task, job: RichJob, target: ConcernTarget) -> ConcernDraft:
+def build_task_concern(task: Task, job: RichJob, target: ConcernTarget, execution_plan: JobSpecV1) -> ConcernDraft:
+    reason = build_concern_reason_data(task=task, job=job, target=target, execution_plan=execution_plan)
+
     if task.is_blocking:
         name = (
             task.name
             if task.name == ADCM_DELETE_SERVICE_ACTION_NAME
             else f"{ConcernCause.JOB.value}_{ConcernType.LOCK.value}"
         )
-        reason = {
-            "message": "Object was locked by running job ${job} on ${target}",
-            "placeholder": {"job": _job_placeholder(task.id, job), "target": _target_placeholder(target)},
-        }
-
         return ConcernDraft(
             type=ConcernType.LOCK,
             cause=ConcernCause.JOB,
@@ -134,29 +134,48 @@ def build_task_concern(task: Task, job: RichJob, target: ConcernTarget) -> Conce
             owner=target.as_descriptor,
         )
 
-    name = f"adcm_running_job_{task.name}"
-    reason = {
-        "message": "${source} has a flag: running job ${job}",
-        "placeholder": {"job": _job_placeholder(task.id, job), "source": _target_placeholder(target)},
-    }
-
     return ConcernDraft(
         type=ConcernType.FLAG,
         cause=ConcernCause.JOB,
-        name=name,
+        name=build_flag_name(task.name),
         reason=reason,
         blocking=False,
         owner=target.as_descriptor,
     )
 
 
-def _job_placeholder(task_id: TaskID, job: RichJob) -> dict:
+def build_flag_name(task_name: str) -> str:
+    return f"{_JOB_FLAG_NAME_PREFIX}{task_name}"
+
+
+def build_concern_reason_data(task: Task, job: RichJob, target: ConcernTarget, execution_plan: JobSpecV1) -> dict:
+    use_task_display_name = is_job_in_parallel_group(spec_key=job.runtime.spec_key, plan=execution_plan)
+    job_name = task.display_name if use_task_display_name else job.spec.names.display
+    job_placeholder = _build_job_placeholder(task_id=task.id, name=job_name)
+
+    if task.is_blocking:
+        message = "Object was locked by running job ${job} on ${target}"
+        target_key = "target"
+    else:
+        message = "${source} has a flag: running job ${job}"
+        target_key = "source"
+
+    return {
+        "message": message,
+        "placeholder": {
+            "job": job_placeholder,
+            target_key: _build_target_placeholder(target),
+        },
+    }
+
+
+def _build_job_placeholder(task_id: TaskID, name: str) -> dict:
     return {
         "type": "job",
-        "name": job.spec.names.display,
+        "name": name,
         "params": {"task_id": task_id},
     }
 
 
-def _target_placeholder(target: ConcernTarget) -> dict:
+def _build_target_placeholder(target: ConcernTarget) -> dict:
     return {"type": target.type.value, "name": target.name, "params": target.id_chain}

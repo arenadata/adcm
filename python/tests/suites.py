@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from shutil import rmtree
-from typing import Any, Final, Literal, TypeVar
+from typing import Any, Final, Literal
 import json
 import datetime
 
@@ -34,8 +34,7 @@ from audit.models import (
     AuditUser,
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
-from cm.impl.job.repo import JobRepo, _get_selector_for_core_object
-from cm.legacy.services.job.run.target_factories import prepare_ansible_job_config
+from cm.impl.job.repo import _get_selector_for_core_object
 from cm.models import (
     ADCM,
     Action,
@@ -54,19 +53,8 @@ from cm.models import (
     TaskLog,
 )
 from cm.tests.scripts import retrieve_rich_jobs
-from core.action.job import JobShortFilter
-from core.action.operations import to_rich_job
 from core.action.types import RichJob
-from core.config import ConfigService
 from core.legacy.job.executors import Executor as JobExecutor
-from core.legacy.job.runners import (
-    ADCMSettings,
-    AnsibleSettings,
-    ConsulSettings,
-    ExternalSettings,
-    IntegrationsSettings,
-)
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -75,11 +63,11 @@ from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK
 from unittest_parametrize import ParametrizedTestCase
-import yaml
 import dishka
 import django.test
 
 from tests._base import WithIndependentDirectories
+from tests.ansible import Executor, prepare_plugin_executor
 from tests.client import ADCMTestClient, APINode
 from tests.dependencies import (
     RBACScenariosOverride,
@@ -165,10 +153,21 @@ class _ADCMTestCase(TaskFlowMixin, django.test.SimpleTestCase, WithIndependentDi
         config_log.save(update_fields=["config"])
 
 
-Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
-
-
 class GenericTestCase(_ADCMTestCase, django.test.TestCase): ...
+
+
+class GenericTransactionTestCase(_ADCMTestCase, django.test.TransactionTestCase):
+    """
+    For cases that require committed data (e.g. to access it from other threads).
+
+    Database is flushed after every test, so ADCM and test data has to be prepared in `setUp`.
+    """
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        # files belong to data that is flushed (e.g. uploaded bundles)
+        self._clean_directories()
 
 
 class ADCMPluginExecutorSuite(
@@ -198,58 +197,16 @@ class ADCMPluginExecutorSuite(
         self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | RichJob | int
     ) -> Executor:
         """
-        Prepare plugin executor more or less like it will be created inside Ansible plugin call
-
-        You can specify `call_arguments` as dict, then it'll be passed right into executor's init function
-        or write it as plain yaml string (that'll be evaluated to dict) to "imitate" ansible plugin call description
-        (note that it should be inner section of plugin (without name).
-        If it is a string, it'll be parsed with `yaml` (so no ansible filters or environment will be there).
-
-        `call_context` can be either a context dict (with `type` and `*_id` fields)
-        or a job (`RichJob`, `JobLog` or job's id as `int`) based on which this function will build context.
+        Prepare plugin executor more or less like it will be created inside Ansible plugin call,
+        see `prepare_plugin_executor` for details
         """
-        with self.container(scope=dishka.Scope.REQUEST) as container:
-            arguments = call_arguments
-            if isinstance(arguments, str):
-                arguments = yaml.safe_load(arguments)
 
-            context = call_context
-            if not isinstance(call_context, dict):
-                configuration = ExternalSettings(
-                    adcm=ADCMSettings(
-                        code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR
-                    ),
-                    ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
-                    integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
-                    consul=ConsulSettings(
-                        url=settings.CONSUL_URL,
-                        datacenter=settings.CONSUL_DATACENTER,
-                        cacert_file=settings.CONSUL_CACERT_FILE,
-                    ),
-                )
+        # executor uses the scope during the call, so it's closed only when test is finished
+        container = self.enterContext(self.container(scope=dishka.Scope.REQUEST))
 
-                match call_context:
-                    case int():
-                        job_id = call_context
-                    case RichJob():
-                        job_id = call_context.runtime.id
-                    case _:
-                        job_id = call_context.id
-                task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
-
-                repo = JobRepo()
-
-                found_jobs = repo.find_jobs_short(JobShortFilter(ids=[job_id]))
-                plan = repo.get_execution_plan(task_id=task_id)
-
-                context = prepare_ansible_job_config(
-                    task=repo.get_task(id=task_id),
-                    job=to_rich_job(spec=plan, job=next(iter(found_jobs))),
-                    configuration=configuration,
-                    config_service=container.get(ConfigService),
-                )
-
-            return executor_type(arguments=arguments, runtime_vars=context, container=container)
+        return prepare_plugin_executor(
+            executor_type=executor_type, call_arguments=call_arguments, call_context=call_context, container=container
+        )
 
     def build_executor_call(
         self,

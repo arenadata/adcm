@@ -216,7 +216,7 @@ def remove_host_from_cluster(host: Host, cluster_service: ClusterService, rbac_s
         ActionHostGroup.hosts.through.objects.filter(host_id=host.id).delete()
         host.maintenance_mode = MaintenanceMode.OFF
         host.cluster = None
-        host.save()
+        host.save(update_fields=["maintenance_mode", "cluster"])
 
         for group in cluster.config_host_group.order_by("id"):
             group.hosts.remove(host)

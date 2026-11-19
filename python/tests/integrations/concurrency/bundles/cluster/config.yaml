@@ -1,0 +1,183 @@
+# Jobs for branches called directly by tests (see `test_examples.py`): jobs aren't run,
+# they only give branches what they get at runtime (task, job's id and config).
+#
+# Environment scenarios expect:
+# - services `service_1` and `service_2` are added, `service_3` and `service_4` aren't;
+# - host `host-1` is added to the cluster (it's referenced by `adcm_hc` calls).
+
+- type: cluster
+  name: concurrency_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  config: &config
+    - name: first
+      type: string
+      required: false
+    - name: second
+      type: string
+      required: false
+
+  actions:
+    jobs_for_branches:
+      masking:
+      scripts: &jobs_for_branches
+        - name: s_1
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_2
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_3
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_4
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_5
+          script_type: ansible
+          script: ./noop.yaml
+        - name: s_6
+          script_type: ansible
+          script: ./noop.yaml
+
+    jobs_for_branches_three:
+      masking:
+      scripts:
+        - name: first
+          script_type: ansible
+          script: ./noop.yaml
+        - name: second
+          script_type: ansible
+          script: ./noop.yaml
+        - name: third
+          script_type: ansible
+          script: ./noop.yaml
+
+    # for `hc_apply`, which applies mapping passed on action's run
+    jobs_for_branches_with_hc_acl:
+      masking:
+      hc_acl:
+        - service: service_1
+          component: component_1
+          action: add
+        - service: service_1
+          component: component_2
+          action: add
+        - service: service_2
+          component: component_1
+          action: add
+      scripts: *jobs_for_branches
+
+    config_parallel:
+      masking:
+      scripts:
+        - group: parallel
+          name: configs
+          scripts: &config_branches
+            - name: change_field_1
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_2
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_3
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_4
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_5
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_6
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_7
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_8
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_9
+              script_type: ansible
+              script: ./noop.yaml
+            - name: change_field_10
+              script_type: ansible
+              script: ./noop.yaml
+
+    config_sequential:
+      masking:
+      scripts:
+        - group: sequential
+          name: configs
+          scripts: *config_branches
+
+- type: service
+  name: service_1
+  version: "1"
+  config: *config
+  components:
+    component_1:
+      constraint: [0, 1]
+    component_2:
+
+- type: service
+  name: service_2
+  version: "1"
+  config: *config
+  components:
+    component_1:
+
+- type: service
+  name: service_3
+  version: "1"
+  config: *config
+  components:
+    component_1:
+
+- type: service
+  name: service_4
+  version: "1"
+  config: *config
+  components:
+    component_1:
+
+- type: service
+  name: config_update_service
+  version: "1"
+  config:
+    - name: field_1
+      type: string
+      default: initial
+    - name: field_2
+      type: string
+      default: initial
+    - name: field_3
+      type: string
+      default: initial
+    - name: field_4
+      type: string
+      default: initial
+    - name: field_5
+      type: string
+      default: initial
+    - name: field_6
+      type: string
+      default: initial
+    - name: field_7
+      type: string
+      default: initial
+    - name: field_8
+      type: string
+      default: initial
+    - name: field_9
+      type: string
+      default: initial
+    - name: field_10
+      type: string
+      default: initial
+    - name: field_11
+      type: string
+      default: initial

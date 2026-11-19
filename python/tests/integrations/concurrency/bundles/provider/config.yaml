@@ -1,0 +1,10 @@
+# Hosts for components mapping of concurrency scenarios
+- type: provider
+  name: concurrency_provider
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+- type: host
+  name: concurrency_host
+  version: "1"

@@ -19,8 +19,6 @@ from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
-    update_task_flag_concern,
-    update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run.audit import audit_task_finish
@@ -51,6 +49,7 @@ from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
 from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import ExecutionTargetFactory, ExternalSettings, RunnerEnvironment
+from core.object.repo import ObjectRepoI
 from core.result import Fail, Success
 from core.scenarios.concern import ConcernScenarios
 from core.settings import Directories
@@ -92,7 +91,7 @@ class StartTask:
         jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
         first_job = jobs_by_key[first_key]
 
-        self.concern_scenarios.create_job_concern(task=task, first_job=first_job)
+        self.concern_scenarios.create_job_concern(task=task, first_job=first_job, execution_plan=plan)
 
         return self.process_starter.start(
             task_id=task_id, code_dir=self.directories.code, log_dir=self.directories.logs
@@ -123,6 +122,7 @@ class SetTaskToRunning:
 @dataclass(slots=True)
 class RunJob:
     repo: JobRepoI
+    concern_scenarios: ConcernScenarios
     target_factory: ExecutionTargetFactory
     cluster_service: ClusterService
     config_service: ConfigService
@@ -164,12 +164,7 @@ class RunJob:
             to_update = JobUpdateDTO(status=ExecutionStatus.RUNNING, start_date=environment.now())
             self.repo.update_job(id=job_id, data=to_update)
 
-            # it's enough to detect the function once (as the delete one),
-            # but implementation of such a thing is better be done with thoughfull concerns refactoring
-            if task.is_blocking:
-                update_task_lock_concern(job_id=job_id)
-            else:
-                update_task_flag_concern(job_id=job_id)
+            self.concern_scenarios.update_job_concern(task=task, job=job, execution_plan=plan)
 
         try:
             # Executor launch moved outside of transaction,
@@ -230,6 +225,7 @@ class RunJob:
 @dataclass(slots=True)
 class FinalizeTask:
     job_repo: JobRepoI
+    object_repo: ObjectRepoI
     notifier: EventNotifier
     status_scenarios: StatusScenarios
     cluster_service: ClusterService
@@ -344,12 +340,12 @@ class FinalizeTask:
             logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
-            self.job_repo.update_owner_state(owner=owner, state=state)
+            self.object_repo.set_state(object_=owner, state=state)
 
-        self.job_repo.update_owner_multi_states(
-            owner=owner,
-            add_multi_states=state_changes.multi_state_set,
-            remove_multi_states=state_changes.multi_state_unset,
+        self.object_repo.update_multi_state(
+            object_=owner,
+            add=state_changes.multi_state_set,
+            remove=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:

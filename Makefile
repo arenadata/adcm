@@ -49,13 +49,13 @@ build-redos:
 	@docker build --platform=linux/amd64 . -f Dockerfile.redos -t $(APP_IMAGE):$(APP_TAG)-redos8 --build-arg ADCM_VERSION=$(ADCM_VERSION)
 
 unittests:
-	# celery_worker exclude is ignored, but it's a failsafe in case discovery is changed,
-	# since these tests may flak/fail in parallel run
-	$(call run_tests,python --parallel --exclude-tag celery_worker)
+	# excludes of integration tests' tags (see `tests/integrations/constants.py`) are ignored,
+	# but it's a failsafe in case discovery is changed, since these tests may flak/fail in parallel run
+	$(call run_tests,python --parallel --exclude-tag celery_worker --exclude-tag integration_tests)
 
 test-integrations:
 	# `tests.integrations` has no `__init__.py`, so its test packages have to be pointed at directly
-	$(call run_tests,tests.integrations.celery)
+	$(call run_tests,tests.integrations.celery tests.integrations.locks tests.integrations.concurrency)
 
 pretty:
 	$(call uv_sync,lint)

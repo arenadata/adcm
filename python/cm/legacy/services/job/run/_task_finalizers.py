@@ -27,6 +27,7 @@ from cm.converters import core_type_to_model, orm_object_to_core_type
 from cm.legacy.services.mapping import change_host_component_mapping, check_nothing
 from cm.legacy.status_api import send_object_update_event
 from cm.models import (
+    Host,
     MaintenanceMode,
     TaskLog,
     get_object_cluster,
@@ -76,7 +77,7 @@ def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCor
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.OFF
-        obj.save()
+        obj.save(update_fields=["maintenance_mode"] if isinstance(obj, Host) else ["_maintenance_mode"])
         send_object_update_event(
             obj_id=obj.pk,
             obj_type=orm_object_to_core_type(obj).value,
@@ -88,7 +89,7 @@ def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCor
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.ON
-        obj.save()
+        obj.save(update_fields=["maintenance_mode"] if isinstance(obj, Host) else ["_maintenance_mode"])
         send_object_update_event(
             obj_id=obj.pk,
             obj_type=orm_object_to_core_type(obj).value,

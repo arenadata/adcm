@@ -23,8 +23,10 @@ from application.di.providers.main import (
     ConcernProvider,
     ConfigProvider,
     JobProvider,
+    LockProvider,
     LogsServiceProvider,
     MetricsProvider,
+    ObjectProvider,
     PathResolverProvider,
     ProviderProvider,
     ScenariosProvider,
@@ -44,6 +46,7 @@ def get_ansible_plugin_providers() -> tuple[Provider, ...]:
         ConfigProvider(),
         EnvironmentProvider(),
         JobProvider(),
+        ObjectProvider(),
         PathResolverProvider(),
         ProviderProvider(),
         ScenariosProvider(),
@@ -51,6 +54,7 @@ def get_ansible_plugin_providers() -> tuple[Provider, ...]:
         UseCaseProvider(),
         UtilsProvider(),
         WizardProvider(),
+        LockProvider(),
     )
 
 

@@ -14,13 +14,14 @@ from collections import defaultdict
 from collections.abc import Collection
 from typing import Any, Literal
 
-from cm.legacy.api import get_hc
+from cm.legacy.api import atomic, get_hc
 from cm.legacy.services.mapping import change_host_component_mapping
 from cm.models import Cluster, Component, Host, JobLog
 from cm.transition.status import StatusScenarios
 from core.action import TaskMappingDelta
 from core.cluster import ClusterService
-from core.types import ADCMCoreType, CoreObjectDescriptor
+from core.locks import LockRepoI
+from core.types import ADCMCoreType, CoreObjectDescriptor, Descriptor
 from pydantic import field_validator
 
 from ansible_plugin.base import (
@@ -90,51 +91,57 @@ class ADCMHostComponentPluginExecutor(ADCMAnsiblePluginExecutor[ChangeHostCompon
         if action_hc_map:
             raise PluginIncorrectCallError(message="You can not change hc in plugin for action with hc_acl")
 
-        cluster = Cluster.objects.get(id=runtime.vars.context.cluster_id)
+        cluster_id = int(runtime.vars.context.cluster_id)
+        lock_repo = self._container.get(LockRepoI)
 
-        hostcomponent = get_hc(cluster)
-        mapping_add, mapping_remove = defaultdict(set), defaultdict(set)
-        for operation in arguments.operations:
-            component_id, service_id = Component.objects.values_list("id", "service_id").get(
-                cluster=cluster, service__prototype__name=operation.service, prototype__name=operation.component
+        with atomic():
+            # locking whole object, because parallel manage service internal script shouldn't conflict
+            lock_repo.register_lock_on_object_waiting(target=Descriptor(id=cluster_id, type=ADCMCoreType.CLUSTER))
+            cluster = Cluster.objects.get(id=cluster_id)
+
+            hostcomponent = get_hc(cluster)
+            mapping_add, mapping_remove = defaultdict(set), defaultdict(set)
+            for operation in arguments.operations:
+                component_id, service_id = Component.objects.values_list("id", "service_id").get(
+                    cluster=cluster, service__prototype__name=operation.service, prototype__name=operation.component
+                )
+                host_id = Host.objects.values_list("id", flat=True).get(cluster=cluster, fqdn=operation.host)
+                item = {
+                    "host_id": host_id,
+                    "service_id": service_id,
+                    "component_id": component_id,
+                }
+                if operation.action == "add":
+                    if item in hostcomponent:
+                        return CallResult(
+                            value=None,
+                            changed=False,
+                            error=PluginRuntimeError(
+                                message=f'There is already component "{operation.component}" on host "{operation.host}"'
+                            ),
+                        )
+                    hostcomponent.append(item)
+                    mapping_add[component_id].add(host_id)
+
+                else:
+                    if item not in hostcomponent:
+                        return CallResult(
+                            value=None,
+                            changed=False,
+                            error=PluginRuntimeError(
+                                message=f'There is no component "{operation.component}" on host "{operation.host}"'
+                            ),
+                        )
+
+                    hostcomponent.remove(item)
+                    mapping_remove[component_id].add(host_id)
+
+            change_host_component_mapping(
+                cluster_id=cluster.id,
+                bundle_id=cluster.prototype.bundle_id,
+                cluster_service=self._container.get(ClusterService),
+                status_scenarios=self._container.get(StatusScenarios),
+                mapping_delta=TaskMappingDelta(add=mapping_add, remove=mapping_remove),
             )
-            host_id = Host.objects.values_list("id", flat=True).get(cluster=cluster, fqdn=operation.host)
-            item = {
-                "host_id": host_id,
-                "service_id": service_id,
-                "component_id": component_id,
-            }
-            if operation.action == "add":
-                if item in hostcomponent:
-                    return CallResult(
-                        value=None,
-                        changed=False,
-                        error=PluginRuntimeError(
-                            message=f'There is already component "{operation.component}" on host "{operation.host}"'
-                        ),
-                    )
-                hostcomponent.append(item)
-                mapping_add[component_id].add(host_id)
-
-            else:
-                if item not in hostcomponent:
-                    return CallResult(
-                        value=None,
-                        changed=False,
-                        error=PluginRuntimeError(
-                            message=f'There is no component "{operation.component}" on host "{operation.host}"'
-                        ),
-                    )
-
-                hostcomponent.remove(item)
-                mapping_remove[component_id].add(host_id)
-
-        change_host_component_mapping(
-            cluster_id=cluster.id,
-            bundle_id=cluster.prototype.bundle_id,
-            cluster_service=self._container.get(ClusterService),
-            status_scenarios=self._container.get(StatusScenarios),
-            mapping_delta=TaskMappingDelta(add=mapping_add, remove=mapping_remove),
-        )
 
         return CallResult(value=None, changed=True, error=None)

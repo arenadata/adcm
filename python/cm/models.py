@@ -322,6 +322,7 @@ class ADCMEntity(ADCMModel):
         return f'{self.prototype.type} #{self.id} "{name}"'
 
     def set_state(self, state: str) -> None:
+        # DEPRECATED, use ObjectRepo
         self.state = state or self.state
         self.save(update_fields=["state"])
         logger.info('set %s state to "%s"', self, state)
@@ -346,22 +347,24 @@ class ADCMEntity(ADCMModel):
         return sorted(self._multi_state.keys())
 
     def set_multi_state(self, multi_state: str) -> None:
+        # DEPRECATED, use ObjectRepo
         """Append new unique multi_state to entity._multi_state"""
         if multi_state in self._multi_state:
             return
 
         self._multi_state.update({multi_state: 1})
-        self.save()
+        self.save(update_fields=["_multi_state"])
 
         logger.info('add "%s" to "%s" multi_state', multi_state, self)
 
     def unset_multi_state(self, multi_state: str) -> None:
+        # DEPRECATED, use ObjectRepo
         """Remove specified multi_state from entity._multi_state"""
         if multi_state not in self._multi_state:
             return
 
         del self._multi_state[multi_state]
-        self.save()
+        self.save(update_fields=["_multi_state"])
 
         logger.info('remove "%s" from "%s" multi_state', multi_state, self)
 
