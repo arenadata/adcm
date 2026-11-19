@@ -24,7 +24,7 @@ import (
 )
 
 const httpPort = ":8020"
-const componentTimeout = 300 // seconds
+const componentTimeout = 300 * time.Second
 
 type Hub struct {
 	HostStatusStorage    *Storage
