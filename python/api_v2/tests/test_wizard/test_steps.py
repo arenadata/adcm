@@ -31,6 +31,8 @@ from api_v2.tests.test_wizard.helpers import WizardProcessHelpers, render_templa
 
 
 class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcessHelpers):
+    maxDiff = None
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -99,6 +101,7 @@ class TestWizardActionProcessSteps(APIV2Mixin, ADCMDjangoAPISuite, WizardProcess
                 display_name="Sleep",
                 path="wizard_jinja/scripts/sleep.yaml",
                 test_params=["created"],
+                terminatable=True,
             ),
         )
         self.assertEqual(process_step.step_spec, expected_spec)

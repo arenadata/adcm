@@ -301,9 +301,6 @@ class Task(BaseModel):
     on_fail: StateChanges
 
     is_blocking: bool
-    # currently it's action's property,
-    # but for similarity with job we'll put it in here
-    is_termination_allowed: bool
 
     description: str
 
@@ -388,9 +385,10 @@ class JobShortInfo:
 
 @dataclass(slots=True)
 class JobDetails:
-    # `False` mirrors what the bundle DSL means by saying nothing,
-    # so a script that states nothing doesn't silently become terminatable
-    terminatable: bool = False
+    # Non-internal scripts are terminatable; internal ones are always set to `False`
+    # explicitly by `_is_terminatable` during bundle parsing, so this default is a
+    # test/fallback value rather than a production one.
+    terminatable: bool = True
 
 
 # script by type

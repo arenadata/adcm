@@ -284,7 +284,7 @@ def _to_script_spec(key: FullSpecKey, script: dict, context: dict) -> ScriptSpec
             multi_state_set=tuple(on_fail["multi_state_on_fail_set"]),
             multi_state_unset=tuple(on_fail["multi_state_on_fail_unset"]),
         ),
-        details=JobDetails(terminatable=_is_terminatable(script_type=script_type, script=script)),
+        details=JobDetails(terminatable=_is_terminatable(script_type=script_type)),
     )
 
 
@@ -300,14 +300,10 @@ def _to_script_params(script_type: action.ScriptType, script: dict) -> Any:
     return params
 
 
-def _is_terminatable(script_type: action.ScriptType, script: dict) -> bool:
-    if script_type == action.ScriptType.INTERNAL:
-        # internal scripts are performed by ADCM itself, there's no process to terminate.
-        # forced rather than rejected on purpose: existing bundles may say otherwise
-        # and that shouldn't make them invalid
-        return False
-
-    return bool(script.get("allow_to_terminate", False))
+def _is_terminatable(script_type: action.ScriptType) -> bool:
+    # Internal scripts are performed by ADCM itself, there's no process to terminate.
+    # `allow_to_terminate` is deprecated: non-internal scripts are always terminatable.
+    return script_type != action.ScriptType.INTERNAL
 
 
 def _extract_config(entity: dict, context: dict) -> ConfigDefinition | None:

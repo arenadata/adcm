@@ -286,19 +286,27 @@ class TestRepresentExecutionPlan(TestCase):
         self.assertEqual(outer.status, RUNNING)
         self.assertEqual((outer.start_time, outer.end_time, outer.duration), (at(0), None, None))
 
-    def test_group_is_terminatable_even_if_its_jobs_are_not(self) -> None:
-        spec = JobSpecV1.from_entries(
+    def test_group_terminatable_reflects_its_children(self) -> None:
+        all_not = JobSpecV1.from_entries(
             make_group("/group", SEQUENTIAL),
             make_script("/group/0-one", terminatable=False),
             make_script("/group/1-two", terminatable=False),
         )
         jobs = [make_job(1, "/group/0-one"), make_job(2, "/group/1-two")]
 
-        plan = represent_execution_plan(spec=spec, jobs=jobs, version=1)
-
-        (group,) = map(as_group, plan.children)
-        self.assertTrue(group.is_terminatable)
+        (group,) = map(as_group, represent_execution_plan(spec=all_not, jobs=jobs, version=1).children)
+        self.assertFalse(group.is_terminatable)
         self.assertEqual([as_job(job).is_terminatable for job in group.children], [False, False])
+
+        some_terminatable = JobSpecV1.from_entries(
+            make_group("/group", SEQUENTIAL),
+            make_script("/group/0-one", terminatable=False),
+            make_script("/group/1-two", terminatable=True),
+        )
+        jobs = [make_job(1, "/group/0-one"), make_job(2, "/group/1-two")]
+
+        (group,) = map(as_group, represent_execution_plan(spec=some_terminatable, jobs=jobs, version=1).children)
+        self.assertTrue(group.is_terminatable)
 
     def test_partly_run_group_is_running(self) -> None:
         spec = JobSpecV1.from_entries(

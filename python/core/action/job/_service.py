@@ -59,12 +59,8 @@ class JobService:
         if logs:
             self.repo.create_logs(logs)
 
-    def terminate_task(self, task_id: TaskID, *, force_allow_termination: bool = False) -> None:
+    def terminate_task(self, task_id: TaskID) -> None:
         task = self.repo.get_task(task_id)
-
-        if not (force_allow_termination or task.is_termination_allowed):
-            message = f"Task #{task_id} termination is not allowed due to action definition"
-            raise JobValidationError(message)
 
         if not is_terminatable_status(task.status):
             message = f"Task #{task_id} termination is not allowed due to status: {task.status.value}"
@@ -91,7 +87,11 @@ class JobService:
         target_keys = tuple(key for key in plan.scripts if is_part_of_group(key, group.key))
 
         found_jobs = self.repo.find_jobs_short(JobShortFilter(task_ids=[task_id], spec_keys=target_keys))
-        terminatable_jobs = tuple(job for job in found_jobs if is_terminatable_status(job.status))
+        terminatable_jobs = tuple(
+            job
+            for job in found_jobs
+            if is_terminatable_status(job.status) and to_rich_job(spec=plan, job=job).spec.details.terminatable
+        )
 
         if not terminatable_jobs:
             message = f'Group "{name}" of task #{task_id} has nothing to terminate'

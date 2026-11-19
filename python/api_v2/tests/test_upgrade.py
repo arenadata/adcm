@@ -263,7 +263,7 @@ class TestUpgrade(ADCMDjangoAPISuite):
 
         self.assertEqual(upgrade_data["id"], self.upgrade_host_via_action_complex.pk)
         self.assertEqual(upgrade_data["disclaimer"], "Cool upgrade")
-        self.assertFalse(upgrade_data["isAllowToTerminate"])
+        self.assertTrue(upgrade_data["isAllowToTerminate"])
 
         self.assertEqual(len(upgrade_data["hostComponentMapRules"]), 0)
 

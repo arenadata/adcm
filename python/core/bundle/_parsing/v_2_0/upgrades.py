@@ -10,17 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
-from typing import Annotated, Generic, TypeVar
+from typing import Annotated, Generic, TypeAlias, TypeVar
 
-from pydantic import AfterValidator, BeforeValidator, Field, model_validator
+from pydantic import AfterValidator, Field, StrictBool, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.model import BundleModel
-from core.bundle._parsing.shared.validation import (
-    field_not_set_mode_before,
-    min_and_max_present,
-)
+from core.bundle._parsing.shared.validation import min_and_max_present
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
     BeforeUpgradeCleanScript,
@@ -35,18 +31,13 @@ ScriptT = TypeVar("ScriptT")
 _SwitchCleanScripts = BundleSwitchInternalScript | BeforeUpgradeCleanScript
 UpgradeCommonInternalScript = Annotated[_SwitchCleanScripts, Field(discriminator="script")]
 UpgradeDynamicInternalScript = Annotated[_SwitchCleanScripts | ConfigApplyInternalScript, Field(discriminator="script")]
-# extra validator is added to not duplicate scripts structure, yet it's not allowed in upgrade
 UpgradeScript = Annotated[
     UpgradeCommonInternalScript | AnsibleScript,
     Field(discriminator="script_type"),
-    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
 ]
 DynamicUpgradeScript = Annotated[UpgradeDynamicInternalScript | AnsibleScript, Field(discriminator="script_type")]
 # amount of `bundle_switch` scripts is checked on the spec built out of them
-DynamicUpgradeScriptList = Annotated[
-    list[ScriptT],
-    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
-]
+DynamicUpgradeScriptList: TypeAlias = list[ScriptT]
 
 
 class SimpleUpgrade(BundleModel):
@@ -63,6 +54,8 @@ class SimpleUpgrade(BundleModel):
 
 class _UpgradeWithActionBase(SimpleUpgrade):
     config: ConfigAsListDictOrNoneNoDuplicates
+
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
 
     masking: Masking
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]

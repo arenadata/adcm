@@ -11,17 +11,15 @@
 # limitations under the License.
 
 """
-Behavior "freeze" of `allow_to_terminate` in upgrades.
+`allow_to_terminate` is supported by upgrades now.
 
-Upgrade itself can't declare it, so there's nothing to propagate to its scripts.
-Statically declared upgrade scripts reject it, while rendered ones (`scripts_template`) accept and respect it.
-The latter is most likely unintended and may be fixed later, until then it's pinned as is.
+It may be declared on the upgrade itself (propagated to its scripts) or on a script directly,
+for both statically declared and template-rendered scripts. Internal scripts stay non-terminatable.
 """
 
 from pathlib import Path
 from typing import Final
 
-from cm.errors import AdcmEx
 from cm.models import Upgrade
 from cm.tests.scripts import retrieve_rich_jobs
 from rest_framework.status import HTTP_200_OK
@@ -42,33 +40,16 @@ class TestAllowToTerminateInUpgrade(ADCMDjangoAPISuite):
     @parametrize(
         "bundle_name",
         [
-            param("static_upgrade_with_allow_to_terminate", id="with_scripts"),
-            param("rendered_upgrade_with_allow_to_terminate", id="with_scripts_template"),
+            param("static_upgrade_with_allow_to_terminate", id="static_upgrade"),
+            param("rendered_upgrade_with_allow_to_terminate", id="rendered_upgrade"),
+            param("static_scripts_with_allow_to_terminate", id="static_scripts"),
+            param("rendered_scripts_with_allow_to_terminate", id="rendered_scripts"),
         ],
     )
-    def test_allow_to_terminate_on_upgrade_fail(self, bundle_name: str) -> None:
-        with self.assertRaises(AdcmEx) as err:
-            self.uc.upload_bundle(BUNDLES_DIR / bundle_name)
-
-        self.assertEqual(err.exception.code, "BUNDLE_DEFINITION_ERROR")
-        self.assertIn("allow_to_terminate", err.exception.msg)
-        self.assertIn("Extra inputs are not permitted", err.exception.msg)
-
-    def test_allow_to_terminate_on_static_upgrade_scripts_fail(self) -> None:
-        with self.assertRaises(AdcmEx) as err:
-            self.uc.upload_bundle(BUNDLES_DIR / "static_scripts_with_allow_to_terminate")
-
-        self.assertEqual(err.exception.code, "BUNDLE_DEFINITION_ERROR")
-        self.assertIn("Field allow_to_terminate is not allowed in here", err.exception.msg)
-
-    def test_allow_to_terminate_on_rendered_upgrade_scripts_success(self) -> None:
-        new_bundle = self.uc.upload_bundle(BUNDLES_DIR / "rendered_scripts_with_allow_to_terminate")
+    def test_allow_to_terminate_on_upgrade_success(self, bundle_name: str) -> None:
+        new_bundle = self.uc.upload_bundle(BUNDLES_DIR / bundle_name)
         cluster = self.uc.add_cluster(bundle=self.old_bundle, name="to upgrade")
         upgrade = Upgrade.objects.select_related("action").get(bundle=new_bundle)
-
-        # scripts rendered from template are unknown until rendering, so nothing is stored
-        self.assertIsNotNone(upgrade.action)
-        self.assertIsNone(upgrade.action.scripts)
 
         response = self.client.v2[cluster, "upgrades", upgrade, "run"].post()
 
@@ -76,5 +57,5 @@ class TestAllowToTerminateInUpgrade(ADCMDjangoAPISuite):
         terminatable = {
             job.spec.names.internal: job.spec.details.terminatable for job in retrieve_rich_jobs(response.json()["id"])
         }
-        # internal scripts are never terminatable
+        # internal scripts are never terminatable, regular ones are
         self.assertDictEqual(terminatable, {"run": True, "switch": False})

@@ -119,8 +119,7 @@ class PydanticParser(BundleParser, ABC, Generic[RootT, ObjectT]):
         dumped = parsed.model_dump(exclude_unset=True, exclude_defaults=True)["scripts"]
 
         for script in iterate_scripts(dumped):  # propagate `allow_to_terminate` attr from action if not set
-            if not script.get("allow_to_terminate"):
-                script["allow_to_terminate"] = action_allow_to_terminate
+            script.setdefault("allow_to_terminate", action_allow_to_terminate)
 
         result = extract_scripts(scripts=dumped, path_resolution_root=template_path.parent)
 

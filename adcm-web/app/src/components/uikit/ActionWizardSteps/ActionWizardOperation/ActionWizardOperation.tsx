@@ -106,7 +106,7 @@ const ActionWizardOperation = ({ job, subJobLog, executionPlan = null }: ActionW
                     />
                     <JobActionIconButton
                       icon="g1-graph-stop"
-                      label="Terminate the subjob"
+                      label="Stop the subjob"
                       disabled={!isStopEnabled}
                       onClick={() => handleSubJobAction(subJob, 'stop')}
                       data-test="wizard-subjob-stop"

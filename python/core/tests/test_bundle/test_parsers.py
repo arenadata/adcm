@@ -609,7 +609,7 @@ class TestScriptsConversion(TestCase):
 
         check_mock.assert_called_once_with(spec=spec)
 
-    def test_terminatable_is_off_unless_stated(self):
+    def test_non_internal_scripts_are_always_terminatable(self):
         spec = self.parse(
             """
             - name: silent
@@ -618,11 +618,12 @@ class TestScriptsConversion(TestCase):
             - name: loud
               script: b.yaml
               script_type: ansible
-              allow_to_terminate: true
+              allow_to_terminate: false
             """
         )
 
-        self.assertFalse(spec.scripts["/0-silent"].details.terminatable)
+        # `allow_to_terminate` is deprecated: non-internal scripts are always terminatable
+        self.assertTrue(spec.scripts["/0-silent"].details.terminatable)
         self.assertTrue(spec.scripts["/1-loud"].details.terminatable)
 
     def test_internal_scripts_are_never_terminatable(self):
@@ -656,7 +657,7 @@ class TestScriptsConversion(TestCase):
         # ... except internal ones, which have no process to terminate
         self.assertFalse(spec.scripts["/1-switch"].details.terminatable)
 
-    def test_action_level_terminate_propagates_to_root_entry_scripts(self):
+    def test_allow_to_terminate_flag_does_not_affect_terminatable(self):
         entry = V2Implementation.build_cluster_entry() | {
             "actions": {
                 "act": {
@@ -678,9 +679,9 @@ class TestScriptsConversion(TestCase):
 
                 (action,) = definitions[("cluster",)].actions
                 self.assertIsNotNone(action.scripts)
+                # the deprecated flag no longer makes a non-internal script non-terminatable
                 self.assertTrue(action.scripts.scripts["/0-inherits"].details.terminatable)
-                # explicit `false` is kept as is, only unset values are inherited
-                self.assertFalse(action.scripts.scripts["/1-own"].details.terminatable)
+                self.assertTrue(action.scripts.scripts["/1-own"].details.terminatable)
 
 
 class TestUpgradeScripts(TestCase):
@@ -1825,7 +1826,7 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="simple_job",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0-simple_job", "simple_job", ansible_script("wow.yaml")),
+                    build_script_spec("/0-simple_job", "simple_job", ansible_script("wow.yaml"), terminatable=True),
                 ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
@@ -1834,8 +1835,10 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="Awesome ma I",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0-first", "first", ansible_script("inner/root.yaml")),
-                    build_script_spec("/1-second", "second", ansible_script("another.yaml"), display_name="Special"),
+                    build_script_spec("/0-first", "first", ansible_script("inner/root.yaml"), terminatable=True),
+                    build_script_spec(
+                        "/1-second", "second", ansible_script("another.yaml"), display_name="Special", terminatable=True
+                    ),
                 ),
                 available_at=ActionAvailability(states=[], multi_states="any"),
             ),
@@ -1844,7 +1847,9 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="not_full_states",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0-not_full_states", "not_full_states", python_script("x.py")),
+                    build_script_spec(
+                        "/0-not_full_states", "not_full_states", python_script("x.py"), terminatable=True
+                    ),
                 ),
                 available_at=ActionAvailability(states="any", multi_states="any"),
             ),
@@ -1853,7 +1858,9 @@ class TestBundleDefinitionConversion(TestCase):
                 display_name="not_full_masking",
                 venv=MAIN_VENV,
                 scripts=JobSpecV1.from_entries(
-                    build_script_spec("/0-not_full_masking", "not_full_masking", python_script("x.py")),
+                    build_script_spec(
+                        "/0-not_full_masking", "not_full_masking", python_script("x.py"), terminatable=True
+                    ),
                 ),
                 unavailable_at=ActionAvailability(states=["o"], multi_states=[]),
             ),
@@ -2025,9 +2032,13 @@ class TestBundleDefinitionConversion(TestCase):
                     venv=MAIN_VENV,
                     available_at=ActionAvailability(states="any", multi_states="any"),
                     scripts=JobSpecV1.from_entries(
-                        build_script_spec("/0-first", "first", ansible_script("root.yaml")),
+                        build_script_spec("/0-first", "first", ansible_script("root.yaml"), terminatable=True),
                         build_script_spec(
-                            "/1-second", "second", simple_internal_script("bundle_switch"), display_name="Special"
+                            "/1-second",
+                            "second",
+                            simple_internal_script("bundle_switch"),
+                            display_name="Special",
+                            terminatable=False,
                         ),
                     ),
                 ),

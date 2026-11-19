@@ -110,6 +110,7 @@ class TestWizardOnAHG(ADCMDjangoAPISuite, APIV2Mixin):
                     "sleep_script",
                     display_name="Sleep",
                     path="wizard_jinja/scripts/sleep.yaml",
+                    terminatable=True,
                 ),
             ),
         }

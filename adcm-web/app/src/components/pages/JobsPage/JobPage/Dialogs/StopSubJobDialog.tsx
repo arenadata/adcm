@@ -3,6 +3,13 @@ import { useDispatch, useStore } from '@hooks';
 import { closeStopDialog, stopSubJobWithUpdate } from '@store/adcm/jobs/subJobsActionsSlice';
 import { useParams } from 'react-router-dom';
 import { DialogV2 } from '@uikit';
+import JobTerminateDialogBody from '@commonComponents/job/JobTerminateDialogBody/JobTerminateDialogBody';
+import {
+  getSkipSubJobDialogDescription,
+  getSkipSubJobDialogTitle,
+  getStopSubJobDialogDescription,
+  getStopSubJobDialogTitle,
+} from '@commonComponents/job/jobTerminateDialogContent';
 
 const StopSubJobDialog: React.FC = () => {
   const dispatch = useDispatch();
@@ -41,12 +48,14 @@ const StopSubJobDialog: React.FC = () => {
 
   return (
     <DialogV2
-      title={isSkip ? `Skip the subjob "${displayName}"` : `Terminate the subjob "${displayName}"`}
+      title={isSkip ? getSkipSubJobDialogTitle(displayName) : getStopSubJobDialogTitle(displayName)}
       actionButtonLabel={isSkip ? 'Skip' : 'Stop'}
       onAction={handleConfirm}
       onCancel={handleClose}
     >
-      {isSkip ? 'Selected subjob will be skipped' : 'Selected subjob will be terminated'}
+      <JobTerminateDialogBody
+        description={isSkip ? getSkipSubJobDialogDescription(displayName) : getStopSubJobDialogDescription(displayName)}
+      />
     </DialogV2>
   );
 };

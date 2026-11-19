@@ -87,6 +87,7 @@ class TestTask(ADCMDjangoAPISuite):
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
             start_date=timezone.now(),
             finish_date=timezone.now(),
+            status=JobStatus.CREATED,
         )
 
     def test_task_list_success(self):

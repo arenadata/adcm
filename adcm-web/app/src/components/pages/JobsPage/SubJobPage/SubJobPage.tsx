@@ -29,9 +29,9 @@ const SubJobPage = () => {
     }
   }, [subJob, subJob?.displayName, subJob?.parentTask.id, subJob?.parentTask.displayName, dispatch]);
 
-  const handleStop = () => {
+  const handleAction = (mode: 'skip' | 'stop') => {
     if (subJob) {
-      dispatch(openStopDialog(subJob.id));
+      dispatch(openStopDialog({ id: subJob.id, mode, displayName: subJob.displayName }));
     }
   };
 
@@ -39,7 +39,7 @@ const SubJobPage = () => {
     <SubJobLogsAutoScrollProvider isInitialAutoScroll={true}>
       <JobPageHeader job={subJob} />
       <div className={s.subJobInfo}>
-        <SubJobOverviewTable onStop={handleStop} />
+        <SubJobOverviewTable onAction={handleAction} />
         <div className={s.logsWrapper}>
           <SubJobLogs />
         </div>
