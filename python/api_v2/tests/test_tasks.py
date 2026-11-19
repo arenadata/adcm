@@ -36,6 +36,7 @@ from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
 from tests.deprecated import prepare_task_for_action
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
 from use_cases.transition.cluster.delete import DeleteService
 
 
@@ -204,6 +205,29 @@ class TestTask(ADCMDjangoAPISuite):
         self.assertEqual(response.data["id"], self.cluster_task.pk)
         self.assertEqual(response.data["objects"], [task_object])
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+    @parametrize(
+        ("executor", "expected_environment"),
+        [
+            param({}, None, id="not_queued"),
+            param({"environment": "local", "worker_id": 100}, "local", id="local"),
+            param({"environment": "celery", "worker_id": "some-celery-id"}, "celery", id="celery"),
+        ],
+    )
+    def test_task_execution_environment_success(self, executor: dict, expected_environment: str | None):
+        self.cluster_task.executor = executor
+        self.cluster_task.save(update_fields=["executor"])
+
+        response = self.client.v2[self.cluster_task].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["executionEnvironment"], expected_environment)
+
+        response = (self.client.v2 / "tasks").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        environment_by_task = {task["id"]: task["executionEnvironment"] for task in response.json()["results"]}
+        self.assertEqual(environment_by_task[self.cluster_task.pk], expected_environment)
 
     def test_task_retrieve_not_found_fail(self):
         response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog)).get()

@@ -49,7 +49,12 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CON
 from unittest_parametrize import param, parametrize
 import dishka
 
-from tests.dependencies import MockWithEnvProvider, get_status_scenarios_manager, make_overridden_container
+from tests.dependencies import (
+    MockWithEnvProvider,
+    StatusEventCall,
+    get_status_scenarios_manager,
+    make_overridden_container,
+)
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuiteNoBundles
 
 BUNDLES_DIR: Final = Path(__file__).parent / "bundles" / "bundle_revert"
@@ -95,6 +100,14 @@ def bind_to_exporter(case: ADCMDjangoAPISuiteNoBundles, importer: Cluster | Serv
 
 def get_upgrades(bundle: Bundle) -> dict[str, Upgrade]:
     return {upgrade.name: upgrade for upgrade in Upgrade.objects.filter(bundle=bundle)}
+
+
+def get_prototype_update_events(target: Cluster | Provider) -> list[StatusEventCall]:
+    return [
+        event
+        for event in get_status_scenarios_manager().send_object_update_event_calls
+        if event.obj_id == target.pk and "prototype" in event.changes
+    ]
 
 
 def get_prototypes(bundle: Bundle) -> dict[tuple[str, str], Prototype]:
@@ -232,7 +245,8 @@ class TestClusterBundleRevert(ADCMDjangoAPISuiteNoBundles):
 
         run_revert(self, target=self.cluster)
 
-        self.assertEqual(get_status_scenarios_manager().get_calls("send_prototype_and_state_update_event"), 1)
+        [event] = get_prototype_update_events(target=self.cluster)
+        self.assertIn("isUpgradable", event.changes)
 
         expected = (
             (self.cluster, self.prototypes_v1["cluster", "revert_cluster"], "created"),
@@ -433,7 +447,8 @@ class TestClusterBundleRevert(ADCMDjangoAPISuiteNoBundles):
         stderr = LogStorage.objects.get(job__task_id=task_id, type="stderr").body
         self.assertIn("The configuration cannot be restored because the record was deleted.", stderr)
         # event is sent even though revert failed
-        self.assertEqual(get_status_scenarios_manager().get_calls("send_prototype_and_state_update_event"), 1)
+        [event] = get_prototype_update_events(target=self.cluster)
+        self.assertIn("isUpgradable", event.changes)
 
 
 class TestProviderBundleRevert(ADCMDjangoAPISuiteNoBundles):
@@ -465,7 +480,8 @@ class TestProviderBundleRevert(ADCMDjangoAPISuiteNoBundles):
 
         run_revert(self, target=self.provider)
 
-        self.assertEqual(get_status_scenarios_manager().get_calls("send_prototype_and_state_update_event"), 1)
+        [event] = get_prototype_update_events(target=self.provider)
+        self.assertIn("isUpgradable", event.changes)
 
         self.provider.refresh_from_db()
         self.assertEqual(self.provider.prototype, self.prototypes_v1["provider", "revert_provider"])

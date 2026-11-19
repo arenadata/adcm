@@ -30,6 +30,7 @@ interface CommonSelectParams {
 
 export interface SingleSelectOptions<T> extends SingleSelectParams<T>, CommonSelectParams {
   noneLabel?: string;
+  isVirtualized?: boolean;
 }
 
 export interface MultiPropsParams<T> {

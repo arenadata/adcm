@@ -4,6 +4,7 @@ import { createAsyncThunk } from '@store/redux';
 import { AdcmClusterHostsApi, AdcmClusterMappingApi, AdcmJobsApi, type RequestError } from '@api';
 import { showError } from '@store/notificationsSlice';
 import { getErrorMessage } from '@utils/httpResponseUtils';
+import { resolveProcessOnWizardOpen } from '@utils/wizardProcessUtils';
 import { fulfilledFilter, rejectedFilter } from '@utils/promiseUtils';
 import type {
   AdcmHostShortView,
@@ -93,8 +94,9 @@ const getProcessOnActionClick = createAsyncThunk(
   async ({ clusterId, hostId, actionId, processId }: AdcmGetProcessPayload, thunkAPI) => {
     try {
       const process = await AdcmClusterHostsApi.getHostActionWizardProcess(clusterId, hostId, actionId, processId);
-
-      return process;
+      return await resolveProcessOnWizardOpen(process, () =>
+        AdcmClusterHostsApi.createHostActionWizardProcess(clusterId, hostId, actionId),
+      );
     } catch (error) {
       thunkAPI.dispatch(showError({ message: getErrorMessage(error as RequestError) }));
       return thunkAPI.rejectWithValue(error);
@@ -174,8 +176,19 @@ const loadJobFromBackend = createAsyncThunk(
   },
 );
 
+const loadExecutionPlanFromBackend = createAsyncThunk(
+  'adcm/clusterHostsWizard/loadExecutionPlanFromBackend',
+  async (arg: loadJobPayload, thunkAPI) => {
+    try {
+      return await AdcmJobsApi.getTaskExecutionPlan(arg.jobId);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  },
+);
+
 const getJob = createAsyncThunk('adcm/clusterHostsWizard/getJob', async (arg: loadJobPayload, thunkAPI) => {
-  await thunkAPI.dispatch(loadJobFromBackend(arg));
+  await Promise.all([thunkAPI.dispatch(loadJobFromBackend(arg)), thunkAPI.dispatch(loadExecutionPlanFromBackend(arg))]);
 });
 
 interface loadSubJobLogPayload {
@@ -402,6 +415,20 @@ const clusterHostsWizardSlice = createSlice({
       const id = action.meta.arg.stepId;
       if (id && state.jobsData[id]) {
         state.jobsData[id].job = undefined;
+      }
+    });
+    builder.addCase(loadExecutionPlanFromBackend.fulfilled, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id) {
+        const jobData = state.jobsData[id] ?? (state.jobsData[id] = {});
+        jobData.executionPlan = action.payload;
+      }
+    });
+    builder.addCase(loadExecutionPlanFromBackend.rejected, (state, action) => {
+      const id = action.meta.arg.stepId;
+      if (id) {
+        const jobData = state.jobsData[id] ?? (state.jobsData[id] = {});
+        jobData.executionPlan = null;
       }
     });
     builder.addCase(loadSubJobLogFromBackend.fulfilled, (state, action) => {

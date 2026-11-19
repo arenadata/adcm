@@ -15,6 +15,7 @@ export interface DialogV2Props {
   title?: React.ReactNode;
   dialogControls?: React.ReactNode;
   isDialogControlsOnTop?: boolean;
+  isFullHeight?: boolean;
   width?: string;
   height?: string;
   maxWidth?: string;
@@ -36,6 +37,7 @@ const DialogV2: React.FC<DialogV2Props> = ({
   title,
   dialogControls,
   isDialogControlsOnTop = false,
+  isFullHeight = false,
   width = '584px',
   height,
   maxWidth = '100%',
@@ -105,7 +107,10 @@ const DialogV2: React.FC<DialogV2Props> = ({
         style={{ width, height, maxWidth, minWidth }}
         data-test={dataTest}
       >
-        <div className={s.dialogContentWrapper} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={cn(s.dialogContentWrapper, { [s.dialogContentWrapper_fullHeight]: isFullHeight })}
+          onClick={(e) => e.stopPropagation()}
+        >
           <IconButton
             icon="g2-close"
             variant="secondary"

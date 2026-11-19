@@ -1,23 +1,26 @@
-:global {
-  body.theme-dark {
-    --list-transfer-item-src-include-border: var(--color-xdark);
-    --list-transfer-item-src-include-color: var(--color-xgray-light);
+.listTransferItem {
+  --checkbox-label-color: var(--text-txt-default);
+  --checkbox-label-color-hover: var(--text-txt-h-contrast, var(--main-colors-color-hight-contrast));
+  --checkbox-label-color-checked: var(--text-txt-default);
+
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: fit-content;
+  min-height: 25px;
+  max-width: 100%;
+  padding: 2px 12px;
+  border-radius: 5px;
+  background: var(--surfaces-sf-one-b);
+  cursor: pointer;
+  transition: background-color 250ms;
+
+  &:hover {
+    background: var(--bg-container);
   }
 
-  body.theme-light {
-    --list-transfer-item-src-include-border: var(--color-stroke-light);
-    --list-transfer-item-src-include-color: var(--color-xgray-lighter);
-  }
-}
-
-.listTransferItemSrc {
-  &_include {
-    color: var(--list-transfer-item-src-include-color);
-    border: 2px solid var(--list-transfer-item-src-include-border);
-    border-radius: 8px;
-
-    padding: 4px 32px;
-    font-size: 14px;
-    line-height: 20px;
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--text-green-color);
+    outline-offset: -2px;
   }
 }

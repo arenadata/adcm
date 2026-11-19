@@ -37,3 +37,16 @@
             - name: without_on_fail
               script_type: ansible
               script: ./playbook.yaml
+
+- name: todelete
+  type: service
+  version: 1
+
+  actions:
+    dummy:
+      masking: {}
+      scripts:
+        - name: prepare
+          script_type: ansible
+          script: ./playbook.yaml
+

@@ -31,7 +31,7 @@ const initFormData: FormData = {
 };
 
 const srcOptions = {
-  title: 'All available hosts',
+  title: 'Available hosts',
   searchPlaceholder: 'Search hosts',
 };
 

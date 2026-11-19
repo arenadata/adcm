@@ -12,27 +12,31 @@ const ActionWizardStopSubJobDialog: React.FC<ActionWizardStopSubJobDialogProps> 
   const dispatch = useDispatch();
 
   const stopDialogId = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.id);
+  const mode = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.mode);
+  const dialogDisplayName = useStore(({ adcm }) => adcm.subJobsActions.stopDialog.displayName);
   const subJob = job.childJobs.find(({ id }) => id === stopDialogId) ?? null;
 
-  if (!subJob) return null;
+  if (stopDialogId === null) return null;
+
+  const isSkip = mode === 'skip';
+  const displayName = subJob?.displayName ?? dialogDisplayName ?? String(stopDialogId);
 
   const handleClose = () => {
     dispatch(closeStopDialog());
   };
 
   const handleConfirm = () => {
-    dispatch(stopSubJobWithUpdate({ subJobId: subJob.id, jobId: job.id }));
+    dispatch(stopSubJobWithUpdate({ subJobId: stopDialogId, jobId: job.id }));
   };
 
   return (
     <DialogV2
-      //
-      title={`Terminate the subjob "${subJob.displayName}"`}
-      actionButtonLabel="Stop"
+      title={isSkip ? `Skip the subjob "${displayName}"` : `Terminate the subjob "${displayName}"`}
+      actionButtonLabel={isSkip ? 'Skip' : 'Stop'}
       onAction={handleConfirm}
       onCancel={handleClose}
     >
-      Selected subjob will be terminated
+      {isSkip ? 'Selected subjob will be skipped' : 'Selected subjob will be terminated'}
     </DialogV2>
   );
 };

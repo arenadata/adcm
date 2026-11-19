@@ -21,7 +21,7 @@ from cm.impl.job.repo import JobRepo
 from cm.legacy.services.action_process.render_step import RenderStepContext, fill_step_spec
 from cm.legacy.services.action_process.schema_validation import ProcessOperationType
 from cm.legacy.services.action_process.types import ProcessContext, ProcessStepState
-from cm.models import Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service
+from cm.models import Action, Cluster, Component, ConcernItem, Process, ProcessStep, ProcessStepInput, Service, TaskLog
 from core.dynamic_bundle.render import BundleRenderer
 from core.types import ActionTargetDescriptor
 from rest_framework.status import (
@@ -173,6 +173,18 @@ class TestActionProcessAudit(ADCMDjangoAPISuite):
                     **self.prepare_audit_object_arguments(expected_object=obj, is_deleted=False),
                     user__username="admin",
                 )
+
+                task = TaskLog.objects.order_by("pk").filter(action=action).first()
+                self.task_runner().launch_task(task.pk)
+
+                self.check_last_audit_record(
+                    operation_name=f"{task.display_name} action completed",
+                    operation_result="success",
+                    operation_type=AuditLogOperationType.UPDATE,
+                    **self.prepare_audit_object_arguments(expected_object=obj, is_deleted=False),
+                    user__username=None,
+                )
+
                 ConcernItem.objects.all().delete()
 
     def test_audit_record_process_create(self):

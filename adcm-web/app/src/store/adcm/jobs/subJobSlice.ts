@@ -5,6 +5,7 @@ import type { AdcmSubJobLogItem, AdcmSubJobDetails } from '@models/adcm';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { AdcmJobsApi } from '@api/adcm/jobs';
+import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 
 interface AdcmSubJobState {
   subJob?: AdcmSubJobDetails;
@@ -77,6 +78,12 @@ const jobsSlice = createSlice({
       })
       .addCase(getSubJobLog.fulfilled, (state, action) => {
         state.subJobLog = action.payload;
+      })
+      .addCase(wsActions.update_task, (state, action) => {
+        const { id, changes } = action.payload.object;
+        if (state.subJob?.parentTask.id === id) {
+          state.subJob.parentTask = { ...state.subJob.parentTask, ...changes };
+        }
       });
   },
 });

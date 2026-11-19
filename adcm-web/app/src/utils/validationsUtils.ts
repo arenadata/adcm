@@ -19,6 +19,25 @@ export const isEmailValid = (email: string) => {
   return baseEmailRegex.test(email);
 };
 
+export const stringLengthValidator = (value: string, fieldName: string, minLength?: number, maxLength?: number) => {
+  const isTooShort = minLength !== undefined && value.length < minLength;
+  const isTooLong = maxLength !== undefined && value.length > maxLength;
+
+  if (!isTooShort && !isTooLong) return;
+
+  if (minLength !== undefined && maxLength !== undefined) {
+    return `${fieldName} should be greater than ${minLength - 1} and less than ${maxLength + 1}`;
+  }
+
+  if (isTooShort) {
+    return `${fieldName} should be greater than ${minLength - 1}`;
+  }
+
+  if (isTooLong) {
+    return `${fieldName} should be less than ${maxLength + 1}`;
+  }
+};
+
 export const isClusterNameValid = (clusterName: string) => {
   return /^[a-z0-9][a-z0-9._-\s]{0,148}[a-z0-9]$/i.test(clusterName);
 };

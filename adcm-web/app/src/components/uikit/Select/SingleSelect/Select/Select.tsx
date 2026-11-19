@@ -3,6 +3,7 @@ import type { InputProps } from '@uikit/Input/Input';
 import SingleSelectPanel from '@uikit/Select/SingleSelect/SingleSelectPanel/SingleSelectPanel';
 import Popover from '@uikit/Popover/Popover';
 import type { SingleSelectOptions } from '@uikit/Select/Select.types';
+import { DEFAULT_SELECT_MAX_HEIGHT } from '@uikit/Select/Select.constants';
 import { useForwardRef } from '@hooks';
 import CommonSelectField from '@uikit/Select/CommonSelect/CommonSelectField/CommonSelectField';
 import PopoverPanelDefault from '@uikit/Popover/PopoverPanelDefault/PopoverPanelDefault';
@@ -20,9 +21,10 @@ function SelectComponent<T>(
     value,
     onChange,
     noneLabel,
-    maxHeight = 200,
+    maxHeight = DEFAULT_SELECT_MAX_HEIGHT,
     isSearchable,
     searchPlaceholder,
+    isVirtualized = false,
     containerRef,
     placement,
     offset,
@@ -82,6 +84,7 @@ function SelectComponent<T>(
             maxHeight={maxHeight}
             isSearchable={isSearchable}
             searchPlaceholder={searchPlaceholder}
+            isVirtualized={isVirtualized}
           />
         </PopoverPanelDefault>
       </Popover>

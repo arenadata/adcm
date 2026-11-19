@@ -1050,6 +1050,14 @@ components:
       - code
       - level
       - desc
+    ExecutionEnvironmentEnum:
+      enum:
+      - local
+      - celery
+      type: string
+      description: |-
+        * `local` - local
+        * `celery` - celery
     Group:
       type: object
       properties:
@@ -3761,6 +3769,12 @@ components:
           type: string
           nullable: true
           default: ''
+        executionEnvironment:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/ExecutionEnvironmentEnum'
+          - $ref: '#/components/schemas/NullEnum'
       required:
       - id
       - name
@@ -3774,6 +3788,7 @@ components:
       - childJobs
       - objects
       - description
+      - executionEnvironment
     TaskObjectsField:
       type: object
       properties:
@@ -3845,11 +3860,18 @@ components:
         isTerminatable:
           type: boolean
           readOnly: true
+        executionEnvironment:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/ExecutionEnvironmentEnum'
+          - $ref: '#/components/schemas/NullEnum'
       required:
       - action
       - displayName
       - duration
       - endTime
+      - executionEnvironment
       - id
       - isTerminatable
       - name
