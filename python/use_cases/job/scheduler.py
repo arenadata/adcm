@@ -397,7 +397,7 @@ def _check_hc_acl(task: Task, cluster: Cluster | None, bundle_id: BundleID) -> N
             bundle_id=bundle_id,
             topology=topology,
             hc_payload=new_mapping,  # pyright: ignore[reportArgumentType]
-            hc_rules=[rule._asdict() for rule in task.action.hc_acl],  # pyright: ignore[reportArgumentType]
+            hc_rules=[asdict(rule) for rule in task.action.hc_acl],  # pyright: ignore[reportArgumentType]
             mapping_restriction_err_template="{}",
         )
     except AdcmEx as e:

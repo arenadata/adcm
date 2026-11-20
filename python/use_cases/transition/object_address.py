@@ -20,14 +20,20 @@ turned into ORM objects in a fixed number of queries, and nothing in `cm.legacy.
 has to import the ansible layer to do it.
 """
 
-from collections import defaultdict
-from collections.abc import Collection, Iterable
+from collections.abc import Collection
 from dataclasses import dataclass
 
-from cm.errors import AdcmEx
 from cm.models import Cluster, Component, Provider, Service
-from core.action import ComponentObjectTarget, ObjectTarget, ServiceObjectTarget, TypeBasedObjectTarget
+from core.action.internal_scripts import (
+    ClusterObjectTarget,
+    ComponentObjectTarget,
+    ObjectTarget,
+    ProviderObjectTarget,
+    ServiceObjectTarget,
+)
 from core.types import ClusterID, ObjectID
+
+from use_cases.errors import UseCaseError
 
 AddressableObject = Cluster | Service | Component | Provider
 
@@ -71,29 +77,23 @@ def resolve_object_targets(
     component_names = {target.component_name for target in targets if target.type == "component"}
 
     cluster: Cluster | None = None
-    needs_cluster = any(target.type == "cluster" for target in targets) or bool(service_names)
+    needs_cluster = any(isinstance(target, ClusterObjectTarget) for target in targets) or bool(service_names)
     if needs_cluster:
         if context.cluster_id is None:
-            raise AdcmEx(
-                code="WRONG_OWNER",
-                msg=f"{addressed_by} addresses an object of a cluster, but the task has no cluster",
-            )
+            raise UseCaseError(f"{addressed_by} addresses an object of a cluster, but the task has no cluster")
 
         cluster = Cluster.objects.filter(id=context.cluster_id).first()
         if cluster is None:
-            raise AdcmEx(code="CLUSTER_NOT_FOUND")
+            raise UseCaseError(f"{addressed_by} addresses cluster #{context.cluster_id}, which does not exist")
 
     provider: Provider | None = None
-    if any(target.type == "provider" for target in targets):
+    if any(isinstance(target, ProviderObjectTarget) for target in targets):
         if context.provider_id is None:
-            raise AdcmEx(
-                code="WRONG_OWNER",
-                msg=f"{addressed_by} addresses a provider, but the task has no provider",
-            )
+            raise UseCaseError(f"{addressed_by} addresses a provider, but the task has no provider")
 
         provider = Provider.objects.filter(id=context.provider_id).first()
         if provider is None:
-            raise AdcmEx(code="PROVIDER_NOT_FOUND")
+            raise UseCaseError(f"{addressed_by} addresses provider #{context.provider_id}, which does not exist")
 
     services: dict[str, Service] = {}
     if service_names:
@@ -122,26 +122,15 @@ def resolve_object_targets(
                 found = services.get(target.service_name)
             case ComponentObjectTarget():
                 found = components.get((target.service_name, target.component_name))
-            case TypeBasedObjectTarget():
-                # both are already known to exist: their absence is refused above
-                found = cluster if target.type == "cluster" else provider
+            case ClusterObjectTarget():
+                # already known to exist: its absence is refused above
+                found = cluster
+            case ProviderObjectTarget():
+                found = provider
 
         if found is None:
-            raise AdcmEx(
-                code="INTERNAL_SERVER_ERROR",
-                msg=f"{addressed_by} names {describe(target)}, which this cluster does not have",
-            )
+            raise UseCaseError(f"{addressed_by} names {describe(target)}, which this cluster does not have")
 
         resolved[target] = found
 
     return resolved
-
-
-def group_by_owner(
-    entries: Iterable[tuple[ObjectTarget, object]], resolved: dict[ObjectTarget, AddressableObject]
-) -> dict[AddressableObject, list[object]]:
-    grouped = defaultdict(list)
-    for target, entry in entries:
-        grouped[resolved[target]].append(entry)
-
-    return grouped

@@ -12,8 +12,9 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 from itertools import chain
-from typing import NamedTuple, Protocol
+from typing import Protocol
 
 from core.action import TaskMappingDelta
 from core.cluster import ClusterService
@@ -180,9 +181,8 @@ def check_host_component_mapping_change(
     and the task finalizer commit the delta of a task.
     """
 
-    _prepare_and_check_mapping_change(
-        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
-    )
+    mapping_change = _prepare_mapping_change(cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta)
+    _check_mapping_change(mapping_change=mapping_change, checks_func=checks_func)
 
 
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
@@ -197,9 +197,8 @@ def _change_host_component_mapping(
     cluster_service: ClusterService,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
-    current_topology, new_topology, host_difference, bundle_restrictions = _prepare_and_check_mapping_change(
-        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
-    )
+    mapping_change = _prepare_mapping_change(cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta)
+    _check_mapping_change(mapping_change=mapping_change, checks_func=checks_func)
 
     # save mapping changes to db
     to_add = ((host_id, component_id) for component_id, host_ids in mapping_delta.add.items() for host_id in host_ids)
@@ -210,11 +209,13 @@ def _change_host_component_mapping(
 
     # updates of related entities
     added, removed = _update_concerns(
-        old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
+        old_topology=mapping_change.current_topology,
+        new_topology=mapping_change.new_topology,
+        bundle_restrictions=mapping_change.bundle_restrictions,
     )
-    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
-    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
-    _update_policies(topology=new_topology)
+    ActionHostGroupRepo().remove_unmapped_hosts_from_groups(mapping_change.host_difference.unmapped)
+    ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(mapping_change.host_difference.unmapped)
+    _update_policies(topology=mapping_change.new_topology)
 
     # update info in statistics service
     reset_hc_map()
@@ -222,23 +223,22 @@ def _change_host_component_mapping(
     send_host_component_map_update_event(cluster_id=cluster_id)
     notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
-    return new_topology
+    return mapping_change.new_topology
 
 
-class _MappingChange(NamedTuple):
+@dataclass(slots=True)
+class _MappingChange:
     current_topology: ClusterTopology
     new_topology: ClusterTopology
     host_difference: TopologyHostDiff
     bundle_restrictions: BundleRestrictions
 
 
-def _prepare_and_check_mapping_change(
+def _prepare_mapping_change(
     cluster_id: ClusterID,
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
-    checks_func: PerformMappingChecks,
 ) -> _MappingChange:
-    # prepare
     current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
     new_topology = _construct_new_topology_or_raise_on_invalid_input(
         base_topology=current_topology, mapping_delta=mapping_delta
@@ -246,14 +246,19 @@ def _prepare_and_check_mapping_change(
     host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
 
-    # business checks
-    checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
-
     return _MappingChange(
         current_topology=current_topology,
         new_topology=new_topology,
         host_difference=host_difference,
         bundle_restrictions=bundle_restrictions,
+    )
+
+
+def _check_mapping_change(mapping_change: _MappingChange, checks_func: PerformMappingChecks) -> None:
+    checks_func(
+        bundle_restrictions=mapping_change.bundle_restrictions,
+        new_topology=mapping_change.new_topology,
+        host_difference=mapping_change.host_difference,
     )
 
 

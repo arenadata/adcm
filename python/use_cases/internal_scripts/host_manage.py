@@ -11,23 +11,30 @@
 # limitations under the License.
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from cm.converters import core_type_to_model
-from cm.errors import AdcmEx
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.legacy.services.mapping import check_for_action_mapping, check_host_component_mapping_change
 from cm.models import Cluster, Component, Service
 from cm.transition.status import StatusScenarios
-from core.action import HostGroupReference, TargetCluster, Task, TaskMappingDelta
+from core.action import Task, TaskMappingDelta
+from core.action.internal_scripts import (
+    AddDuplicatesParams,
+    AddToGroupsParams,
+    HostGroupReference,
+    RemoveDuplicatesParams,
+    TargetCluster,
+)
 from core.action.job import JobRepoI, TaskUpdateDTO
-from core.action.types import HostManageScript, HostManageScriptParams
+from core.action.types import HostManageScript
 from core.cluster import ClusterService
 from core.config import ConfigService
 from core.types import ClusterID, HostID, JobID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 
+from use_cases.errors import UseCaseError
 from use_cases.internal_scripts.common import build_result_message, cluster_id_of_task, provider_id_of_task
 from use_cases.transition.host_group import GroupAddress, add_hosts, group_key, retrieve_group_hosts, retrieve_groups
 from use_cases.transition.host_manage import (
@@ -58,52 +65,33 @@ class HostManageInternalScript:
 
         cluster_id = cluster_id_of_task(task=task, script_name=SCRIPT_NAME)
         if cluster_id is None:
-            raise AdcmEx(
-                code="WRONG_OWNER",
-                msg=f"Internal script `{SCRIPT_NAME}` can only be defined in cluster, service or component context",
+            raise RuntimeError(
+                f"Internal script `{SCRIPT_NAME}` can only be called from a cluster, service or component context"
             )
 
         params = script.params
-        context = SelectionContext(cluster_id=cluster_id, provider_id=provider_id_of_task(task=task))
+        selected = resolve_source(
+            source=params.source, context=SelectionContext(cluster_id=cluster_id, provider_id=provider_id_of_task(task))
+        )
 
         with atomic():
-            selected = resolve_source(source=params.source, context=context)
-
-            match params.operation:
-                case "add_duplicates":
+            match params:
+                case AddDuplicatesParams():
                     return self._add_duplicates(task=task, params=params, selected=selected, cluster_id=cluster_id)
-
-                case "add_to_groups":
-                    added = _apply_group_membership(
-                        task=task,
-                        references=params.groups or (),
-                        host_ids=duplicates_here(host_ids=selected, cluster_id=cluster_id),
-                        cluster_id=cluster_id,
-                    )
-
-                    return InternalScriptResult(
-                        code=0,
-                        message=build_result_message(
-                            script_name=SCRIPT_NAME,
-                            full_complete_message=f"the hosts are in their groups ({added} membership(s) added)",
-                            without_updates_message="the hosts were added to their groups",
-                            with_updates=bool(added),
-                        ),
-                    )
-
-                case _:
+                case AddToGroupsParams():
+                    return self._add_to_groups(task=task, params=params, selected=selected, cluster_id=cluster_id)
+                case RemoveDuplicatesParams():
                     return self._remove_duplicates(task=task, selected=selected, cluster_id=cluster_id)
 
     def _add_duplicates(
-        self, task: Task, params: HostManageScriptParams, selected: list[HostID], cluster_id: ClusterID
+        self, task: Task, params: AddDuplicatesParams, selected: list[HostID], cluster_id: ClusterID
     ) -> InternalScriptResult:
         target_cluster_ids = _resolve_target_clusters(targets=params.target, here=cluster_id)
 
         if cluster_id not in target_cluster_ids and (params.mapping_rules or params.groups):
-            raise AdcmEx(
-                code="INTERNAL_SERVER_ERROR",
-                msg="`mapping_rules` and `groups` act on this cluster, but `target` sends every "
-                "duplicate somewhere else - there would be nothing here for them to apply to",
+            raise UseCaseError(
+                "`mapping_rules` and `groups` act on this cluster, but `target` sends every "
+                "duplicate somewhere else - there would be nothing here for them to apply to"
             )
 
         outcome = add_duplicates(
@@ -150,6 +138,26 @@ class HostManageInternalScript:
             ),
         )
 
+    def _add_to_groups(
+        self, task: Task, params: AddToGroupsParams, selected: list[HostID], cluster_id: ClusterID
+    ) -> InternalScriptResult:
+        added = _apply_group_membership(
+            task=task,
+            references=params.groups,
+            host_ids=duplicates_here(host_ids=selected, cluster_id=cluster_id),
+            cluster_id=cluster_id,
+        )
+
+        return InternalScriptResult(
+            code=0,
+            message=build_result_message(
+                script_name=SCRIPT_NAME,
+                full_complete_message=f"the hosts are in their groups ({added} membership(s) added)",
+                without_updates_message="the hosts were added to their groups",
+                with_updates=bool(added),
+            ),
+        )
+
     def _remove_duplicates(self, task: Task, selected: list[HostID], cluster_id: ClusterID) -> InternalScriptResult:
         outcome = remove_duplicates(
             source_host_ids=selected,
@@ -179,7 +187,7 @@ class HostManageInternalScript:
         )
 
 
-def _resolve_target_clusters(targets: Sequence[TargetCluster] | None, here: ClusterID) -> list[ClusterID]:
+def _resolve_target_clusters(targets: list[TargetCluster] | None, here: ClusterID) -> list[ClusterID]:
     if not targets:
         return [here]
 
@@ -188,10 +196,7 @@ def _resolve_target_clusters(targets: Sequence[TargetCluster] | None, here: Clus
 
     missing = sorted(names - set(found))
     if missing:
-        raise AdcmEx(
-            code="CLUSTER_NOT_FOUND",
-            msg=f"`target` names {', '.join(missing)}, which this ADCM does not manage",
-        )
+        raise UseCaseError(f"`target` names {', '.join(missing)}, which this ADCM does not manage")
 
     return sorted(found.values())
 
@@ -205,7 +210,7 @@ def _mapping_delta_of_task(task: Task) -> TaskMappingDelta:
     """
 
     if task.hostcomponent.mapping_delta is None:
-        task.hostcomponent = task.hostcomponent._replace(mapping_delta=TaskMappingDelta())
+        task.hostcomponent = replace(task.hostcomponent, mapping_delta=TaskMappingDelta())
 
     delta = task.hostcomponent.mapping_delta
     if delta is None:
@@ -272,10 +277,9 @@ def _apply_group_membership(
     existing = retrieve_groups(addresses=set(addresses))
     missing = sorted(str(address) for address in addresses if address not in existing)
     if missing:
-        raise AdcmEx(
-            code="GROUP_CONFIG_NOT_FOUND",
-            msg=f"`{SCRIPT_NAME}` puts hosts into {', '.join(missing)}, which does not exist. "
-            "Create it with `host_group_manage` first - this script only manages membership.",
+        raise UseCaseError(
+            f"`{SCRIPT_NAME}` puts hosts into {', '.join(missing)}, which does not exist. "
+            "Create it with `host_group_manage` first - this script only manages membership."
         )
 
     membership = retrieve_group_hosts(groups=existing.values())

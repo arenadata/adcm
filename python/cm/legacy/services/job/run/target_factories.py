@@ -230,10 +230,10 @@ def prepare_ansible_inventory(
 ) -> dict[str, Any]:
     delta, process_context, process_mapping_delta = None, None, {}
 
-    # `host_manage` writes a mapping delta of its own, and an action that uses it does not have
-    # to declare `hc_acl`: the `.add` and `.remove` groups the delta puts in this inventory are
-    # how the job after it finds the hosts it has to work on.
-    if task.action.hc_acl or task.hostcomponent.mapping_delta is not None:
+    # an action with `hc_acl` launches with its mapping delta stored on the task, and a
+    # script (`host_manage`) may write a delta of its own afterwards - either way the delta
+    # is what puts the `.add`/`.remove` groups into this inventory for the job after this one
+    if task.hostcomponent.mapping_delta is not None:
         delta = task.hostcomponent.mapping_delta
 
     if task.action_process and topology:

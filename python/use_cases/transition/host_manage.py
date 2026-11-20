@@ -23,10 +23,10 @@ from collections import defaultdict
 from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, field
 
-from cm.errors import AdcmEx
 from cm.models import Cluster, Component, Host, HostComponent
 from cm.transition.status import StatusScenarios
-from core.action import (
+from core.action import TaskMappingDelta
+from core.action.internal_scripts import (
     ActionHostGroupSource,
     ClusterHostSource,
     ComponentHostSource,
@@ -34,7 +34,6 @@ from core.action import (
     HcAclRule,
     HostSource,
     ServiceHostSource,
-    TaskMappingDelta,
 )
 from core.cluster import ClusterService
 from core.config import ConfigService
@@ -42,7 +41,8 @@ from core.types import ClusterID, ComponentID, HostID, HostName, ObjectID
 from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 
-from use_cases.transition.host.duplicate import create_duplicates
+from use_cases.errors import UseCaseError
+from use_cases.transition.host.duplicate import CreateHostDuplicates
 from use_cases.transition.host_group import GroupAddress, group_key, retrieve_group_hosts, retrieve_groups
 from use_cases.transition.object_address import ObjectContext, resolve_object_targets
 
@@ -97,9 +97,8 @@ def _resolve_cluster_names(source: Iterable[HostSource], context: SelectionConte
 
     missing = sorted(names - set(found))
     if missing:
-        raise AdcmEx(
-            code="CLUSTER_NOT_FOUND",
-            msg=f"This ADCM does not manage a cluster named {', '.join(missing)}, so its hosts can't be selected here",
+        raise UseCaseError(
+            f"This ADCM does not manage a cluster named {', '.join(missing)}, so its hosts can't be selected here"
         )
 
     resolved.update(found)
@@ -168,10 +167,7 @@ def _hosts_by_name(source: Iterable[HostSource]) -> set[HostID]:
 
     missing = sorted(names - set(found))
     if missing:
-        raise AdcmEx(
-            code="HOST_NOT_FOUND",
-            msg=f"This ADCM does not manage a host named {', '.join(missing)}",
-        )
+        raise UseCaseError(f"This ADCM does not manage a host named {', '.join(missing)}")
 
     return set(found.values())
 
@@ -259,13 +255,11 @@ def add_duplicates(
             outcome.existing[cluster_id] = already
 
         if to_create:
-            created = create_duplicates(
+            created = CreateHostDuplicates(
                 config_service=config_service,
-                originals=to_create,
-                cluster_id=cluster_id,
                 rbac_scenarios=rbac_scenarios,
                 status_scenarios=status_scenarios,
-            )
+            )(originals=to_create, cluster_id=cluster_id)
             outcome.created[cluster_id] = sorted(host.fqdn for host in created)
 
             for original, duplicate in zip(to_create, created, strict=True):
@@ -445,28 +439,6 @@ def write_mapping_delta(
     return written
 
 
-def _components_of_rules(rules: Iterable[HcAclRule], cluster_id: ClusterID) -> dict[tuple[str, str], ComponentID]:
-    wanted = {(rule.service, rule.component) for rule in rules}
-
-    found = {
-        (service_name, component_name): component_id
-        for component_id, service_name, component_name in Component.objects.filter(
-            cluster_id=cluster_id,
-            service__prototype__name__in={service for service, _ in wanted},
-            prototype__name__in={component for _, component in wanted},
-        ).values_list("id", "service__prototype__name", "prototype__name")
-    }
-
-    missing = sorted(f"{service}.{component}" for service, component in wanted - set(found))
-    if missing:
-        raise AdcmEx(
-            code="COMPONENT_NOT_FOUND",
-            msg=f"`mapping_rules` names {', '.join(missing)}, which this cluster does not have",
-        )
-
-    return found
-
-
 def merge_mapping_delta(into: TaskMappingDelta, addition: TaskMappingDelta) -> None:
     for source, target in ((addition.add, into.add), (addition.remove, into.remove)):
         for component_id, hosts in source.items():
@@ -496,16 +468,26 @@ def forget_hosts_in_delta(delta: TaskMappingDelta, host_ids: Collection[HostID])
     return changed
 
 
+def _components_of_rules(rules: Iterable[HcAclRule], cluster_id: ClusterID) -> dict[tuple[str, str], ComponentID]:
+    wanted = {(rule.service, rule.component) for rule in rules}
+
+    found = {
+        (service_name, component_name): component_id
+        for component_id, service_name, component_name in Component.objects.filter(
+            cluster_id=cluster_id,
+            service__prototype__name__in={service for service, _ in wanted},
+            prototype__name__in={component for _, component in wanted},
+        ).values_list("id", "service__prototype__name", "prototype__name")
+    }
+
+    missing = sorted(f"{service}.{component}" for service, component in wanted - set(found))
+    if missing:
+        raise UseCaseError(f"`mapping_rules` names {', '.join(missing)}, which this cluster does not have")
+
+    return found
+
+
 # GROUP MEMBERSHIP
-
-
-def hosts_of_cluster_named(host_ids: Collection[HostID], cluster_id: ClusterID) -> set[HostID]:
-    """Of the given hosts, the ones this cluster actually holds."""
-
-    if not host_ids:
-        return set()
-
-    return set(Host.objects.filter(id__in=host_ids, cluster_id=cluster_id).values_list("id", flat=True))
 
 
 def duplicates_here(host_ids: Collection[HostID], cluster_id: ClusterID) -> set[HostID]:
@@ -521,18 +503,3 @@ def duplicates_here(host_ids: Collection[HostID], cluster_id: ClusterID) -> set[
         return set()
 
     return set(Host.objects.filter(cluster_id=cluster_id, original_id__in=original_ids).values_list("id", flat=True))
-
-
-__all__ = [
-    "AddDuplicatesOutcome",
-    "RemoveDuplicatesOutcome",
-    "SelectionContext",
-    "add_duplicates",
-    "duplicates_here",
-    "forget_hosts_in_delta",
-    "merge_mapping_delta",
-    "hosts_of_cluster_named",
-    "remove_duplicates",
-    "resolve_source",
-    "write_mapping_delta",
-]

@@ -27,12 +27,13 @@ from dataclasses import dataclass, field
 from typing import Literal, TypeAlias
 
 from cm.converters import orm_object_to_core_descriptor
-from cm.errors import AdcmEx
 from cm.models import ActionHostGroup, Cluster, Component, ConfigHostGroup, Host, ObjectConfig, Provider, Service
 from core.config import ConfigService, ObjectWithoutConfigError
-from core.types import ADCMHostGroupType, Descriptor, HostID, HostName
+from core.types import ADCMHostGroupType, Descriptor, HostGroupDescriptor, HostID, HostName
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+
+from use_cases.errors import UseCaseError
 
 HostGroupOwner: TypeAlias = Cluster | Service | Component | Provider
 HostGroupKind: TypeAlias = Literal["config_host_group", "action_host_group"]
@@ -103,7 +104,7 @@ def retrieve_groups(addresses: Collection[GroupAddress]) -> dict[GroupAddress, C
     return found
 
 
-def group_key(group: ConfigHostGroup | ActionHostGroup) -> tuple[str, int]:
+def group_key(group: ConfigHostGroup | ActionHostGroup) -> HostGroupDescriptor:
     """Identity of a group across both kinds.
 
     The two kinds live in separate tables with independent id sequences, so a configuration
@@ -111,15 +112,17 @@ def group_key(group: ConfigHostGroup | ActionHostGroup) -> tuple[str, int]:
     has to say which table it means.
     """
 
-    return type(group).__name__, group.pk
+    type_ = ADCMHostGroupType.CONFIG if isinstance(group, ConfigHostGroup) else ADCMHostGroupType.ACTION
+    return HostGroupDescriptor(id=group.pk, type=type_)
 
 
 def retrieve_group_hosts(
     groups: Collection[ConfigHostGroup | ActionHostGroup],
-) -> dict[tuple[str, int], set[HostID]]:
+) -> dict[HostGroupDescriptor, set[HostID]]:
     """Membership of the given groups, one query per group kind."""
 
-    membership = defaultdict(set)
+    membership: dict[HostGroupDescriptor, set[HostID]] = defaultdict(set)
+    descriptor_of_id = {group.pk: group_key(group) for group in groups}
 
     by_model = defaultdict(list)
     for group in groups:
@@ -130,7 +133,7 @@ def retrieve_group_hosts(
         for group_id, host_id in model.hosts.through.objects.filter(**{f"{owner_field}__in": group_ids}).values_list(
             owner_field, "host_id"
         ):
-            membership[(model.__name__, group_id)].add(host_id)
+            membership[descriptor_of_id[group_id]].add(host_id)
 
     return membership
 
@@ -142,26 +145,23 @@ def _kind_of(group: ConfigHostGroup | ActionHostGroup) -> HostGroupKind:
 def _check_description_fits(kind: HostGroupKind, name: str, description: str) -> None:
     limit = DESCRIPTION_MAX_LENGTH.get(kind)
     if limit is not None and len(description) > limit:
-        raise AdcmEx(
-            code="INTERNAL_SERVER_ERROR",
-            msg=f'Description of {kind} "{name}" is longer than the {limit} characters an {kind} allows',
-        )
+        raise UseCaseError(f'Description of {kind} "{name}" is longer than the {limit} characters an {kind} allows')
 
 
 def create_group(
     address: GroupAddress, description: str, config_service: ConfigService
 ) -> ConfigHostGroup | ActionHostGroup:
     if len(address.name) > NAME_MAX_LENGTH[address.kind]:
-        raise AdcmEx(
-            code="INTERNAL_SERVER_ERROR",
-            msg=f"Name of {address} is longer than the {NAME_MAX_LENGTH[address.kind]} characters "
-            f"an {address.kind} allows",
+        raise UseCaseError(
+            f"Name of {address} is longer than the {NAME_MAX_LENGTH[address.kind]} characters an {address.kind} allows"
         )
 
     _check_description_fits(kind=address.kind, name=address.name, description=description)
 
     if address.kind == "config_host_group" and address.owner.config is None:
-        raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR")
+        raise UseCaseError(
+            f"Configuration of {address.owner} is not found, so a configuration host group can't be created"
+        )
 
     group = GROUP_MODEL[address.kind].objects.create(
         object_id=address.owner.pk,
@@ -180,7 +180,7 @@ def create_group(
                 owner=orm_object_to_core_descriptor(address.owner),
             )
         except ObjectWithoutConfigError as e:
-            raise AdcmEx(code="GROUP_CONFIG_NO_CONFIG_ERROR") from e
+            raise UseCaseError(f"Configuration of {address.owner} is not found: {e}") from e
 
     return group
 
@@ -254,7 +254,7 @@ def _candidate_host_ids(group: ConfigHostGroup) -> set[HostID]:
                 hostcomponent__component_id=owner.pk,
             )
         case _:
-            raise AdcmEx(code="GROUP_CONFIG_TYPE_ERROR")
+            raise UseCaseError(f"A configuration host group can't be owned by a {type(owner).__name__}")
 
     # a host belongs to at most one configuration group of a given owner
     held_elsewhere = set(
@@ -293,10 +293,7 @@ def _action_group_candidate_host_ids(group: ActionHostGroup) -> set[HostID]:
                 hostcomponent__component_id=owner.pk,
             )
         case _:
-            raise AdcmEx(
-                code="HOST_GROUP_CONFLICT",
-                msg=f"An action host group can't be owned by a {type(owner).__name__.lower()}",
-            )
+            raise UseCaseError(f"An action host group can't be owned by a {type(owner).__name__.lower()}")
 
     return set(candidates.values_list("id", flat=True))
 
@@ -328,11 +325,10 @@ def add_hosts(group: ConfigHostGroup | ActionHostGroup, wanted: set[HostID], hel
         not_allowed = to_add - _candidate_host_ids(group)
         if not_allowed:
             fqdns = sorted(Host.objects.filter(id__in=not_allowed).values_list("fqdn", flat=True))
-            raise AdcmEx(
-                code="GROUP_CONFIG_HOST_ERROR",
-                msg=f'These hosts can\'t join the "{group.name}" configuration host group: '
+            raise UseCaseError(
+                f'These hosts can\'t join the "{group.name}" configuration host group: '
                 f"{', '.join(fqdns)}. A host must be mapped to the group's owner and can be in "
-                "only one of its configuration groups.",
+                "only one of its configuration groups."
             )
     else:
         # An action host group has no equivalent of `host_candidate`, and the model does not
@@ -341,11 +337,10 @@ def add_hosts(group: ConfigHostGroup | ActionHostGroup, wanted: set[HostID], hel
         not_allowed = to_add - _action_group_candidate_host_ids(group)
         if not_allowed:
             fqdns = sorted(Host.objects.filter(id__in=not_allowed).values_list("fqdn", flat=True))
-            raise AdcmEx(
-                code="HOST_GROUP_CONFLICT",
-                msg=f'These hosts can\'t join the "{group.name}" action host group: '
+            raise UseCaseError(
+                f'These hosts can\'t join the "{group.name}" action host group: '
                 f"{', '.join(fqdns)}. A host must belong to the group owner's cluster"
-                + (", and be mapped to the owner." if not isinstance(group.object, Cluster) else "."),
+                + (", and be mapped to the owner." if not isinstance(group.object, Cluster) else ".")
             )
 
     through = _through(group)
@@ -384,9 +379,6 @@ def resolve_host_names(owner: HostGroupOwner, names: Collection[HostName]) -> di
 
     missing = sorted(set(names) - set(found))
     if missing:
-        raise AdcmEx(
-            code="HOST_NOT_FOUND",
-            msg=f"{owner} has no host named {', '.join(missing)}, so it can't join a host group of it",
-        )
+        raise UseCaseError(f"{owner} has no host named {', '.join(missing)}, so it can't join a host group of it")
 
     return found

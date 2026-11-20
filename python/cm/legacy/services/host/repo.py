@@ -48,13 +48,3 @@ def build_duplicate_host_record(
     duplicate.description = overrides.description
 
     return duplicate
-
-
-def duplicate_host_record(
-    host: Host,
-    overrides: DuplicateHostOverrides,
-) -> Host:
-    duplicate = build_duplicate_host_record(host=host, overrides=overrides)
-    duplicate.save()
-
-    return duplicate

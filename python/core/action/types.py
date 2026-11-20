@@ -22,6 +22,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import Self
 
+from core.action.internal_scripts import HcAclRule, HostGroupManageScriptParams, HostManageScriptParams
 from core.constants import MM_ACTION_NAMES
 from core.spec.errors import DuplicateSpecEntryError
 from core.spec.hierarchy import HierarchyLevel
@@ -129,12 +130,6 @@ class StateChanges:
         return not any((self.state, self.multi_state_set, self.multi_state_unset))
 
 
-class HcAclRule(NamedTuple):
-    component: str
-    service: str
-    action: Literal["add", "remove"]
-
-
 class ActionInfo(BaseModel):
     id: ActionID
     name: str
@@ -225,132 +220,8 @@ class ServiceManageScriptParams:
     services: list[ServiceManageServiceEntry]
 
 
-# `host_manage` / `host_group_manage`
-#
-# One addressing vocabulary: `ObjectTarget` names an ADCM object the way `config_apply` does,
-# and every `source` variant declares only the keys that make sense for it, so a combination
-# the semantics reject is refused when the bundle is parsed rather than when the job runs.
-
-
-@dataclass(slots=True, frozen=True)
-class TypeBasedObjectTarget:
-    type: Literal["cluster", "provider"]
-
-
-@dataclass(slots=True, frozen=True)
-class ServiceObjectTarget:
-    type: Literal["service"]
-    service_name: str
-
-
-@dataclass(slots=True, frozen=True)
-class ComponentObjectTarget:
-    type: Literal["component"]
-    service_name: str
-    component_name: str
-
-
-ObjectTarget = Annotated[
-    TypeBasedObjectTarget | ServiceObjectTarget | ComponentObjectTarget,
-    Field(discriminator="type"),
-]
-
-HostGroupType = Literal["config_host_group", "action_host_group"]
-
-
-@dataclass(slots=True, frozen=True)
-class ClusterHostSource:
-    type: Literal["cluster"]
-    cluster_name: str | None = None
-
-
-@dataclass(slots=True, frozen=True)
-class ServiceHostSource:
-    type: Literal["service"]
-    service_name: str
-    cluster_name: str | None = None
-
-
-@dataclass(slots=True, frozen=True)
-class ComponentHostSource:
-    type: Literal["component"]
-    service_name: str
-    component_name: str
-    cluster_name: str | None = None
-
-
-@dataclass(slots=True, frozen=True)
-class NamedHostSource:
-    type: Literal["host"]
-    host_name: str
-
-
-@dataclass(slots=True, frozen=True)
-class ConfigHostGroupSource:
-    type: Literal["config_host_group"]
-    name: str
-    object: ObjectTarget
-
-
-@dataclass(slots=True, frozen=True)
-class ActionHostGroupSource:
-    type: Literal["action_host_group"]
-    name: str
-    object: ObjectTarget
-
-
-HostSource = Annotated[
-    ClusterHostSource
-    | ServiceHostSource
-    | ComponentHostSource
-    | NamedHostSource
-    | ConfigHostGroupSource
-    | ActionHostGroupSource,
-    Field(discriminator="type"),
-]
-
-
-@dataclass(slots=True, frozen=True)
-class TargetCluster:
-    cluster_name: str
-
-
-@dataclass(slots=True, frozen=True)
-class HostGroupReference:
-    name: str
-    type: HostGroupType
-    object: ObjectTarget | None = None
-
-
-@dataclass(slots=True)
-class HostManageScriptParams:
-    operation: Literal["add_duplicates", "remove_duplicates", "add_to_groups"]
-    source: list[HostSource]
-    target: list[TargetCluster] | None = None
-    mapping_rules: list[HcAclRule] | None = None
-    groups: list[HostGroupReference] | None = None
-
-
-@dataclass(slots=True, frozen=True)
-class HostGroupParameter:
-    key: str
-    value: Any
-
-
-@dataclass(slots=True, frozen=True)
-class HostGroupEntry:
-    name: str
-    type: HostGroupType
-    object: ObjectTarget
-    description: str | None = None
-    hosts: list[str] | None = None
-    parameters: list[HostGroupParameter] | None = None
-
-
-@dataclass(slots=True)
-class HostGroupManageScriptParams:
-    operation: Literal["add", "remove"]
-    groups: list[HostGroupEntry]
+# `host_manage` / `host_group_manage` arguments live in `core.action.internal_scripts`,
+# so bundle parsing and stored-plan validation share one set of models.
 
 
 class BundleInfo(NamedTuple):
@@ -395,7 +266,8 @@ class TaskActionInfo(NamedTuple):
     is_host_action: bool
 
 
-class HostComponentChanges(NamedTuple):
+@dataclass(slots=True, frozen=True)
+class HostComponentChanges:
     post_upgrade: list[dict] | None
     mapping_delta: TaskMappingDelta | None
 

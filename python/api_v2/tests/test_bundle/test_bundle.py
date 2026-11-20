@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
@@ -552,7 +553,7 @@ class TestBundle(ADCMDjangoAPISuite):
                     {"action": "remove", "component": "component_2", "service": "service_2"},
                     {"action": "add", "component": "component_3", "service": "service_2"},
                 ],
-                [rule._asdict() for rule in script.script.params.rules],
+                [asdict(rule) for rule in script.script.params.rules],
             )
 
         with self.subTest("hc_apply internal script: wrong definition"):

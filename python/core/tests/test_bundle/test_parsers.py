@@ -20,7 +20,8 @@ import re
 from pydantic import TypeAdapter, ValidationError
 import yaml
 
-from core.action import ComponentHostSource, HcAclRule, HostGroupParameter, ScriptType
+from core.action import HcAclRule, ScriptType
+from core.action.internal_scripts import ComponentHostSource, HostGroupParameter
 from core.action.types import (
     AnsibleScript,
     AnsibleScriptParams,

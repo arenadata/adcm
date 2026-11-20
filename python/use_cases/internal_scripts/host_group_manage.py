@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from dataclasses import asdict, dataclass
+from typing import cast
 
-from cm.errors import AdcmEx
 from cm.legacy.services.job.run.executors import InternalScriptResult
 from cm.models import ActionHostGroup, ConfigHostGroup
 from core.action import Task
+from core.action.internal_scripts import AddHostGroupsParams, ConfigHostGroupEntry, RemoveHostGroupsParams
 from core.action.types import HostGroupManageScript
 from core.config import ConfigService
 from core.types import HostID, JobID
@@ -68,93 +69,102 @@ class HostGroupManageInternalScript:
         }
 
         with atomic():
-            if params.operation == "remove":
-                removed = remove_groups(addresses=set(addresses.values()))
+            match params:
+                case AddHostGroupsParams():
+                    return self._add(task=task, params=params, addresses=addresses)
+                case RemoveHostGroupsParams():
+                    return self._remove(addresses=set(addresses.values()))
 
-                return InternalScriptResult(
-                    code=0,
-                    message=build_result_message(
-                        script_name=SCRIPT_NAME,
-                        full_complete_message=f"the named host groups are gone ({len(removed)} removed)",
-                        without_updates_message="the groups were removed",
-                        with_updates=bool(removed),
-                    ),
+    def _remove(self, addresses: set[GroupAddress]) -> InternalScriptResult:
+        removed = remove_groups(addresses=addresses)
+
+        return InternalScriptResult(
+            code=0,
+            message=build_result_message(
+                script_name=SCRIPT_NAME,
+                full_complete_message=f"the named host groups are gone ({len(removed)} removed)",
+                without_updates_message="the groups were removed",
+                with_updates=bool(removed),
+            ),
+        )
+
+    def _add(
+        self,
+        task: Task,
+        params: AddHostGroupsParams,
+        addresses: dict[int, GroupAddress],
+    ) -> InternalScriptResult:
+        outcome = GroupOutcome()
+        existing = retrieve_groups(addresses=set(addresses.values()))
+        membership = retrieve_group_hosts(groups=existing.values())
+
+        groups_of_entry: dict[int, ConfigHostGroup | ActionHostGroup] = {}
+        owners_of_new_groups: set[HostGroupOwner] = set()
+
+        for entry in params.groups:
+            address = addresses[id(entry)]
+            group = existing.get(address)
+
+            if group is None:
+                group = create_group(
+                    address=address, description=entry.description or "", config_service=self.config_service
                 )
+                if isinstance(group, ConfigHostGroup):
+                    owners_of_new_groups.add(address.owner)
+                outcome.created.append(str(address))
+            elif set_description(group=group, description=entry.description or ""):
+                outcome.updated.append(str(address))
 
-            outcome = GroupOutcome()
-            existing = retrieve_groups(addresses=set(addresses.values()))
-            membership = retrieve_group_hosts(groups=existing.values())
+            groups_of_entry[id(entry)] = group
 
-            groups_of_entry: dict[int, ConfigHostGroup | ActionHostGroup] = {}
-            owners_of_new_groups: set[HostGroupOwner] = set()
+        # A configuration group carries its own object permissions, so the owner's policies have
+        # to be re-applied once a group exists - once for the whole batch, because doing it per
+        # group repeats work whose cost grows with everything the policy covers.
+        for owner in owners_of_new_groups:
+            self.rbac_scenarios.re_apply_object_policy(apply_object=owner)
 
-            for entry in params.groups:
-                address = addresses[id(entry)]
-                group = existing.get(address)
+        # Removals for every group first, then additions: a host belongs to at most one
+        # configuration group of an owner, so moving one between two groups of the same owner
+        # only works if it has left the first before it is offered to the second.
+        wanted_of_entry: dict[int, set[HostID]] = {}
+        for entry in params.groups:
+            if entry.hosts is None:
+                continue
 
-                if group is None:
-                    group = create_group(
-                        address=address, description=entry.description or "", config_service=self.config_service
-                    )
-                    if isinstance(group, ConfigHostGroup):
-                        owners_of_new_groups.add(address.owner)
-                    outcome.created.append(str(address))
-                elif set_description(group=group, description=entry.description or ""):
-                    outcome.updated.append(str(address))
+            group = groups_of_entry[id(entry)]
+            wanted = set(resolve_host_names(owner=addresses[id(entry)].owner, names=entry.hosts).values())
+            wanted_of_entry[id(entry)] = wanted
+            outcome.hosts_removed += drop_hosts(
+                group=group, wanted=wanted, held=membership.get(group_key(group), set())
+            )
 
-                groups_of_entry[id(entry)] = group
+        for entry in params.groups:
+            if entry.hosts is None:
+                continue
 
-            # A configuration group carries its own object permissions, so the owner's policies have
-            # to be re-applied once a group exists - once for the whole batch, because doing it per
-            # group repeats work whose cost grows with everything the policy covers.
-            for owner in owners_of_new_groups:
-                self.rbac_scenarios.re_apply_object_policy(apply_object=owner)
+            group = groups_of_entry[id(entry)]
+            outcome.hosts_added += add_hosts(
+                group=group, wanted=wanted_of_entry[id(entry)], held=membership.get(group_key(group), set())
+            )
 
-            # Removals for every group first, then additions: a host belongs to at most one
-            # configuration group of an owner, so moving one between two groups of the same owner
-            # only works if it has left the first before it is offered to the second.
-            wanted_of_entry: dict[int, set[HostID]] = {}
-            for entry in params.groups:
-                if entry.hosts is None:
-                    continue
+        # `parameters` exists only on a configuration group entry, so this loop never sees an
+        # action group: the schema refuses the combination rather than the script checking it
+        for entry in params.groups:
+            if not isinstance(entry, ConfigHostGroupEntry) or not entry.parameters:
+                continue
 
-                group = groups_of_entry[id(entry)]
-                wanted = set(resolve_host_names(owner=addresses[id(entry)].owner, names=entry.hosts).values())
-                wanted_of_entry[id(entry)] = wanted
-                outcome.hosts_removed += drop_hosts(
-                    group=group, wanted=wanted, held=membership.get(group_key(group), set())
-                )
-
-            for entry in params.groups:
-                if entry.hosts is None:
-                    continue
-
-                group = groups_of_entry[id(entry)]
-                outcome.hosts_added += add_hosts(
-                    group=group, wanted=wanted_of_entry[id(entry)], held=membership.get(group_key(group), set())
-                )
-
-            for entry in params.groups:
-                if not entry.parameters:
-                    continue
-
-                address = addresses[id(entry)]
-                group = groups_of_entry[id(entry)]
-                if not isinstance(group, ConfigHostGroup):
-                    raise AdcmEx(
-                        code="INTERNAL_SERVER_ERROR",
-                        msg=f"`parameters` is only allowed for a `config_host_group`, {address} is not one",
-                    )
-
-                changed = apply_config_changes_to_host_group(
-                    db_object=address.owner,
-                    group=group,
-                    parameters=[asdict(parameter) for parameter in entry.parameters],
-                    changes_description=f"{task.display_name} process update",
-                    update_configuration=self.update_host_group_configuration,
-                )
-                if changed and str(address) not in outcome.updated:
-                    outcome.updated.append(str(address))
+            address = addresses[id(entry)]
+            # the entry's kind decided which row was created or looked up for it
+            group = cast(ConfigHostGroup, groups_of_entry[id(entry)])
+            changed = apply_config_changes_to_host_group(
+                db_object=address.owner,
+                group=group,
+                parameters=[asdict(parameter) for parameter in entry.parameters],
+                changes_description=f"{task.display_name} process update",
+                update_configuration=self.update_host_group_configuration,
+            )
+            if changed and str(address) not in outcome.updated:
+                outcome.updated.append(str(address))
 
         details = [
             f"{len(outcome.created)} created",
