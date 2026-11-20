@@ -47,7 +47,7 @@ from use_cases.internal_scripts.bundle_switch import BundleSwitchInternalScript
 from use_cases.internal_scripts.config_apply import ConfigApplyInternalScript
 from use_cases.internal_scripts.hc_apply import HcApplyInternalScript
 from use_cases.internal_scripts.service_manage import ServiceManageInternalScript
-from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask
+from use_cases.job.run import FinalizeTask, MarkTaskBroken, RunJob, SetTaskToRunning, StartTask, UpdateCallingProcess
 
 
 class SubprocessRunnerEnvironment:
@@ -116,5 +116,7 @@ class TaskRunnerProvider(Provider):
 class JobUseCaseProvider(Provider):
     scope = Scope.APP
 
-    task_runner_steps = provide_all(SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken, StartTask)
+    task_runner_steps = provide_all(
+        SetTaskToRunning, RunJob, FinalizeTask, MarkTaskBroken, StartTask, UpdateCallingProcess
+    )
     process_starter = provide(LocalProcessStarter, provides=ProcessStarter)
