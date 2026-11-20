@@ -415,6 +415,24 @@ class ConfigService:
         )
         operations.store_files(values=configuration.values, specification=specification, write=write)
 
+    def prepare_symlinks_for_file_type_of_many(
+        self, specification: spec.FullSpec, pairs: Iterable[tuple[HostDesc, HostDesc]]
+    ) -> None:
+        """Symlink the file-type parameter values of each original to its duplicate.
+
+        The batched form of `prepare_symlinks_for_file_type`: the caller retrieves the
+        specification once (it is the same for every host of one prototype) and passes it in,
+        so duplicating many hosts costs no query per host.
+        """
+
+        for original, duplicate in pairs:
+            operations.create_symlinks_for_files(
+                specification=specification,
+                original_prefix=files.build_config_prefix(original),
+                duplicate_prefix=files.build_config_prefix(duplicate),
+                files_dir=self.directories.files,
+            )
+
     def prepare_symlinks_for_file_type(self, original: HostDesc, duplicate: HostDesc) -> None:
         original_specification = self.retrieve_specification(
             owner=CoreObjectDescriptor(id=original.id, type=ADCMCoreType.HOST)

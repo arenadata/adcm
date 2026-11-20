@@ -13,7 +13,7 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
-from typing import Protocol
+from typing import NamedTuple, Protocol
 
 from core.action import TaskMappingDelta
 from core.cluster import ClusterService
@@ -177,6 +177,23 @@ def change_host_component_mapping_no_lock(
     )
 
 
+def check_host_component_mapping_change(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    mapping_delta: TaskMappingDelta,
+    checks_func: PerformMappingChecks = check_for_action_mapping,
+) -> None:
+    """Run the checks `change_host_component_mapping` would run on this delta, without applying it.
+
+    For a delta that is stored now and committed later with `check_nothing`, the way `hc_apply`
+    and the task finalizer commit the delta of a task.
+    """
+
+    _prepare_and_check_mapping_change(
+        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
+    )
+
+
 def check_no_host_in_mm(hosts: Iterable[HostID]) -> None:
     if Host.objects.filter(id__in=hosts).exclude(maintenance_mode=MaintenanceMode.OFF).exists():
         raise AdcmEx("INVALID_HC_HOST_IN_MM")
@@ -190,16 +207,9 @@ def _change_host_component_mapping(
     status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
-    # prepare
-    current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
-    new_topology = _construct_new_topology_or_raise_on_invalid_input(
-        base_topology=current_topology, mapping_delta=mapping_delta
+    current_topology, new_topology, host_difference, bundle_restrictions = _prepare_and_check_mapping_change(
+        cluster_id=cluster_id, bundle_id=bundle_id, mapping_delta=mapping_delta, checks_func=checks_func
     )
-    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
-    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
-
-    # business checks
-    checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
 
     # save mapping changes to db
     to_add = ((host_id, component_id) for component_id, host_ids in mapping_delta.add.items() for host_id in host_ids)
@@ -226,6 +236,38 @@ def _change_host_component_mapping(
     status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
+
+
+class _MappingChange(NamedTuple):
+    current_topology: ClusterTopology
+    new_topology: ClusterTopology
+    host_difference: TopologyHostDiff
+    bundle_restrictions: BundleRestrictions
+
+
+def _prepare_and_check_mapping_change(
+    cluster_id: ClusterID,
+    bundle_id: BundleID,
+    mapping_delta: TaskMappingDelta,
+    checks_func: PerformMappingChecks,
+) -> _MappingChange:
+    # prepare
+    current_topology = retrieve_cluster_topology(cluster_id=cluster_id)
+    new_topology = _construct_new_topology_or_raise_on_invalid_input(
+        base_topology=current_topology, mapping_delta=mapping_delta
+    )
+    host_difference = find_hosts_difference(new_topology=new_topology, old_topology=current_topology)
+    bundle_restrictions = retrieve_bundle_restrictions(bundle_id=bundle_id)
+
+    # business checks
+    checks_func(bundle_restrictions=bundle_restrictions, new_topology=new_topology, host_difference=host_difference)
+
+    return _MappingChange(
+        current_topology=current_topology,
+        new_topology=new_topology,
+        host_difference=host_difference,
+        bundle_restrictions=bundle_restrictions,
+    )
 
 
 def _construct_new_topology_or_raise_on_invalid_input(
