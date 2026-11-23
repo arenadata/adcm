@@ -242,9 +242,18 @@ class Monitor:
             for dead_task in result.get(TaskLivenessStatus.DEAD, ()):
                 monitor_logger.debug("Task id=%d is considered dead, setting to broken", dead_task.id)
 
-                result = self.set_broken.do(
-                    task_id=dead_task.id, environment=self.running_environment, from_status=dead_task.status
-                )
+                try:
+                    result = self.set_broken.do(
+                        task_id=dead_task.id, environment=self.running_environment, from_status=dead_task.status
+                    )
+                except Exception:
+                    # NOTE: This patch introduced as part of ADCM-8614 for release 3.1.0.
+                    #       If bundle is deleted, action can't be retrieved for task and broken fails with RuntimeError.
+                    #       Such cases need another approach rather than just logging errors,
+                    #       yet this will prevent monitor from failing full iteration.
+                    monitor_logger.exception("Unexpected exception during set broken occurred")
+                    continue
+
                 match result:
                     case Success():
                         monitor_logger.debug("Task id=%d set to broken successfuly", dead_task.id)
