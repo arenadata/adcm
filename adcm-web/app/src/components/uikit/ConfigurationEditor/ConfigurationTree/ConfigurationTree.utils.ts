@@ -219,7 +219,9 @@ const getNodeProps = (
   }
 
   const isReadonly = getIsReadonly(fieldSchema, fieldAttributes, parentNode);
-  const isCleanable = !isReadonly && isNullable;
+  // selection group in config group is not read-only itself, but its selection can't be changed
+  const isAllowChange = fieldSchema.adcmMeta?.synchronization?.isAllowChange ?? true;
+  const isCleanable = !isReadonly && isNullable && isAllowChange;
   const isDeletable = !isReadonly && (!isRequiredField || isArrayItem);
   const isDraggable = !isReadonly && isArrayItem;
   const isAdvanced = getIsAdvanced(fieldSchema, parentNode);
