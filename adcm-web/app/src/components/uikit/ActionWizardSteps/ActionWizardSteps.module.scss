@@ -89,7 +89,8 @@
     // thread: panel ::before/::after around the circle + content border-left when expanded
     --panel-thread-color: var(--panel-thread-color-normal);
     --panel-thread-left: 35px;
-    --panel-thread-circle-bottom: 40px; // padding-top 8px + circle 32px
+    --panel-thread-circle-top: 16px; // centers the 32px circle in the 64px panel
+    --panel-thread-circle-bottom: calc(var(--panel-thread-circle-top) + 32px); // + circle 32px
     --panel-thread-gap: 10px; // matches &_isHidden margin-bottom
 
     &:not(:first-child) {
@@ -98,7 +99,7 @@
         position: absolute;
         left: var(--panel-thread-left);
         top: calc(-1 * var(--panel-thread-gap));
-        height: calc(var(--panel-thread-gap) + 8px); // gap circle top
+        height: calc(var(--panel-thread-gap) + var(--panel-thread-circle-top));
         width: 0;
         border-left: 2px solid var(--panel-thread-color);
         box-sizing: content-box;
@@ -123,8 +124,13 @@
         border-left: 2px solid var(--panel-thread-color);
         margin-left: var(--panel-thread-left);
         padding-left: 10px;
-        margin-bottom: var(--base-margin-v);
+        padding-bottom: var(--base-margin-v); // padding, so the thread reaches the next panel
         padding-top: 32px;
+
+        // the gap is set by padding-bottom
+        > :last-child {
+          margin-bottom: 0;
+        }
       }
     }
   }
@@ -137,7 +143,8 @@
     min-width: 0;
     flex-direction: row;
     gap: 16px;
-    align-items: center;
+    align-items: flex-start;
+    padding: 8px 0; // with the panel padding puts the circle 16px from the top
 
     div {
       color: var(--panel-title-color);
@@ -206,7 +213,7 @@
       font-size: 20px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 5px;
+      margin: 6px 0 5px; // 6px centers the 20px line on the 32px circle
 
       &:hover {
         color: var(--panel-title-hover-color);
@@ -226,6 +233,5 @@
 
   &__content {
     padding-top: 32px;
-    height: calc(100% - 64px);
   }
 }
