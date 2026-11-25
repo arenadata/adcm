@@ -235,7 +235,11 @@ def document_action_process_viewset(object_type: str, operation_id_variant: str 
                     request_only=True,
                     value={
                         "method": ProcessOperationType.SUBMIT.value,
-                        "params": {"stepId": 1, "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17"},
+                        "params": {
+                            "stepId": 1,
+                            "processSyncKey": "c0a71f0b-4a6b-489c-a352-cfba8d8c3c17",
+                            "operation": {"isVerbose": True, "shouldBlockObject": True},
+                        },
                     },
                 ),
                 OpenApiExample(
