@@ -1,0 +1,53 @@
+- id: "1"
+  title: Snapshot format, full shared setup and first scenario
+  description: >-
+    Build the snapshot module, baseline + per-scenario diff goldens with missing-file recording, the
+    separate query-count file and the full shared setup (every S-id), proven end-to-end by G1.01
+    (SPEC CAP-1, CAP-2, CAP-3, CAP-7). The goal is to confirm the golden format reads well before
+    scenarios are added.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: &dev_notes >-
+    No commits; work on the currently active branch, even if it changed since planning.
+    Run tests with ./run-tests.sh <label> from the repo root. After changes run make pretty and make lint.
+    No automatic code review; review only when the user explicitly asks.
+- id: "2"
+  title: G1 topology and object lifecycle scenarios
+  description: >-
+    Add G1.02-G1.10, G1.17, G1.18 and G1.20 from scenarios.md on top of the story 1 setup (SPEC CAP-4).
+    Empty diffs are recorded explicitly where no RBAC write is expected.
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: *dev_notes
+- id: "3"
+  title: G1 config, task and log scenarios
+  description: >-
+    Add G1.11-G1.16 and G1.19 from scenarios.md: config saves, task launches on every target, wizard,
+    custom/check logs, bundle_switch upgrade and logrotate (SPEC CAP-4).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: *dev_notes
+- id: "4"
+  title: G2 RBAC change scenarios
+  description: >-
+    Add G2.01-G2.07 from scenarios.md, including the per-user effective-view diff for membership
+    changes (SPEC CAP-5).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: *dev_notes
+- id: "5"
+  title: G3 task permission confirmations
+  description: >-
+    Add G3.01-G3.11 from scenarios.md, pinning current TaskRole behaviour C1-C8 and D1-D7 with explicit
+    row asserts plus golden diffs; the mark column stays unset (SPEC CAP-6).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: *dev_notes
+- id: "6"
+  title: G3 topology and policy confirmations
+  description: >-
+    Add G3.12-G3.17 from scenarios.md: the 01 §2.1 warning cases, repeated multi-object re-apply,
+    overlapping policies and the deleted-action ActionRole (SPEC CAP-6).
+  spec_checkpoint: true
+  done_checkpoint: true
+  invoke_dev_with: *dev_notes
