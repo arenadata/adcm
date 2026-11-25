@@ -17,6 +17,11 @@
     text-transform: capitalize;
   }
 
+  &__parentIcon {
+    align-self: center;
+    cursor: pointer;
+  }
+
   &__tags {
     width: fit-content;
     margin-top: 16px;
