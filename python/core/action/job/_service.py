@@ -24,6 +24,8 @@ from core.action.job.errors import JobTerminationError, JobValidationError, Task
 from core.action.job.operations import is_terminatable_status
 from core.action.operations import to_rich_job, to_rich_jobs
 from core.action.types import ExecutionStatus, JobSpecV1
+from core.object.repo import ObjectRepoI
+from core.object.utils import as_selector_target
 from core.spec.keys import is_part_of_group
 from core.types import ActionID, JobID, TaskID
 
@@ -31,12 +33,15 @@ from core.types import ActionID, JobID, TaskID
 @dataclass(slots=True)
 class JobService:
     repo: JobRepoI
+    object_repo: ObjectRepoI
 
     def retrieve_scripts(self, action_id: ActionID) -> JobSpecV1:
         return self.repo.find_scripts_of_action(action_id=action_id)
 
     def create_task(self, payload: TaskCreateDTO) -> TaskID:
-        return self.repo.create_task(payload=payload)
+        target = as_selector_target(payload.target)
+        selector = self.object_repo.build_selector(targets=(target,), owner=payload.owner)[target]
+        return self.repo.create_task(payload=payload, selector=selector)
 
     def set_post_init_task_attributes(self, task_id: TaskID, payload: PostInitTaskAttributesDTO) -> None:
         self.repo.set_post_init_task_attributes(task_id=task_id, payload=payload)

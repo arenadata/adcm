@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
+
 from adcm.permissions import VIEW_POLICY_PERMISSION
 from audit.alt.api import audit_create, audit_delete, audit_update
 from audit.alt.hooks import (
@@ -18,15 +20,19 @@ from audit.alt.hooks import (
     extract_previous_from_object,
     only_on_success,
 )
+from cm.converters import model_name_to_core_type
 from cm.errors import AdcmEx
 from cm.transition.status import StatusScenarios
+from core.object.repo import ObjectRepoI
+from core.object.types import Selector
+from core.types import CoreObjectDescriptor
 from dishka import FromDishka
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from guardian.mixins import PermissionListMixin
-from rbac.models import Policy
+from rbac.models import Policy, PolicyObject
 from rbac.services.policy import policy_create, policy_update
-from rest_framework.mixins import DestroyModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -54,6 +60,30 @@ from api_v2.utils.audit import (
 )
 from api_v2.utils.di import inject
 from api_v2.views import ADCMGenericViewSet
+
+
+def _object_selectors(
+    object_repo: ObjectRepoI,
+    policies: Policy | Iterable[Policy],
+) -> dict[tuple[int, int], Selector]:
+    if isinstance(policies, Policy):
+        policies = (policies,)
+
+    policy_ids = [policy.pk for policy in policies]
+    policy_object_fields = list(
+        PolicyObject.objects.filter(policy__in=policy_ids)
+        .values_list("content_type_id", "object_id", "content_type__model")
+        .distinct()
+    )
+
+    keys = [(content_type_id, object_id) for content_type_id, object_id, _ in policy_object_fields]
+    targets = [
+        CoreObjectDescriptor(id=object_id, type=model_name_to_core_type(model_name))
+        for _, object_id, model_name in policy_object_fields
+    ]
+    selectors = object_repo.build_selector(targets=targets)
+
+    return {key: selectors[target] for key, target in zip(keys, targets, strict=True)}
 
 
 @extend_schema_view(
@@ -105,7 +135,7 @@ from api_v2.views import ADCMGenericViewSet
         ),
     ),
 )
-class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin, ADCMGenericViewSet):
+class PolicyViewSet(PermissionListMixin, DestroyModelMixin, ADCMGenericViewSet):
     queryset = (
         Policy.objects.select_related("role")
         .prefetch_related("group", "object", "object__object", "object__object__prototype")
@@ -125,12 +155,54 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
 
         return PolicySerializer
 
+    @inject
+    def list(
+        self,
+        request,  # noqa: ARG002
+        *,
+        object_repo: FromDishka[ObjectRepoI],
+        **_,
+    ) -> Response:
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        policies = page if page is not None else queryset
+        context = {**self.get_serializer_context(), "object_selectors": _object_selectors(object_repo, policies)}
+        serializer = self.get_serializer(policies, many=True, context=context)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+
+        return Response(serializer.data)
+
+    @inject
+    def retrieve(
+        self,
+        request,  # noqa: ARG002
+        *,
+        object_repo: FromDishka[ObjectRepoI],
+        **_,
+    ) -> Response:
+        instance = self.get_object()
+        context = {**self.get_serializer_context(), "object_selectors": _object_selectors(object_repo, instance)}
+        serializer = self.get_serializer(instance, context=context)
+
+        return Response(serializer.data)
+
     @audit_create(name="Policy created", object_=policy_from_response)
-    def create(self, request, *args, **kwargs):  # noqa: ARG002
+    @inject
+    def create(
+        self,
+        request,
+        *,
+        object_repo: FromDishka[ObjectRepoI],
+        **_,
+    ) -> Response:
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
         policy = policy_create(**serializer.validated_data)
-        return Response(data=PolicySerializer(policy).data, status=HTTP_201_CREATED)
+        context = {**self.get_serializer_context(), "object_selectors": _object_selectors(object_repo, policy)}
+        return Response(data=PolicySerializer(policy, context=context).data, status=HTTP_201_CREATED)
 
     @(
         audit_update(name="Policy updated", object_=policy_from_lookup)
@@ -152,8 +224,9 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
         request,
         *,
         status_scenarios: FromDishka[StatusScenarios],
+        object_repo: FromDishka[ObjectRepoI],
         **_,
-    ):
+    ) -> Response:
         policy = self.get_object()
 
         if policy.built_in:
@@ -162,7 +235,8 @@ class PolicyViewSet(PermissionListMixin, ListModelMixin, RetrieveModelMixin, Des
         serializer = self.get_serializer(policy, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         policy = policy_update(policy, status_scenarios=status_scenarios, **serializer.validated_data)
-        return Response(data=PolicySerializer(policy).data)
+        context = {**self.get_serializer_context(), "object_selectors": _object_selectors(object_repo, policy)}
+        return Response(data=PolicySerializer(policy, context=context).data)
 
     @audit_delete(name="Policy deleted", object_=policy_from_lookup, removed_on_success=True)
     def destroy(self, request, *args, **kwargs):

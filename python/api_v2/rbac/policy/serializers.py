@@ -12,6 +12,7 @@
 
 from adcm.serializers import EmptySerializer
 from cm.models import Cluster, Component, Host, Provider, Service
+from core.object.utils import order_selector
 from rbac.models import Group, Policy, Role, RoleTypes
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField, CharField, IntegerField, JSONField
@@ -94,6 +95,8 @@ class ObjectField(JSONField):
 
 class PolicyObjectField(ObjectField):
     def to_representation(self, value):
+        object_selectors = self.context["object_selectors"]
+
         data = []
         for obj in value.all():
             parent_id = obj.object.cluster_id if isinstance(obj.object, Service) else None
@@ -104,6 +107,7 @@ class PolicyObjectField(ObjectField):
                     "name": obj.object.name,
                     "display_name": obj.object.display_name,
                     "parent_id": parent_id,
+                    "objects": order_selector(selector=object_selectors[(obj.content_type_id, obj.object_id)]),
                 },
             )
 

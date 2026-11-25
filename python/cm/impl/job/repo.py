@@ -15,7 +15,7 @@ from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Final, Literal, TypeAlias, cast
+from typing import Literal, TypeAlias, cast
 
 from core.action import (
     ActionInfo,
@@ -53,13 +53,13 @@ from core.action.operations import flatten_execution_plan
 from core.action.scheduler import Claimer
 from core.action.types import JobSpecV1, Script, ScriptSpec
 from core.errors import NotFoundError
+from core.object.types import Selector
 from core.types import (
     ActionID,
     ActionTargetDescriptor,
     CoreObjectDescriptor,
     ExtraActionTargetType,
     HostGroupDescriptor,
-    HostID,
     JobID,
     NamedActionObject,
     NamedCoreObjectWithPrototype,
@@ -68,13 +68,12 @@ from core.types import (
 )
 from django.conf import settings
 from django.db import close_old_connections
-from django.db.models import F, ObjectDoesNotExist, Value
+from django.db.models import F, ObjectDoesNotExist
 from pydantic import TypeAdapter
 
 from cm.converters import (
     core_type_to_model,
     db_record_type_to_core_type,
-    model_name_to_core_type,
     orm_object_to_action_target_type,
     orm_object_to_core_descriptor,
 )
@@ -92,28 +91,10 @@ from cm.models import (
     JobLog,
     LogStorage,
     Provider,
-    QuerySet,
     Service,
     TaskLog,
     Upgrade,
 )
-
-# need to filter out "unsupported" values, because no guarantee DB have correct ones
-_SELECTOR_FIELDS_MAP: Final = {
-    Cluster: {"object_id": F("id"), "object_name": F("name"), "type_name": Value(ADCMCoreType.CLUSTER.value)},
-    Service: {
-        "object_id": F("id"),
-        "object_name": F("prototype__display_name"),
-        "type_name": Value(ADCMCoreType.SERVICE.value),
-    },
-    Component: {
-        "object_id": F("id"),
-        "object_name": F("prototype__display_name"),
-        "type_name": Value(ADCMCoreType.COMPONENT.value),
-    },
-    Host: {"object_id": F("id"), "object_name": F("fqdn"), "type_name": Value(ADCMCoreType.HOST.value)},
-    Provider: {"object_id": F("id"), "object_name": F("name"), "type_name": Value("provider")},
-}
 
 TaskTargetCoreObject: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 _RelatedWizardProcess = TypeAdapter(CallingProcess | AssociatedProcess)
@@ -302,23 +283,14 @@ class JobRepo(JobRepoI):
 
     # create
 
-    def create_task(self, payload: TaskCreateDTO) -> TaskID:
+    def create_task(self, payload: TaskCreateDTO, *, selector: Selector) -> TaskID:
         match payload.target:
             case CoreObjectDescriptor(type=ADCMCoreType.ADCM):
-                selector = {"adcm": {"id": payload.target.id, "name": "adcm"}}
                 object_type = ADCM.class_content_type
-            case CoreObjectDescriptor():
-                selector = _get_selector_for_core_object(target=payload.target, owner=payload.owner)
-                object_type = core_type_to_model(core_type=payload.target.type).class_content_type
             case HostGroupDescriptor():
-                group = ActionHostGroup.objects.select_related("object_type").get(id=payload.target.id)
-                group_owner = CoreObjectDescriptor(
-                    id=group.object_id, type=model_name_to_core_type(group.object_type.model)
-                )
-                selector = {"action_host_group": {"id": group.pk, "name": group.name}} | _get_selector_for_core_object(
-                    target=group_owner, owner=payload.owner
-                )
                 object_type = ContentType.objects.get_for_model(ActionHostGroup)
+            case CoreObjectDescriptor():
+                object_type = core_type_to_model(core_type=payload.target.type).class_content_type
 
         task = TaskLog.objects.create(
             action_id=payload.action_id,
@@ -552,61 +524,6 @@ def _script_spec_to_job_log(task_id: TaskID, script_spec: ScriptSpec) -> JobLog:
 
 
 # utilities
-
-
-def _get_selector_for_core_object(target: CoreObjectDescriptor, owner: CoreObjectDescriptor) -> dict:
-    model_ = core_type_to_model(core_type=target.type)
-    # todo Most likely we should use `Descriptor[X]` instead of `CoreObjectDescriptor`
-    #      in order to specify what can and can't be passed in functions,
-    #      because in this case ADCM descriptor shouldn't be in here
-    query = model_.objects.values(**_SELECTOR_FIELDS_MAP[model_]).filter(id=target.id)
-
-    match target.type, owner.type:
-        case (ADCMCoreType.HOST, ADCMCoreType.HOST):
-            provider_id = Host.objects.values_list("provider_id", flat=True).get(id=target.id)
-            values = Provider.objects.values(**_SELECTOR_FIELDS_MAP[Provider]).filter(id=provider_id)
-            # todo ??? stabs for django doesn't cover that case?
-            query = query.union(values)
-
-        case (ADCMCoreType.HOST, ADCMCoreType.CLUSTER | ADCMCoreType.SERVICE | ADCMCoreType.COMPONENT):
-            query = query.union(_get_host_related_selector(host_id=target.id, owner=owner))
-
-        case (ADCMCoreType.SERVICE, _):
-            cluster_id = Service.objects.values_list("cluster_id", flat=True).get(id=target.id)
-            values = Cluster.objects.values(**_SELECTOR_FIELDS_MAP[Cluster]).filter(id=cluster_id)
-            query = query.union(values)
-
-        case (ADCMCoreType.COMPONENT, _):
-            cluster_id, service_id = Component.objects.values_list("cluster_id", "service_id").get(id=target.id)
-            cluster_qs = Cluster.objects.values(**_SELECTOR_FIELDS_MAP[Cluster]).filter(id=cluster_id)
-            service_qs = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=service_id)
-            query = query.union(cluster_qs).union(service_qs)
-
-    return {entry["type_name"]: {"id": entry["object_id"], "name": entry["object_name"]} for entry in query.all()}
-
-
-def _get_host_related_selector(host_id: HostID, owner: CoreObjectDescriptor) -> QuerySet:
-    cluster_id = Host.objects.values_list("cluster_id", flat=True).get(id=host_id)
-    if not cluster_id:
-        message = "Can't detect selector for host without cluster for other targets than host itself"
-        raise RuntimeError(message)
-
-    query = Cluster.objects.values("id", object_name=F("name"), type_name=Value(ADCMCoreType.CLUSTER.value)).filter(
-        id=cluster_id
-    )
-
-    if owner.type == ADCMCoreType.SERVICE:
-        values = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=owner.id, cluster_id=cluster_id)
-        query = query.union(values)
-    elif owner.type == ADCMCoreType.COMPONENT:
-        service_id, component_id = Component.objects.values_list("service_id", "id").get(
-            cluster_id=cluster_id, id=owner.id
-        )
-        service_values = Service.objects.values(**_SELECTOR_FIELDS_MAP[Service]).filter(id=service_id)
-        component_values = Component.objects.values(**_SELECTOR_FIELDS_MAP[Component]).filter(id=component_id)
-        query = query.union(service_values).union(component_values)
-
-    return query
 
 
 def _get_task_owner(task_record: TaskLog) -> TaskOwner | None:
