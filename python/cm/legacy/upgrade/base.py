@@ -160,6 +160,12 @@ def _set_before_upgrade(
 ) -> None:
     before_upgrade.state = obj.state
 
+    if isinstance(obj, Cluster | Provider):
+        before_upgrade.edition = obj.prototype.bundle.edition
+
+    if not isinstance(obj, Component):
+        before_upgrade.version = obj.prototype.version
+
     if obj.config:
         before_upgrade.config_id = obj.config.current
 

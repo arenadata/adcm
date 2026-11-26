@@ -149,6 +149,7 @@ class TestClusterBundleSwitch(ADCMDjangoAPISuiteNoBundles):
         cls.expected_deleted_services = {
             "service_removed": {
                 "state": "created",
+                "version": "1.0",
                 "config": {"data": {"value": "service-removed"}, "attributes": {}},
                 "config_host_groups": {},
                 "action_host_groups": {},
