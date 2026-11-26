@@ -1,8 +1,8 @@
 # The ansible environments are built and published by the ansible-environments repo; this
 # build layers ADCM's own dependencies onto them rather than assembling its own venvs.
-ARG ANSIBLE_216_MUSL_IMAGE=hub.adsw.io/ansible/ansible:2.16.4-python3.10-musl-release-2-1-0
-ARG ANSIBLE_221_MUSL_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-musl-release-2-1-0
-ARG ANSIBLE_221_GLIBC_IMAGE=hub.adsw.io/ansible/ansible:2.21.4-python3.12-glibc-release-2-1-0
+ARG ANSIBLE_216_MUSL_IMAGE=arenadata/ansible:2.16.4-python3.10-musl
+ARG ANSIBLE_221_MUSL_IMAGE=arenadata/ansible:2.21.4-python3.12-musl
+ARG ANSIBLE_221_GLIBC_IMAGE=arenadata/ansible:2.21.4-python3.12-glibc
 
 FROM golang:1.26 AS go_builder
 COPY ./go /code
