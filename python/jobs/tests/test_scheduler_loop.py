@@ -132,6 +132,7 @@ class TestLauncher(ParametrizedTestCase, TestCase):
             job_repo=Mock(),
             claimer=Mock(claim_first_scheduled_or_created_task=claim),
             scheduler_repo=Mock(),
+            concern_scenarios=Mock(),
         )
 
         with (

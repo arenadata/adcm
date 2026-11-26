@@ -29,41 +29,42 @@ from tests.suites import ADCMDjangoAPISuite
 
 
 class TestPolicyAudit(ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
         custom_role = role_create(
             display_name="Custom role name",
             child=[Role.objects.get(name="View cluster configurations")],
         )
-        self.another_role = role_create(
+        cls.another_role = role_create(
             display_name="Another custom role name",
             child=[Role.objects.get(name="Edit cluster configurations")],
         )
-        self.group = create_group(name_to_display="Some group")
-        self.another_group = create_group(name_to_display="Other group")
-        self.another_group_2 = create_group(name_to_display="Other group 2")
-        self.policy_create_data = {
+        cls.group = create_group(name_to_display="Some group")
+        cls.another_group = create_group(name_to_display="Other group")
+        cls.another_group_2 = create_group(name_to_display="Other group 2")
+        cls.policy_create_data = {
             "name": "New Policy",
             "role": {"id": custom_role.pk},
-            "objects": [{"id": self.cluster_1.pk, "type": "cluster"}],
-            "groups": [self.group.pk],
+            "objects": [{"id": cls.cluster_1.pk, "type": "cluster"}],
+            "groups": [cls.group.pk],
         }
-        self.policy_update_data = {"name": "Updated name"}
-        self.policy = policy_create(
+        cls.policy_update_data = {"name": "Updated name"}
+        cls.policy = policy_create(
             name="Test policy",
             role=Role.objects.get(name="View provider configurations"),
-            group=[self.another_group],
-            object=[self.provider],
+            group=[cls.another_group],
+            object=[cls.provider],
         )
-        self.another_policy = policy_create(
+        cls.another_policy = policy_create(
             name="Test policy 2",
             role=Role.objects.get(name="View cluster configurations"),
-            group=[self.group],
-            object=[self.cluster_1],
+            group=[cls.group],
+            object=[cls.cluster_1],
         )
 
     def test_policy_create_success(self):

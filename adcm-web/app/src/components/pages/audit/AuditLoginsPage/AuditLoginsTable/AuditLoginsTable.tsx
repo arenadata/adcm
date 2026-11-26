@@ -6,6 +6,7 @@ import type { SortParams } from '@models/table';
 import DateTimeCell from '@commonComponents/Table/Cells/DateTimeCell';
 import { orElseGet } from '@utils/checkUtils';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import { getShortBrowserName } from '@utils/userAgentParser';
 
 const AuditLoginsTable = () => {
   const dispatch = useDispatch();
@@ -25,6 +26,8 @@ const AuditLoginsTable = () => {
           <TableCell>{orElseGet(auditLogin.user?.name ?? auditLogin.details.username)}</TableCell>
           <TableCell>{orElseGet(auditLogin.result)}</TableCell>
           <DateTimeCell value={orElseGet(auditLogin.time)} />
+          <TableCell>{orElseGet(auditLogin.address)}</TableCell>
+          <TableCell>{orElseGet(auditLogin.agent, getShortBrowserName)}</TableCell>
         </TableRow>
       ))}
     </Table>

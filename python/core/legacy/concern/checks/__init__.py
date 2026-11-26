@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._mapping import find_cluster_mapping_issues, parse_constraint
+from ._mapping import find_cluster_mapping_issues
 from ._service import (
     cluster_has_required_services_issue,
     find_not_added_required_services,
@@ -19,7 +19,6 @@ from ._service import (
 
 __all__ = [
     "find_cluster_mapping_issues",
-    "parse_constraint",
     "find_unsatisfied_service_requirements",
     "cluster_has_required_services_issue",
     "find_not_added_required_services",

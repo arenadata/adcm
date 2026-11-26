@@ -8,6 +8,7 @@ import ConfigurationFormContextProvider from '@commonComponents/configuration/Co
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain/ConfigurationMain';
 import ConfigurationEmptyState from '@commonComponents/configuration/ConfigurationEmptyState/ConfigurationEmptyState';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import { useComponentPrimaryConfigurationsCompare } from './useComponentPrimaryConfigurationCompare';
 import PermissionsChecker from '@commonComponents/PermissionsChecker/PermissionsChecker';
 import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
@@ -73,7 +74,12 @@ const ComponentPrimaryConfiguration: React.FC = () => {
           />
           <PermissionsChecker requestState={accessConfigCheckStatus}>
             <ConfigurationFormContextProvider>
-              <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+              <ConfigurationSubHeader
+                onSave={onSave}
+                onRevert={onReset}
+                isViewDraft={selectedConfigId === 0}
+                canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+              />
               <ConfigurationMinimap>
                 <ConfigurationMain
                   isLoading={isConfigurationLoading}

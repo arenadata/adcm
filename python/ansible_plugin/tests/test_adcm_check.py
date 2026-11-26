@@ -488,7 +488,7 @@ class TestCheckPluginExecutor(ADCMPluginExecutorSuite):
 
         with self.container() as container:
             log_service = container.get(LogsService)
-            content = log_service.retrieve_check_logs_content_for_job(job_id=job.id)
+            content = log_service.retrieve_check_logs_content_for_job(job_id=job.runtime.id)
             self.assertListEqual(
                 CheckLogContentAdapter.dump_python(content),
                 [

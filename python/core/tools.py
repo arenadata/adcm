@@ -17,3 +17,18 @@ from typing import Any
 
 def get_nested(source: dict, path: Iterable[str]) -> Any:
     return reduce(dict.__getitem__, path, source)
+
+
+def convert_keys_to_camel_case(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {_to_camel_case(key): convert_keys_to_camel_case(item) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [convert_keys_to_camel_case(item) for item in value]
+
+    return value
+
+
+def _to_camel_case(value: str) -> str:
+    first, *rest = value.split("_")
+    return f"{first}{''.join(part.capitalize() for part in rest)}"

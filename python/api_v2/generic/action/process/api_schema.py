@@ -76,8 +76,7 @@ class ResetStepParamsSerializer(Serializer):
     process_sync_key = UUIDField()
 
 
-class SkipStepParamsSerializer(ResetStepParamsSerializer):
-    ...
+class SkipStepParamsSerializer(ResetStepParamsSerializer): ...
 
 
 class SubmitStepParamsSerializer(ResetStepParamsSerializer):

@@ -1,51 +1,160 @@
 :global {
-  body {
-    &.theme-dark {
-      --list-transfer-panel-background: var(--color-xdark-new-20);
-    }
+  body.theme-dark {
+    --list-transfer-panel-background: var(--color-xdark-new-20);
+    --list-transfer-panel-divider-color: var(--color-xgray-reading);
+    --list-transfer-panel-filter-color: var(--text-txt-default);
+    --list-transfer-panel-action-color: var(--color-xgray-lighter);
+    --list-transfer-panel-counter-background: var(--color-xdark-new-full);
+    --list-transfer-panel-action-background: var(--surfaces-sf-one-b);
+    --list-transfer-panel-action-background-hover: var(--color-xdark-new);
+  }
 
-    &.theme-light {
-      --list-transfer-panel-background: var(--color-xgray-alt-30);
-    }
+  body.theme-light {
+    --list-transfer-panel-background: var(--color-xgray-alt-30);
+    --list-transfer-panel-divider-color: var(--borders-br-main);
+    --list-transfer-panel-filter-color: var(--text-txt-default);
+    --list-transfer-panel-action-color: var(--color-added-text);
+    --list-transfer-panel-counter-background: var(--surfaces-sf-one-b);
+    --list-transfer-panel-action-background: var(--surfaces-sf-one-b);
+    --list-transfer-panel-action-background-hover: var(--color-xgray-alt-60);
   }
 }
 
 .listTransferPanel {
   background: var(--list-transfer-panel-background);
-  padding: 8px 12px 12px 12px;
-  border-radius: 5px;
+  padding: 20px;
+  border-radius: 8px;
   min-height: 0;
-  display: grid;
-  grid-template-rows: min-content min-content min-content;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 
   &__title {
     color: var(--list-transfer-panel-title-color, inherit);
     font-weight: 500;
-    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 14px;
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  &__titleText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+    border: 2px solid var(--text-green-color);
+    border-radius: 4px;
+    background: var(--list-transfer-panel-action-background);
+    color: var(--text-green-color);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  &__divider {
+    height: 1px;
+    flex-shrink: 0;
+    margin-bottom: 16px;
+    background: var(--list-transfer-panel-divider-color);
   }
 
   &__filters {
-    gap: 12px;
     display: flex;
-    margin-bottom: 20px;
-  }
-  &__search {
-    flex: 1;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
   }
 
-  &__checkAll {
-    margin-bottom: 20px;
+  &__filterLabel {
+    color: var(--list-transfer-panel-filter-color);
+    white-space: nowrap;
+  }
+
+  &__search {
+    &.listTransferPanel__search {
+      flex: 0 1 200px;
+      width: 200px;
+      min-width: 80px;
+      height: 27px;
+      border-width: 1px;
+      border-radius: 5px;
+    }
+
+    input {
+      padding: 1px 7px;
+      font-size: 14px;
+      line-height: 20px;
+    }
+  }
+
+  &__counter {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 5px;
+    background: var(--list-transfer-panel-counter-background);
+    color: var(--list-transfer-panel-filter-color);
+    white-space: nowrap;
+  }
+
+  &__actionButton {
+    &.listTransferPanel__actionButton {
+      align-self: flex-start;
+      flex-shrink: 0;
+      min-width: 0;
+      margin-bottom: 12px;
+      padding: 4px 12px;
+      border-radius: 5px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+
+      --button-background-secondary: var(--list-transfer-panel-action-background);
+      --button-border-secondary: var(--list-transfer-panel-divider-color);
+      --button-color-secondary: var(--list-transfer-panel-action-color);
+
+      --button-background-hover-secondary: var(--list-transfer-panel-action-background-hover);
+      --button-border-hover-secondary: var(--list-transfer-panel-divider-color);
+      --button-color-hover-secondary: var(--text-green-color);
+
+      --button-background-disabled: var(--list-transfer-panel-action-background);
+      --button-border-disabled: transparent;
+      --button-color-disabled: var(--color-xgray-reading);
+    }
   }
 
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
     align-items: flex-start;
+    flex: 1;
+    min-height: 0;
     overflow: auto;
     max-height: var(--list-transfer-list-max-height, none);
+    padding-right: 2px;
+    --scrollbar-thumb-color: var(--list-transfer-panel-divider-color);
   }
 }

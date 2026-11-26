@@ -1,0 +1,13 @@
+# "new" venv is explicitly set for service, the same as for its cluster
+- type: cluster
+  name: component_venv_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+- type: service
+  name: service
+  version: "1"
+  venv: "2.21"
+  components:
+    component:

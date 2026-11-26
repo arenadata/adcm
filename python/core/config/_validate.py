@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Final, Protocol, TypeAlias
 
 from core.config import _yspec, spec
 from core.config._config import detect_active_groups
@@ -35,13 +35,11 @@ from core.types import CoreObjectDescriptor
 
 
 class VariantValidator(Protocol):
-    def is_value_allowed(self, value: Any, parameter: spec.p.VariantParameter) -> bool:
-        ...
+    def is_value_allowed(self, value: Any, parameter: spec.p.VariantParameter) -> bool: ...
 
 
 class PatternValidator(Protocol):
-    def is_match(self, value: str, pattern: str) -> bool:
-        ...
+    def is_match(self, value: str, pattern: str) -> bool: ...
 
 
 class AlwaysPassValidator(VariantValidator, PatternValidator):
@@ -68,8 +66,7 @@ class MainConfigVariantResolver(ABC, VariantValidator):
     # todo rethink variant validator interface,
     #  maybe it'll actually work with `resolve` method and check in validation
     @abstractmethod
-    def resolve(self, parameter: spec.p.VariantParameter) -> tuple:
-        ...
+    def resolve(self, parameter: spec.p.VariantParameter) -> tuple: ...
 
 
 # Types & Constants
@@ -240,6 +237,12 @@ def validate_values_are_correct(
 
 
 # Steps And Utilities
+
+_ROOT_GROUP: Final[ParameterFullName] = ParameterFullName("")
+"""
+Prefix of the configuration root: joining a level name with it adds nothing but the separator.
+It is not a valid full name on its own, which is why it's built directly instead of via `names`.
+"""
 
 _AnyAsConfigValues = ConfigValues | Any
 _ValuesStructureValidator = Callable[
@@ -418,7 +421,7 @@ def _find_attribute_violations(
 
 
 def _detect_excluded_groups_from_values(
-    values: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group: ParameterFullName = ""
+    values: _AnyAsConfigValues, hierarchy: spec.SpecHierarchyLevel, group: ParameterFullName = _ROOT_GROUP
 ) -> list[ParameterFullName]:
     excluded = []
 

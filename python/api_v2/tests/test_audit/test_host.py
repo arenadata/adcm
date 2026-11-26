@@ -25,16 +25,17 @@ from tests.suites import ADCMDjangoAPISuite
 
 
 class TestHostAudit(ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
-        self.prototype = Prototype.objects.get(bundle=self.bundle_1, type=ObjectType.CLUSTER)
-        self.host_1 = self.uc.add_host(provider=self.provider, fqdn="test_host")
-        self.host_2 = self.uc.add_host(provider=self.provider, fqdn="test_host_2")
-        self.uc.add_host_to_cluster(cluster=self.cluster_1, host=self.host_1)
+        cls.prototype = Prototype.objects.get(bundle=cls.bundle_1, type=ObjectType.CLUSTER)
+        cls.host_1 = cls.uc.add_host(provider=cls.provider, fqdn="test_host")
+        cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="test_host_2")
+        cls.uc.add_host_to_cluster(cluster=cls.cluster_1, host=cls.host_1)
 
     def test_create_success(self):
         response = (self.client.v2 / "hosts").post(

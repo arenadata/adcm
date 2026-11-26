@@ -1,0 +1,20 @@
+- type: cluster
+  name: switch_cluster
+  version: "2.3"
+  contract_version: "2.1"
+  venv: "2.16"
+  allow_maintenance_mode: true
+  upgrade:
+    - name: api
+      versions:
+        min: "1.0"
+        max: "1.0"
+      states:
+        available: any
+
+- type: service
+  name: service_kept
+  version: "2.3"
+  license: ./EULA.txt
+  components:
+    component_kept:

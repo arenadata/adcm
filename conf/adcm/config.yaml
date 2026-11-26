@@ -1,9 +1,9 @@
 ---
 - type: adcm
   name: ADCM
-  version: "4.0"
+  version: "4.1"
   contract_version: "2.1"
-  venv: "2.21"
+  venv: "adcm"
 
   actions:
     run_ldap_sync:
@@ -23,6 +23,7 @@
       allow_to_terminate: true
       states:
         available: any
+
 
   config:
     - name: "global"

@@ -12,12 +12,14 @@
 
 from collections import defaultdict
 from collections.abc import Generator, Iterable
+from functools import partial
 from operator import attrgetter, itemgetter
 
 from core.converters import named_mapping_from_topology
 from core.legacy.concern.checks import cluster_has_required_services_issue, find_unsatisfied_service_requirements
 from core.types import ADCMCoreType, Concern, ConcernID, CoreObjectDescriptor, ServiceID, ServiceName
 from django.contrib.contenttypes.models import ContentType
+import core
 
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology
@@ -31,14 +33,16 @@ from cm.legacy.services.concern.distribution import OwnObjectConcernMap
 from cm.models import Cluster, Component, ConcernCause, ConcernItem, ConcernType, Host, Service
 
 
-def recalculate_own_concerns_on_add_clusters(cluster: Cluster) -> OwnObjectConcernMap:
+def recalculate_own_concerns_on_add_clusters(
+    cluster: Cluster, config_service: core.config.ConfigService
+) -> OwnObjectConcernMap:
     named_mapping = named_mapping_from_topology(topology=retrieve_cluster_topology(cluster_id=cluster.pk))
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
 
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
 
     cluster_checks = (
-        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.CONFIG, partial(object_configuration_has_issue, config_service=config_service)),
         (ConcernCause.IMPORT, object_imports_has_issue),
     )
 
@@ -64,7 +68,9 @@ def _filter_concerns_by_cause(concerns: Iterable[Concern], cause: str) -> Genera
     return (concern for concern in concerns if concern.cause == cause)
 
 
-def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterable[Service]) -> OwnObjectConcernMap:
+def recalculate_own_concerns_on_add_services(
+    cluster: Cluster, services: Iterable[Service], config_service: core.config.ConfigService
+) -> OwnObjectConcernMap:
     named_mapping = named_mapping_from_topology(topology=retrieve_cluster_topology(cluster_id=cluster.pk))
     bundle_restrictions = retrieve_bundle_restrictions(bundle_id=int(cluster.prototype.bundle_id))
     new_concerns: OwnObjectConcernMap = defaultdict(lambda: defaultdict(set))
@@ -79,7 +85,7 @@ def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterabl
         new_concerns[ADCMCoreType.CLUSTER][cluster.pk].add(issue.pk)
 
     service_checks = (
-        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.CONFIG, partial(object_configuration_has_issue, config_service=config_service)),
         (ConcernCause.IMPORT, object_imports_has_issue),
     )
     for service in services:
@@ -100,7 +106,7 @@ def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterabl
             )
 
     for component in Component.objects.filter(service__in=services):
-        if object_configuration_has_issue(component):
+        if object_configuration_has_issue(component, config_service=config_service):
             issue = create_issue(
                 owner=CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT), cause=ConcernCause.CONFIG
             )
@@ -158,17 +164,17 @@ def recalculate_own_concerns_on_add_services(cluster: Cluster, services: Iterabl
     return new_concerns
 
 
-def recalculate_own_concerns_on_add_hosts(host: Host) -> OwnObjectConcernMap:
-    if object_configuration_has_issue(host):
+def recalculate_own_concerns_on_add_hosts(host: Host, config_service: core.config.ConfigService) -> OwnObjectConcernMap:
+    if object_configuration_has_issue(host, config_service=config_service):
         issue = create_issue(owner=CoreObjectDescriptor(id=host.id, type=ADCMCoreType.HOST), cause=ConcernCause.CONFIG)
         return {ADCMCoreType.HOST: {host.id: {issue.id}}}
 
     return {}
 
 
-def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
+def recalculate_concerns_on_cluster_upgrade(cluster: Cluster, config_service: core.config.ConfigService) -> None:
     cluster_checks = (
-        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.CONFIG, partial(object_configuration_has_issue, config_service=config_service)),
         (ConcernCause.IMPORT, object_imports_has_issue),
     )
 
@@ -202,7 +208,7 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         create_issue(owner=cluster_cod, cause=ConcernCause.HOSTCOMPONENT)
 
     service_checks = (
-        (ConcernCause.CONFIG, object_configuration_has_issue),
+        (ConcernCause.CONFIG, partial(object_configuration_has_issue, config_service=config_service)),
         (ConcernCause.IMPORT, object_imports_has_issue),
     )
 
@@ -249,7 +255,7 @@ def recalculate_concerns_on_cluster_upgrade(cluster: Cluster) -> None:
         .filter(service__in=services)
         .exclude(id__in=components_with_config_concerns)
     ):
-        if object_configuration_has_issue(component):
+        if object_configuration_has_issue(component, config_service=config_service):
             create_issue(
                 owner=CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT), cause=ConcernCause.CONFIG
             )

@@ -12,9 +12,8 @@
 
 from dataclasses import dataclass
 
-from core.provider._repo import ProviderRepoI
+from core.provider._repo import HostInfo, ProviderRepoI
 from core.types import (
-    HostDesc,
     MaintenanceModeOfObjects,
     ProviderID,
     ProviderObjectDesc,
@@ -25,7 +24,7 @@ from core.types import (
 class ProviderService:
     repo: ProviderRepoI
 
-    def retrieve_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostDesc, ...]:
+    def retrieve_hosts_by_provider(self, provider_id: ProviderID) -> tuple[HostInfo, ...]:
         return self.repo.find_hosts_by_provider(provider_id=provider_id)
 
     def retrieve_own_maintenance_mode(self, target: ProviderObjectDesc) -> MaintenanceModeOfObjects:

@@ -1,0 +1,7 @@
+---
+- type: cluster
+  name: cluster_adcm_8528
+  version: '1.0'
+  edition: 'test-edition'
+  contract_version: '0.999'
+  venv: '2.16'

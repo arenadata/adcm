@@ -12,14 +12,11 @@
 
 from functools import partial
 
-from api_v2.concern.serializers import ConcernSerializer
 from core.types import CoreObjectDescriptor
 from django.db.transaction import on_commit
-from djangorestframework_camel_case.util import camelize
+import core
 
 from cm.converters import orm_object_to_core_type
-from cm.errors import AdcmEx
-from cm.legacy.adcm_config.utils import proto_ref
 from cm.legacy.hierarchy import Tree
 from cm.legacy.services.concern import create_issue, retrieve_issue
 from cm.legacy.services.concern.checks import (
@@ -29,44 +26,18 @@ from cm.legacy.services.concern.checks import (
     object_imports_has_issue,
     service_requirements_has_issue,
 )
-from cm.legacy.status_api import send_concern_creation_event, send_concern_delete_event
+from cm.legacy.status_api import send_concern_delete_event
 from cm.logger import logger
 from cm.models import (
     ADCMEntity,
-    Cluster,
-    Component,
     ConcernCause,
     ConcernItem,
     ConcernType,
     ObjectType,
-    Prototype,
-    Service,
 )
-
-
-def check_service_requires(cluster: Cluster, proto: Prototype) -> None:
-    if not proto.requires:
-        return
-
-    for require in proto.requires:
-        req_service = Service.objects.filter(prototype__name=require["service"], cluster=cluster)
-        obj_prototype = Prototype.objects.filter(name=require["service"], type="service")
-
-        if comp_name := require.get("component"):
-            req_obj = Component.objects.filter(prototype__name=comp_name, service=req_service.first(), cluster=cluster)
-            obj_prototype = Prototype.objects.filter(name=comp_name, type="component", parent=obj_prototype.first())
-        else:
-            req_obj = req_service
-
-        if not req_obj.exists():
-            raise AdcmEx(
-                code="SERVICE_CONFLICT",
-                msg=f"No required {proto_ref(prototype=obj_prototype.first())} for {proto_ref(prototype=proto)}",
-            )
-
+from cm.transition.status import StatusScenarios
 
 _issue_check_map = {
-    ConcernCause.CONFIG: object_configuration_has_issue,
     ConcernCause.IMPORT: object_imports_has_issue,
     ConcernCause.SERVICE: object_has_required_services_issue_orm_version,
     ConcernCause.HOSTCOMPONENT: cluster_mapping_has_issue_orm_version,
@@ -87,7 +58,7 @@ _prototype_issue_map = {
 }
 
 
-def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
+def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause, status_scenarios: StatusScenarios) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
     object_cod = CoreObjectDescriptor(id=obj.id, type=orm_object_to_core_type(obj))
     object_own_issue = retrieve_issue(owner=object_cod, cause=issue_cause)
@@ -97,7 +68,7 @@ def add_issue_on_linked_objects(obj: ADCMEntity, issue_cause: ConcernCause) -> N
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
 
     for node in affected_nodes:
-        add_concern_to_object(object_=node.value, concern=issue)
+        add_concern_to_object(object_=node.value, concern=issue, status_scenarios=status_scenarios)
 
 
 def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
@@ -108,22 +79,31 @@ def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     issue.delete()
 
 
-def recheck_issues(obj: ADCMEntity) -> None:
+def recheck_issues(
+    obj: ADCMEntity, config_service: core.config.ConfigService, status_scenarios: StatusScenarios
+) -> None:
     """Re-check for object's type-specific issues"""
     issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
     for issue_cause in issue_causes:
-        if _issue_check_map[issue_cause](obj):
-            add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause)
+        has_issue = (
+            object_configuration_has_issue(obj, config_service=config_service)
+            if issue_cause == ConcernCause.CONFIG
+            else _issue_check_map[issue_cause](obj)
+        )
+        if has_issue:
+            add_issue_on_linked_objects(obj=obj, issue_cause=issue_cause, status_scenarios=status_scenarios)
         else:
             remove_issue(obj=obj, issue_cause=issue_cause)
 
 
-def update_hierarchy_issues(obj: ADCMEntity) -> None:
+def update_hierarchy_issues(
+    obj: ADCMEntity, config_service: core.config.ConfigService, status_scenarios: StatusScenarios
+) -> None:
     """Update issues on all directly connected objects"""
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(node=tree.built_from)
     for node in affected_nodes:
-        recheck_issues(obj=node.value)
+        recheck_issues(obj=node.value, config_service=config_service, status_scenarios=status_scenarios)
 
 
 def update_issues_and_flags_after_deleting() -> None:
@@ -141,7 +121,7 @@ def update_issues_and_flags_after_deleting() -> None:
                 unlink_concern_from_object(object_=object_moved_out_hierarchy, concern=concern)
 
 
-def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:
+def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None, status_scenarios: StatusScenarios) -> None:
     if not concern or getattr(concern, "id", None) is None:
         return
 
@@ -150,8 +130,13 @@ def add_concern_to_object(object_: ADCMEntity, concern: ConcernItem | None) -> N
 
     object_.concerns.add(concern)
 
-    concern_data = camelize(data=ConcernSerializer(instance=concern).data)
-    on_commit(func=partial(send_concern_creation_event, object_=object_, concern=concern_data))
+    on_commit(
+        func=partial(
+            status_scenarios.notify_about_new_concern,
+            concern_id=concern.id,
+            related_objects={orm_object_to_core_type(object_): {object_.id}},
+        )
+    )
 
 
 def unlink_concern_from_object(object_: ADCMEntity, concern: ConcernItem | None) -> None:

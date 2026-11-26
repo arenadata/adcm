@@ -1,0 +1,500 @@
+# Rows of a 3.0.0 database that `cm.0156_execution_plan_storage` has to convert.
+#
+# Only what 3.0.0 had is here: every value is a column of the 0155 migration state.
+# What 0156 must produce for each case is kept in `execution_plan_migration_expected.yaml`
+# under the same case name, the comment of each case says it in short.
+#
+# Rows are created in the order they are listed, so `id` order is the order below:
+# it's the position that script keys of converted plans start with (`/<position>-<name>`: `/0-prepare`, ...).
+
+bundle:
+  name: legacy_bundle
+  version: "1.0"
+  hash: legacy_bundle_hash
+
+prototype:
+  type: cluster
+  name: legacy_cluster
+  version: "1.0"
+
+# Case: `SubAction` rows of an action become `Action.scripts`.
+# Action's name is its case name, `subactions` are its `SubAction` rows.
+actions:
+  # static action of several scripts:
+  # keys `/0-prepare`, `/1-install`, `/2-health_check` in `id` order, names move as-is
+  # (`/` of `health/check` is `_` in the key only),
+  # ansible params move as-is (`{}` stays `{}`), python params become `null`,
+  # `state_on_fail: ""` becomes `null`, on_fail is an object
+  multi_script_action:
+    subactions:
+      - name: prepare
+        display_name: Prepare hosts
+        script: ./playbooks/prepare.yaml
+        script_type: ansible
+        params: {ansible_tags: prepare}
+        state_on_fail: failed
+        multi_state_on_fail_set: [prepare_failed]
+        multi_state_on_fail_unset: [prepared]
+        allow_to_terminate: true
+      - name: install
+        display_name: install
+        script: ./playbooks/install.yaml
+        script_type: ansible
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+      - name: health/check
+        display_name: Check
+        script: ./scripts/check.py
+        script_type: python
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+
+  # `type: job` action: 3.0.0 kept its only script as one `SubAction`,
+  # it becomes a one-node plan `/0-job_type_action`
+  job_type_action:
+    subactions:
+      - name: job_type_action
+        display_name: Restart
+        script: ./playbooks/restart.yaml
+        script_type: ansible
+        params: {ansible_tags: restart}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+
+  # ansible mixed with internal scripts:
+  # `hc_apply` params move as-is, empty params of `bundle_switch` become `null`,
+  # internal scripts are never terminatable, ansible keeps its `allow_to_terminate`
+  internal_mix_action:
+    subactions:
+      - name: add_hosts
+        display_name: add_hosts
+        script: ./playbooks/add_hosts.yaml
+        script_type: ansible
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+      - name: apply_mapping
+        display_name: Apply mapping
+        script: hc_apply
+        script_type: internal
+        params:
+          rules:
+            - {service: service_a, component: component_a, action: add}
+            - {service: service_a, component: component_b, action: remove}
+        state_on_fail: mapping_failed
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+      - name: switch
+        display_name: switch
+        script: bundle_switch
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+
+  # the rest of internal scripts:
+  # non-empty params (`config_apply`, `service_manage`) move as-is,
+  # empty params (`bundle_revert`, `before_upgrade_clean`) become `null`,
+  # internal scripts are never terminatable, even with `allow_to_terminate: true`
+  other_internal_action:
+    subactions:
+      - name: set_debug
+        display_name: Set debug
+        script: config_apply
+        script_type: internal
+        params:
+          changes:
+            - object: {type: cluster}
+              parameters:
+                - {key: debug, value: true}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+      - name: add_service
+        display_name: Add service
+        script: service_manage
+        script_type: internal
+        params:
+          operation: add
+          services:
+            - name: service_b
+              config_changes:
+                - {key: port, value: 8080}
+              hc_changes:
+                - {component: component_c, hosts: [host_1]}
+        state_on_fail: service_add_failed
+        multi_state_on_fail_set: [service_add_failed]
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+      - name: revert
+        display_name: revert
+        script: bundle_revert
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+      - name: clean
+        display_name: clean
+        script: before_upgrade_clean
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+
+  # scripts are rendered from `scripts_template`, there are no `SubAction` rows:
+  # `scripts` stays NULL
+  template_action:
+    scripts_template: {file: {path: scripts.j2}, engine: {type: jinja2}}
+    subactions: []
+
+  # action with no scripts at all: `scripts` stays NULL
+  no_scripts_action:
+    subactions: []
+
+  # wizard action (processes below belong to it), no `SubAction` rows: `scripts` stays NULL
+  wizard_action:
+    wizard_template: {file: {path: wizard.j2}, engine: {type: jinja2}}
+    subactions: []
+
+# Case: `JobLog` rows of a task become `TaskLog.execution_plan`,
+# each job gets `spec_key` of its node there (`/<position>-<name>`, position by `id` order within the task).
+# `action` refers to a case of `actions`, `jobs` are the task's `JobLog` rows.
+tasks:
+  # finished run of `multi_script_action`, its jobs copied the subactions' columns:
+  # plan follows the same rules as for actions, jobs get `/0-prepare`, `/1-install`, `/2-health_check`
+  finished_task:
+    action: multi_script_action
+    object_type: cluster
+    object_id: 1
+    status: success
+    jobs:
+      - name: prepare
+        display_name: Prepare hosts
+        script: ./playbooks/prepare.yaml
+        script_type: ansible
+        params: {ansible_tags: prepare}
+        state_on_fail: failed
+        multi_state_on_fail_set: [prepare_failed]
+        multi_state_on_fail_unset: [prepared]
+        allow_to_terminate: true
+        status: success
+      - name: install
+        display_name: install
+        script: ./playbooks/install.yaml
+        script_type: ansible
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: success
+      - name: health/check
+        display_name: Check
+        script: ./scripts/check.py
+        script_type: python
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: success
+
+  # failed run of `internal_mix_action`: internal jobs follow the same rules as internal subactions
+  failed_internal_task:
+    action: internal_mix_action
+    object_type: cluster
+    object_id: 1
+    status: failed
+    jobs:
+      - name: add_hosts
+        display_name: add_hosts
+        script: ./playbooks/add_hosts.yaml
+        script_type: ansible
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+        status: success
+      - name: apply_mapping
+        display_name: Apply mapping
+        script: hc_apply
+        script_type: internal
+        params:
+          rules:
+            - {service: service_a, component: component_a, action: add}
+            - {service: service_a, component: component_b, action: remove}
+        state_on_fail: mapping_failed
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: failed
+      - name: switch
+        display_name: switch
+        script: bundle_switch
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+        status: aborted
+
+  # run of `other_internal_action`: internal jobs follow the same rules as internal subactions
+  other_internal_task:
+    action: other_internal_action
+    object_type: cluster
+    object_id: 1
+    status: success
+    jobs:
+      - name: set_debug
+        display_name: Set debug
+        script: config_apply
+        script_type: internal
+        params:
+          changes:
+            - object: {type: cluster}
+              parameters:
+                - {key: debug, value: true}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: success
+      - name: add_service
+        display_name: Add service
+        script: service_manage
+        script_type: internal
+        params:
+          operation: add
+          services:
+            - name: service_b
+              config_changes:
+                - {key: port, value: 8080}
+              hc_changes:
+                - {component: component_c, hosts: [host_1]}
+        state_on_fail: service_add_failed
+        multi_state_on_fail_set: [service_add_failed]
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: success
+      - name: revert
+        display_name: revert
+        script: bundle_revert
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: true
+        status: success
+      - name: clean
+        display_name: clean
+        script: before_upgrade_clean
+        script_type: internal
+        params: {}
+        state_on_fail: ""
+        multi_state_on_fail_set: []
+        multi_state_on_fail_unset: []
+        allow_to_terminate: false
+        status: success
+
+  # task that has no `JobLog` rows: it gets the empty plan
+  task_without_jobs:
+    action: no_scripts_action
+    object_type: cluster
+    object_id: 1
+    status: success
+    jobs: []
+
+# Case: `JobLog` rows with `task = NULL`, they aren't converted: `spec_key` stays ""
+orphan_jobs:
+  orphan_job:
+    name: lost
+    display_name: Lost job
+    script: ./playbooks/lost.yaml
+    script_type: ansible
+    params: {ansible_tags: lost}
+    state_on_fail: ""
+    multi_state_on_fail_set: []
+    multi_state_on_fail_unset: []
+    allow_to_terminate: false
+    status: success
+
+# Case: `step_spec` of wizard operation steps, a list of 3.0.0 `JobSpec` dicts,
+# becomes the stored plan (`/<position>-<name>`, position in list order) whatever state the process is in.
+# `action` refers to a case of `actions`, `steps` are the process' `ProcessStep` rows by case name.
+processes:
+  unfinished_process:
+    action: wizard_action
+    state: created
+    steps:
+      # rendered operation step of a process that is still going: converted,
+      # same node and key rules as for actions (`finalize/cleanup` is keyed `/2-finalize_cleanup`),
+      # `hc_apply` included
+      operation_step_unfinished:
+        type: operation
+        name: install_step
+        display_name: Install
+        state: created
+        step_spec:
+          - name: install
+            display_name: Install services
+            script: ./playbooks/install.yaml
+            script_type: ansible
+            allow_to_terminate: true
+            state_on_fail: install_failed
+            multi_state_on_fail_set: [install_failed]
+            multi_state_on_fail_unset: []
+            params: {ansible_tags: install}
+          - name: apply_mapping
+            display_name: apply_mapping
+            script: hc_apply
+            script_type: internal
+            allow_to_terminate: true
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params:
+              rules:
+                - {service: service_a, component: component_a, action: add}
+          - name: finalize/cleanup
+            display_name: Finalize
+            script: ./scripts/finalize.py
+            script_type: python
+            allow_to_terminate: false
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: [installing]
+            params: {}
+
+      # rendered operation step of internal scripts only:
+      # non-empty params move as-is, empty ones become `null`, none is terminatable
+      operation_step_internal:
+        type: operation
+        name: switch_step
+        display_name: Switch
+        state: created
+        step_spec:
+          - name: switch
+            display_name: switch
+            script: bundle_switch
+            script_type: internal
+            allow_to_terminate: false
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params: {}
+          - name: set_debug
+            display_name: Set debug
+            script: config_apply
+            script_type: internal
+            allow_to_terminate: false
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params:
+              changes:
+                - object: {type: service, service_name: service_a}
+                  parameters:
+                    - {key: debug, value: true}
+          - name: add_service
+            display_name: Add service
+            script: service_manage
+            script_type: internal
+            allow_to_terminate: false
+            state_on_fail: service_add_failed
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params:
+              operation: add
+              services:
+                - name: service_b
+                  config_changes:
+                    - {key: port, value: 8080}
+                  hc_changes:
+                    - {component: component_c, hosts: [host_1]}
+          - name: revert
+            display_name: revert
+            script: bundle_revert
+            script_type: internal
+            allow_to_terminate: true
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params: {}
+          - name: clean
+            display_name: clean
+            script: before_upgrade_clean
+            script_type: internal
+            allow_to_terminate: false
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params: {}
+
+      # operation step that isn't rendered yet: `step_spec` stays NULL
+      operation_step_not_rendered:
+        type: operation
+        name: upgrade_step
+        display_name: Upgrade
+        state: created
+        step_spec: null
+
+      # mapping step: not an operation, `step_spec` is left as it is
+      mapping_step:
+        type: mapping
+        name: mapping_step
+        display_name: Mapping
+        state: created
+        step_spec:
+          - {operation: add, service: service_a, component: component_a}
+
+  completed_process:
+    action: wizard_action
+    state: completed
+    steps:
+      # operation step of a finished process: converted all the same
+      operation_step_completed:
+        type: operation
+        name: install_step
+        display_name: Install
+        state: completed
+        step_spec:
+          - name: install
+            display_name: install
+            script: ./playbooks/install.yaml
+            script_type: ansible
+            allow_to_terminate: false
+            state_on_fail: ""
+            multi_state_on_fail_set: []
+            multi_state_on_fail_unset: []
+            params: {}
+
+      # configuration step: not an operation, `step_spec` is left as it is
+      configuration_step:
+        type: configuration
+        name: configuration_step
+        display_name: Configuration
+        state: completed
+        step_spec:
+          - {config: {}}
+          - {values: {}, attributes: {}}

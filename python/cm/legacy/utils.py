@@ -15,8 +15,6 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 import os
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt
-
 if TYPE_CHECKING:
     from cm.models import ADCMEntity
 
@@ -45,6 +43,21 @@ def build_id_object_mapping(objects: Iterable[ObjectWithPk]) -> dict[int, Object
     return {object_.pk: object_ for object_ in objects}
 
 
+# Temporary, while musl and glibc ansible environments coexist, see NOTES.md "Ansible environments per bundle contract"
+VENVS_WITH_MUSL_BUILD = frozenset(("2.21",))
+
+
+def get_venv_dir_name(venv: str, contract_version: str) -> str:
+    if venv not in VENVS_WITH_MUSL_BUILD:
+        return venv
+
+    major, minor, *_ = (int(part) for part in contract_version.split("."))
+    if (major, minor) >= (2, 2):
+        return venv
+
+    return f"{venv}-musl"
+
+
 def get_env_with_venv_path(venv: str, existing_env: dict | None = None) -> dict:
     if existing_env is None:
         existing_env = os.environ.copy()
@@ -71,15 +84,6 @@ def deep_merge(origin: dict, renovator: Mapping) -> dict:
             origin[key] = value
 
     return origin
-
-
-def obj_to_dict(obj: Any, keys: Iterable) -> dict:
-    dictionary = {}
-    for key in keys:
-        if hasattr(obj, key):
-            dictionary[key] = getattr(obj, key)
-
-    return dictionary
 
 
 def dict_to_obj(dictionary: dict, obj: Any, keys: Iterable) -> Any:
@@ -150,22 +154,3 @@ def get_on_fail_states(config: dict) -> tuple[str, list[str], list[str]]:
         raise TypeError(f'Unsupported "{ON_FAIL}" type: "{type(on_fail)}"')
 
     return state_on_fail, multi_state_on_fail_set, multi_state_on_fail_unset
-
-
-# TO DO: move the function back in python/cm/tests/test_inventory/base.py after old rendering mechanism is out of use
-def decrypt_secrets(source: dict) -> dict:
-    result = {}
-    for key, value in source.items():
-        if not isinstance(value, dict):
-            if isinstance(value, list):
-                result[key] = [entry if not isinstance(entry, dict) else decrypt_secrets(entry) for entry in value]
-            else:
-                result[key] = value
-            continue
-
-        if "__ansible_vault" in value:
-            result[key] = ansible_decrypt(value["__ansible_vault"])
-        else:
-            result[key] = decrypt_secrets(value)
-
-    return result

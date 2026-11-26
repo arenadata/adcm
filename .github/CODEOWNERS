@@ -1,4 +1,21 @@
-* @arenadata/python
-/tests/functional/ @arenadata/python-web-qa
-/tests/ui_tests/ @arenadata/python-web-qa
-/tests/api/ @arenadata/python-web-qa
+/adcm-web/ @arenadata/adcm/ui
+/data/ @arenadata/adcm/backend
+/conf/ @arenadata/adcm/backend
+/go/ @arenadata/adcm/backend
+/os/ @arenadata/adcm/backend
+/python/ @arenadata/adcm/backend
+/spec/ @arenadata/adcm/backend
+.dockerignore @remizov-arena @arenadata/adcm/backend
+.gitignore @arenadata/adcm
+.gitlab-ci.yaml @remizov-arena @arenadata/adcm/backend
+.pre-commit-config.yaml @arenadata/adcm
+CODEOWNERS @remizov-arena @arenadata/adcm/backend
+COPYRIGHT @arenadata/adcm
+Dockerfile @remizov-arena @arenadata/adcm/backend
+LICENSE @arenadata/adcm
+license_checker.py @arenadata/adcm/backend
+Makefile @arenadata/adcm/backend
+uv.lock @arenadata/adcm/backend
+pyproject.toml @arenadata/adcm/backend
+README.md @arenadata/adcm
+CONTRIBUTING.md @remizov-arena @arenadata/adcm/backend

@@ -218,8 +218,8 @@ class TestClusterMetrics(ADCMDjangoAPISuite):
             },
         )
 
-    def test_cluster_metrics_retrieve_without_new_fact_fields(self):
-        # delete fields "ram_bytes", "disk_size"
+    def test_adcm_8476_cluster_metrics_retrieve_without_new_fact_fields(self):
+        # delete fields "ram_bytes", "disk_size", should return resources=None
         HostInfo.objects.filter(host=self.host_4).update(
             value={
                 "cpu_vcores": 2,
@@ -236,11 +236,7 @@ class TestClusterMetrics(ADCMDjangoAPISuite):
             response.json(),
             {
                 "id": self.cluster_2.id,
-                "resources": {
-                    "cpuVcores": 2,
-                    "ram": {"value": 0, "unit": "GiB"},
-                    "disk": {"value": 0, "unit": "GiB"},
-                },
+                "resources": None,
                 # no status data here, all missing statuses considered DOWN
                 "services": {"count": 0, "up": 0, "down": 0, "maintenanceMode": 0},
                 "hosts": {"count": 3, "up": 0, "down": 3, "maintenanceMode": 0},

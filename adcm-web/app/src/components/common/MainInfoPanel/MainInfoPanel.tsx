@@ -3,6 +3,7 @@ import type { HTMLReactParserOptions } from 'html-react-parser';
 import parse, { Element } from 'html-react-parser';
 import cn from 'classnames';
 import s from './MainInfoPanel.module.scss';
+import { sanitizeAllowedHtml } from '@utils/sanitizeUtils';
 
 interface MainInfoPanelProps {
   className?: string;
@@ -13,11 +14,13 @@ const parseOptions: HTMLReactParserOptions = {
   replace: (domNode) => {
     if (domNode instanceof Element && domNode.attribs) {
       if (domNode.name === 'a') {
-        domNode.attribs.class = [domNode.attribs.class, 'text-link'].join(' ');
+        const existingClass = domNode.attribs.class ?? '';
+        domNode.attribs.class = [existingClass, 'text-link'].filter(Boolean).join(' ');
       }
 
       if (domNode.name === 'ul') {
-        domNode.attribs.class = [domNode.attribs.class, 'marked-list'].join(' ');
+        const existingClass = domNode.attribs.class ?? '';
+        domNode.attribs.class = [existingClass, 'marked-list'].filter(Boolean).join(' ');
       }
     }
 
@@ -29,7 +32,9 @@ const MainInfoPanel = ({ mainInfo, className }: MainInfoPanelProps) => {
   const parsedMainInfo = useMemo(() => {
     if (!mainInfo) return null;
 
-    return parse(mainInfo, parseOptions);
+    const sanitizedMainInfo = sanitizeAllowedHtml(mainInfo);
+
+    return parse(sanitizedMainInfo, parseOptions);
   }, [mainInfo]);
 
   return <div className={cn(className, s.mainInfoPanel)}>{parsedMainInfo}</div>;

@@ -14,12 +14,11 @@ from collections.abc import Iterable
 
 from core.cluster import ClusterService
 from core.types import ADCMCoreType, CoreObjectDescriptor
-from infra.services import get_config_service
+import core
 
 from cm.converters import model_name_to_core_type
 from cm.legacy.api import DataForMultiBind, multi_bind
 from cm.legacy.services.job.context import get_imports_for_inventory, get_inventory_data
-from cm.legacy.utils import decrypt_secrets
 from cm.models import (
     Action,
     ADCMModel,
@@ -29,6 +28,8 @@ from cm.models import (
     Service,
 )
 from cm.tests.test_inventory.base import BaseInventoryTestCase
+from cm.tests.utils import decrypt_secrets
+from cm.transition.status import StatusScenarios
 
 
 class TestConfigAndImportsInInventory(BaseInventoryTestCase):
@@ -107,8 +108,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             cluster=self.cluster, entries=((self.host_1, self.component), (self.host_2, self.component))
         )
 
-    @staticmethod
-    def bind_objects(*entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
+    def bind_objects(self, *entries: tuple[Cluster | Service, Iterable[Cluster | Service]]) -> None:
+        status_scenarios = self.uc.container.get(StatusScenarios)
+        cluster_service = self.uc.container.get(ClusterService)
+
         for import_object, export_objects in entries:
             multibind_data: list[DataForMultiBind] = []
 
@@ -125,9 +128,21 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                 multibind_data.append({"import_id": int(proto_import.pk), "export_id": export_entry})
 
             if isinstance(import_object, Cluster):
-                multi_bind(cluster=import_object, service=None, bind_list=multibind_data)
+                multi_bind(
+                    cluster=import_object,
+                    service=None,
+                    bind_list=multibind_data,
+                    status_scenarios=status_scenarios,
+                    cluster_service=cluster_service,
+                )
             else:
-                multi_bind(cluster=import_object.cluster, service=import_object, bind_list=multibind_data)
+                multi_bind(
+                    cluster=import_object.cluster,
+                    service=import_object,
+                    bind_list=multibind_data,
+                    status_scenarios=status_scenarios,
+                    cluster_service=cluster_service,
+                )
 
     def change_config_partial(self, target: ADCMModel) -> None:
         self.uc.change_config(
@@ -173,6 +188,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                         target=target,
                         is_host_action=action.host_action,
                         cluster_service=self.uc.container.get(ClusterService),
+                        config_service=self.uc.container.get(core.config.ConfigService),
                     )
                 )
                 expected_inventory = self.render_json_template(
@@ -199,6 +215,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                         target=target,
                         is_host_action=action.host_action,
                         cluster_service=self.uc.container.get(ClusterService),
+                        config_service=self.uc.container.get(core.config.ConfigService),
                     )["all"]["vars"]
                 )
                 self.assertDictEqual(actual_vars, expected_vars)
@@ -238,6 +255,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                         target=target,
                         is_host_action=action.host_action,
                         cluster_service=self.uc.container.get(ClusterService),
+                        config_service=self.uc.container.get(core.config.ConfigService),
                     )["all"]["vars"]
                 )
                 self.assertDictEqual(actual_vars, expected_vars)
@@ -287,6 +305,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                         target=target,
                         is_host_action=action.host_action,
                         cluster_service=self.uc.container.get(ClusterService),
+                        config_service=self.uc.container.get(core.config.ConfigService),
                     )["all"]["vars"]
                 )
                 actual_vars["cluster"]["imports"]["for_export"] = sorted(
@@ -305,7 +324,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             "very_complex": {"activatable_group": None, "plain_group": {"listofstuff": ["204"]}},
         }
         result = decrypt_secrets(
-            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+            get_imports_for_inventory(
+                cluster_id=self.cluster_with_defaults.pk,
+                config_service=self.uc.container.get(core.config.ConfigService),
+            )
         )
         self.assertDictEqual(result, expected)
 
@@ -324,7 +346,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -335,7 +357,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         }
 
         result = decrypt_secrets(
-            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+            get_imports_for_inventory(
+                cluster_id=self.cluster_with_defaults.pk,
+                config_service=self.uc.container.get(core.config.ConfigService),
+            )
         )
         self.assertDictEqual(result, expected)
 
@@ -356,7 +381,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],
@@ -377,7 +402,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
             ],
         }
         result = decrypt_secrets(
-            get_imports_for_inventory(cluster_id=self.cluster_with_defaults.pk, config_service=get_config_service())
+            get_imports_for_inventory(
+                cluster_id=self.cluster_with_defaults.pk,
+                config_service=self.uc.container.get(core.config.ConfigService),
+            )
         )
 
         # sorted for test, in this case, the order is not important
@@ -415,7 +443,10 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
         target = CoreObjectDescriptor(id=self.service_with_defaults.id, type=ADCMCoreType.SERVICE)
         result = decrypt_secrets(
             get_inventory_data(
-                target=target, is_host_action=action.host_action, cluster_service=self.uc.container.get(ClusterService)
+                target=target,
+                is_host_action=action.host_action,
+                cluster_service=self.uc.container.get(ClusterService),
+                config_service=self.uc.container.get(core.config.ConfigService),
             )
         )["all"]
         expected_vars_imports = {
@@ -425,7 +456,7 @@ class TestConfigAndImportsInInventory(BaseInventoryTestCase):
                     "simple": "ingroup",
                     "secretmap": {"gk1": "gv1", "gk2": "gv2"},
                     "secretfile": (
-                        f"{self.directories.files}/" f"cluster.{self.export_cluster_1.id}.plain_group.secretfile"
+                        f"{self.directories.files}/cluster.{self.export_cluster_1.id}.plain_group.secretfile"
                     ),
                     "list_of_dicts": None,
                     "listofstuff": ["x", "y"],

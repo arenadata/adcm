@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { getActionHostGroups, cleanupActionHostGroups } from '@store/adcm/entityActionHostGroups/actionHostGroupsSlice';
 import { cleanupActions } from '@store/adcm/entityActionHostGroups/actionHostGroupsActionsSlice';
 import { cleanupList } from '@store/adcm/entityActionHostGroups/actionHostGroupsTableSlice';
-import { cleanupDynamicActions, loadDynamicActions } from '@store/adcm/entityDynamicActions/dynamicActionsSlice';
+import { cleanupDynamicActions } from '@store/adcm/entityDynamicActions/dynamicActionsSlice';
 import { cleanupDynamicActionsMapping } from '@store/adcm/entityDynamicActions/dynamicActionsMappingSlice';
 import { defaultDebounceDelay } from '@constants';
 import type { ActionHostGroupOwner, EntityArgs } from '@store/adcm/entityActionHostGroups/actionHostGroups.types';
@@ -14,16 +14,8 @@ export const useRequestActionHostGroups = <T extends ActionHostGroupOwner>(
 ) => {
   const dispatch = useDispatch();
 
-  const actionHostGroups = useStore(({ adcm }) => adcm.actionHostGroups.actionHostGroups);
   const filter = useStore(({ adcm }) => adcm.actionHostGroupsTable.filter);
   const paginationParams = useStore(({ adcm }) => adcm.actionHostGroupsTable.paginationParams);
-
-  useEffect(() => {
-    if (actionHostGroups.length) {
-      const actionHostGroupIds = actionHostGroups.map(({ id }) => id);
-      dispatch(loadDynamicActions({ entityType, entityArgs, actionHostGroupIds }));
-    }
-  }, [dispatch, entityType, entityArgs, actionHostGroups]);
 
   useEffect(() => {
     return () => {

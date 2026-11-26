@@ -13,6 +13,7 @@ import type { AdcmHostProvider } from '@models/adcm';
 import { opeHostProviderUpgradeDialog } from '@store/adcm/hostProviders/hostProviderUpgradesSlice';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
+import EntityVersionCell from '@commonComponents/EntityVersionCell/EntityVersionCell';
 
 const HostProviderTable = () => {
   const dispatch = useDispatch();
@@ -41,33 +42,40 @@ const HostProviderTable = () => {
       onSorting={handleSorting}
       variant="secondary"
     >
-      {hostProviders.map((hostProvider) => (
-        <TableRow key={hostProvider.id}>
-          <TableCell>
-            <Link to={`/hostproviders/${hostProvider.id}`} className="text-link">
-              {hostProvider.name}
-            </Link>
-          </TableCell>
-          <TableCell>{hostProvider.prototype.displayName}</TableCell>
-          <TableCell>{hostProvider.prototype.version}</TableCell>
-          <MultiStateCell entity={hostProvider} />
-          <TableCell>{orElseGet(hostProvider.description)}</TableCell>
-          <TableCell hasIconOnly>
-            <Concern concerns={hostProvider.concerns} />
-          </TableCell>
-          <TableCell hasIconOnly align="center">
-            <HostProvidersDynamicActionsIcon hostProvider={hostProvider} />
-            <IconButton
-              icon="g1-upgrade"
-              size={32}
-              disabled={!hostProvider.isUpgradable || isBlockingConcernPresent(hostProvider.concerns)}
-              onClick={() => handleUpgradeClick(hostProvider)}
-              title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
-            />
-            <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider)} title="Delete" />
-          </TableCell>
-        </TableRow>
-      ))}
+      {hostProviders.map((hostProvider) => {
+        const versionInfo = {
+          contractVersion: hostProvider.prototype.contractVersion,
+          version: hostProvider.prototype.version,
+        };
+
+        return (
+          <TableRow key={hostProvider.id}>
+            <TableCell>
+              <Link to={`/hostproviders/${hostProvider.id}`} className="text-link">
+                {hostProvider.name}
+              </Link>
+            </TableCell>
+            <TableCell>{hostProvider.prototype.displayName}</TableCell>
+            <EntityVersionCell versionInfo={versionInfo} />
+            <MultiStateCell entity={hostProvider} />
+            <TableCell>{orElseGet(hostProvider.description)}</TableCell>
+            <TableCell hasIconOnly>
+              <Concern concerns={hostProvider.concerns} />
+            </TableCell>
+            <TableCell hasIconOnly align="center">
+              <HostProvidersDynamicActionsIcon hostProvider={hostProvider} />
+              <IconButton
+                icon="g1-upgrade"
+                size={32}
+                disabled={!hostProvider.isUpgradable || isBlockingConcernPresent(hostProvider.concerns)}
+                onClick={() => handleUpgradeClick(hostProvider)}
+                title={hostProvider.isUpgradable ? 'Upgrade' : 'No upgrades'}
+              />
+              <IconButton icon="g1-delete" size={32} onClick={() => handleDeleteAction(hostProvider)} title="Delete" />
+            </TableCell>
+          </TableRow>
+        );
+      })}
     </Table>
   );
 };

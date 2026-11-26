@@ -13,170 +13,31 @@
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
-from core.action import JobSpec, ScriptType, Task, TaskMappingDelta
-from core.action.job import LaunchOptions, LogCreateDTO, TaskCreateDTO, TaskExtraInfo, TaskPayloadDTO
-from core.action.job.errors import TaskCreateError
+from core.action import TaskMappingDelta
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
 from core.legacy.cluster.types import ClusterTopology, HostComponentEntry
-from core.templates import Template
-from core.types import ActionID, ActionTargetDescriptor, BundleID, CoreObjectDescriptor, HostID
+from core.types import BundleID, HostID
 from django.conf import settings
-from infra.services import get_config_service, get_wizard_service
-from rest_framework.status import HTTP_409_CONFLICT
-import core
 
-from cm.converters import orm_object_to_action_target_type, orm_object_to_core_type
-from cm.errors import AdcmEx
-from cm.impl.job.repo import JobRepo
+from cm.errors import HTTP_409_CONFLICT, AdcmEx
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
-from cm.legacy.services.bundle_alt.render import ContextGatherer, Environment, TaskArgs, render_scripts
 from cm.legacy.services.concern.checks import check_mapping_restrictions
 from cm.legacy.services.job._utils import check_delta_is_allowed, construct_delta_for_task
-from cm.legacy.services.job.jinja_scripts import get_job_specs_from_template
 from cm.legacy.services.job.types import ActionHCRule
 from cm.legacy.services.mapping import check_no_host_in_mm
 from cm.models import (
     ADCM,
-    Action,
     ActionHostGroup,
     Cluster,
     Component,
     ConcernType,
     Host,
-    Process,
     Provider,
     Service,
 )
 
 ObjectWithAction: TypeAlias = ADCM | Cluster | Service | Component | Provider | Host
 ActionTarget: TypeAlias = ObjectWithAction | ActionHostGroup
-
-
-def prepare_task_for_action(
-    target: ActionTargetDescriptor | CoreObjectDescriptor,
-    orm_owner: ObjectWithAction,
-    orm_target: ActionTarget,
-    action: ActionID,
-    payload: TaskPayloadDTO,
-    delta: TaskMappingDelta | None = None,
-    feature_scripts_jinja: bool = False,
-) -> Task:
-    """
-    USED ONLY IN TESTS, WILL BE REMOVED
-    """
-    job_repo = JobRepo()
-    action_repo = job_repo
-    owner = CoreObjectDescriptor(id=orm_owner.pk, type=orm_object_to_core_type(orm_owner))
-    orm_action = Action.objects.select_related("prototype").get(id=action)
-
-    spec = None
-
-    if not spec:
-        if payload.conf:
-            raise AdcmEx(code="CONFIG_VALUE_ERROR", msg="Absent config in action prototype")
-
-    elif not payload.conf:
-        raise AdcmEx("TASK_ERROR", "action config is required")
-
-    action_info = action_repo.get_action(id=action)
-
-    create_dto = TaskCreateDTO(
-        owner=owner,
-        target=target.as_core_or_group_descriptor if not isinstance(target, CoreObjectDescriptor) else target,
-        action_id=action,
-        launch=LaunchOptions(is_verbose=payload.verbose, is_blocking=payload.is_blocking),
-        extra=TaskExtraInfo(
-            name=orm_action.name, display_name=orm_action.display_name, description=orm_action.description
-        ),
-    )
-
-    task_id = job_repo.create_task(payload=create_dto)
-    task = job_repo.get_task(task_id)
-
-    if payload.conf:
-        raise NotImplementedError("Running an action with a configuration is no longer supported by this function.")
-
-    if action_info.scripts_jinja:
-        job_specifications = tuple(
-            get_job_specs_from_template(task_id=task.id, delta=delta, feature_scripts_jinja=feature_scripts_jinja)
-        )
-        if any(
-            specs.script_type == ScriptType.INTERNAL and specs.script == "config_apply" for specs in job_specifications
-        ):
-            message = "Internal script 'config_apply' can't be used for jinja action"
-            raise AdcmEx(code="INTERNAL_SERVER_ERROR", msg=message)
-    elif action_info.scripts_template:
-        if not isinstance(orm_target, Cluster | Service | Component | Host | ActionHostGroup):
-            message = f"Can't render scripts for target of type {type(target)}"
-            raise TypeError(message)
-
-        if not isinstance(orm_owner, Cluster | Service | Component | Host):
-            message = f"Can't render scripts for owner of type {type(orm_owner)}"
-            raise TypeError(message)
-
-        job_specifications = _render_scripts_from_template(
-            template=action_info.scripts_template,
-            action=orm_action,
-            owner=orm_owner,
-            target=orm_target,
-            context_gatherer=ContextGatherer(config_service=get_config_service(), wizard_service=get_wizard_service()),
-        )
-    else:
-        job_specifications = tuple(action_repo.get_job_specs(id=action))
-
-    if not job_specifications:
-        message = f"Can't compose task for action #{action}, because no associated jobs found"
-        raise TaskCreateError(message)
-
-    job_repo.create_jobs(task_id=task.id, scripts=job_specifications)
-
-    logs = []
-    for job in job_repo.get_task_jobs(task_id=task.id):
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stdout", format="txt"))
-        logs.append(LogCreateDTO(job_id=job.id, name=job.type.value, type="stderr", format="txt"))
-
-    if logs:
-        job_repo.create_logs(logs)
-
-    return task
-
-
-def _render_scripts_from_template(
-    template: Template,
-    target: Cluster | Service | Component | Host | ActionHostGroup,
-    owner: Cluster | Service | Component,
-    action: Action,
-    context_gatherer: ContextGatherer,
-) -> tuple[JobSpec, ...]:
-    # todo this level is too deep for working with that stuff, it should be passed from outside
-    #      yet it's a problem to do this now,
-    #      request for process should be separated too
-    bundle_root = settings.BUNDLE_DIR / action.prototype.bundle.hash
-    process_id: core.action.wizard.ProcessID | None = (
-        Process.objects.filter(
-            action_id=action.pk,
-            target_id=target.pk,
-            target_type=orm_object_to_action_target_type(target).value,
-        )
-        .values_list("id", flat=True)
-        .order_by("-created_at")
-        .first()
-    )
-
-    environment = Environment(bundle_root=bundle_root)
-    task_args = TaskArgs(
-        target_object=target,
-        owner_object=owner,
-        action=action,
-        config={},
-        verbose=False,
-        delta=None,
-        wizard_process_id=process_id,
-    )
-    step_spec = render_scripts(
-        template=template, environment=environment, context_args=task_args, context_gatherer=context_gatherer
-    )
-    return tuple(step_spec)
 
 
 def check_no_blocking_concerns(lock_owner: ObjectWithAction, action_name: str) -> None:

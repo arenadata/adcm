@@ -1,19 +1,12 @@
-:global {
-  body.theme-dark {
-    --dialog-mapping-background: var(--color-xblack);
-  }
-}
-
 .configGroupMappingDialog {
-  background: var(--dialog-mapping-background);
+  background: var(--surfaces-sf-one);
   max-height: 100%;
   display: grid;
   // dialog title - min-content
   // dialog body - 1fr (100% - title)
   grid-template-rows: min-content 1fr;
 
-
   &__listTransfer {
-    height: 100%;
+    height: min(600px, calc(100vh - 250px));
   }
 }

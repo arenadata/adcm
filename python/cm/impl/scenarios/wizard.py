@@ -13,7 +13,7 @@
 from core.scenarios.wizard import FillWizardStepSpec
 
 from cm.errors import AdcmEx
-from cm.legacy.services.bundle_alt.render import ActionArgs, TaskArgs
+from cm.impl.bundle.context import ActionArgs, TaskArgs
 
 
 class FillWizardStepSpecLegacy(FillWizardStepSpec[ActionArgs, TaskArgs]):

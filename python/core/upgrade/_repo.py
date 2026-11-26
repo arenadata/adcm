@@ -17,5 +17,4 @@ from core.types import MainObjectDesc
 
 
 class UpgradeRepoI(Protocol):
-    def set_before_upgrade(self, targets: Iterable[MainObjectDesc], value: dict) -> None:
-        ...
+    def set_before_upgrade(self, targets: Iterable[MainObjectDesc], value: dict) -> None: ...

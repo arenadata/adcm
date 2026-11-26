@@ -14,34 +14,39 @@ from collections.abc import Iterable
 from typing import Literal, Protocol, TypeAlias, overload
 
 from core.config import spec
-from core.config._types import Configuration, ConfigurationExtraInfo, ConfigurationWithInfo, Defaults, EncryptFunc
+from core.config._types import (
+    Configuration,
+    ConfigurationExtraInfo,
+    ConfigurationWithInfo,
+    Defaults,
+    EncryptFunc,
+    RelatedConfigs,
+)
 from core.types import (
     ActionDescriptor,
+    ADCMCoreType,
     ADCMHostGroupType,
     ConfigID,
     CoreObjectDescriptor,
     Descriptor,
     HostGroupDescriptor,
+    ObjectID,
     PrototypeID,
 )
 
 # todo improve
 
 
-class RepoError(Exception):
-    ...
+class RepoError(Exception): ...
 
 
-class NoConfigError(RepoError):
-    ...
+class NoConfigError(RepoError): ...
 
 
-class ObjectWithoutConfigError(RepoError):
-    ...
+class ObjectWithoutConfigError(RepoError): ...
 
 
-class ObjectDiscoveryError(RepoError):
-    ...
+class ObjectDiscoveryError(RepoError): ...
 
 
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | Descriptor[Literal[ADCMHostGroupType.CONFIG]]
@@ -50,8 +55,7 @@ ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | Descript
 class ConfigRepoI(Protocol):
     # retrieve
 
-    def get_config(self, owner: ObjectOrGroup) -> ConfigurationWithInfo:
-        ...
+    def get_config(self, owner: ObjectOrGroup) -> ConfigurationWithInfo: ...
 
     @overload
     def get_spec(
@@ -60,8 +64,7 @@ class ConfigRepoI(Protocol):
         *,
         defaults: Literal[False],
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
-    ) -> spec.FullSpec:
-        ...
+    ) -> spec.FullSpec: ...
 
     @overload
     def get_spec(
@@ -70,8 +73,7 @@ class ConfigRepoI(Protocol):
         *,
         defaults: EncryptFunc,
         only_for: Iterable[type[spec.p.SimpleParameter] | type[spec.p.ParameterGroup]] | None = None,
-    ) -> tuple[spec.FullSpec, Defaults]:
-        ...
+    ) -> tuple[spec.FullSpec, Defaults]: ...
 
     def get_spec(
         self,
@@ -93,33 +95,35 @@ class ConfigRepoI(Protocol):
         """
         ...
 
-    def find_configs_by_ids(self, ids: Iterable[ConfigID]) -> dict[ConfigID, Configuration]:
-        ...
+    def find_configs_by_ids(self, ids: Iterable[ConfigID]) -> dict[ConfigID, Configuration]: ...
 
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[False], encrypt: None = None
-    ) -> dict[PrototypeID, spec.FullSpec]:
-        ...
+    ) -> dict[PrototypeID, spec.FullSpec]: ...
 
     @overload
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: Literal[True], encrypt: EncryptFunc
-    ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        ...
+    ) -> dict[PrototypeID, tuple[spec.FullSpec, Defaults]]: ...
 
     def find_specs_by_prototype_ids(
         self, ids: Iterable[PrototypeID], with_defaults: bool, encrypt: EncryptFunc | None = None
-    ) -> dict[PrototypeID, spec.FullSpec] | dict[PrototypeID, tuple[spec.FullSpec, Defaults]]:
-        ...
+    ) -> dict[PrototypeID, spec.FullSpec] | dict[PrototypeID, tuple[spec.FullSpec, Defaults]]: ...
 
     # todo: shouldn't be here, see service for more info
-    def find_host_group_configurations(self, owner: CoreObjectDescriptor) -> dict[HostGroupDescriptor, Configuration]:
-        ...
+    def find_host_group_configurations(
+        self, owner: CoreObjectDescriptor
+    ) -> dict[HostGroupDescriptor, Configuration]: ...
+
+    def retrieve_primary_configs(self, objects: dict[ADCMCoreType, set[ObjectID]]) -> list[RelatedConfigs]: ...
+
+    def retrieve_configs_with_revision(
+        self, objects: dict[ADCMCoreType, set[ObjectID]]
+    ) -> dict[CoreObjectDescriptor, ConfigID]: ...
 
     # change
 
     def set_new_config_for_object(
         self, config: Configuration, config_extra_info: ConfigurationExtraInfo, owner: ObjectOrGroup
-    ) -> ConfigID:
-        ...
+    ) -> ConfigID: ...

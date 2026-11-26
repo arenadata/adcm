@@ -14,6 +14,7 @@ from operator import itemgetter
 
 from cm.models import Action, Cluster, Component, Host, MaintenanceMode
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.types import HostID
 from rbac.scenarios import RBACScenarios
 from rest_framework.status import (
@@ -51,6 +52,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         return Host.objects.get(id=duplicate_id)
 
@@ -97,6 +99,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         duplicate_2_id = create_duplicate(
             host_id=self.host_1.id,
@@ -104,6 +107,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
 
         expected_duplicates = [
@@ -158,6 +162,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         create_duplicate(
             host_id=self.host_1.id,
@@ -165,6 +170,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         with self.subTest("New host"):
             response = (self.client.v2 / "hosts").post(data={"hostproviderId": self.provider.pk, "name": "awesome"})
@@ -186,6 +192,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
         duplicate_2_id = create_duplicate(
             host_id=self.host_1.id,
@@ -193,6 +200,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
 
         service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
@@ -327,6 +335,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
 
         with self.assertNumQueries(expected_queries_amount):
@@ -342,6 +351,7 @@ class TestDuplicateHost(ADCMDjangoAPISuite):
             config_service=self.container.get(core.config.ConfigService),
             rbac_scenarios=self.container.get(RBACScenarios),
             status_scenarios=self.container.get(StatusScenarios),
+            cluster_service=self.container.get(ClusterService),
         )
 
         with self.assertNumQueries(expected_queries_amount):

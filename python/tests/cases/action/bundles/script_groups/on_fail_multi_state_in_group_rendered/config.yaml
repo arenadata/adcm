@@ -1,0 +1,15 @@
+# rendered scripts are unknown until rendering, so the bundle loads and the action run is rejected
+- type: cluster
+  name: on_fail_rendered_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.21"
+
+  actions:
+    grouped_rendered:
+      masking:
+      scripts_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./scripts.j2

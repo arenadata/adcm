@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import type { RequestError } from '@api';
 import { AuthApi, AdcmProfileApi } from '@api';
 import { createAsyncThunk } from './redux';
@@ -70,6 +71,10 @@ const authSlice = createSlice({
     clearError(state) {
       state.hasError = false;
     },
+    setProfile(state, action: PayloadAction<AdcmProfileUser>) {
+      state.username = action.payload.username;
+      state.profile = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(login.pending, (state) => {
@@ -126,6 +131,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setProfile } = authSlice.actions;
 export { login, logout, checkSession };
 export default authSlice.reducer;

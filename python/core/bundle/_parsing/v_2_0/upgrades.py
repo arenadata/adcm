@@ -10,18 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
-from typing import Annotated
+from typing import Annotated, Generic, TypeAlias, TypeVar
 
-from pydantic import AfterValidator, BeforeValidator, Field, model_validator
+from pydantic import AfterValidator, Field, StrictBool, model_validator
 
 from core.bundle._parsing.shared.config import ConfigAsListDictOrNoneNoDuplicates
 from core.bundle._parsing.shared.model import BundleModel
-from core.bundle._parsing.shared.validation import (
-    field_not_set_mode_before,
-    min_and_max_present,
-    upgrade_scripts_are_valid,
-)
+from core.bundle._parsing.shared.validation import min_and_max_present
 from core.bundle._parsing.v_2_0.actions import (
     AnsibleScript,
     BeforeUpgradeCleanScript,
@@ -31,20 +26,18 @@ from core.bundle._parsing.v_2_0.actions import (
 )
 from core.bundle._parsing.v_2_0.schema import Masking, ScriptsTemplate, StatesSchema, VersionsSchema
 
+ScriptT = TypeVar("ScriptT")
+
 _SwitchCleanScripts = BundleSwitchInternalScript | BeforeUpgradeCleanScript
 UpgradeCommonInternalScript = Annotated[_SwitchCleanScripts, Field(discriminator="script")]
 UpgradeDynamicInternalScript = Annotated[_SwitchCleanScripts | ConfigApplyInternalScript, Field(discriminator="script")]
-# extra validator is added to not duplicate scripts structure, yet it's not allowed in upgrade
 UpgradeScript = Annotated[
     UpgradeCommonInternalScript | AnsibleScript,
     Field(discriminator="script_type"),
-    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
 ]
-DynamicUpgradeScriptList = Annotated[
-    list[Annotated[UpgradeDynamicInternalScript | AnsibleScript, Field(discriminator="script_type")]],
-    BeforeValidator(partial(field_not_set_mode_before, field_name="allow_to_terminate")),
-    AfterValidator(upgrade_scripts_are_valid),
-]
+DynamicUpgradeScript = Annotated[UpgradeDynamicInternalScript | AnsibleScript, Field(discriminator="script_type")]
+# amount of `bundle_switch` scripts is checked on the spec built out of them
+DynamicUpgradeScriptList: TypeAlias = list[ScriptT]
 
 
 class SimpleUpgrade(BundleModel):
@@ -62,6 +55,8 @@ class SimpleUpgrade(BundleModel):
 class _UpgradeWithActionBase(SimpleUpgrade):
     config: ConfigAsListDictOrNoneNoDuplicates
 
+    allow_to_terminate: Annotated[StrictBool | None, Field(default=None)]
+
     masking: Masking
     on_fail: Annotated[StateActionResultSchema | None, Field(default=None)]
     on_success: Annotated[StateActionResultSchema | None, Field(default=None)]
@@ -76,15 +71,14 @@ class _UpgradeWithActionBase(SimpleUpgrade):
         return self
 
 
-class UpgradeWithScripts(_UpgradeWithActionBase):
-    scripts: list[UpgradeScript]
+class UpgradeWithScripts(_UpgradeWithActionBase, Generic[ScriptT]):
+    scripts: list[ScriptT]
 
 
 class UpgradeWithScriptsTemplate(_UpgradeWithActionBase):
     scripts_template: ScriptsTemplate
 
 
-ProviderUpgrades = Annotated[list[UpgradeWithScripts | SimpleUpgrade] | None, Field(default=None)]
-ClusterUpgrades = Annotated[
-    list[UpgradeWithScriptsTemplate | UpgradeWithScripts | SimpleUpgrade] | None, Field(default=None)
-]
+# NB: there are no aliases for lists of upgrades on purpose:
+# pydantic model parametrized with its own type variable is the model itself,
+# so such alias wouldn't be generic. Targets declare them with type variables of their own.

@@ -19,7 +19,9 @@ from cm.legacy.services.concern import delete_issue
 from cm.legacy.services.job.run import update_related_configs
 from cm.models import ADCM, ADCMEntity, ConcernCause, ConfigHostGroup, ConfigLog, MainObject
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.config.constants import SYSTEM_CONFIG_CREATOR
+from core.locks import LockRepoI
 from core.scenarios.config import ConfigScenarios
 from core.types import ADCMHostGroupType, ConfigID, CoreObjectDescriptor, Descriptor, HostGroupDescriptor, JobID
 from django.db.transaction import atomic
@@ -30,15 +32,13 @@ T = TypeVar("T", contravariant=True)
 
 
 class InputConfigConverter(Protocol[T]):
-    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration:
-        ...
+    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration: ...
 
 
 class ChangesConverter(Protocol[T]):
     def __call__(
         self, configuration: T, specification: core.config.spec.FullSpec, /
-    ) -> list[core.config.ChangeRequest]:
-        ...
+    ) -> list[core.config.ChangeRequest]: ...
 
 
 HasChanged: TypeAlias = bool
@@ -50,6 +50,7 @@ class UpdateConfigurationOfObject:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(
         self,
@@ -85,7 +86,9 @@ class UpdateConfigurationOfObject:
             delete_issue(owner=owner_descriptor, cause=ConcernCause.CONFIG)
             # flag on ADCM can't be raised
             if not isinstance(owner, ADCM) and result.has_changed:
-                concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
+                concern_id, related_objects = raise_outdated_config_flag_if_required(
+                    object_=owner, cluster_service=self.cluster_service
+                )
             self.rbac_scenarios.apply_policy_for_new_config(
                 config_object=owner, config_log=_get_config_log(id_=main_config_log_id)
             )
@@ -104,6 +107,7 @@ class UpdateConfigurationOfHostGroup:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(
         self,
@@ -148,7 +152,9 @@ class UpdateConfigurationOfHostGroup:
             delete_issue(owner=owner_descriptor, cause=ConcernCause.CONFIG)
             # flag on ADCM can't be raised
             if not isinstance(owner, ADCM) and result.has_changed:
-                concern_id, related_objects = raise_outdated_config_flag_if_required(object_=owner)
+                concern_id, related_objects = raise_outdated_config_flag_if_required(
+                    object_=owner, cluster_service=self.cluster_service
+                )
             self.rbac_scenarios.apply_policy_for_new_config(config_object=owner, config_log=_get_config_log(config_id))
 
             # see why it's in here in main config save
@@ -173,6 +179,7 @@ class UpdateConfigurationFromJob:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    lock_repo: LockRepoI
 
     def do(
         self,
@@ -186,6 +193,7 @@ class UpdateConfigurationFromJob:
         owner_orm: ADCMEntity,
     ) -> tuple[list[core.config.ChangeRequest], HasChanged]:
         with atomic():
+            self.lock_repo.register_lock_on_object_waiting(target=owner, aspect="config")
             specification, defaults = self.config_service.retrieve_specification_with_defaults(owner=owner)
             changes = convert(changes_input, specification)
 

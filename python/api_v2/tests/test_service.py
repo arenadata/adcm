@@ -31,6 +31,8 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from cm.tests.mocks.task_runner import JobImitator
+from cm.tests.utils import gen_config
 from core.status import FullStatusMap
 from core.types import TaskID
 from django.contrib.contenttypes.models import ContentType
@@ -41,7 +43,11 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
 )
+from tests.dependencies import MockWithEnvProvider, make_overridden_container
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import expect_task_launched
+
+from api_v2.serializers import get_main_info
 
 
 class FakePopenResponse(NamedTuple):
@@ -222,7 +228,7 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Service "{service_1.display_name}" requires this service or its component',
+                "desc": f'Service "{service.display_name}" is required by: service "{service_1.display_name}"',
                 "level": "error",
             },
         )
@@ -244,8 +250,8 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Component "{component.prototype.name}" of service "{third_service.prototype.display_name} '
-                f"requires this service or its component",
+                "desc": f'Service "{service.display_name}" is required by: '
+                f'component "{component.prototype.name}" of service "{third_service.display_name}"',
                 "level": "error",
             },
         )
@@ -267,8 +273,8 @@ class TestServiceAPI(ADCMDjangoAPISuite):
             response.json(),
             {
                 "code": "SERVICE_CONFLICT",
-                "desc": f'Component "{component.prototype.name}" of service "{fourth_service.prototype.display_name} '
-                f"requires this service or its component",
+                "desc": f'Service "{service.display_name}" is required by: '
+                f'component "{component.prototype.name}" of service "{fourth_service.display_name}"',
                 "level": "error",
             },
         )
@@ -417,10 +423,10 @@ class TestServiceAPI(ADCMDjangoAPISuite):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         self.assert_task_status_is(task_id, "created")
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         self.assert_task_status_is(task_id, "success")
 
 
@@ -442,6 +448,33 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
             host=self.uc.add_host(provider=self.provider, fqdn="doesntmatter", cluster=self.cluster_1),
         )
 
+    def imitate_task_running(self, action: Action, object_: Cluster | Service) -> TaskLog:
+        response = self.client.v2[object_, "actions", action.pk, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        task_id = response.json()["id"]
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(object_.concerns.exists())
+
+        self.task_runner().schedule_task(task_id)
+
+        task = TaskLog.objects.get(id=task_id)
+
+        job = JobLog.objects.filter(task_id=task_id).first()
+        job.status = "running"
+        job.save(update_fields=["status"])
+
+        task.status = "running"
+        task.pid = 4
+        task.save(update_fields=["status", "pid"])
+
+        return task
+
+    def delete_service(self, _executor) -> None:
+        Service.objects.get(pk=self.service_to_delete.pk).delete()
+
     def test_delete_service_do_not_abort_cluster_actions_fail(self) -> None:
         self.imitate_task_running(action=self.cluster_regular_action, object_=self.cluster_1)
 
@@ -459,31 +492,49 @@ class TestServiceDeleteAction(ADCMDjangoAPISuite):
         self.assertTrue(self.service_to_delete.concerns.filter(type=ConcernType.LOCK).exists())
 
         with patch("subprocess.Popen", return_value=FakePopenResponse(3)), patch("os.kill", return_type=None):
-            response = self.client.v2[self.service_to_delete].delete()
+            with expect_task_launched() as launched:
+                response = self.client.v2[self.service_to_delete].delete()
 
             self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
             service_concerns_qs = self.service_to_delete.concerns.filter(type=ConcernType.LOCK)
+
+            # delete action's task is only created by deletion, its concern appears on scheduling
+            self.assertEqual(service_concerns_qs.count(), 1)
+
+            self.task_runner().schedule_task(launched.task_id())
+
             # one for old job, one for delete job
             self.assertEqual(service_concerns_qs.count(), 2)
             self.assertTrue(service_concerns_qs.filter(name="adcm_delete_service").exists())
 
-    def imitate_task_running(self, action: Action, object_: Cluster | Service) -> TaskLog:
-        response = self.client.v2[object_, "actions", action.pk, "run"].post()
+    def test_adcm_8434_get_services_during_service_deletion(self) -> None:
+        # add config to the service
+        config = gen_config()
+        Service.objects.filter(pk=self.service_to_delete.pk).update(config=config)
+
+        with expect_task_launched() as launched:
+            # create a task for delete
+            _ = self.client.v2[self.service_to_delete].delete()
+
+        task_id = launched.task_id()
+        job_spec_key = JobLog.objects.values_list("spec_key", flat=True).get(task_id=task_id)
+        container = make_overridden_container(
+            MockWithEnvProvider(change_jobs={job_spec_key: JobImitator(call=self.delete_service)})
+        )
+
+        def get_main_info_side_effect(*, obj: Service):
+            # use a closure to trigger the service deletion during the serialization of main_info
+            self.task_runner(container).launch_task(task_id=task_id)
+            return get_main_info(obj=obj)
+
+        with patch("api_v2.service.serializers.get_main_info", side_effect=get_main_info_side_effect):
+            response = self.client.v2[self.cluster_1, "services"].get()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-        task_id = self.task_runner.expect_task_launched().id
-        task = TaskLog.objects.get(id=task_id)
-
-        job = JobLog.objects.filter(task_id=task_id).first()
-        job.status = "running"
-        job.save(update_fields=["status"])
-
-        task.status = "running"
-        task.pid = 4
-        task.save(update_fields=["status", "pid"])
-
-        return task
+        self.assertFalse(Service.objects.filter(pk=self.service_to_delete.pk).exists())
+        self.assertEqual(self.cluster_1.services.count(), 0)
 
 
 class TestServiceMaintenanceMode(ADCMDjangoAPISuite):

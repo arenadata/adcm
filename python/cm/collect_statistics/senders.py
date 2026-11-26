@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import sleep, time
 
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError as RequestsConnectionError
 from rest_framework.status import HTTP_201_CREATED, HTTP_405_METHOD_NOT_ALLOWED
 import requests
 
@@ -74,7 +74,7 @@ class StatisticSender(Sender[Path]):
                     files={"file": f},
                     timeout=self.settings.request_timeout,
                 )
-            except ConnectionError:
+            except RequestsConnectionError:
                 return False
 
         return response.status_code == HTTP_201_CREATED
@@ -84,7 +84,7 @@ class StatisticSender(Sender[Path]):
 
         try:
             response = requests.head(url=self.settings.url, headers={}, timeout=self.settings.request_timeout)
-        except ConnectionError as e:
+        except RequestsConnectionError as e:
             raise SenderConnectionError(f"Check connection: can't connect to {self.settings.url}") from e
 
         if response.status_code != HTTP_405_METHOD_NOT_ALLOWED:

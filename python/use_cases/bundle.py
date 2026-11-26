@@ -18,7 +18,6 @@ from adcm_version import ComparisonResult, compare_adcm_versions
 from cm import models
 from cm.errors import AdcmEx
 from cm.legacy.services import adcm
-from cm.legacy.services import bundle_alt as bundle
 from core.errors import localize_error
 from core.files import directories
 from core.scenarios.adcm import InitializeADCM, UpgradeADCM
@@ -28,6 +27,8 @@ from django.db.transaction import atomic
 from rbac.scenarios import RBACScenarios
 import core
 import core.bundle
+
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
 
 logger = logging.getLogger("adcm")
 
@@ -39,20 +40,29 @@ class ParseBundleFromRequest:
     bundle_service: core.bundle.BundleService
     rbac_scenarios: RBACScenarios
 
-    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    @convert_bundle_errors_to_adcm_ex
     def do(self, archive: Path) -> BundleID:
-        adcm_configuration = adcm.get_adcm_configuration()
+        adcm_configuration = adcm.get_adcm_configuration()[0]
         verified_signature_only = adcm.get_verified_bundles_flag(adcm_configuration)
 
-        with bundle.load.cleanup(on_exit=[archive]):
-            unpacking_info = bundle.load.unpack_bundle(
-                archive=archive, bundles_dir=self.directories.bundles, files_dir=self.directories.files
+        with core.bundle.cleanup(on_exit=[archive]):
+            unpacking_info = core.bundle.unpack_bundle(
+                archive=archive,
+                bundles_dir=self.directories.bundles,
+                files_dir=self.directories.files,
+                repo=self.bundle_service.repo,
             )
-            with bundle.load.cleanup(on_fail=[unpacking_info.root]):
-                bundle.load.verify_signature(unpacking_info.signature, verified_signature_only)
+            with core.bundle.cleanup(on_fail=[unpacking_info.root]):
+                core.bundle.verify_signature(unpacking_info.signature, verified_signature_only)
 
                 with localize_error(f"Bundle from {archive.name}"):
                     root_entries = self.bundle_service.read_root_bundle_entries_from_fs(bundle_root=unpacking_info.root)
+                    # ADCM-8528: bundle existence must be checked before contract and min ADCM version checks.
+                    # Archive in downloads, bundle dir and hash are checked on unpacking;
+                    # name-version-edition is checked here, since it's only known from root entries.
+                    # Duplicates IntegrityError handling in `BundleRepo.save_definitions`, but relying on it
+                    # would mean validating contract and ADCM versions after saving definitions.
+                    self.bundle_service.check_bundle_not_uploaded(entries=root_entries)
                     parsing_meta, definitions = self.bundle_service.parse_to_definitions(
                         entries=root_entries, bundle_root=unpacking_info.root
                     )
@@ -79,7 +89,7 @@ class InitOrUpgradeADCM:
     initialize_adcm: InitializeADCM
     upgrade_adcm: UpgradeADCM
 
-    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    @convert_bundle_errors_to_adcm_ex
     def do(
         self,
         # required for test for a while, should be changed with DI thou
@@ -134,7 +144,7 @@ class InitOrUpgradeADCM:
 class AcceptLicense:
     bundle_service: core.bundle.BundleService
 
-    @bundle.errors.convert_bundle_errors_to_adcm_ex
+    @convert_bundle_errors_to_adcm_ex
     def do(self, prototype: models.Prototype) -> None:
         meta_info = core.bundle.d.PrototypeMetaInfo(
             contract_version=prototype.bundle.contract_version,

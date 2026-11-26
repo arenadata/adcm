@@ -20,8 +20,7 @@ from pydantic_core import ErrorDetails
 from core.errors import OperationError
 
 
-class BundleOperationError(OperationError):
-    ...
+class BundleOperationError(OperationError): ...
 
 
 class BundleProcessingError(OperationError):
@@ -30,22 +29,22 @@ class BundleProcessingError(OperationError):
     """
 
 
-class BundleParsingError(BundleOperationError):
-    ...
+class BundleParsingError(BundleOperationError): ...
 
 
-class UnsupportedBundleError(BundleOperationError):
-    ...
+class UnsupportedBundleError(BundleOperationError): ...
 
 
-class LicenseError(BundleOperationError):
-    ...
+class LicenseError(BundleOperationError): ...
 
 
 class BundleValidationError(BundleOperationError):
     """
     Use for errors in objects relations and overall "sanity" of bundle definitions
     """
+
+
+class BundleSignatureVerificationError(BundleOperationError): ...
 
 
 def convert_validation_to_bundle_error(func):

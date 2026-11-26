@@ -64,8 +64,7 @@ MappingDict: TypeAlias = dict[Literal["host_id", "component_id", "service_id"], 
 T = TypeVar("T")
 
 
-class ADCMCoreError(Exception):
-    ...
+class ADCMCoreError(Exception): ...
 
 
 class ADCMMessageError(ADCMCoreError):
@@ -142,8 +141,7 @@ class Descriptor(Generic[T]):
 
 
 @dataclass(slots=True, frozen=True)
-class GeneralEntityDescriptor(Descriptor[str]):
-    ...
+class GeneralEntityDescriptor(Descriptor[str]): ...
 
 
 @dataclass(slots=True, frozen=True)
@@ -185,6 +183,19 @@ MainObjectDesc: TypeAlias = ClusterObjectDesc | ProviderObjectDesc
 ObjectOrGroup: TypeAlias = CoreObjectDescriptor | HostGroupDescriptor | ConfigHostGroupDesc
 TaskDescriptor: TypeAlias = Descriptor[Literal["task"]]
 ActionDescriptor: TypeAlias = Descriptor[Literal["action"]]
+
+
+@dataclass(slots=True)
+class Names:
+    internal: str
+    # This default and corresponding post-init is mostly for internal/tests convenience,
+    # real propagation should be held before instantiating this instance,
+    # yet some code may rely on this.
+    display: str = ""
+
+    def __post_init__(self):
+        if not self.display:
+            self.display = self.internal
 
 
 @dataclass(slots=True, frozen=True)

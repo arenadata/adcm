@@ -1,7 +1,6 @@
 .actionHostGroupDialogForm {
   display: grid;
-  height: 100%;
-  grid-template-rows: min-content 1fr;
+  grid-template-rows: min-content min-content;
 
   &__column {
     display: grid;
@@ -9,10 +8,12 @@
     gap: 0 20px;
     margin-bottom: 24px;
   }
+
+  &__listTransfer {
+    height: min(560px, calc(100vh - 350px));
+  }
 }
 
 .actionHostGroupDialog {
-  display: grid;
-  grid-template-rows: min-content min-content 1fr;
-  max-height: 100%;
+  background: var(--surfaces-sf-one);
 }

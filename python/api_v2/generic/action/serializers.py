@@ -30,7 +30,7 @@ class ActionListSerializer(ModelSerializer):
 
     class Meta:
         model = Action
-        fields = ["id", "name", "display_name", "start_impossible_reason"]
+        fields = ["id", "name", "display_name", "description", "start_impossible_reason"]
 
     def get_start_impossible_reason(self, instance: Action) -> str | None:
         return self.context["start_impossible_reasons"][instance.pk]
@@ -61,6 +61,7 @@ class ActionRetrieveSerializer(ActionListSerializer):
             "id",
             "name",
             "display_name",
+            "description",
             "start_impossible_reason",
             "is_allow_to_terminate",
             "host_component_map_rules",

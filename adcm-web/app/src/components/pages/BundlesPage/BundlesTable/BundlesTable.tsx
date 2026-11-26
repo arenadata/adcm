@@ -3,7 +3,6 @@ import type React from 'react';
 import { useCallback } from 'react';
 import { useDispatch, useStore, useSelectedItems } from '@hooks';
 import { columns } from './BundlesTable.constants';
-import BundleVersionCell from './BundleVersionCell/BundleVersionCell';
 import { Checkbox, IconButton, Table, TableCell, TableRow } from '@uikit';
 import { orElseGet } from '@utils/checkUtils';
 import { AdcmContractVersionStatus, type AdcmBundle } from '@models/adcm';
@@ -17,6 +16,7 @@ import { setSortParams } from '@store/adcm/bundles/bundlesTableSlice';
 import { Link } from 'react-router-dom';
 import cn from 'classnames';
 import { isShowSpinner } from '@uikit/Table/Table.utils';
+import EntityVersionCell from '@commonComponents/EntityVersionCell/EntityVersionCell';
 
 const getBundleUniqKey = ({ id }: AdcmBundle) => id;
 
@@ -63,6 +63,8 @@ const BundlesTable: React.FC = () => {
       toggleSelectedAll={toggleSelectedAllItems}
     >
       {bundles.map((bundle) => {
+        const versionInfo = { contractVersion: bundle.contractVersion, version: bundle.version };
+
         return (
           <TableRow
             key={bundle.id}
@@ -75,7 +77,7 @@ const BundlesTable: React.FC = () => {
             <TableCell>
               <Link to={`/bundles/${bundle.id}`}>{bundle.displayName || bundle.name}</Link>
             </TableCell>
-            <BundleVersionCell bundle={bundle} />
+            <EntityVersionCell versionInfo={versionInfo} />
             <TableCell>{orElseGet(bundle.edition)}</TableCell>
             <DateTimeCell value={bundle.uploadTime} />
             <TableCell>{bundle.mainPrototype.license.status}</TableCell>

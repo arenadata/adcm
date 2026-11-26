@@ -47,7 +47,9 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         self.assertIsNone(result.error)
         self.assertTrue(
-            LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name, body=content).exists()
+            LogStorage.objects.filter(
+                job_id=job.runtime.id, type="custom", format=format_, name=name, body=content
+            ).exists()
         )
         permissions_mock.assert_called_once()
 
@@ -68,7 +70,7 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
         result = executor.execute()
 
         self.assertIsNone(result.error)
-        log = LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name).get()
+        log = LogStorage.objects.filter(job_id=job.runtime.id, type="custom", format=format_, name=name).get()
         self.assertEqual(log.body, path)
 
     def test_path_and_content_error(self) -> None:
@@ -134,6 +136,8 @@ class TestEffectsOfADCMAnsiblePlugins(ADCMPluginExecutorSuite):
 
         self.assertIsNotNone(result.error)
         self.assertFalse(
-            LogStorage.objects.filter(job_id=job.id, type="custom", format=format_, name=name, body=content).exists()
+            LogStorage.objects.filter(
+                job_id=job.runtime.id, type="custom", format=format_, name=name, body=content
+            ).exists()
         )
         permissions_mock.assert_not_called()

@@ -38,8 +38,7 @@ from integrations.celery.pg.transport import discard_engines_inherited_from_fork
 logger = logging.getLogger("worker.celery")
 
 
-class StatusServiceUrlResolutionError(WorkerShutdown):
-    ...
+class StatusServiceUrlResolutionError(WorkerShutdown): ...
 
 
 class JobFailedFlowErrFilter(logging.Filter):

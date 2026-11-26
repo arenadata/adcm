@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster import ClusterService
 from core.types import ADCMCoreType, ConcernID, CoreObjectDescriptor
 
 from cm.legacy.services.concern import create_issue
@@ -19,7 +20,7 @@ from cm.models import Cluster, ConcernCause
 
 
 def create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
-    cluster: Cluster,
+    cluster: Cluster, cluster_service: ClusterService
 ) -> tuple[ConcernID | None, ConcernRelatedObjects]:
     cluster_cod = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
     concern = cluster.get_own_issue(cause=ConcernCause.HOSTCOMPONENT)
@@ -30,4 +31,6 @@ def create_and_distribute_hostcomponent_concern_on_add_host_to_cluster(
         else:
             return None, {}
 
-    return concern.pk, distribute_concern_on_related_objects(owner=cluster_cod, concern_id=concern.pk)
+    return concern.pk, distribute_concern_on_related_objects(
+        owner=cluster_cod, concern_id=concern.pk, cluster_service=cluster_service
+    )

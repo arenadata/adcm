@@ -7,24 +7,25 @@ import type { AlertOptions } from './Alert.types';
 import s from './Alert.module.scss';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import parse, { Element } from 'html-react-parser';
-import { escapeNonHtmlTags } from './ErrorAlert.utils';
+import { sanitizeErrorAlertHtml } from './ErrorAlert.utils';
 
 const ErrorAlert: React.FC<ErrorNotification & AlertOptions> = ({ model: { message }, onClose }) => {
   const parsedMessage = useMemo(() => {
     if (!message) return null;
 
-    const escapedMessage = escapeNonHtmlTags(message);
+    const sanitizedMessage = sanitizeErrorAlertHtml(message);
 
     const parseOptions: HTMLReactParserOptions = {
       replace: (domNode) => {
         if (domNode instanceof Element && domNode.attribs && domNode.name === 'a') {
-          domNode.attribs.class = [domNode.attribs.class, 'text-link'].join(' ');
+          const existingClass = domNode.attribs.class ?? '';
+          domNode.attribs.class = [existingClass, 'text-link'].filter(Boolean).join(' ');
         }
         return domNode;
       },
     };
 
-    return parse(escapedMessage, parseOptions);
+    return parse(sanitizedMessage, parseOptions);
   }, [message]);
 
   return (

@@ -25,6 +25,6 @@ export const columns: TableColumn[] = [
     label: 'Operations',
     name: 'operations',
     headerAlign: 'center',
-    width: '100px',
+    width: '120px',
   },
 ];

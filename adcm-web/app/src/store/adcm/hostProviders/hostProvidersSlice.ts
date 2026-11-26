@@ -1,13 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { AdcmHostProvider } from '@models/adcm/hostProvider';
 import { createAsyncThunk } from '@store/redux';
-import { AdcmHostProvidersApi } from '@api';
+import { AdcmHostProvidersApi, AdcmPrototypesApi } from '@api';
 import { executeWithMinDelay } from '@utils/requestUtils';
 import { updateIfExists } from '@utils/objectUtils';
 import { upsertConcern } from '@utils/concernStoreUtils';
 import { defaultSpinnerDelay } from '@constants';
 import { wsActions } from '@store/middlewares/wsMiddleware.constants';
 import { LoadState } from '@models/loadState';
+import { attachContractVersionsToEntities, getUniqueEntityPrototypeIds } from '@utils/contractVersionUtils';
+import type { AdcmPrototype } from '@models/adcm';
 
 interface AdcmHostProvidersState {
   hostProviders: AdcmHostProvider[];
@@ -24,7 +26,21 @@ const loadHostProviders = createAsyncThunk('adcm/hostProviders/loadHostProviders
 
   try {
     const batch = await AdcmHostProvidersApi.getHostProviders(filter, sortParams, paginationParams);
-    return batch;
+    const prototypeIds = getUniqueEntityPrototypeIds(batch.results);
+    let prototypes: AdcmPrototype[] = [];
+    if (prototypeIds.length) {
+      try {
+        const response = await AdcmPrototypesApi.getPrototypes({ ids: prototypeIds }, undefined, {
+          pageNumber: 0,
+          perPage: prototypeIds.length,
+        });
+        prototypes = response.results;
+      } catch {
+        prototypes = [];
+      }
+    }
+    const results = attachContractVersionsToEntities(batch.results, prototypes) as AdcmHostProvider[];
+    return { ...batch, results };
   } catch (error) {
     return thunkAPI.rejectWithValue(error);
   }

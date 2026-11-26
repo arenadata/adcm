@@ -12,17 +12,14 @@
 
 from collections import deque
 from collections.abc import Iterable
-from functools import partial
 
+from core.cluster import HostsAmount, is_constraint_restriction_satisfied
 from core.legacy.bundle.types import (
     ComponentRestrictionOwner,
-    Constraint,
-    HostsAmount,
     MappingRestrictions,
     MappingRestrictionType,
     MappingRestrictionViolation,
     ServiceRestrictionOwner,
-    SupportedConstraintFormat,
 )
 from core.legacy.cluster.types import NamedMapping
 from core.types import ComponentNameKey, HostID
@@ -124,14 +121,6 @@ def find_cluster_mapping_issues(
     return tuple(unsatisfied_restrictions)
 
 
-def is_constraint_restriction_satisfied(
-    constraint: Constraint, hosts_with_component: HostsAmount, hosts_in_cluster: HostsAmount
-) -> bool:
-    return all(
-        constraint_is_satisfied(hosts_with_component, hosts_in_cluster) for constraint_is_satisfied in constraint.checks
-    )
-
-
 def find_first_unmapped_component(
     required_components: Iterable[ComponentNameKey], named_mapping: NamedMapping
 ) -> ComponentNameKey | None:
@@ -151,59 +140,3 @@ def is_bound_to_restriction_satisfied(
 
     bound_component_hosts = named_mapping.get(bound_component.service, {}).get(bound_component.component, set())
     return bound_component_hosts == component_hosts
-
-
-# Constraint Preparation
-
-
-def check_equal_or_less(mapped_hosts: HostsAmount, _: HostsAmount, argument: int):
-    return mapped_hosts <= argument
-
-
-def check_equal_or_greater(mapped_hosts: HostsAmount, _: HostsAmount, argument: int):
-    return mapped_hosts >= argument
-
-
-def check_exact(mapped_hosts: HostsAmount, _: HostsAmount, argument: int):
-    return mapped_hosts == argument
-
-
-def check_is_odd(mapped_hosts: HostsAmount, _: HostsAmount):
-    return mapped_hosts % 2 == 1
-
-
-def check_is_zero_or_odd(mapped_hosts: HostsAmount, hosts_in_cluster: HostsAmount):
-    if mapped_hosts == 0:
-        return True
-
-    return check_is_odd(mapped_hosts, hosts_in_cluster)
-
-
-def check_on_all(mapped_hosts: HostsAmount, hosts_in_cluster: HostsAmount):
-    return mapped_hosts > 0 and mapped_hosts == hosts_in_cluster
-
-
-def parse_constraint(constraint: SupportedConstraintFormat) -> Constraint:
-    match constraint:
-        case [0, "+"]:
-            # no checks actually required, it's the "default"
-            checks = ()
-        case ["+"]:
-            checks = (check_on_all,)
-        case ["odd"]:
-            checks = (check_is_odd,)
-        case [int(exact)]:
-            checks = (partial(check_exact, argument=exact),)
-        case [0, "odd"]:
-            checks = (check_is_zero_or_odd,)
-        case [int(min_), "odd"]:
-            checks = (partial(check_equal_or_greater, argument=min_), check_is_odd)
-        case [int(min_), "+"]:
-            checks = (partial(check_equal_or_greater, argument=min_),)
-        case [int(min_), int(max_)]:
-            checks = (partial(check_equal_or_greater, argument=min_), partial(check_equal_or_less, argument=max_))
-        case _:
-            # keep this function safe, even though it may lead to "strange" results
-            checks = ()
-
-    return Constraint(internal=constraint, checks=checks)

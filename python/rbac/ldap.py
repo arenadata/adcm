@@ -16,9 +16,9 @@ import os
 import re
 
 from cm.errors import raise_adcm_ex
-from cm.legacy.adcm_config.ansible import ansible_decrypt
 from cm.logger import logger
 from cm.models import ADCM, ConfigLog
+from cm.transition.ansible import ansible_decrypt
 from django.contrib.auth.models import Group as DjangoGroup
 from django.db.transaction import atomic
 from django_auth_ldap.backend import LDAPBackend, _LDAPUser
@@ -74,9 +74,7 @@ def configure_tls(
 
 
 def is_tls(ldap_uri: str) -> bool:
-    if "ldaps://" in ldap_uri.lower():
-        return True
-    return False
+    return "ldaps://" in ldap_uri.lower()
 
 
 def get_ldap_config() -> dict | None:

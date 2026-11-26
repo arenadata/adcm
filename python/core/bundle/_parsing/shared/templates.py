@@ -83,7 +83,7 @@ def engine_type_discriminator(value):
         return None
 
 
-_discriminator_err_msg = f'Expected {" | ".join(cls.__name__ for cls in _TemplateBaseModel.__subclasses__())} template'
+_discriminator_err_msg = f"Expected {' | '.join(cls.__name__ for cls in _TemplateBaseModel.__subclasses__())} template"
 _TemplateDiscriminator = Discriminator(
     engine_type_discriminator, custom_error_type="invalid_template", custom_error_message=_discriminator_err_msg
 )

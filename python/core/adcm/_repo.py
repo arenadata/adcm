@@ -16,5 +16,4 @@ from core.scenarios.adcm import ADCMUUID
 
 
 class ADCMRepoI(Protocol):
-    def get_uuid(self) -> ADCMUUID | None:
-        ...
+    def get_uuid(self) -> ADCMUUID | None: ...

@@ -166,7 +166,7 @@ def spec_to_jsonschema(
 
 
 def _hierarchy_level_to_jsonschema(
-    level: SpecHierarchyLevel, previous_levels: tuple[str, ...], context: _Context
+    level: SpecHierarchyLevel, previous_levels: tuple[ParameterLevelName, ...], context: _Context
 ) -> Generator[tuple[ParameterLevelName, OptionalNode], None, None]:
     for parameter_level_name in level.fields:
         levels = (*previous_levels, parameter_level_name)

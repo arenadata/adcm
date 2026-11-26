@@ -1,0 +1,6 @@
+---
+- name: allow_to_terminate test playbook
+  hosts: all
+  connection: local
+  gather_facts: false
+  tasks: []

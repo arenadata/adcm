@@ -189,7 +189,7 @@ def responses(
     if isinstance(errors, int):
         errors = (errors,)
 
-    error_response = {code: ErrorSerializer for code in errors}
+    error_response = dict.fromkeys(errors, ErrorSerializer)
     if auth_required:
         error_response |= {HTTP_401_UNAUTHORIZED: ErrorSerializer}
 

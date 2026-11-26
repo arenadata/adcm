@@ -13,13 +13,26 @@
 from collections.abc import Collection
 from typing import Protocol, TypeAlias
 
-from core.types import ADCMCoreType, ClusterDesc, ConcernID, HostDesc, ObjectID
+from core.concern.types import ConcernCause, ConcernDraft, ConcernInfo, ConcernRelatedObjects, ConcernType
+from core.types import ADCMCoreType, ClusterDesc, ConcernID, CoreObjectDescriptor, HostDesc, ObjectID, TaskID
 
 # concerns of an owner grouped by objects those concerns are shown on
 ConcernDistribution: TypeAlias = dict[ADCMCoreType, dict[ObjectID, set[ConcernID]]]
 
 
 class ConcernRepoI(Protocol):
+    def create(self, draft: ConcernDraft) -> ConcernID: ...
+
+    def link(self, *, concern_id: ConcernID, targets: ConcernRelatedObjects) -> None:
+        """
+        Link an existing concern to `targets`.
+
+        NOTE: computing which objects a concern should be distributed to (cluster/provider
+        hierarchy, MM, etc.) is not part of this method and is not yet reworked to be
+        core-safe — callers must supply `targets` themselves for now.
+        """
+        ...
+
     def update_object_name_in_concerns(
         self, object_: ClusterDesc | HostDesc, previous_name: str, new_name: str
     ) -> tuple[ConcernID, ...]:
@@ -35,4 +48,22 @@ class ConcernRepoI(Protocol):
         """
         Find objects given concerns are currently distributed on.
         """
+        ...
+
+    def get_concerns_info(self, concern_ids: Collection[ConcernID]) -> tuple[ConcernInfo, ...]: ...
+
+    def find_concern_id(
+        self, *, owner: CoreObjectDescriptor, name: str, concern_type: ConcernType, cause: ConcernCause | None
+    ) -> ConcernID | None:
+        """
+        Find a concern ID by its owner, name, type, and cause.
+        """
+        ...
+
+    def update_job_concern_name(self, concern_id: ConcernID, name: str) -> None:
+        """Update the job name"""
+        ...
+
+    def get_lock_concern_id_from_task(self, task_id: TaskID) -> ConcernID | None:
+        """Return the concern id stored on a task."""
         ...

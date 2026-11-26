@@ -47,5 +47,6 @@ export const useRequestHostProviderPage = () => {
 
   return {
     accessCheckStatus,
+    hostProvider,
   };
 };

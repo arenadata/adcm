@@ -10,6 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from core.cluster._constraint import (
+    Constraint,
+    HostsAmount,
+    SupportedConstraintFormat,
+    is_constraint_restriction_satisfied,
+    is_mapping_required,
+    parse_constraint,
+)
 from core.cluster._repo import ClusterRepoI
 from core.cluster._service import ClusterService
 from core.cluster._types import (
@@ -21,6 +29,12 @@ from core.cluster._types import (
 )
 
 __all__ = [
+    "Constraint",
+    "HostsAmount",
+    "SupportedConstraintFormat",
+    "is_constraint_restriction_satisfied",
+    "is_mapping_required",
+    "parse_constraint",
     "ClusterRepoI",
     "ClusterService",
     "ClusterTopology",

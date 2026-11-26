@@ -11,9 +11,16 @@
 # limitations under the License.
 
 from collections.abc import Iterable
+from itertools import product
 from pathlib import Path
+from unittest.mock import patch
 
 from cm.converters import orm_object_to_core_type
+from cm.legacy.services.concern import create_issue
+from cm.legacy.services.concern.distribution import (
+    detect_concern_distribution,
+    distribute_concern_on_related_objects,
+)
 from cm.legacy.services.concern.flags import BuiltInFlag, lower_flag
 from cm.legacy.services.concern.messages import ConcernMessage
 from cm.models import (
@@ -33,6 +40,13 @@ from cm.models import (
     Service,
     TaskLog,
 )
+from core.cluster import ClusterService
+from core.concern.repo import ConcernRepoI
+from core.concern.types import ConcernType as CoreConcernType
+from core.scenarios.concern import ConcernDistributionScenarios, ConcernScenarios
+from core.spec.keys import is_part_of_group, to_full_key
+from core.spec.types import FullSpecKey
+from core.tools import convert_keys_to_camel_case
 from core.types import ADCMCoreType, CoreObjectDescriptor
 from core.types import MaintenanceModeState as MM  # noqa: N814
 from django.contrib.contenttypes.models import ContentType
@@ -45,6 +59,35 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
+
+PARALLEL_CONCERN_ACTION_CASES = (
+    param(
+        "concern_parallel_first_plan",
+        "Concern parallel first plan",
+        [
+            "Concern parallel first plan",
+            "Concern parallel first plan",
+            "Concern parallel first plan",
+            "After parallel",
+        ],
+        True,
+        id="parallel",
+    ),
+    param(
+        "concern_mixed_plan",
+        "Before parallel",
+        [
+            "Before parallel",
+            "Concern mixed plan",
+            "Concern mixed plan",
+            "Concern mixed plan",
+            "After parallel",
+        ],
+        False,
+        id="mixed",
+    ),
+)
 
 
 class TestConcernsResponse(ADCMDjangoAPISuite):
@@ -80,6 +123,66 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
 
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
+
+    def check_concern_serialization_identity(self, concern: dict) -> None:
+        """
+        Additional check to ensure that the data from the custom camel case converter matches
+        the Django serializer output.
+        """
+
+        repo = self.container.get(ConcernRepoI)
+        concern_info = repo.get_concerns_info(concern_ids={concern["id"]})[0]
+        converted_concern = convert_keys_to_camel_case(
+            value={
+                "id": concern_info.id,
+                "type": concern_info.type.value,
+                "reason": concern_info.reason,
+                "is_blocking": concern_info.blocking,
+                "cause": concern_info.cause.value if concern_info.cause else None,
+                "owner": {
+                    "id": concern_info.owner.id,
+                    "type": concern_info.owner.type.value,
+                },
+            }
+        )
+
+        self.assertDictEqual(concern, converted_concern)
+
+    def run_action_and_get_task_concern(self, action: Action, blocking: bool) -> tuple[TaskLog, ConcernItem]:
+        response = self.client.v2[self.cluster_1, "actions", action, "run"].post(data={"shouldBlockObject": blocking})
+        self.assertEqual(response.status_code, HTTP_200_OK, response.json())
+
+        task = TaskLog.objects.get(id=response.json()["id"])
+        self.task_runner().schedule_task(task.pk)
+        concern = self.cluster_1.concerns.get(cause=ConcernCause.JOB)
+
+        return task, concern
+
+    def run_task_and_collect_concern_reasons(
+        self, task: TaskLog, concern: ConcernItem
+    ) -> list[tuple[FullSpecKey, dict]]:
+        """
+        Run the task and capture its concern reason after each job starts
+        """
+
+        snapshots = []
+        update_concern = self.container.get(ConcernScenarios).update_job_concern
+
+        def update_concern_and_capture_reason(_scenarios, *, task, job, execution_plan) -> None:
+            """
+            Update the concern for a started job and capture its reason
+            """
+
+            update_concern(task=task, job=job, execution_plan=execution_plan)
+            concern.refresh_from_db()
+            snapshots.append((job.runtime.spec_key, concern.reason))
+
+        with patch.object(
+            ConcernScenarios, "update_job_concern", autospec=True, side_effect=update_concern_and_capture_reason
+        ):
+            self.task_runner().launch_task(task.pk)
+
+        return snapshots
 
     def test_required_service_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_service_bundle, name="required_service_cluster")
@@ -125,6 +228,8 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         concern, *_ = data["concerns"]
         self.assertEqual(concern["type"], "issue")
         self.assertDictEqual(concern["reason"], expected_concern_reason)
+
+        self.check_concern_serialization_identity(concern=concern)
 
     def test_required_import_concern(self):
         cluster = self.uc.add_cluster(bundle=self.required_import_bundle, name="required_import_cluster")
@@ -205,6 +310,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
 
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
+
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
             concern.delete()
@@ -251,6 +362,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         def run_action(_object, object_action) -> list[tuple[int, int]]:
             response = self.client.v2[_object, "actions", object_action, "run"].post()
             self.assertEqual(response.status_code, HTTP_200_OK)
+
+            # concerns are distributed when task is scheduled, not when action is launched,
+            # so object stays free of them until scheduler picks the task up
+            self.assertFalse(ConcernItem.objects.filter(name="job_lock").exists())
+
+            self.task_runner().schedule_task(response.json()["id"])
 
             concern = ConcernItem.objects.filter(name="job_lock").first()
             related_objects = sorted([(o.id, o.prototype_id) for o in concern.related_objects])
@@ -405,6 +522,77 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
             self.assertEqual(len(concerns), 1)
             self.assertEqual(concerns.first().cause, "config")
 
+    def test_outdated_config_flag_does_not_leak_via_shared_host(self) -> None:
+        # `first_service`/`first_service.first_component` have `enable_outdated_config` on;
+        # `second_service` shares a host with `first_component` but has it off, so it should never
+        # get the flag on its own — the only question is whether *distribution* leaks it there anyway,
+        # the way LOCK/ISSUE concerns do (see `test_adcm_6275_concern_propagation_success`)
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_flag_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_service.state = "notcreated"
+        first_service.save(update_fields=["state"])
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="flag_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        response = self.client.v2[first_service, "configs"].post(
+            data={"config": {"string_param": "changed", "int_param": 12}, "adcmMeta": {}, "description": ""},
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        flag_name = BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name
+        concern = ConcernItem.objects.get(
+            name=flag_name, owner_id=first_service.pk, owner_type=first_service.content_type
+        )
+
+        # distribution (the concern's m2m links), not just ownership
+        # `shared_host` is mapped to `first_component`, so it's within `first_service`'s own
+        # hierarchy and should get the flag too — only the objects reachable solely *through*
+        # the shared host (the sibling service and its component) are the actual leak candidates
+        self.assertIn(concern, first_service.concerns.all())
+        self.assertIn(concern, shared_host.concerns.all())
+        for not_leaked_to in (second_service, second_service_component):
+            self.assertNotIn(concern, not_leaked_to.concerns.all())
+
+    def test_config_issue_leaks_via_shared_host(self) -> None:
+        # unlike FLAG (see `test_outdated_config_flag_does_not_leak_via_shared_host`), ISSUE concerns
+        # owned by a service/component *do* widen to whatever else sits on a shared host — this locks
+        # in that leak for the same topology used in the flag test
+        cluster = self.uc.add_cluster(bundle=self.complex_dependencies, name="cluster_issue_leak")
+        services = self.uc.add_services_to_cluster(
+            names=["first_service", "second_service", "third_service"], cluster=cluster
+        )
+        first_service = next(s for s in services if s.prototype.name == "first_service")
+        second_service = next(s for s in services if s.prototype.name == "second_service")
+
+        first_component = first_service.components.get(prototype__name="first_component")
+        second_service_component = second_service.components.get(prototype__name="first_component")
+
+        shared_host = self.uc.add_host(provider=self.provider, fqdn="issue_leak_shared_host", cluster=cluster)
+        self.uc.set_hostcomponent(
+            cluster=cluster, entries=[(shared_host, first_component), (shared_host, second_service_component)]
+        )
+
+        first_service_cod = CoreObjectDescriptor(id=first_service.pk, type=ADCMCoreType.SERVICE)
+        issue = create_issue(owner=first_service_cod, cause=ConcernCause.CONFIG)
+        distribute_concern_on_related_objects(
+            owner=first_service_cod, concern_id=issue.pk, cluster_service=self.container.get(ClusterService)
+        )
+
+        # distribution (the concern's m2m links), not just ownership
+        for leaked_to in (first_service, shared_host, second_service, second_service_component):
+            self.assertIn(issue, leaked_to.concerns.all())
+
     def test_service_requirements(self):
         cluster = self.uc.add_cluster(bundle=self.service_requirements_bundle, name="service_requirements_cluster")
         service, *_ = self.uc.add_services_to_cluster(names=["service_1"], cluster=cluster)
@@ -441,6 +629,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.cluster_1.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
+
         expected_concern_reason = {
             "message": ConcernMessage.LOCKED_BY_JOB.template.message,
             "placeholder": {
@@ -458,6 +652,72 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(len(response.json()["concerns"]), 1)
         self.assertDictEqual(response.json()["concerns"][0]["reason"], expected_concern_reason)
+
+    @parametrize("blocking", [True, False], ids=["lock_concern", "flag_concern"])
+    def test_concern_reason_in_sequential_execution_plan(self, blocking: bool) -> None:
+        action = Action.objects.get(prototype=self.cluster_1.prototype, name="concern_sequential_plan")
+        task, concern = self.run_action_and_get_task_concern(action, blocking=blocking)
+
+        expected_type = ConcernType.LOCK if blocking else ConcernType.FLAG
+        self.assertEqual(concern.type, expected_type)
+        self.assertEqual(concern.reason["placeholder"]["job"]["name"], "Sequential first")
+
+        snapshots = self.run_task_and_collect_concern_reasons(task, concern)
+
+        actual_job_names = [reason["placeholder"]["job"]["name"] for _, reason in snapshots]
+        expected_job_names = ["Sequential first", "Sequential second"]
+        self.assertListEqual(actual_job_names, expected_job_names)
+
+    @parametrize(
+        (
+            "action_name",
+            "expected_initial_name",
+            "expected_plan_job_names",
+            "check_initial_reason_unchanged",
+            "blocking",
+        ),
+        [
+            param(
+                *action_case.args,
+                blocking,
+                id=f"{action_case.id}_{'lock_concern' if blocking else 'flag_concern'}",
+            )
+            for action_case, blocking in product(PARALLEL_CONCERN_ACTION_CASES, (True, False))
+        ],
+    )
+    def test_concern_reason_in_parallel_execution_plan(
+        self,
+        blocking: bool,
+        action_name: str,
+        expected_initial_name: str,
+        expected_plan_job_names: list[str],
+        check_initial_reason_unchanged: bool,
+    ) -> None:
+        parallel_group_spec_key = to_full_key("/parallel_jobs")
+        action = Action.objects.get(prototype=self.cluster_1.prototype, name=action_name)
+        expected_concern_type = ConcernType.LOCK if blocking else ConcernType.FLAG
+        task, concern = self.run_action_and_get_task_concern(action, blocking=blocking)
+        initial_reason = concern.reason
+
+        # Blocking tasks create a lock, non-blocking tasks create a flag
+        self.assertEqual(concern.type, expected_concern_type)
+        # The initial reason names the first job, or the task when the plan starts in parallel
+        self.assertEqual(initial_reason["placeholder"]["job"]["name"], expected_initial_name)
+
+        snapshots = self.run_task_and_collect_concern_reasons(task, concern)
+
+        parallel_reasons = [
+            reason for key, reason in snapshots if is_part_of_group(key=key, group=parallel_group_spec_key)
+        ]
+        # Every parallel job shows the task name and keeps the same reason throughout the group
+        self.assertEqual(len(parallel_reasons), 3)
+        self.assertTrue(all(reason["placeholder"]["job"]["name"] == task.display_name for reason in parallel_reasons))
+        self.assertTrue(all(reason == parallel_reasons[0] for reason in parallel_reasons))
+        if check_initial_reason_unchanged:
+            self.assertEqual(parallel_reasons[0], initial_reason)
+        # The complete sequence of reasons follows the execution plan
+        actual_plan_job_names = [reason["placeholder"]["job"]["name"] for _, reason in snapshots]
+        self.assertListEqual(actual_plan_job_names, expected_plan_job_names)
 
     def test_permissions_to_delete_concern_item(self):
         cluster = self.cluster_1
@@ -590,6 +850,12 @@ class TestConcernsResponse(ADCMDjangoAPISuite):
                 action = Action.objects.get(name="action_1_comp_1", prototype=component.prototype)
                 response = self.client.v2[component, "actions", action, "run"].post()
                 self.assertEqual(response.status_code, HTTP_200_OK)
+
+                # concerns are distributed when task is scheduled, not when action is launched,
+                # so object stays free of them until scheduler picks the task up
+                self.assertEqual(len(component.concerns.all()), 1)
+
+                self.task_runner().schedule_task(response.json()["id"])
 
                 response = self.client.v2[concerns.last()].delete()
                 self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -988,12 +1254,11 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             self.check_concerns(host_2, concerns=(provider_config_con,))
             self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
 
-            self.check_concerns(
-                self.cluster, concerns=(*cluster_own_cons, *main_and_single_cons, sir_c_conn, no_components_conn)
-            )
+            # sir is optional and unmapped, so its concerns aren't passed to service/cluster
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, *main_and_single_cons, no_components_conn))
 
             self.check_concerns(main_s, concerns=(*cluster_own_cons, *main_and_single_cons))
-            self.check_concerns(require_dummy_s, concerns=(*cluster_own_cons, sir_c_conn))
+            self.check_concerns(require_dummy_s, concerns=cluster_own_cons)
             self.check_concerns(dummy_s, concerns=cluster_own_cons)
             self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_conn))
 
@@ -1069,12 +1334,12 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             self.check_concerns(host_2, concerns=(provider_config_con, *cluster_own_cons, *main_and_single_cons))
             self.check_concerns(unmapped_host, concerns=(provider_config_con, unmapped_host_con))
 
+            # sir is unmapped again, so its concerns aren't passed to service/cluster anymore
             self.check_concerns(
                 self.cluster,
                 concerns=(
                     *cluster_own_cons,
                     *main_and_single_cons,
-                    sir_c_conn,
                     no_components_conn,
                     provider_config_con,
                     host_1_config_con,
@@ -1082,9 +1347,7 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             )
 
             self.check_concerns(main_s, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con))
-            self.check_concerns(
-                require_dummy_s, concerns=(*cluster_own_cons, sir_c_conn, provider_config_con, host_1_config_con)
-            )
+            self.check_concerns(require_dummy_s, concerns=(*cluster_own_cons, provider_config_con, host_1_config_con))
             self.check_concerns(no_components_s, concerns=(*cluster_own_cons, no_components_conn))
 
             self.check_concerns(single_c, concerns=(*cluster_own_cons, *main_and_single_cons, provider_config_con))
@@ -1410,9 +1673,10 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
             ],
         )
 
+        # component_1 is optional and unmapped, so its concerns aren't passed to service/cluster
         with self.subTest("Set All Imports On Service"):
-            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, component_1_con, *host_1_cons))
-            self.check_concerns(import_s, concerns=(*cluster_own_cons, component_1_con, *host_1_cons))
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, *host_1_cons))
+            self.check_concerns(import_s, concerns=(*cluster_own_cons, *host_1_cons))
             self.check_concerns(component_1, concerns=(*cluster_own_cons, component_1_con))
             self.check_concerns(component_2, concerns=(*cluster_own_cons, *host_1_cons))
             self.check_concerns(host_1, concerns=(*host_1_cons, *cluster_own_cons))
@@ -1428,8 +1692,8 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         with self.subTest("Set 1/2 Required Imports On Service"):
             self.assertIsNotNone(import_s_con)
 
-            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
-            self.check_concerns(import_s, concerns=(*cluster_own_cons, import_s_con, component_1_con, *host_1_cons))
+            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, import_s_con, *host_1_cons))
+            self.check_concerns(import_s, concerns=(*cluster_own_cons, import_s_con, *host_1_cons))
             self.check_concerns(component_1, concerns=(*cluster_own_cons, import_s_con, component_1_con))
             self.check_concerns(component_2, concerns=(*cluster_own_cons, import_s_con, *host_1_cons))
             self.check_concerns(host_1, concerns=(*host_1_cons, import_s_con, *cluster_own_cons))
@@ -1703,13 +1967,14 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         cluster_own_cons = tuple(
             ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
         )
-        expected_concerns = (*cluster_own_cons, requirement_con, component_config_con)
+        # sir is optional and unmapped, so its concerns aren't passed to service/cluster
+        expected_concerns = (*cluster_own_cons, requirement_con)
 
         with self.subTest("Appeared On Add"):
             self.assertIsNotNone(requirement_con)
             self.check_concerns(self.cluster, concerns=expected_concerns)
             self.check_concerns(require_dummy_s, concerns=expected_concerns)
-            self.check_concerns(sir_c, concerns=expected_concerns)
+            self.check_concerns(sir_c, concerns=(*expected_concerns, component_config_con))
             self.check_concerns(silent_c, concerns=(*cluster_own_cons, requirement_con))
 
         service_proto_id = Prototype.objects.get(
@@ -1724,13 +1989,13 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
         cluster_own_cons = tuple(
             ConcernItem.objects.filter(owner_id=self.cluster.id, owner_type=Cluster.class_content_type)
         )
-        expected_concerns = (*cluster_own_cons, requirement_con, component_config_con)
+        expected_concerns = (*cluster_own_cons, requirement_con)
 
         with self.subTest("Stayed On Unrelated Service Add"):
             self.assertIsNotNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))
             self.check_concerns(self.cluster, concerns=expected_concerns)
             self.check_concerns(require_dummy_s, concerns=expected_concerns)
-            self.check_concerns(sir_c, concerns=expected_concerns)
+            self.check_concerns(sir_c, concerns=(*expected_concerns, component_config_con))
             self.check_concerns(silent_c, concerns=(*cluster_own_cons, requirement_con))
 
         dummy_proto_id = Prototype.objects.get(
@@ -1743,8 +2008,340 @@ class TestConcernRedistribution(ADCMDjangoAPISuite):
 
         with self.subTest("Disappeared On Required Service Add"):
             self.assertIsNone(require_dummy_s.get_own_issue(ConcernCause.REQUIREMENT))
-            self.check_concerns(self.cluster, concerns=(*cluster_own_cons, component_config_con))
-            self.check_concerns(require_dummy_s, concerns=(*cluster_own_cons, component_config_con))
+            self.check_concerns(self.cluster, concerns=cluster_own_cons)
+            self.check_concerns(require_dummy_s, concerns=cluster_own_cons)
             self.check_concerns(sir_c, concerns=(*cluster_own_cons, component_config_con))
             self.check_concerns(silent_c, concerns=cluster_own_cons)
             self.check_concerns(dummy_s, concerns=cluster_own_cons)
+
+
+OPTIONAL_COMPONENTS = [param("optional", id="min_0_max_any"), param("optional_limited", id="min_0_max_1")]
+REQUIRED_COMPONENTS = [param("required_single", id="exactly_1"), param("required_at_least_one", id="min_1_max_any")]
+
+
+class TestOptionalComponentConcernsDistribution(ADCMDjangoAPISuite):
+    """
+    Concerns of an optional component (constraint's min is 0) should be passed up to service/cluster
+    only when the component is mapped to at least one host.
+    Concerns of a required component (constraint's min is >= 1) are always passed up, regardless of mapping.
+    Own concerns must always stay on the component itself
+    """
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+
+        cls.cluster = cls.uc.add_cluster(
+            bundle=cls.uc.upload_bundle(cls.test_bundles_dir / "cluster_optional_components_concerns"),
+            name="Optional Components",
+        )
+        cls.host_1 = cls.uc.add_host(cls.provider, fqdn="host-1", cluster=cls.cluster)
+        cls.host_2 = cls.uc.add_host(cls.provider, fqdn="host-2", cluster=cls.cluster)
+
+        cls.service, *_ = cls.uc.add_services_to_cluster(["main"], cluster=cls.cluster)
+
+    def get_component(self, name: str) -> Component:
+        return self.service.components.get(prototype__name=name)
+
+    def get_config_issue(self, object_: ADCMEntity) -> ConcernItem:
+        issue = object_.get_own_issue(ConcernCause.CONFIG)
+        self.assertIsNotNone(issue, f"{object_} should have its own config issue")
+
+        return issue
+
+    def change_mapping_via_api(self, entries: Iterable[tuple[Host, Component]]) -> None:
+        response = self.client.v2[self.cluster, "mapping"].post(
+            data=[{"hostId": host.id, "componentId": component.id} for host, component in entries]
+        )
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+    def required_components_mapping(self) -> list[tuple[Host, Component]]:
+        return [
+            (self.host_1, self.get_component("required_single")),
+            (self.host_1, self.get_component("required_at_least_one")),
+        ]
+
+    def check_linked(self, concern: ConcernItem, *objects: ADCMEntity) -> None:
+        for object_ in objects:
+            self.assertIn(concern, object_.concerns.all(), f"{concern} should be linked to {object_}")
+
+    def check_not_linked(self, concern: ConcernItem, *objects: ADCMEntity) -> None:
+        for object_ in objects:
+            self.assertNotIn(concern, object_.concerns.all(), f"{concern} should not be linked to {object_}")
+
+    def raise_outdated_config_flag_via_api(self, component: Component) -> ConcernItem:
+        # flag isn't raised in "created" state
+        component.state = "installed"
+        component.save(update_fields=["state"])
+
+        response = self.client.v2[component, "configs"].post(data={"config": {"field": 1}, "adcmMeta": {}})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        return ConcernItem.objects.get(
+            name=BuiltInFlag.ADCM_OUTDATED_CONFIG.value.name,
+            type=ConcernType.FLAG,
+            owner_id=component.id,
+            owner_type=component.content_type,
+        )
+
+    def run_action_and_get_lock(self, component: Component) -> ConcernItem:
+        # resolve own config issue, so action isn't blocked by it
+        response = self.client.v2[component, "configs"].post(data={"config": {"field": 1}, "adcmMeta": {}})
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
+
+        action = Action.objects.get(name="dummy", prototype=component.prototype)
+        response = self.client.v2[component, "actions", action, "run"].post()
+        self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # lock is created when task is scheduled
+        task_id = response.json()["id"]
+        self.task_runner().schedule_task(task_id)
+
+        lock = TaskLog.objects.get(id=task_id).lock
+        self.assertIsNotNone(lock)
+
+        return lock
+
+    def detect_distribution(self, component: Component, concern_type: ConcernType) -> dict[str, dict]:
+        """Detect distribution with both legacy and scenario-based implementations, omitting empty entries"""
+        owner = CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT)
+
+        by_legacy = detect_concern_distribution(
+            owner=owner, concern_type=concern_type, cluster_service=self.container.get(ClusterService)
+        )
+        by_scenario = self.container.get(ConcernDistributionScenarios).detect_concern_distribution(
+            owner=owner, concern_type=CoreConcernType(concern_type), cluster_id=self.cluster.id
+        )
+
+        return {
+            name: {core_type: ids for core_type, ids in result.items() if ids}
+            for name, result in (("legacy", by_legacy), ("scenario", by_scenario))
+        }
+
+    @parametrize("component_name", OPTIONAL_COMPONENTS)
+    def test_unmapped_optional_component_concern_stays_on_component(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        issue = self.get_config_issue(component)
+
+        self.check_linked(issue, component)
+        self.check_not_linked(issue, self.service, self.cluster, self.host_1, self.host_2)
+
+    @parametrize("component_name", REQUIRED_COMPONENTS)
+    def test_unmapped_required_component_concern_is_passed_up(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        issue = self.get_config_issue(component)
+
+        self.check_linked(issue, component, self.service, self.cluster)
+        self.check_not_linked(issue, self.host_1, self.host_2)
+
+    @parametrize("component_name", REQUIRED_COMPONENTS)
+    def test_mapped_required_component_concern_is_passed_up(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        issue = self.get_config_issue(component)
+
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+
+        self.check_linked(issue, component, self.service, self.cluster, self.host_1)
+        self.check_not_linked(issue, self.host_2)
+
+    @parametrize("component_name", OPTIONAL_COMPONENTS)
+    def test_optional_component_concern_follows_mapping(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        issue = self.get_config_issue(component)
+        required_mapping = self.required_components_mapping()
+
+        with self.subTest("Mapped"):
+            self.change_mapping_via_api(entries=[*required_mapping, (self.host_2, component)])
+
+            self.check_linked(issue, component, self.service, self.cluster, self.host_2)
+            self.check_not_linked(issue, self.host_1)
+
+        with self.subTest("Unmapped"):
+            self.change_mapping_via_api(entries=required_mapping)
+
+            self.check_linked(issue, component)
+            self.check_not_linked(issue, self.service, self.cluster, self.host_1, self.host_2)
+
+        with self.subTest("Required Components Concerns Are Not Affected"):
+            for _, required_component in required_mapping:
+                required_issue = self.get_config_issue(required_component)
+                self.check_linked(required_issue, required_component, self.service, self.cluster, self.host_1)
+
+    def test_new_concern_of_unmapped_optional_component_stays_on_component(self) -> None:
+        component = self.get_component("optional")
+        component_cod = CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT)
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+        self.get_config_issue(component).delete()
+
+        issue = create_issue(owner=component_cod, cause=ConcernCause.CONFIG)
+        distribute_concern_on_related_objects(
+            owner=component_cod, concern_id=issue.pk, cluster_service=self.container.get(ClusterService)
+        )
+
+        self.check_linked(issue, component)
+        self.check_not_linked(issue, self.service, self.cluster, self.host_1, self.host_2)
+
+    def test_new_concern_of_unmapped_required_component_is_passed_up(self) -> None:
+        component = self.get_component("required_single")
+        component_cod = CoreObjectDescriptor(id=component.id, type=ADCMCoreType.COMPONENT)
+        self.get_config_issue(component).delete()
+
+        issue = create_issue(owner=component_cod, cause=ConcernCause.CONFIG)
+        distribute_concern_on_related_objects(
+            owner=component_cod, concern_id=issue.pk, cluster_service=self.container.get(ClusterService)
+        )
+
+        self.check_linked(issue, component, self.service, self.cluster)
+
+    def test_unmapped_optional_component_action_is_forbidden(self) -> None:
+        component = self.get_component("optional")
+        issue = self.get_config_issue(component)
+        # get rid of cluster's mapping issue, so the only blocking issue is the component's own one
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+        self.assertIsNone(self.cluster.get_own_issue(ConcernCause.HOSTCOMPONENT))
+
+        self.assertListEqual(list(component.concerns.filter(type=ConcernType.ISSUE)), [issue])
+
+        action = Action.objects.get(name="dummy", prototype=component.prototype)
+        response = self.client.v2[component, "actions", action, "run"].post()
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "ISSUE_INTEGRITY_ERROR")
+
+    @parametrize("component_name", OPTIONAL_COMPONENTS)
+    def test_unmapped_optional_component_flag_stays_on_component(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+
+        flag = self.raise_outdated_config_flag_via_api(component)
+
+        self.check_linked(flag, component)
+        self.check_not_linked(flag, self.service, self.cluster, self.host_1, self.host_2)
+
+    @parametrize("component_name", OPTIONAL_COMPONENTS)
+    def test_mapped_optional_component_flag_is_passed_up(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        self.change_mapping_via_api(entries=[*self.required_components_mapping(), (self.host_2, component)])
+
+        flag = self.raise_outdated_config_flag_via_api(component)
+
+        self.check_linked(flag, component, self.service, self.cluster, self.host_2)
+        self.check_not_linked(flag, self.host_1)
+
+    @parametrize("component_name", REQUIRED_COMPONENTS)
+    def test_unmapped_required_component_flag_is_passed_up(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+
+        flag = self.raise_outdated_config_flag_via_api(component)
+
+        self.check_linked(flag, component, self.service, self.cluster)
+        self.check_not_linked(flag, self.host_1, self.host_2)
+
+    @parametrize("component_name", REQUIRED_COMPONENTS)
+    def test_mapped_required_component_flag_is_passed_up(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+
+        flag = self.raise_outdated_config_flag_via_api(component)
+
+        self.check_linked(flag, component, self.service, self.cluster, self.host_1)
+        self.check_not_linked(flag, self.host_2)
+
+    @parametrize("component_name", OPTIONAL_COMPONENTS)
+    def test_optional_component_flag_follows_mapping(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        flag = self.raise_outdated_config_flag_via_api(component)
+        required_mapping = self.required_components_mapping()
+
+        with self.subTest("Mapped"):
+            self.change_mapping_via_api(entries=[*required_mapping, (self.host_2, component)])
+
+            self.check_linked(flag, component, self.service, self.cluster, self.host_2)
+            self.check_not_linked(flag, self.host_1)
+
+        with self.subTest("Unmapped"):
+            self.change_mapping_via_api(entries=required_mapping)
+
+            self.check_linked(flag, component)
+            self.check_not_linked(flag, self.service, self.cluster, self.host_1, self.host_2)
+
+    @parametrize("component_name", REQUIRED_COMPONENTS)
+    def test_required_component_flag_is_passed_up_after_mapping(self, component_name: str) -> None:
+        component = self.get_component(component_name)
+        flag = self.raise_outdated_config_flag_via_api(component)
+
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+
+        self.check_linked(flag, component, self.service, self.cluster, self.host_1)
+        self.check_not_linked(flag, self.host_2)
+
+    @parametrize(
+        ("component_name", "concern_type"),
+        [
+            param(component_name, concern_type, id=f"{component_name}_{concern_type.value}")
+            for component_name in ("optional", "optional_limited")
+            for concern_type in ConcernType
+        ],
+    )
+    def test_detect_distribution_of_unmapped_optional_component_concern(
+        self, component_name: str, concern_type: ConcernType
+    ) -> None:
+        component = self.get_component(component_name)
+
+        for name, result in self.detect_distribution(component=component, concern_type=concern_type).items():
+            self.assertDictEqual(result, {ADCMCoreType.COMPONENT: {component.id}}, f"{name} detection mismatch")
+
+    @parametrize(
+        ("component_name", "concern_type"),
+        [
+            param(component_name, concern_type, id=f"{component_name}_{concern_type.value}")
+            for component_name in ("required_single", "required_at_least_one")
+            for concern_type in ConcernType
+        ],
+    )
+    def test_detect_distribution_of_unmapped_required_component_concern(
+        self, component_name: str, concern_type: ConcernType
+    ) -> None:
+        component = self.get_component(component_name)
+        expected = {
+            ADCMCoreType.CLUSTER: {self.cluster.id},
+            ADCMCoreType.SERVICE: {self.service.id},
+            ADCMCoreType.COMPONENT: {component.id},
+        }
+
+        for name, result in self.detect_distribution(component=component, concern_type=concern_type).items():
+            self.assertDictEqual(result, expected, f"{name} detection mismatch")
+
+    def test_unmapped_optional_component_lock_stays_on_component(self) -> None:
+        component = self.get_component("optional")
+        # get rid of cluster's mapping issue, so action isn't blocked by it
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+
+        lock = self.run_action_and_get_lock(component)
+
+        self.check_linked(lock, component)
+        self.check_not_linked(
+            lock,
+            self.service,
+            self.cluster,
+            self.host_1,
+            self.host_2,
+            *self.service.components.exclude(id=component.id),
+        )
+
+    def test_mapped_optional_component_lock_is_passed_up(self) -> None:
+        component = self.get_component("optional")
+        self.change_mapping_via_api(entries=[*self.required_components_mapping(), (self.host_2, component)])
+
+        lock = self.run_action_and_get_lock(component)
+
+        self.check_linked(lock, component, self.service, self.cluster, self.host_2)
+        self.check_not_linked(lock, self.host_1)
+
+    def test_mapped_required_component_lock_is_passed_up(self) -> None:
+        component = self.get_component("required_single")
+        self.change_mapping_via_api(entries=self.required_components_mapping())
+
+        lock = self.run_action_and_get_lock(component)
+
+        self.check_linked(lock, component, self.service, self.cluster, self.host_1)
+        self.check_not_linked(lock, self.host_2)

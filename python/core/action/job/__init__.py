@@ -17,27 +17,22 @@ from core.action.job._repo import (
     JobUpdateDTO,
     LaunchOptions,
     LogCreateDTO,
+    PostInitTaskAttributesDTO,
     TaskCreateDTO,
     TaskExtraInfo,
     TaskMutableFieldsDTO,
     TaskPayloadDTO,
     TaskShortFilter,
     TaskUpdateDTO,
-    TaskUpdateMainFieldsDTO,
 )
 from core.action.job._service import JobService
 from core.action.job._termination import (
-    DirectOSTerminationSignaller,
     ExecutorTerminator,
-    IndirectRepoTerminationSignaller,
     TaskRunnerTerminator,
-    TerminationSignaller,
 )
 
 __all__ = [
-    "DirectOSTerminationSignaller",
     "ExecutorTerminator",
-    "IndirectRepoTerminationSignaller",
     "JobRepoI",
     "JobService",
     "JobShortFilter",
@@ -51,8 +46,7 @@ __all__ = [
     "TaskRunnerTerminator",
     "TaskShortFilter",
     "TaskUpdateDTO",
-    "TaskUpdateMainFieldsDTO",
-    "TerminationSignaller",
+    "PostInitTaskAttributesDTO",
     "errors",
     "operations",
 ]

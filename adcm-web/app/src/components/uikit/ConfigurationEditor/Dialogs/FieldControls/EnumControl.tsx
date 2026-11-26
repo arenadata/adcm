@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import Select from '@uikit/Select/SingleSelect/Select/Select';
 import ConfigurationField from './ConfigurationField';
 import type { JSONPrimitive } from '@models/json';
@@ -14,7 +15,7 @@ export interface EnumControlProps {
 }
 
 const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, onResetToDefault }: EnumControlProps) => {
-  const options = getEnumOptions(fieldSchema);
+  const options = useMemo(() => getEnumOptions(fieldSchema), [fieldSchema]);
 
   const handleSelectChange = (newValue: unknown) => {
     onChange(newValue as JSONPrimitive);
@@ -31,7 +32,7 @@ const EnumControl = ({ fieldName, value, fieldSchema, isReadonly, onChange, onRe
         value={value}
         onChange={handleSelectChange}
         options={options}
-        isSearchable={false}
+        isVirtualized
         placeholder="Please select value"
         disabled={isReadonly}
       />

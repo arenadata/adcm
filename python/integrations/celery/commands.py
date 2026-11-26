@@ -13,7 +13,7 @@
 import logging
 
 from celery.worker.control import control_command
-from core.action.job import ExecutorTerminator, JobRepoI
+from core.action.job import ExecutorTerminator, JobRepoI, JobShortFilter
 
 
 @control_command(
@@ -32,18 +32,19 @@ def stop_executor(state, task_id: str, adcm_job_id: str):
         return
 
     repo: JobRepoI = state.app.di_container.get(JobRepoI)
-    job = repo.get_job(id=job_id)
+    found_jobs = repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+    job = next(iter(found_jobs))
 
-    is_same_celery_id = task_id == job.execution_env.worker_id
+    is_same_celery_id = task_id == job.worker.worker_id
     if not is_same_celery_id:
         logging.warning(
             'Command "stop_executor" skipped due to celery task ids mismatch (given != defined in job): %s != %s',
             task_id,
-            job.execution_env.worker_id,
+            job.worker.worker_id,
         )
         return
 
-    pid = job.execution_env.pid
+    pid = job.worker.pid
 
     if pid <= 0:
         logging.debug('Command "stop_executor" skipped due to local pid not specified (pid=%d)', pid)

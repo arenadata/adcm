@@ -24,6 +24,7 @@ from application.loggers import scheduler_logging_config_from_env
 from core.action.scheduler import BusyAwareLimiter, Clock, FixedRateLimiter, Limiter
 from core.result import Fail, Success
 from dishka import make_container
+import django.db.utils
 
 sys.path.append("/adcm/python")
 
@@ -65,6 +66,14 @@ class SchedulerLoop:
             except Exception as error:  # noqa: BLE001
                 self.logger.exception("%s iteration failed", self.component_name)
                 outcome = Fail(error)
+                if isinstance(error, django.db.utils.OperationalError) and "connection" in error.args[0]:
+                    self.logger.info(
+                        "%s seems to have DB connection problem, attempting closing connection", self.component_name
+                    )
+                    try:
+                        django.db.close_old_connections()
+                    except Exception:
+                        self.logger.exception("%s failed to close stale connection", self.component_name)
 
 
 def main() -> None:

@@ -1,0 +1,12 @@
+- name: default
+  script: scripts/run.yaml
+  script_type: ansible
+{% if task.config.group %}
+- name: active
+  script: scripts/run.yaml
+  script_type: ansible
+{% else %}
+- name: inactive
+  script: scripts/run.yaml
+  script_type: ansible
+{% endif %}

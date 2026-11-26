@@ -1,21 +1,27 @@
-.profilePage {
-  margin-top: 68px;
+.profilePageGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-400);
 }
 
 .profilePageInformation {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  > * > div:first-child {
+    margin-bottom: var(--space-400);
+  }
 }
 
-.profilePagePassword {
-  max-width: 560px;
+.profilePageValue {
+  color: var(--text-accent-color);
+}
+
+.profilePageAdministrator {
+  margin-top: var(--space-500);
+}
+
+.profilePageNewPassword {
+  grid-column: 3;
 }
 
 .profilePageConfirmPassword {
-  margin-top: 84px;
-}
-
-.buttonChangePassword {
-  margin-top: 68px;
+  grid-column: 4;
 }

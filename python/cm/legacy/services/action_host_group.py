@@ -59,12 +59,10 @@ class UpdateDTO:
 _UpdateTA = TypeAdapter(UpdateDTO)
 
 
-class ActionHostGroupError(ADCMMessageError):
-    ...
+class ActionHostGroupError(ADCMMessageError): ...
 
 
-class NameCollisionError(ActionHostGroupError):
-    ...
+class NameCollisionError(ActionHostGroupError): ...
 
 
 class GroupIsLockedError(ActionHostGroupError):
@@ -76,8 +74,7 @@ class GroupIsLockedError(ActionHostGroupError):
         return self.message
 
 
-class HostError(ADCMMessageError):
-    ...
+class HostError(ADCMMessageError): ...
 
 
 class ActionHostGroupRepo(HostGroupRepoMixin):

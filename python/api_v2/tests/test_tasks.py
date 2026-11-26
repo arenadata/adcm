@@ -17,7 +17,6 @@ from operator import itemgetter
 from unittest.mock import patch
 
 from cm.converters import model_name_to_core_type
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.models import (
     ADCM,
     Action,
@@ -35,7 +34,9 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_404_NOT_FOUND
+from tests.deprecated import prepare_task_for_action
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
+from unittest_parametrize import param, parametrize
 from use_cases.transition.cluster.delete import DeleteService
 
 
@@ -59,7 +60,6 @@ class TestTask(ADCMDjangoAPISuite):
             id=prepare_task_for_action(
                 target=cluster_object,
                 orm_owner=self.cluster_1,
-                orm_target=self.cluster_1,
                 action=self.cluster_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -69,7 +69,6 @@ class TestTask(ADCMDjangoAPISuite):
             id=prepare_task_for_action(
                 target=service_object,
                 orm_owner=self.service_1,
-                orm_target=self.service_1,
                 action=self.service_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -79,7 +78,6 @@ class TestTask(ADCMDjangoAPISuite):
             id=prepare_task_for_action(
                 target=component_object,
                 orm_owner=self.component_1,
-                orm_target=self.component_1,
                 action=component_1_action.pk,
                 payload=TaskPayloadDTO(),
             ).id
@@ -89,6 +87,7 @@ class TestTask(ADCMDjangoAPISuite):
             object_type=ContentType.objects.get(app_label="cm", model="adcm"),
             start_date=timezone.now(),
             finish_date=timezone.now(),
+            status=JobStatus.CREATED,
         )
 
     def test_task_list_success(self):
@@ -208,6 +207,29 @@ class TestTask(ADCMDjangoAPISuite):
         self.assertEqual(response.data["objects"], [task_object])
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+    @parametrize(
+        ("executor", "expected_environment"),
+        [
+            param({}, None, id="not_queued"),
+            param({"environment": "local", "worker_id": 100}, "local", id="local"),
+            param({"environment": "celery", "worker_id": "some-celery-id"}, "celery", id="celery"),
+        ],
+    )
+    def test_task_execution_environment_success(self, executor: dict, expected_environment: str | None):
+        self.cluster_task.executor = executor
+        self.cluster_task.save(update_fields=["executor"])
+
+        response = self.client.v2[self.cluster_task].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json()["executionEnvironment"], expected_environment)
+
+        response = (self.client.v2 / "tasks").get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        environment_by_task = {task["id"]: task["executionEnvironment"] for task in response.json()["results"]}
+        self.assertEqual(environment_by_task[self.cluster_task.pk], expected_environment)
+
     def test_task_retrieve_not_found_fail(self):
         response = (self.client.v2 / "tasks" / self.get_non_existent_pk(TaskLog)).get()
 
@@ -244,9 +266,10 @@ class TestTask(ADCMDjangoAPISuite):
         service_admin_credentials = {"username": "service_admin_username", "password": "service_admin_passwo"}
         service_admin = self.create_user(**service_admin_credentials)
 
-        with self.grant_permissions(
-            to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator"
-        ) as _, self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _:
+        with (
+            self.grant_permissions(to=cluster_admin, on=self.cluster_1, role_name="Cluster Administrator") as _,
+            self.grant_permissions(to=service_admin, on=self.service_1, role_name="Service Administrator") as _,
+        ):
             # run action as service admin (create all permissions we interested in)
             self.client.login(**service_admin_credentials)
             response = self.client.v2[self.service_1, "actions", self.service_1_action, "run"].post(
@@ -254,7 +277,7 @@ class TestTask(ADCMDjangoAPISuite):
             )
 
             self.assertEqual(response.status_code, HTTP_200_OK)
-            task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+            task_id = response.json()["id"]
             self.assertEqual(TaskLog.objects.get(id=task_id).status, "created")
 
             service_task_pk = response.json()["id"]
@@ -417,8 +440,6 @@ class TestTaskObjects(ADCMDjangoAPISuite):
         )
         target = CoreObjectDescriptor(id=host.pk, type=ADCMCoreType.HOST) if host else owner
 
-        launch = prepare_task_for_action(
-            target=target, orm_owner=object_, orm_target=host or object_, action=action.pk, payload=TaskPayloadDTO()
-        )
+        launch = prepare_task_for_action(target=target, orm_owner=object_, action=action.pk, payload=TaskPayloadDTO())
 
         return TaskLog.objects.get(id=launch.id)

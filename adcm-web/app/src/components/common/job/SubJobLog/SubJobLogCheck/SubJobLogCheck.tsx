@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { type AdcmSubJobLogItemCheck, AdcmJobStatus } from '@models/adcm';
 import CollapseNode from '@uikit/CollapseTree2/CollapseNode';
@@ -27,6 +27,7 @@ interface SubJobLogCheckProps {
   log: AdcmSubJobLogItemCheck;
 }
 const SubJobLogCheck: React.FC<SubJobLogCheckProps> = ({ subJobStatus, log }) => {
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const node = useMemo<SubJobLogNode>(() => {
     const isRootValid = log.content.length !== 0;
     const status = getRootNodeStatus(log.content, subJobStatus);
@@ -57,11 +58,22 @@ const SubJobLogCheck: React.FC<SubJobLogCheckProps> = ({ subJobStatus, log }) =>
 
   useResizeObserver(ref, calculateHeight);
 
+  const handleExpandedChange = useCallback((nodeKey: string, isExpanded: boolean) => {
+    setExpandedNodes((prev) => {
+      if (prev[nodeKey] === isExpanded) {
+        return prev;
+      }
+      return { ...prev, [nodeKey]: isExpanded };
+    });
+  }, []);
+
   return (
     <div className={s.subJobLogCheck} ref={ref}>
       <CollapseNode
         node={node}
         isInitiallyExpanded={true}
+        expandedNodes={expandedNodes}
+        onExpandedChange={handleExpandedChange}
         getNodeClassName={handleGetNodeClassName}
         renderNodeContent={handleRenderNodeContent}
       />

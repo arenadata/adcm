@@ -1,0 +1,359 @@
+# Exact values `cm.0156_execution_plan_storage` stores for the cases of `execution_plan_migration_3_0_0.yaml`.
+#
+# Case names are the same as there, cases are grouped by what happens to them.
+# Plans are stored the way `dump_execution_plan` writes them:
+# the `version: 1` envelope, script keys `/<position>-<internal name>` with every `/` of the name as `_`,
+# no groups, `on_fail` as an object.
+
+# empty plan, written for a task without jobs
+empty_plan:
+  version: 1
+  hierarchy: {rule: sequential, fields: [], child_groups: {}}
+  groups: {}
+  scripts: {}
+
+# `Action.scripts`
+actions:
+  # actions with `SubAction` rows: exact plan
+  converted:
+    multi_script_action:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-prepare", "1-install", "2-health_check"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-prepare:
+          key: /0-prepare
+          names: {internal: prepare, display: Prepare hosts}
+          script: {type: ansible, path: ./playbooks/prepare.yaml, params: {ansible_tags: prepare}}
+          on_fail: {state: failed, multi_state_set: [prepare_failed], multi_state_unset: [prepared]}
+          details: {terminatable: true}
+        /1-install:
+          key: /1-install
+          names: {internal: install, display: install}
+          script: {type: ansible, path: ./playbooks/install.yaml, params: {}}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /2-health_check:
+          key: /2-health_check
+          names: {internal: health/check, display: Check}
+          script: {type: python, path: ./scripts/check.py, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+    job_type_action:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-job_type_action"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-job_type_action:
+          key: /0-job_type_action
+          names: {internal: job_type_action, display: Restart}
+          script: {type: ansible, path: ./playbooks/restart.yaml, params: {ansible_tags: restart}}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+    internal_mix_action:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-add_hosts", "1-apply_mapping", "2-switch"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-add_hosts:
+          key: /0-add_hosts
+          names: {internal: add_hosts, display: add_hosts}
+          script: {type: ansible, path: ./playbooks/add_hosts.yaml, params: {}}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: true}
+        /1-apply_mapping:
+          key: /1-apply_mapping
+          names: {internal: apply_mapping, display: Apply mapping}
+          script:
+            type: internal
+            path: hc_apply
+            params:
+              rules:
+                - {service: service_a, component: component_a, action: add}
+                - {service: service_a, component: component_b, action: remove}
+          on_fail: {state: mapping_failed, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /2-switch:
+          key: /2-switch
+          names: {internal: switch, display: switch}
+          script: {type: internal, path: bundle_switch, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+    other_internal_action:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-set_debug", "1-add_service", "2-revert", "3-clean"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-set_debug:
+          key: /0-set_debug
+          names: {internal: set_debug, display: Set debug}
+          script:
+            type: internal
+            path: config_apply
+            params:
+              changes:
+                - object: {type: cluster}
+                  parameters:
+                    - {key: debug, value: true}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /1-add_service:
+          key: /1-add_service
+          names: {internal: add_service, display: Add service}
+          script:
+            type: internal
+            path: service_manage
+            params:
+              operation: add
+              services:
+                - name: service_b
+                  config_changes:
+                    - {key: port, value: 8080}
+                  hc_changes:
+                    - {component: component_c, hosts: [host_1]}
+          on_fail: {state: service_add_failed, multi_state_set: [service_add_failed], multi_state_unset: []}
+          details: {terminatable: false}
+        /2-revert:
+          key: /2-revert
+          names: {internal: revert, display: revert}
+          script: {type: internal, path: bundle_revert, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /3-clean:
+          key: /3-clean
+          names: {internal: clean, display: clean}
+          script: {type: internal, path: before_upgrade_clean, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+  # actions without `SubAction` rows: `scripts` stays NULL
+  stay_null: [template_action, no_scripts_action, wizard_action]
+
+# `TaskLog.execution_plan` and `JobLog.spec_key` of the task's jobs, in the order they are listed
+tasks:
+  # tasks with jobs: exact plan and keys
+  converted:
+    finished_task:
+      execution_plan:
+        version: 1
+        hierarchy: {rule: sequential, fields: ["0-prepare", "1-install", "2-health_check"], child_groups: {}}
+        groups: {}
+        scripts:
+          /0-prepare:
+            key: /0-prepare
+            names: {internal: prepare, display: Prepare hosts}
+            script: {type: ansible, path: ./playbooks/prepare.yaml, params: {ansible_tags: prepare}}
+            on_fail: {state: failed, multi_state_set: [prepare_failed], multi_state_unset: [prepared]}
+            details: {terminatable: true}
+          /1-install:
+            key: /1-install
+            names: {internal: install, display: install}
+            script: {type: ansible, path: ./playbooks/install.yaml, params: {}}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+          /2-health_check:
+            key: /2-health_check
+            names: {internal: health/check, display: Check}
+            script: {type: python, path: ./scripts/check.py, params: null}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+      spec_keys: [/0-prepare, /1-install, /2-health_check]
+
+    failed_internal_task:
+      execution_plan:
+        version: 1
+        hierarchy: {rule: sequential, fields: ["0-add_hosts", "1-apply_mapping", "2-switch"], child_groups: {}}
+        groups: {}
+        scripts:
+          /0-add_hosts:
+            key: /0-add_hosts
+            names: {internal: add_hosts, display: add_hosts}
+            script: {type: ansible, path: ./playbooks/add_hosts.yaml, params: {}}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: true}
+          /1-apply_mapping:
+            key: /1-apply_mapping
+            names: {internal: apply_mapping, display: Apply mapping}
+            script:
+              type: internal
+              path: hc_apply
+              params:
+                rules:
+                  - {service: service_a, component: component_a, action: add}
+                  - {service: service_a, component: component_b, action: remove}
+            on_fail: {state: mapping_failed, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+          /2-switch:
+            key: /2-switch
+            names: {internal: switch, display: switch}
+            script: {type: internal, path: bundle_switch, params: null}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+      spec_keys: [/0-add_hosts, /1-apply_mapping, /2-switch]
+
+    other_internal_task:
+      execution_plan:
+        version: 1
+        hierarchy: {rule: sequential, fields: ["0-set_debug", "1-add_service", "2-revert", "3-clean"], child_groups: {}}
+        groups: {}
+        scripts:
+          /0-set_debug:
+            key: /0-set_debug
+            names: {internal: set_debug, display: Set debug}
+            script:
+              type: internal
+              path: config_apply
+              params:
+                changes:
+                  - object: {type: cluster}
+                    parameters:
+                      - {key: debug, value: true}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+          /1-add_service:
+            key: /1-add_service
+            names: {internal: add_service, display: Add service}
+            script:
+              type: internal
+              path: service_manage
+              params:
+                operation: add
+                services:
+                  - name: service_b
+                    config_changes:
+                      - {key: port, value: 8080}
+                    hc_changes:
+                      - {component: component_c, hosts: [host_1]}
+            on_fail: {state: service_add_failed, multi_state_set: [service_add_failed], multi_state_unset: []}
+            details: {terminatable: false}
+          /2-revert:
+            key: /2-revert
+            names: {internal: revert, display: revert}
+            script: {type: internal, path: bundle_revert, params: null}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+          /3-clean:
+            key: /3-clean
+            names: {internal: clean, display: clean}
+            script: {type: internal, path: before_upgrade_clean, params: null}
+            on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+            details: {terminatable: false}
+      spec_keys: [/0-set_debug, /1-add_service, /2-revert, /3-clean]
+
+  # tasks without jobs: `empty_plan`
+  empty_plan: [task_without_jobs]
+
+# jobs without a task: `spec_key` stays ""
+jobs_without_task: [orphan_job]
+
+# `ProcessStep.step_spec`
+steps:
+  # rendered operation steps: exact plan
+  converted:
+    operation_step_unfinished:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-install", "1-apply_mapping", "2-finalize_cleanup"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-install:
+          key: /0-install
+          names: {internal: install, display: Install services}
+          script: {type: ansible, path: ./playbooks/install.yaml, params: {ansible_tags: install}}
+          on_fail: {state: install_failed, multi_state_set: [install_failed], multi_state_unset: []}
+          details: {terminatable: true}
+        /1-apply_mapping:
+          key: /1-apply_mapping
+          names: {internal: apply_mapping, display: apply_mapping}
+          script:
+            type: internal
+            path: hc_apply
+            params:
+              rules:
+                - {service: service_a, component: component_a, action: add}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /2-finalize_cleanup:
+          key: /2-finalize_cleanup
+          names: {internal: finalize/cleanup, display: Finalize}
+          script: {type: python, path: ./scripts/finalize.py, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: [installing]}
+          details: {terminatable: false}
+
+    operation_step_internal:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-switch", "1-set_debug", "2-add_service", "3-revert", "4-clean"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-switch:
+          key: /0-switch
+          names: {internal: switch, display: switch}
+          script: {type: internal, path: bundle_switch, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /1-set_debug:
+          key: /1-set_debug
+          names: {internal: set_debug, display: Set debug}
+          script:
+            type: internal
+            path: config_apply
+            params:
+              changes:
+                - object: {type: service, service_name: service_a}
+                  parameters:
+                    - {key: debug, value: true}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /2-add_service:
+          key: /2-add_service
+          names: {internal: add_service, display: Add service}
+          script:
+            type: internal
+            path: service_manage
+            params:
+              operation: add
+              services:
+                - name: service_b
+                  config_changes:
+                    - {key: port, value: 8080}
+                  hc_changes:
+                    - {component: component_c, hosts: [host_1]}
+          on_fail: {state: service_add_failed, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /3-revert:
+          key: /3-revert
+          names: {internal: revert, display: revert}
+          script: {type: internal, path: bundle_revert, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+        /4-clean:
+          key: /4-clean
+          names: {internal: clean, display: clean}
+          script: {type: internal, path: before_upgrade_clean, params: null}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+    operation_step_completed:
+      version: 1
+      hierarchy: {rule: sequential, fields: ["0-install"], child_groups: {}}
+      groups: {}
+      scripts:
+        /0-install:
+          key: /0-install
+          names: {internal: install, display: install}
+          script: {type: ansible, path: ./playbooks/install.yaml, params: {}}
+          on_fail: {state: null, multi_state_set: [], multi_state_unset: []}
+          details: {terminatable: false}
+
+  # operation steps that aren't rendered yet: `step_spec` stays NULL
+  stay_null: [operation_step_not_rendered]
+
+  # steps other than operation ones: `step_spec` is left as it is
+  unchanged:
+    mapping_step:
+      - {operation: add, service: service_a, component: component_a}
+    configuration_step:
+      - {config: {}}
+      - {values: {}, attributes: {}}

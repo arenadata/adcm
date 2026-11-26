@@ -15,11 +15,11 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
 from typing import Any
 import tarfile
-import unittest
 
 from cm.legacy.bundle import _get_file_hashes
-from cm.legacy.services.adcm import adcm_config
+from cm.legacy.services.adcm import adcm_config_attr
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectType, Prototype
+from cm.tests.scripts import read_plan_scripts
 from django.conf import settings
 from django.db.models import F
 from rest_framework.response import Response
@@ -70,7 +70,7 @@ class TestBundle(ADCMDjangoAPISuite):
     def setUp(self) -> None:
         super().setUp()
 
-        adcm_config.cache_clear()
+        adcm_config_attr.cache_clear()
 
     def create_bundle_r(self, bundle_path: Path) -> Response:
         with open(bundle_path, encoding=settings.ENCODING_UTF_8) as bundle_file:
@@ -127,7 +127,7 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.json()["code"], "BUNDLE_VALIDATION_ERROR")
             self.assertIn("No such file or directory", response.json()["desc"])
 
-        with self.subTest("Mutually exclusive checks for scripts/scripts_jinja."):
+        with self.subTest("Mutually exclusive checks for scripts/scripts_template."):
             new_bundle_file = prepare_bundle_file(
                 source_dir=Path(self.test_bundles_dir / "invalid_bundles" / "mutually_exclusive_scripts"),
                 target_dir=self.test_tmp_dir,
@@ -143,10 +143,10 @@ class TestBundle(ADCMDjangoAPISuite):
             )
 
         with self.subTest("Empty archive is uploaded"):
-            temp_tar = NamedTemporaryFile(suffix=".tar")
+            temp_tar = NamedTemporaryFile(suffix=".tar")  # noqa: SIM115
             temp_tar.close()
 
-            tar = tarfile.open(name=temp_tar.name, mode="w")
+            tar = tarfile.open(name=temp_tar.name, mode="w")  # noqa: SIM115
             tar.close()
 
             response = self.create_bundle_r(Path(temp_tar.name))
@@ -542,17 +542,17 @@ class TestBundle(ADCMDjangoAPISuite):
             bundle = Bundle.objects.get(name="hc_apply_scripts_cluster")
             prototype = Prototype.objects.get(bundle=bundle, type="cluster")
 
-            subaction = Action.objects.filter(prototype__name=prototype.name)[0].subaction_set.first()
+            script, *_ = read_plan_scripts(Action.objects.filter(prototype__name=prototype.name))
 
-            self.assertEqual("script_1", subaction.name)
-            self.assertEqual("hc_apply", subaction.script)
+            self.assertEqual("script_1", script.names.internal)
+            self.assertEqual("hc_apply", script.script.path)
             self.assertListEqual(
                 [
                     {"action": "add", "component": "component_1", "service": "service_1"},
                     {"action": "remove", "component": "component_2", "service": "service_2"},
                     {"action": "add", "component": "component_3", "service": "service_2"},
                 ],
-                subaction.params["rules"],
+                [rule._asdict() for rule in script.script.params.rules],
             )
 
         with self.subTest("hc_apply internal script: wrong definition"):
@@ -564,14 +564,14 @@ class TestBundle(ADCMDjangoAPISuite):
             self.assertEqual(response.data["code"], "BUNDLE_DEFINITION_ERROR")
             self.assertIn(
                 (
-                    "          service\n"
-                    "          | missing: Field required\n"
-                    "          component\n"
-                    "          | missing: Field required\n"
-                    "          action\n"
-                    "          | missing: Field required\n"
-                    "          ansible_tags\n"
-                    "          | unexpected_keyword_argument: Unexpected keyword argument"
+                    "           service\n"
+                    "           | missing: Field required\n"
+                    "           component\n"
+                    "           | missing: Field required\n"
+                    "           action\n"
+                    "           | missing: Field required\n"
+                    "           ansible_tags\n"
+                    "           | unexpected_keyword_argument: Unexpected keyword argument"
                 ),
                 response.data["desc"],
             )
@@ -588,7 +588,6 @@ class TestBundle(ADCMDjangoAPISuite):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["desc"].count("Value error, the value cannot be empty"), 2)
 
-    @unittest.skip("Unskip after ADCM-7491")
     def test_adcm_7398_upload_provider_bundle_with_templates_fail(self) -> None:
         bundle_file = prepare_bundle_file(
             source_dir=self.test_bundles_dir / "invalid_bundles" / "provider_groups_v1.0_community",

@@ -1,0 +1,57 @@
+- type: cluster
+  name: revert_cluster
+  version: "1.0"
+  contract_version: "2.1"
+  venv: "2.16"
+  config_group_customization: true
+  import:
+    exporter:
+      versions:
+        min: "1.0"
+        max: "1.0"
+      required: true
+  config:
+    - name: kept
+      type: string
+      default: cluster-kept
+    - name: removed
+      type: integer
+      default: 1
+
+- type: service
+  name: service_kept
+  version: "1.0"
+  import:
+    exporter:
+      versions:
+        min: "1.0"
+        max: "1.0"
+  config:
+    - name: kept
+      type: string
+      default: service-kept
+    - name: removed
+      type: integer
+      default: 2
+  components:
+    component_kept:
+      config:
+        - name: kept
+          type: string
+          default: component-kept
+    component_removed:
+
+- type: service
+  name: service_removed
+  version: "1.0"
+  config_group_customization: true
+  config:
+    - name: value
+      type: string
+      default: service-removed
+  components:
+    component_of_removed:
+
+- type: service
+  name: service_without_config
+  version: "1.0"

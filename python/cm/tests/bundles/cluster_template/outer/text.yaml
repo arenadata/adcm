@@ -1,0 +1,9 @@
+root:
+  match: dict
+  items:
+    string: string
+    integer: integer
+string:
+  match: string
+integer:
+  match: int

@@ -63,44 +63,6 @@
         - name: hc_acl_action_on_cluster
           script: ./playbook.yaml
           script_type: ansible
-    jinja_scripts_action:
-      states:
-        available: any
-      scripts_template:
-        file:
-          path: ./jinja/scripts.j2
-        engine:
-          type: jinja2
-    unprocessable_jinja_scripts_action:
-      states:
-        available: any
-      scripts_template:
-        file:
-          path: ./unprocessable_scripts.j2
-        engine:
-          type: jinja2
-    with_activatable_group_jinja:
-      masking: {}
-      config:
-        - name: group
-          activatable: true
-          type: group
-          subs:
-            - name: x
-              type: integer
-      scripts_template:
-        file:
-          path: ./with_group.j2
-        engine:
-          type: jinja2
-    state_2:
-      states:
-        available: any
-      scripts_template:
-        file:
-          path: ./jinja/config_apply.j2
-        engine:
-          type: jinja2
   contract_version: '2.1'
   venv: '2.16'
 - name: service_one_component

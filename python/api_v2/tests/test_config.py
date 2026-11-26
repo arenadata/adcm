@@ -18,9 +18,7 @@ from unittest.mock import patch
 import json
 import unittest
 
-from cm.legacy.adcm_config.ansible import ansible_decrypt, ansible_encrypt_and_format
-from cm.legacy.bundle_switch_revert import bundle_revert
-from cm.legacy.services.config import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
+from cm.impl.config.convert import convert_adcm_meta_to_attr, convert_attr_to_adcm_meta
 from cm.legacy.services.job.context._base import get_inventory_data
 from cm.models import (
     ADCM,
@@ -35,14 +33,11 @@ from cm.models import (
     Service,
     Upgrade,
 )
+from cm.transition.ansible import ansible_decrypt, ansible_encrypt_and_format
 from core.cluster import ClusterService
 from core.config._types import ChangeRequest
-from core.scenarios.cluster import BeforeUpgradeScenarios
-from core.scenarios.config import ConfigScenarios
 from core.types import ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from rbac.scenarios import RBACScenarios
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
@@ -54,7 +49,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 from tests.suites import SETUP_WITH_RBAC, ADCMDjangoAPISuite
-from use_cases.legacy.upgrade import build_switch_revert_callbacks
+from use_cases.internal_scripts.bundle_revert import RevertUpgrade
 from use_cases.transition.config import UpdateConfigurationFromJob
 import core
 
@@ -131,6 +126,29 @@ class TestClusterConfig(ADCMDjangoAPISuite):
         self.assertDictEqual(response_data["adcmMeta"], data["adcmMeta"])
         self.assertEqual(response_data["description"], data["description"])
         self.assertEqual(response_data["isCurrent"], True)
+
+    def test_create_adcm_meta_key_without_root_prefix_fail(self):
+        data = {
+            "config": {
+                "activatable_group": {"integer": 100},
+                "boolean": False,
+                "group": {"float": 2.1},
+                "list": ["value1", "value2", "value3", "value4"],
+                "variant_not_strict": "value5",
+            },
+            # same attribute as in `test_create_success`, but keyed without the leading "/",
+            # which makes it not a full name and thus not a key of anything in specification
+            "adcmMeta": {"activatable_group": {"isActive": False}},
+            "description": "new config",
+        }
+        response = self.client.v2[self.cluster_1, CONFIGS].post(data=data)
+
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST, response.json())
+        self.assertEqual(response.json()["code"], "ATTRIBUTE_ERROR")
+        self.assertEqual(
+            response.json()["desc"],
+            "Incorrect adcmMeta parameter key: Full key is expected to start with '/', got 'activatable_group'",
+        )
 
     def test_create_more_than_64_bit_number(self):
         large_int = 8**35
@@ -402,11 +420,7 @@ class TestClusterCHG(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.cluster_1),
-            object_id=cls.cluster_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.cluster_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
 
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
@@ -1074,7 +1088,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             "patterned_secrettext": None,
             "secretmap": None,
         }
-        data_empty = {k: "" for k in expected_initial}
+        data_empty = dict.fromkeys(expected_initial, "")
         data_empty["secretmap"] = {"key1": ""}
         expected_empty = data_empty
 
@@ -1102,6 +1116,7 @@ class TestServiceConfig(ADCMDjangoAPISuite):
             target=ActionTargetDescriptor(type=ADCMCoreType.SERVICE, id=service.id),
             is_host_action=False,
             cluster_service=self.uc.container.get(ClusterService),
+            config_service=self.uc.container.get(core.config.ConfigService),
         )
         inv_config = inventory["all"]["vars"]["services"][service_name]["config"]
 
@@ -1121,11 +1136,7 @@ class TestServiceCHG(ADCMDjangoAPISuite):
 
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.service_1),
-            object_id=cls.service_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.service_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -1621,11 +1632,7 @@ class TestComponentCHG(ADCMDjangoAPISuite):
         cls.service_1, *_ = cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
         cls.component_1 = Component.objects.get(service=cls.service_1, prototype__name="component_1")
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.component_1),
-            object_id=cls.component_1.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.component_1, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -2076,9 +2083,9 @@ class TestProviderConfig(ADCMDjangoAPISuite):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
-            "integer_key"
-        ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"] = (
+            integer_key
+        )
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"
@@ -2183,11 +2190,7 @@ class TestProviderCHG(ADCMDjangoAPISuite):
     def setUpTestData(cls) -> None:
         super().setUpTestData()
 
-        cls.host_group = ConfigHostGroup.objects.create(
-            name="config_host_group",
-            object_type=ContentType.objects.get_for_model(cls.provider),
-            object_id=cls.provider.pk,
-        )
+        cls.host_group = cls.uc.add_config_host_group(owner=cls.provider, name="config_host_group")
         cls.config_of_host_group = ConfigLog.objects.get(pk=cls.host_group.config.current)
         cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
         cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
@@ -2451,9 +2454,9 @@ class TestProviderCHG(ADCMDjangoAPISuite):
         actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
             "integer_key"
         ] = integer_key
-        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"][
-            "integer_key"
-        ] = integer_key
+        actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["default"]["integer_key"] = (
+            integer_key
+        )
         string_key = ansible_decrypt(
             msg=actual_data["properties"]["activatable_group"]["properties"]["secretmap"]["oneOf"][0]["default"][
                 "string_key"
@@ -2859,32 +2862,6 @@ class TestAttrTransformation(unittest.TestCase):
         new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
         self.assertDictEqual(new_attr, attr)
 
-    def test_incorrect_attr_to_adcm_meta_fail(self):
-        attr = {
-            "activatable_group": {"active": True},
-            "group_keys": {
-                "group": {"value": None, "fields": {"string": False}},
-                "activatable_group": {
-                    "bad_value": True,
-                    "fields": {"string": True},
-                },
-                "string": True,
-            },
-        }
-        with self.assertRaises(KeyError):
-            convert_attr_to_adcm_meta(attr=attr)
-
-    def test_adcm_meta_to_attr_returns_unchanged_on_fail(self):
-        adcm_meta = {
-            "/activatable_group": {"isActive": True, "isSynchronized": True},
-            "/activatable_group/string": {"isSynchronized": True},
-            "/group/string": {"isSynchronized": False},
-            "/string": {},
-        }
-
-        new_attr = convert_adcm_meta_to_attr(adcm_meta=adcm_meta)
-        self.assertDictEqual(new_attr, adcm_meta)
-
 
 class TestConfigSchemaEnumWithoutValues(ADCMDjangoAPISuite):
     maxDiff = None
@@ -2967,9 +2944,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         cls.service, *_ = cls.uc.add_services_to_cluster(names=["service"], cluster=cls.cluster)
         cls.component = Component.objects.filter(service=cls.service).first()
 
-        cls.cluster_host_group = ConfigHostGroup.objects.create(
-            name="cluster_config_host_group", object_type=cls.cluster.content_type, object_id=cls.cluster.pk
-        )
+        cls.cluster_host_group = cls.uc.add_config_host_group(owner=cls.cluster, name="cluster_config_host_group")
         config = ConfigLog.objects.get(pk=cls.cluster_host_group.config.current)
         config.config.update({"activatable_group": {"integer": 100}, "boolean": True, "group": {"float": 0.1}})
         config.attr.update(
@@ -2983,9 +2958,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         )
         config.save(update_fields=["config", "attr"])
 
-        cls.service_host_group = ConfigHostGroup.objects.create(
-            name="service_config_host_group", object_type=cls.service.content_type, object_id=cls.service.pk
-        )
+        cls.service_host_group = cls.uc.add_config_host_group(owner=cls.service, name="service_config_host_group")
         config = ConfigLog.objects.get(pk=cls.service_host_group.config.current)
         config.config.update(
             {
@@ -3006,9 +2979,7 @@ class TestCHGUpgrade(ADCMDjangoAPISuite):
         )
         config.save(update_fields=["config", "attr"])
 
-        cls.component_host_group = ConfigHostGroup.objects.create(
-            name="component_config_host_group", object_type=cls.component.content_type, object_id=cls.component.pk
-        )
+        cls.component_host_group = cls.uc.add_config_host_group(owner=cls.component, name="component_config_host_group")
         config = ConfigLog.objects.get(pk=cls.component_host_group.config.current)
         config.config.update(
             {
@@ -3302,21 +3273,9 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
 
     def test_change_config_of_config_host_group(self) -> None:
         groups = (
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.cluster),
-                object_id=self.cluster.pk,
-                name="cluster group",
-            ),
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.service),
-                object_id=self.service.pk,
-                name="service group",
-            ),
-            ConfigHostGroup.objects.create(
-                object_type=ContentType.objects.get_for_model(model=self.component),
-                object_id=self.component.pk,
-                name="component group",
-            ),
+            self.uc.add_config_host_group(owner=self.cluster, name="cluster group"),
+            self.uc.add_config_host_group(owner=self.service, name="service group"),
+            self.uc.add_config_host_group(owner=self.component, name="component group"),
         )
         for field, cases in self._EXAMPLES["ok"].items():
             for i, correct_value in enumerate(cases):
@@ -3341,20 +3300,6 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
                         response.json()["desc"],
                     )
 
-    def test_jinja_config_old_processing(self) -> None:
-        # ADCM-6746
-        # with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=False) as patched:
-        self._test_jinja_config()
-
-        # patched.assert_called()
-
-    @unittest.skip("ADCM-6747")
-    def test_jinja_config_new_processing(self) -> None:
-        with patch("cm.legacy.services.config.jinja.use_new_bundle_parsing_approach", return_value=True) as patched:
-            self._test_jinja_config()
-
-        patched.assert_called()
-
     def test_adcm_6686_string_empty_default(self):
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_empty_string_default")
         response = self.client.v2[self.cluster, "actions", action].get()
@@ -3365,7 +3310,7 @@ class TestPatternInConfig(ADCMDjangoAPISuite):
         for param in {"string", "password", "text", "secrettext"}:
             self.assertIsNone(response["configuration"]["config"][param])
 
-    def _test_jinja_config(self) -> None:
+    def test_jinja_config(self) -> None:
         ok_data = {key: values[-1] for key, values in self._EXAMPLES["ok"].items()} | {"control": "4"}
         action = Action.objects.get(prototype=self.cluster.prototype, name="with_jc")
 
@@ -3514,21 +3459,7 @@ class TestNoConfig(ADCMDjangoAPISuite, APIV2Mixin):
             self.check_update_config_response(obj=object_, expected_code=HTTP_409_CONFLICT, obj_repr=obj_repr)
 
         # revert upgrade
-        config_service = self.container.get(core.config.ConfigService)
-        cluster_service = self.container.get(core.cluster.ClusterService)
-        before_upgrade_scensrios = self.container.get(BeforeUpgradeScenarios)
-        config_scenarios = ConfigScenarios(config_service=config_service)
-        callbacks = build_switch_revert_callbacks(
-            config_service=config_service, rbac_scenarios=RBACScenarios(), cluster_service=cluster_service
-        )
-        bundle_revert(
-            obj=self.cluster,
-            callbacks=callbacks,
-            config_service=config_service,
-            cluster_service=cluster_service,
-            config_scenarios=config_scenarios,
-            before_upgrade_scenarios=before_upgrade_scensrios,
-        )
+        self.container.get(RevertUpgrade).do(target=self.cluster)
 
         # CHGs must be restored
         chg_hosts_map = {

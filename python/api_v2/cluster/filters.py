@@ -98,21 +98,18 @@ class ClusterStatusesServiceFilter(FilterSet):
 class ClusterServiceCandidateAndPrototypeFilter(
     AdvancedFilterSet,
     char_fields=("name", "display_name"),
-):
-    ...
+): ...
 
 
 class ClusterMappingComponentFilter(
     AdvancedFilterSet,
     char_fields=(("name", "prototype__name"), ("display_name", "prototype__display_name")),
     number_fields=("id",),
-):
-    ...
+): ...
 
 
 class ClusterMappingHostFilter(
     AdvancedFilterSet,
     char_fields=(("name", "fqdn"),),
     number_fields=("id",),
-):
-    ...
+): ...

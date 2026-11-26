@@ -1,0 +1,71 @@
+- type: cluster
+  name: test_cluster
+  version: &version '2.0'
+  contract_version: "2.1"
+  venv: "2.16"
+
+  upgrade:
+    - name: Upgrade
+      versions:
+        min: 1.0
+        max: 1.0
+      scripts:
+        - name: version_up
+          script_type: internal
+          script: bundle_switch
+      states:
+        available: any
+        on_success: upgradable
+
+  actions:
+    revert_upgrade:
+      scripts:
+        - name: revert
+          script: bundle_revert
+          script_type: internal
+      states:
+        available: [upgradable]
+
+  config: &config
+    - name: group
+      type: group
+      group_customization: true
+      activatable: false
+      subs:
+        - name: string_in_group
+          type: string
+          default: "inside_of_group"
+          group_customization: true
+    - name: nested_group
+      type: group
+      activatable: true
+      active: true
+      group_customization: true
+      subs:
+        - name: g1
+          type: group
+          activatable: true
+          active: true
+          group_customization: true
+          subs:
+            - name: g2
+              type: group
+              activatable: true
+              active: true
+              group_customization: true
+              subs:
+                - name: string_in_nested
+                  type: string
+                  required: false
+                  default: "new_test"
+                  group_customization: true
+
+- type: service
+  name: test_service
+  version: *version
+
+  config: *config
+
+  components:
+    test_component:
+      config: *config

@@ -65,7 +65,7 @@ class FSSecretsBackend(SecretsBackend):
             content = self.path.read_text(encoding="utf-8")
         except FileNotFoundError:
             error = RetrieveError(f"No file {self.path}")
-            return Fail(({}, {s: error for s in Secret}))
+            return Fail(({}, dict.fromkeys(Secret, error)))
         except OSError as e:
             message = f"Failed to read secrets at {self.path}: {e}"
             return Fail(SourceError(message))

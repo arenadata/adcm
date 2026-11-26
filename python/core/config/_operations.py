@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from functools import partial, reduce
 from itertools import chain, filterfalse
 from pathlib import Path
-from typing import Any, Final, Literal, TypeAlias, TypeVar
+from typing import Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from core.config import _yspec, spec
 from core.config._config import (
@@ -49,12 +49,14 @@ from core.config._types import (
     Change,
     ChangeRequest,
     ChangeType,
+    ConfigFlatValues,
     ConfigParameterValue,
     Configuration,
     ConfigValues,
     Defaults,
     FlatConfiguration,
     ParameterFullName,
+    ParameterLevelName,
 )
 from core.config._validate import (
     Validators,
@@ -67,6 +69,9 @@ from core.config._validate import (
 from core.result import Fail, Success, is_fail
 
 # Constants
+
+ANSIBLE_VAULT_MARKER: Final = "__ansible_vault"
+ANSIBLE_UNSAFE_MARKER: Final = "__ansible_unsafe"
 
 _FORBIDDEN_YSPEC_RULES: Final = frozenset({"one_of", "dict_key_selection", "set", "none", "any"})
 
@@ -87,7 +92,7 @@ class ValidationResult:
 class MissingDefaults:
     value: ConfigParameterValue = None
     activation: bool = False
-    selection: str | None = None
+    selection: ParameterLevelName | None = None
 
 
 _MISSING_DEFAULTS = MissingDefaults()
@@ -98,6 +103,9 @@ ChangesToApply = list[ChangeRequest]
 T = TypeVar("T")
 
 _StrToStr: TypeAlias = Callable[[str], str]
+
+_AnsibleJsonValue: TypeAlias = None | bool | int | float | str | list | dict
+_AnsibleJsonObject: TypeAlias = dict[str, _AnsibleJsonValue]
 
 _FileParameterIdentifier: TypeAlias = str
 """
@@ -569,15 +577,35 @@ def changes_to_revision_diff(changes: list[Change]) -> dict[Literal["diff", "att
     return {"diff": diff, "attr_diff": attr_diff}
 
 
+def decode_ansible_json_special_values(value: _AnsibleJsonObject, *, decrypt: _StrToStr) -> _AnsibleJsonObject:
+    return cast(_AnsibleJsonObject, _decode_ansible_json_special_value(value, decrypt=decrypt))
+
+
+def _decode_ansible_json_special_value(value: _AnsibleJsonValue, *, decrypt: _StrToStr) -> _AnsibleJsonValue:
+    if isinstance(value, dict):
+        if ANSIBLE_VAULT_MARKER in value:
+            return decrypt(value[ANSIBLE_VAULT_MARKER])
+
+        if ANSIBLE_UNSAFE_MARKER in value:
+            return value[ANSIBLE_UNSAFE_MARKER]
+
+        return {key: _decode_ansible_json_special_value(item, decrypt=decrypt) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [_decode_ansible_json_special_value(item, decrypt=decrypt) for item in value]
+
+    return value
+
+
 # Utilities
 
 
 def _resolve_chosen_options(
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
-    previous_values: ConfigValues,
-    previous_default_values: ConfigValues,
-) -> dict[ParameterFullName, str | None]:
+    previous_values: ConfigFlatValues,
+    previous_default_values: ConfigFlatValues,
+) -> dict[ParameterFullName, ParameterLevelName | None]:
     """
     Detect option of each selection group of new specification.
 
@@ -623,8 +651,8 @@ def _pick_values_for_new_specification(
     new_specification: spec.FullSpec,
     defaults: Defaults,
     new_defaults: Defaults,
-    previous_values: ConfigValues,
-    chosen_options: dict[ParameterFullName, str | None],
+    previous_values: ConfigFlatValues,
+    chosen_options: dict[ParameterFullName, ParameterLevelName | None],
 ) -> dict[ParameterFullName, ConfigParameterValue]:
     """
     Pick value for each parameter that is present in new specification:
@@ -658,7 +686,7 @@ def _build_attributes_for_new_specification(
     new_specification: spec.FullSpec,
     new_defaults: Defaults,
     previous_attributes: dict[ParameterFullName, Attributes],
-    chosen_options: dict[ParameterFullName, str | None],
+    chosen_options: dict[ParameterFullName, ParameterLevelName | None],
 ) -> dict[ParameterFullName, Attributes]:
     """Activation set by user wins over new default, groups unknown to previous configuration take new default"""
     attributes = {}
@@ -699,7 +727,9 @@ def _set_synchronization(
         )
 
 
-def _is_present_in_chosen_options(name: ParameterFullName, chosen_options: dict[ParameterFullName, str | None]) -> bool:
+def _is_present_in_chosen_options(
+    name: ParameterFullName, chosen_options: dict[ParameterFullName, ParameterLevelName | None]
+) -> bool:
     """Detect whether `name` belongs to options that are chosen in their selection groups"""
     for selection_group, chosen in chosen_options.items():
         if not is_part_of_group(name=name, group=selection_group):
@@ -714,14 +744,17 @@ def _is_present_in_chosen_options(name: ParameterFullName, chosen_options: dict[
     return True
 
 
-def _extract_subtree(values: ConfigValues, group: ParameterFullName) -> dict:
+def _extract_subtree(values: ConfigFlatValues, group: ParameterFullName) -> dict:
     return {name: value for name, value in values.items() if is_part_of_group(name=name, group=group)}
 
 
-def _detect_chosen_option(values: ConfigValues, group: ParameterFullName) -> str | None:
+def _detect_chosen_option(values: ConfigFlatValues, group: ParameterFullName) -> ParameterLevelName | None:
     for name in values:
         if is_part_of_group(name=name, group=group):
-            return remove_group_from_name(name=name, group=group).lstrip("/").split("/")[0]
+            relative_name = remove_group_from_name(name=name, group=group)
+            # `is_part_of_group` guarantees at least one level is left after the group is cut off
+            first_level, *_ = full_name_to_level_names(relative_name)
+            return first_level
 
     return None
 
@@ -821,7 +854,7 @@ def _apply_selection_group_change_registering_violation(
             # current choice is one's to set, so no need in changes
             return False
 
-        new_group_key = join_level_name_with_group_name(name=value, group=key)
+        new_group_key = join_level_name_with_group_name(name=ParameterLevelName(value), group=key)
         group_defaults = _extract_group_defaults(defaults=defaults, group=new_group_key, relative_to=key)
         # only options that are default ones for nested selection groups get into configuration,
         # so attributes should be limited to them the same way values are
@@ -931,14 +964,14 @@ def _set_none(_: Any) -> None:
 
 def _to_ansible_vault_dict_if_is_non_empty_str(value: T) -> dict[Literal["__ansible_vault"], str] | T:
     if is_non_empty_string(value):
-        return {"__ansible_vault": value}
+        return {ANSIBLE_VAULT_MARKER: value}
 
     return value
 
 
 def _to_ansible_unsafe_dict_if_is_str(value: T) -> dict[Literal["__ansible_unsafe"], str] | T:
     if is_str(value):
-        return {"__ansible_unsafe": value}
+        return {ANSIBLE_UNSAFE_MARKER: value}
 
     return value
 

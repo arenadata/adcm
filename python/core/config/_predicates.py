@@ -17,8 +17,7 @@ T = TypeVar("T", contravariant=True)
 
 
 class Predicate(Generic[T], Protocol):
-    def __call__(self, arg: T, /) -> bool:
-        ...
+    def __call__(self, arg: T, /) -> bool: ...
 
 
 def always(_: Any) -> bool:

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.legacy.api import add_host_to_cluster
 from cm.models import (
     Cluster,
     Component,
@@ -22,7 +21,6 @@ from cm.models import (
 from tests.deprecated import BusinessLogicMixin
 
 from rbac.models import Group, Policy, User
-from rbac.scenarios import RBACScenarios
 from rbac.tests.test_base import RBACBaseTestCase
 
 
@@ -212,8 +210,8 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
     def test_parent_policy4host_in_cluster(self):
         provider, host1, host2 = self.get_hosts_and_provider()
         host3 = Host.objects.create(provider=provider, prototype=self.host_prototype, fqdn="host_3")
-        add_host_to_cluster(self.cluster, host1, rbac_scenarios=RBACScenarios())
-        add_host_to_cluster(self.cluster, host2, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host1)
+        self.add_host_to_cluster(self.cluster, host2)
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_host())
         policy.group.add(self.group)
         policy.add_object(self.cluster)
@@ -232,8 +230,8 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
 
     def test_parent_policy4host_in_service(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        add_host_to_cluster(self.cluster, host1, rbac_scenarios=RBACScenarios())
-        add_host_to_cluster(self.cluster, host2, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host1)
+        self.add_host_to_cluster(self.cluster, host2)
         self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(host1, self.component_11), (host2, self.component_21)]
         )
@@ -262,9 +260,9 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
     def test_parent_policy4host_in_component(self):
         provider, host1, host2 = self.get_hosts_and_provider()
         host3 = Host.objects.create(provider=provider, prototype=self.host_prototype, fqdn="host_3")
-        add_host_to_cluster(self.cluster, host1, rbac_scenarios=RBACScenarios())
-        add_host_to_cluster(self.cluster, host2, rbac_scenarios=RBACScenarios())
-        add_host_to_cluster(self.cluster, host3, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host1)
+        self.add_host_to_cluster(self.cluster, host2)
+        self.add_host_to_cluster(self.cluster, host3)
         self.uc.set_hostcomponent(
             cluster=self.cluster,
             entries=[(host1, self.component_21), (host2, self.component_21), (host3, self.component_11)],
@@ -348,7 +346,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
 
     def test_add_host(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        add_host_to_cluster(self.cluster, host1, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host1)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11)])
 
         policy = Policy.objects.create(role=self.object_role_custom_perm_cluster_service_component_host())
@@ -369,7 +367,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
-        add_host_to_cluster(self.cluster, host2, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host2)
 
         self.assertTrue(self.user.has_perm("cm.change_config_of_cluster", self.cluster))
         self.assertTrue(self.user.has_perm("cm.change_config_of_service", self.service_1))
@@ -379,7 +377,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
 
     def test_add_hc(self):
         _, host1, host2 = self.get_hosts_and_provider()
-        add_host_to_cluster(self.cluster, host1, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host1)
         self.uc.set_hostcomponent(cluster=self.cluster, entries=[(host1, self.component_11)])
         policy = Policy.objects.create(role=self.object_role_custom_perm_service_component_host())
         policy.group.add(self.group)
@@ -401,7 +399,7 @@ class PolicyRBACTestCase(BusinessLogicMixin, RBACBaseTestCase):
         self.assertTrue(self.user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(self.user.has_perm("cm.change_config_of_host", host2))
 
-        add_host_to_cluster(self.cluster, host2, rbac_scenarios=RBACScenarios())
+        self.add_host_to_cluster(self.cluster, host2)
         self.uc.set_hostcomponent(
             cluster=self.cluster, entries=[(host1, self.component_11), (host2, self.component_12)]
         )

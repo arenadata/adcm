@@ -60,6 +60,7 @@ type statusChangePayload struct {
 	State           string                     `json:"state,omitempty"`
 	MultiState      *[]string                  `json:"multiState,omitempty"`
 	Prototype       *statusChangePrototype     `json:"prototype,omitempty"`
+	IsUpgradable    *bool                      `json:"isUpgradable,omitempty"`
 	MaintenanceMode string                     `json:"maintenanceMode,omitempty"`
 	Name            string                     `json:"name,omitempty"`
 	DisplayName     string                     `json:"displayName,omitempty"`

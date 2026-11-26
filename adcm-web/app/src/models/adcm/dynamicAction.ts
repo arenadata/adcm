@@ -18,6 +18,7 @@ export interface AdcmDynamicAction {
   name: string;
   displayName: string;
   startImpossibleReason: string;
+  description: string;
 }
 
 export type AdcmDynamicActionConfiguration = {

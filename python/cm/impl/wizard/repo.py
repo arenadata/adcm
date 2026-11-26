@@ -11,13 +11,14 @@
 # limitations under the License.
 
 from collections.abc import Callable, Generator
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import partial
 from typing import Any, cast
 from uuid import UUID, uuid4
 
-from core import action, config, mapping
+from core import config, mapping
 from core.action import wizard
+from core.action.types import JobSpecV1
 from core.types import (
     ActionID,
     ActionProcessID,
@@ -33,6 +34,8 @@ from pydantic import RootModel
 import core
 
 from cm.converters import core_type_to_model
+from cm.impl.common.dto import to_update_payload
+from cm.impl.common.execution_plan import dump_execution_plan, parse_execution_plan
 from cm.legacy.services.action_process.errors import ActionProcessNotFoundError, ActionProcessStepNotFoundError
 from cm.models import (
     Process,
@@ -130,12 +133,14 @@ class WizardRepo(wizard.WizardRepoI):
         return ActionProcess.model_validate(process, from_attributes=True)
 
     def update_step(self, step_id: ActionProcessStepID, data: StepUpdateDTO) -> None:
-        if data.step_spec is not None:
-            match data.step_spec:
-                case (core.config.spec.FullSpec(), _):
-                    data.step_spec = (data.step_spec[0].model_dump(), data.step_spec[1])
+        # every step type keeps a spec of its own kind under `step_spec`, each with its own stored shape,
+        # so it's dumped here explicitly instead of by the generic path
+        payload = to_update_payload(data, exclude={"step_spec"})
 
-        ProcessStep.objects.filter(id=step_id).update(**data.model_dump(exclude_unset=True))
+        if "step_spec" in data.model_fields_set:
+            payload["step_spec"] = _dump_step_spec(data.step_spec)
+
+        ProcessStep.objects.filter(id=step_id).update(**payload)
 
     def upsert_step_input(self, step_id: ActionProcessStepID, data: StepInputDTO) -> None:
         dto_data = data.model_dump()
@@ -167,7 +172,7 @@ class WizardRepo(wizard.WizardRepoI):
         return None
 
     def update_process(self, process_id: ActionProcessID, data: ProcessUpdateDTO) -> None:
-        Process.objects.filter(id=process_id).update(**data.model_dump(exclude_unset=True))
+        Process.objects.filter(id=process_id).update(**to_update_payload(data))
 
     def update_process_sync_key(self, process_id: ActionProcessID, sync_key: UUID, new_sync_key: UUID) -> bool:
         rows_matched = Process.objects.filter(id=process_id, sync_key=sync_key).update(sync_key=new_sync_key)
@@ -272,13 +277,42 @@ def serialize_step(
             return step, data
 
 
+def _dump_step_spec(spec: Any) -> Any:
+    """
+    Dump a step's spec into the shape its reader expects back.
+
+    Which step this is isn't known in here, so the spec's own type stands for it;
+    every case has a `to_step_*_spec` counterpart below reading it back.
+    """
+
+    match spec:
+        case JobSpecV1():
+            # operation step: a plan is stored in its own versioned format
+            return dump_execution_plan(spec)
+
+        case (core.config.spec.FullSpec() as specification, defaults):
+            # configuration step
+            return [specification.model_dump(), asdict(defaults)]
+
+        case [*rules] if all(isinstance(rule, mapping.MappingRule) for rule in rules):
+            # mapping step, an empty list of rules included
+            return [asdict(rule) for rule in rules]
+
+        case None:
+            return None
+
+        case _:
+            message = f"Don't know how to store a step spec of type {type(spec)}"
+            raise TypeError(message)
+
+
 def to_step_config_spec(spec: list[dict]) -> wizard.ConfigStepSpec:
     spec_raw, defaults_raw = spec
     return config.spec.FullSpec.model_validate(spec_raw), config.Defaults(**defaults_raw)
 
 
 def to_step_operation_spec(spec: Any) -> wizard.OperationStepSpec:
-    return [action.JobSpec.model_validate(rec) for rec in spec]
+    return parse_execution_plan(spec)
 
 
 def to_step_mapping_spec(spec: Any) -> wizard.MappingStepSpec:

@@ -6,6 +6,7 @@ import ConfigurationMain from '@commonComponents/configuration/ConfigurationMain
 import ConfigurationFormContextProvider from '@commonComponents/configuration/ConfigurationFormContext/ConfigurationFormContextProvider';
 import ConfigurationSubHeader from '@commonComponents/configuration/ConfigurationSubHeader/ConfigurationSubHeader';
 import ConfigurationHeader from '@commonComponents/configuration/ConfigurationHeader/ConfigurationHeader';
+import { canSaveConfiguration } from '@commonComponents/configuration/canSaveConfiguration';
 import { useClusterConfigGroupConfiguration } from './useClusterConfigGroupConfiguration';
 import { useClusterConfigGroupConfigurationsCompare } from './useClusterConfigGroupConfigurationsCompare';
 import ConfigurationMinimap from '@commonComponents/configuration/ConfigurationMinimap/ConfigurationMinimap';
@@ -53,7 +54,12 @@ const ClusterConfigGroupConfiguration: React.FC = () => {
       />
 
       <ConfigurationFormContextProvider>
-        <ConfigurationSubHeader onSave={onSave} onRevert={onReset} isViewDraft={selectedConfigId === 0} />
+        <ConfigurationSubHeader
+          onSave={onSave}
+          onRevert={onReset}
+          isViewDraft={selectedConfigId === 0}
+          canSave={canSaveConfiguration(selectedConfigId, configVersions)}
+        />
         <ConfigurationMinimap>
           <ConfigurationMain
             isLoading={isConfigurationLoading}

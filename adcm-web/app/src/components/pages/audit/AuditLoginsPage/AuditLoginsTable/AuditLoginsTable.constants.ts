@@ -18,6 +18,14 @@ export const columns: TableColumn[] = [
     name: 'loginTime',
     isSortable: true,
   },
+  {
+    label: 'Address',
+    name: 'address',
+  },
+  {
+    label: 'Client',
+    name: 'agent',
+  },
 ];
 
 export const loginsResultOptions = getOptionsFromEnum(AdcmAuditLoginResultType);

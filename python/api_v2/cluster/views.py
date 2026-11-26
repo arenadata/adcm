@@ -597,7 +597,14 @@ class ClusterViewSet(
         filter_backends=[],
     )
     @inject
-    def mapping(self, request: Request, *args, cluster_service: FromDishka[ClusterService], **kwargs) -> Response:  # noqa: ARG002
+    def mapping(
+        self,
+        request: Request,
+        *_,
+        cluster_service: FromDishka[ClusterService],
+        status_scenarios: FromDishka[StatusScenarios],
+        **__,
+    ) -> Response:
         cluster = self.get_object()
 
         check_custom_perm(
@@ -644,7 +651,11 @@ class ClusterViewSet(
         bundle_id = Prototype.objects.values_list("bundle_id", flat=True).get(id=cluster.prototype_id)
 
         set_host_component_mapping(
-            cluster_id=cluster_id, bundle_id=bundle_id, new_mapping=new_mapping_entries, cluster_service=cluster_service
+            cluster_id=cluster_id,
+            bundle_id=bundle_id,
+            new_mapping=new_mapping_entries,
+            cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
         )
 
         return Response(
@@ -982,6 +993,7 @@ class HostClusterViewSet(
         *_,
         status_scenarios: FromDishka[StatusScenarios],
         rbac_scenarios: FromDishka[RBACScenarios],
+        cluster_service: FromDishka[ClusterService],
         **kwargs,
     ):
         cluster = get_object_for_user(
@@ -1001,8 +1013,9 @@ class HostClusterViewSet(
                 entry["host_id"]
                 for entry in (serializer.validated_data if multiple_hosts else [serializer.validated_data])
             ],
-            status_service=status_scenarios,
+            status_scenarios=status_scenarios,
             rbac_scenarios=rbac_scenarios,
+            cluster_service=cluster_service,
         )
 
         qs_for_added_hosts = self.get_queryset().filter(id__in=added_hosts)
@@ -1111,92 +1124,76 @@ class ClusterImportViewSet(ImportViewSet):
 
 @document_config_host_group_viewset(object_type="cluster")
 @audit_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterCHGViewSet(CHGViewSet):
-    ...
+class ClusterCHGViewSet(CHGViewSet): ...
 
 
 @document_host_config_host_group_viewset(object_type="cluster")
 @audit_host_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterHostCHGViewSet(HostCHGViewSet):
-    ...
+class ClusterHostCHGViewSet(HostCHGViewSet): ...
 
 
 @document_config_viewset(object_type="cluster config group", operation_id_variant="ClusterConfigGroup")
 @audit_config_config_host_group_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterConfigCHGViewSet(ConfigLogViewSet):
-    ...
+class ClusterConfigCHGViewSet(ConfigLogViewSet): ...
 
 
 @document_action_viewset(object_type="cluster")
 @audit_action_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterActionViewSet(ActionViewSet):
-    ...
+class ClusterActionViewSet(ActionViewSet): ...
 
 
 @document_action_viewset(object_type="hostInCluster")
 @audit_action_viewset(retrieve_owner=parent_host_from_lookup)
-class ClusterHostActionViewSet(ActionViewSet):
-    ...
+class ClusterHostActionViewSet(ActionViewSet): ...
 
 
 @document_action_host_group_viewset(object_type="cluster")
 @audit_action_host_group_viewset(parent_cluster_from_lookup)
-class ClusterActionHostGroupViewSet(ActionHostGroupViewSet):
-    ...
+class ClusterActionHostGroupViewSet(ActionHostGroupViewSet): ...
 
 
 @document_action_host_group_hosts_viewset(object_type="cluster")
-class ClusterActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
-    ...
+class ClusterActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet): ...
 
 
 @document_action_host_group_actions_viewset(object_type="cluster")
-class ClusterActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
-    ...
+class ClusterActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet): ...
 
 
 @document_action_process_viewset(object_type="clusterActionHostGroup", operation_id_variant="ClusterActionHostGroup")
 @audit_action_process_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
-    ...
+class ClusterActionHostGroupActionsProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(
     object_type="clusterActionHostGroup", operation_id_variant="ClusterActionHostGroup"
 )
-class ClusterActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ClusterActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet): ...
 
 
 @document_config_viewset(object_type="cluster")
 @audit_config_viewset(type_in_name="Cluster", retrieve_owner=parent_cluster_from_lookup)
-class ClusterConfigViewSet(ConfigLogViewSet):
-    ...
+class ClusterConfigViewSet(ConfigLogViewSet): ...
 
 
 @document_upgrade_viewset(object_type="cluster")
 @audit_upgrade_viewset(retrieve_owner=parent_cluster_from_lookup)
-class ClusterUpgradeViewSet(UpgradeViewSet):
-    ...
+class ClusterUpgradeViewSet(UpgradeViewSet): ...
 
 
 @audit_action_process_viewset(retrieve_owner=parent_cluster_from_lookup)
 @document_action_process_viewset(object_type="cluster")
-class ClusterActionProcessViewSet(ActionProcessViewSet):
-    ...
+class ClusterActionProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(object_type="cluster")
-class ClusterActionProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ClusterActionProcessStepViewSet(ProcessStepViewSet): ...
 
 
 @audit_action_process_viewset(retrieve_owner=parent_host_from_lookup)
 @document_action_process_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
-class ClusterHostActionProcessViewSet(ActionProcessViewSet):
-    ...
+class ClusterHostActionProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(object_type="clusterHost", operation_id_variant="ClusterHost")
-class ClusterHostActionProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ClusterHostActionProcessStepViewSet(ProcessStepViewSet): ...

@@ -27,10 +27,12 @@ from cm.converters import core_type_to_model, orm_object_to_core_type
 from cm.legacy.services.mapping import change_host_component_mapping, check_nothing
 from cm.legacy.status_api import send_object_update_event
 from cm.models import (
+    Host,
     MaintenanceMode,
     TaskLog,
     get_object_cluster,
 )
+from cm.transition.status import StatusScenarios
 
 # todo "unwrap" these functions to use repo without directly calling ORM,
 #  try to rework functions like `save_hc` also, because they rely on API v1 input
@@ -42,7 +44,7 @@ class WithIDAndCoreType(Protocol):
     type: ADCMCoreType
 
 
-def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logger):
+def set_hostcomponent(task: Task, cluster_service: ClusterService, status_scenarios: StatusScenarios, logger: Logger):
     task_object = TaskLog.objects.prefetch_related("task_object").get(id=task.id).task_object
 
     cluster = get_object_cluster(task_object)
@@ -59,6 +61,7 @@ def set_hostcomponent(task: Task, cluster_service: ClusterService, logger: Logge
         bundle_id=cluster.prototype.bundle_id,
         mapping_delta=task.hostcomponent.mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=check_nothing,
     )
 
@@ -74,7 +77,7 @@ def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCor
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.OFF
-        obj.save()
+        obj.save(update_fields=["maintenance_mode"] if isinstance(obj, Host) else ["_maintenance_mode"])
         send_object_update_event(
             obj_id=obj.pk,
             obj_type=orm_object_to_core_type(obj).value,
@@ -86,7 +89,7 @@ def update_object_maintenance_mode(action_name: str, object_: Descriptor[ADCMCor
         and obj.maintenance_mode == MaintenanceMode.CHANGING
     ):
         obj.maintenance_mode = MaintenanceMode.ON
-        obj.save()
+        obj.save(update_fields=["maintenance_mode"] if isinstance(obj, Host) else ["_maintenance_mode"])
         send_object_update_event(
             obj_id=obj.pk,
             obj_type=orm_object_to_core_type(obj).value,

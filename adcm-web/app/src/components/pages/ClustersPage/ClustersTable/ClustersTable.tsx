@@ -19,6 +19,7 @@ import { openClusterUpgradeDialog } from '@store/adcm/clusters/clusterUpgradesSl
 import { isShowSpinner } from '@uikit/Table/Table.utils';
 import { isBlockingConcernPresent } from '@utils/concernUtils';
 import DescriptionCell from '@commonComponents/Table/Cells/DescriptionCell/DescriptionCell';
+import EntityVersionCell from '@commonComponents/EntityVersionCell/EntityVersionCell';
 
 const ClustersTable = () => {
   const dispatch = useDispatch();
@@ -55,6 +56,8 @@ const ClustersTable = () => {
       variant="secondary"
     >
       {clusters.map((cluster) => {
+        const versionInfo = { contractVersion: cluster.prototype.contractVersion, version: cluster.prototype.version };
+
         return (
           <TableRow key={cluster.id}>
             <StatusableCell
@@ -77,7 +80,7 @@ const ClustersTable = () => {
             </StatusableCell>
             <MultiStateCell entity={cluster} />
             <TableCell>{cluster.prototype.displayName}</TableCell>
-            <TableCell>{cluster.prototype.version}</TableCell>
+            <EntityVersionCell versionInfo={versionInfo} />
             <DescriptionCell description={cluster.description} onEdit={handleEditDescription(cluster)} />
             <TableCell hasIconOnly>
               <Concern concerns={cluster.concerns} />

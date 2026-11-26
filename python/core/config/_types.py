@@ -18,12 +18,13 @@ from typing import Any, Literal, NamedTuple, TypeAlias, TypedDict
 from typing_extensions import Self
 
 from core.config.constants import SYSTEM_CONFIG_CREATOR
+from core.spec.types import KEY_ROOT_PREFIX, KEY_SEPARATOR, FullSpecKey, LevelSpecKey
 from core.types import ConfigHostGroupDesc, ConfigID, CoreObjectDescriptor, PrototypeID
 
 EncryptFunc: TypeAlias = Callable[[str], str]
 DecryptFunc: TypeAlias = Callable[[str], str]
 
-ParameterFullName: TypeAlias = str
+ParameterFullName: TypeAlias = FullSpecKey
 """
 "Flat" name for nested fields, each level will start with `/`.
 Elements at "root" of configuration will be named like `"/param"`, `"/group"`,
@@ -39,14 +40,14 @@ If `display_name` is not defined for a parameter or group, its technical name wi
 to build the full display name, for example: `"/Group Name/nested/Param"`.
 """
 
-ParameterLevelName: TypeAlias = str
+ParameterLevelName: TypeAlias = LevelSpecKey
 """
 Parameter technical name, unique inside one config hierarchy level (root or group).
 Doesn't contain `/`, just name from bundle.
 """
 
-PARAMETER_NAME_SEPARATOR = "/"
-PARAMETER_NAME_ROOT_PREFIX = "/"
+PARAMETER_NAME_SEPARATOR = KEY_SEPARATOR
+PARAMETER_NAME_ROOT_PREFIX = KEY_ROOT_PREFIX
 """
 Prefix to put before first level name
 """
@@ -140,7 +141,7 @@ class Defaults:
 
     values: dict[ParameterFullName, ConfigParameterValue] = field(default_factory=dict)
     activation: dict[ParameterFullName, bool] = field(default_factory=dict)
-    selection: dict[ParameterFullName, str | None] = field(default_factory=dict)
+    selection: dict[ParameterFullName, ParameterLevelName | None] = field(default_factory=dict)
 
 
 @dataclass(slots=True)

@@ -1,0 +1,21 @@
+# `hc_acl` isn't declared at all
+- type: cluster
+  name: hc_acl_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.16"
+  actions:
+    hc_apply_without_hc_acl:
+      scripts:
+        - name: run
+          script_type: ansible
+          script: ./playbook.yaml
+        - name: apply
+          script_type: internal
+          script: hc_apply
+
+- type: service
+  name: service
+  version: "1"
+  components:
+    component:

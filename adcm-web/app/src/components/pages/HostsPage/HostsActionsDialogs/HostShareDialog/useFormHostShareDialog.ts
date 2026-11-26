@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useEffect } from 'react';
 import { useStore, useDispatch, useForm } from '@hooks';
-import { createHostDuplicate, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
+import { createHostDuplicates, loadClusters } from '@store/adcm/hosts/hostsActionsSlice';
 import { validateSubHostName } from './HostShareDialog.utils';
 
 interface CreateHostsFormData {
@@ -41,13 +41,15 @@ export const useFormHostShareDialog = () => {
     const hostId = host?.id;
 
     if (hostId) {
-      const payload = {
-        clusterId,
-        hostId,
-        name,
-      };
-
-      dispatch(createHostDuplicate(payload));
+      dispatch(
+        createHostDuplicates([
+          {
+            clusterId,
+            hostId,
+            name,
+          },
+        ]),
+      );
     }
   }, [host, formData, dispatch]);
 

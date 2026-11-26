@@ -21,6 +21,8 @@ from core import config
 
 from cm.models import PrototypeConfig
 
+_MAIN_INFO_NAME: Final = config.names.ensure_full_name("__main_info")
+
 _SECRET_TYPES = frozenset(("password", "secrettext", "secretfile", "secretmap"))
 
 T = TypeVar("T")
@@ -34,7 +36,7 @@ def build_specification(records: Iterable[PrototypeConfig], group_customization_
 
     specification = config.spec.FullSpec.from_parameters(*parameters)
 
-    if main_info := specification.parameters.get("/__main_info"):
+    if main_info := specification.parameters.get(_MAIN_INFO_NAME):
         main_info.extra.ui_options["invisible"] = True
 
     return specification
@@ -99,11 +101,9 @@ def build_defaults(
                 if is_secret:
                     default = config.secrets.encrypt_if_possible(value=default, encryptor=encrypt)
 
-            case (
-                config.spec.p.ListParameter()
-                | config.spec.p.JSONParameter()
-                | config.spec.p.StructureParameter()
-            ) if default:
+            case config.spec.p.ListParameter() | config.spec.p.JSONParameter() | config.spec.p.StructureParameter() if (
+                default
+            ):
                 default = json.loads(default)
 
             case config.spec.p.OptionParameter():

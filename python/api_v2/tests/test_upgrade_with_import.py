@@ -15,8 +15,10 @@ from functools import partial
 from itertools import chain
 
 from cm.models import Action, Cluster, ClusterBind, ConcernItem, ConfigLog, PrototypeImport, Service, TaskLog, Upgrade
+from core.types import TaskID
 from rest_framework.status import HTTP_204_NO_CONTENT
 from tests.suites import ADCMDjangoAPISuite
+from tests.utils import assert_no_task_launched
 from unittest_parametrize import param, parametrize
 
 
@@ -70,8 +72,7 @@ class TestUpgradeWithImport(ADCMDjangoAPISuite):
     def has_import_concern(self, owner: Cluster | Service) -> bool:
         return ConcernItem.objects.filter(owner_id=owner.pk, owner_type=owner.content_type).exists()
 
-    def assert_launched_task_succeed(self):
-        task_id = self.task_runner.expect_task_launched().id
+    def assert_task_succeed(self, task_id: TaskID) -> None:
         status = TaskLog.objects.values_list("status", flat=True).get(id=task_id)
         self.assertEqual(status, "success")
 
@@ -116,8 +117,9 @@ class TestUpgradeWithImport(ADCMDjangoAPISuite):
         response = self.client.v2[self.import_cluster, "upgrades", upgrade, "run"].post()
 
         self.assertEqual(response.status_code, 200)
-        self.task_runner.run_launched_task()
-        self.assert_launched_task_succeed()
+        task_id = response.json()["id"]
+        self.task_runner().launch_task(task_id)
+        self.assert_task_succeed(task_id)
         config = self.get_config(obj=self.import_cluster)
         self.assertDictEqual(config.config["debug"]["before_upgrade"]["imports"], expected)
         before_upgrade_section = self.get_before_upgrade(self.import_cluster)["imports"]["config"]["cluster_export"][
@@ -275,7 +277,7 @@ class TestUpgradeWithImport(ADCMDjangoAPISuite):
         revert_action = Action.objects.get(prototype=self.import_cluster.prototype, name="revert")
         response = self.client.v2[self.import_cluster, "actions", revert_action, "run"].post()
         self.assertEqual(response.status_code, 200)
-        self.task_runner.run_launched_task()
+        self.task_runner().launch_task(response.json()["id"])
 
         self.import_cluster.refresh_from_db(fields=["prototype"])
         self.assertEqual(self.import_cluster.prototype.version, "1.0")
@@ -338,9 +340,9 @@ class TestUpgradeWithImport(ADCMDjangoAPISuite):
 
         self.assertTrue(check_service_bind_exists())
 
-        response = self.client.v2[self.import_cluster, "upgrades", upgrade, "run"].post()
+        with assert_no_task_launched():
+            response = self.client.v2[self.import_cluster, "upgrades", upgrade, "run"].post()
 
         self.assertEqual(response.status_code, 204)
-        self.task_runner.expect_task_not_launched()
         self.assertFalse(check_service_bind_exists())
         self.assertFalse(Service.objects.filter(id=service.id).exists())

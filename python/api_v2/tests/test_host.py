@@ -15,7 +15,6 @@ import secrets
 
 from cm.legacy.api import remove_host_from_cluster
 from cm.legacy.services.cluster import perform_host_to_cluster_map
-from cm.legacy.services.status import notify
 from cm.models import Action, Cluster, Component, Host, HostComponent, Provider, TaskLog
 from cm.transition.status import StatusScenarios
 from core.cluster import ClusterService
@@ -154,6 +153,12 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.host.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
+
         response = self.client.v2[self.host].patch(
             data={"name": "new-name"},
         )
@@ -175,6 +180,12 @@ class TestHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+
+        # concerns are distributed when task is scheduled, not when action is launched,
+        # so object stays free of them until scheduler picks the task up
+        self.assertFalse(self.host.concerns.exists())
+
+        self.task_runner().schedule_task(response.json()["id"])
 
         response = self.client.v2[self.host].patch(data={"name": "new-name"})
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
@@ -368,14 +379,14 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
         expected = {(h.id, h.fqdn) for h in hosts}
         self.assertTrue(
             expected.issubset(candidates),
-            msg=f"Not found entries: {', '.join(map(str, expected.difference( candidates)))}",
+            msg=f"Not found entries: {', '.join(map(str, expected.difference(candidates)))}",
         )
 
     def assert_hosts_not_in_candidates(self, *hosts: Host, candidates: list[tuple[HostID, HostName]]):
         expected = {(h.id, h.fqdn) for h in hosts}
         self.assertFalse(
             expected.intersection(candidates),
-            msg=f"Not expected entries: {', '.join(map(str, expected.difference( candidates)))}",
+            msg=f"Not expected entries: {', '.join(map(str, expected.difference(candidates)))}",
         )
 
     def test_list_success(self):
@@ -545,6 +556,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h2_dup = Host.objects.get(
@@ -554,6 +566,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         hosts_to_add = (self.host, h1_dup, self.host_2, h2_dup)
@@ -580,6 +593,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h2_dup = Host.objects.get(
@@ -589,6 +603,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
 
@@ -629,6 +644,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         h1_dup_2 = Host.objects.get(
@@ -638,6 +654,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         hosts_to_add = (h1_dup, h1_dup_2)
@@ -802,6 +819,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
         host_duplicate_named_as_host_2 = Host.objects.get(
@@ -811,6 +829,7 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
                 config_service=self.container.get(core.config.ConfigService),
                 rbac_scenarios=self.container.get(RBACScenarios),
                 status_scenarios=self.container.get(StatusScenarios),
+                cluster_service=self.container.get(ClusterService),
             )
         )
 
@@ -823,8 +842,9 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
             perform_host_to_cluster_map(
                 cluster_id=self.cluster_1.pk,
                 hosts=[host_duplicate_named_as_host_2.pk],
-                status_service=notify,
+                status_scenarios=self.uc.container.get(StatusScenarios),
                 rbac_scenarios=RBACScenarios(),
+                cluster_service=self.container.get(ClusterService),
             )
 
             candidates = self.get_host_candidates(self.cluster_1)
@@ -841,7 +861,11 @@ class TestClusterHost(ADCMDjangoAPISuite, BusinessLogicMixin):
 
         with self.subTest("exclude by original host add"):
             perform_host_to_cluster_map(
-                cluster_id=self.cluster_2.pk, hosts=[host_1.pk], status_service=notify, rbac_scenarios=RBACScenarios()
+                cluster_id=self.cluster_2.pk,
+                hosts=[host_1.pk],
+                status_scenarios=self.uc.container.get(StatusScenarios),
+                rbac_scenarios=RBACScenarios(),
+                cluster_service=self.container.get(ClusterService),
             )
 
             candidates = self.get_host_candidates(self.cluster_2)
@@ -904,14 +928,14 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.status, "created")
         self.assertEqual(task.task_object, self.host)
         self.assertEqual(task.owner_id, self.host.pk)
         self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         task.refresh_from_db()
         self.assertEqual(task.status, "success")
 
@@ -933,14 +957,14 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
         )
 
         self.assertEqual(response.status_code, HTTP_200_OK)
-        task_id = self.task_runner.expect_task_launched(response.json()["id"]).id
+        task_id = response.json()["id"]
         task = TaskLog.objects.get(id=task_id)
         self.assertEqual(task.status, "created")
         self.assertEqual(task.task_object, self.host)
         self.assertEqual(task.owner_id, self.host.pk)
         self.assertEqual(task.owner_type, ADCMCoreType.HOST.value)
 
-        self.task_runner.run_task(task_id)
+        self.task_runner().launch_task(task_id)
         task.refresh_from_db()
         self.assertEqual(task.status, "success")
 
@@ -978,6 +1002,7 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
                     "displayName": "host_action",
                     "id": host_action.pk,
                     "name": "host_action",
+                    "description": "",
                     "startImpossibleReason": None,
                 }
             ],
@@ -1003,18 +1028,21 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
                     "id": cluster_on_host.pk,
                     "name": "cluster_on_host",
                     "displayName": "cluster_on_host",
+                    "description": "",
                     "startImpossibleReason": None,
                 },
                 {
                     "id": service_on_host.pk,
                     "name": "service_on_host",
                     "displayName": "service_on_host",
+                    "description": "",
                     "startImpossibleReason": None,
                 },
                 {
                     "id": component_on_host.pk,
                     "name": "component_on_host",
                     "displayName": "component_on_host",
+                    "description": "",
                     "startImpossibleReason": None,
                 },
             ],
@@ -1040,6 +1068,7 @@ class TestHostActions(ADCMDjangoAPISuite, BusinessLogicMixin):
                     "id": component_on_host.pk,
                     "name": "component_on_host",
                     "displayName": "component_on_host",
+                    "description": "",
                     "startImpossibleReason": None,
                 },
             ],

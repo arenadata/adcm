@@ -1,0 +1,34 @@
+- type: cluster
+  name: switch_cluster
+  version: "2.2"
+  contract_version: "2.1"
+  venv: "2.16"
+  allow_maintenance_mode: true
+  upgrade:
+    - name: api
+      versions: &versions
+        min: "1.0"
+        max: "1.0"
+      states:
+        available: any
+    - name: task
+      versions: *versions
+      states:
+        available: any
+      scripts:
+        - name: switch
+          script: bundle_switch
+          script_type: internal
+  config:
+    - name: kept
+      type: string
+      default: cluster-kept
+    - name: required_without_default
+      type: string
+      required: true
+
+- type: service
+  name: service_kept
+  version: "2.2"
+  components:
+    component_kept:

@@ -102,8 +102,8 @@ class ProcessExecutor(Executor[BundleExecutorConfig], WithErrOutLogsMixin, ABC):
         self._open_logs(log_dir=self._config.work_dir, log_prefix=self.script_type)
 
         os.chdir(self._config.bundle.root)
-        self._process = subprocess.Popen(
-            command,  # noqa S603
+        self._process = subprocess.Popen(  # noqa S603
+            command,
             env=environment,
             stdout=self._out_log,
             stderr=self._err_log,

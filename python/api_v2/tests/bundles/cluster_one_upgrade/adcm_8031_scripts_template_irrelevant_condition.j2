@@ -1,0 +1,5 @@
+{% if cluster.config.nonexistent %}
+- name: Bundle upgrade
+  script: bundle_switch
+  script_type: internal
+{% endif %}

@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import Collapse from '@uikit/Collapse/Collapse';
 import type { Node } from './CollapseNode.types';
 import s from './CollapseNode.module.scss';
@@ -15,6 +15,8 @@ interface CollapseNodeProps<T> {
   treeRef?: RefObject<HTMLDivElement>;
   isInitiallyExpanded?: boolean;
   areExpandedAll?: boolean;
+  expandedNodes: Record<string, boolean>;
+  onExpandedChange: (nodeKey: string, isExpanded: boolean) => void;
   getNodeClassName: (node: Node<T>) => string;
   renderNodeContent: (node: Node<T>, isExpanded: boolean, onExpand: (isOpen: boolean) => void) => ReactNode;
 }
@@ -24,12 +26,14 @@ const CollapseNode = <T,>({
   treeRef,
   isInitiallyExpanded = false,
   areExpandedAll,
+  expandedNodes,
+  onExpandedChange,
   getNodeClassName,
   renderNodeContent,
 }: CollapseNodeProps<T>) => {
   const isIgnoreExpandAll = node.key === rootNodeKey;
   const initialExpanded = areExpandedAll !== undefined && !isIgnoreExpandAll ? areExpandedAll : isInitiallyExpanded;
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+  const isExpanded = expandedNodes[node.key] ?? initialExpanded;
   const hasChildren = Boolean(node.children?.length);
   const children = (node.children ?? []) as Node<T>[];
   const fieldAttributes = (node as ConfigurationNode).data.fieldAttributes;
@@ -39,10 +43,10 @@ const CollapseNode = <T,>({
   const handleToggleAllNodes = useCallback(
     (e: CustomEvent<boolean>) => {
       if (!isIgnoreExpandAll) {
-        setIsExpanded(e.detail);
+        onExpandedChange(node.key, e.detail);
       }
     },
-    [isIgnoreExpandAll],
+    [isIgnoreExpandAll, node.key, onExpandedChange],
   );
 
   useEffect(() => {
@@ -55,9 +59,7 @@ const CollapseNode = <T,>({
   }, [treeRef, handleToggleAllNodes]);
 
   const toggleCollapseNode = (isOpen: boolean) => {
-    if (hasChildren) {
-      setIsExpanded(isOpen);
-    }
+    onExpandedChange(node.key, isOpen);
   };
 
   return (
@@ -74,6 +76,8 @@ const CollapseNode = <T,>({
                 treeRef={treeRef}
                 key={childNode.key}
                 areExpandedAll={areExpandedAll}
+                expandedNodes={expandedNodes}
+                onExpandedChange={onExpandedChange}
                 getNodeClassName={getNodeClassName}
                 renderNodeContent={renderNodeContent}
               />

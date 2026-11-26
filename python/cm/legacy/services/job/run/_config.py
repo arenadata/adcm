@@ -12,16 +12,15 @@
 
 from core.action import TaskOwner
 from core.action.job import JobUpdateDTO
-from core.config import ConfigCoreObjectWithPrototype, RelatedConfigs
+from core.config import ConfigCoreObjectWithPrototype, ConfigRepoI, RelatedConfigs
 from core.types import ADCMCoreType, ConfigID, CoreObjectDescriptor, PrototypeID
 
 from cm.impl.job.repo import JobRepo
-from cm.legacy.services.config import retrieve_primary_configs
 from cm.legacy.services.hierarchy import retrieve_object_hierarchy
 from cm.models import JobLog
 
 
-def create_related_configs(job_id: int, owner: TaskOwner) -> None:
+def create_related_configs(job_id: int, owner: TaskOwner, config_repo: ConfigRepoI) -> None:
     object_ = CoreObjectDescriptor(id=owner.id, type=owner.type)
 
     if owner.type in (ADCMCoreType.SERVICE, ADCMCoreType.COMPONENT):
@@ -37,7 +36,7 @@ def create_related_configs(job_id: int, owner: TaskOwner) -> None:
         object_ = CoreObjectDescriptor(id=cluster.id, type=cluster.type)
 
     hierarchy = retrieve_object_hierarchy(object_=object_)
-    related_configs = retrieve_primary_configs(objects=hierarchy)
+    related_configs = config_repo.retrieve_primary_configs(objects=hierarchy)
 
     JobRepo().update_job(id=job_id, data=JobUpdateDTO(objects_related_configs=related_configs))
 

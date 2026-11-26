@@ -14,7 +14,7 @@ from collections.abc import Callable
 from enum import Enum, auto
 from urllib.parse import urlsplit
 
-from cm.models import Bundle
+from cm.models import Bundle, JobLog
 from core.bundle import ContractVersionTag, InstalledBundleVersion
 from core.scenarios.adcm import DefaultURL
 from dishka import Container, Scope
@@ -40,6 +40,12 @@ OUTDATED_VERSION_ERROR = (
     "Minimum required version to upgrade from is ADCM 2.10.\n"
     "Please upgrade to ADCM 2.10 first before upgrading to the current version."
 )
+RELEASE_3_0_SKIPPED_ERROR = (
+    "UPGRADE BLOCKED - COMPATIBILITY ISSUES:\n"
+    "✗ Required release is skipped.\n"
+    "Minimum required version to upgrade from is ADCM 3.0.\n"
+    "Please upgrade to 3.0 first before upgrading to the current version."
+)
 OBJECTS_WITH_UNSUPPORTED_VERSIONS_TEMPLATE = (
     "UPGRADE BLOCKED - COMPATIBILITY ISSUES:\n"
     "✗ Found Clusters or Hostproviders which are use unsupported bundles with incompatible "
@@ -54,6 +60,24 @@ class CheckStatuses(str, Enum):
     NO_TABLE = auto()
     NO_FIELD = auto()
     SUCCESS = auto()
+
+
+def check_is_upgraded_to_3_0_release_directly() -> CheckStatuses:
+    """Check JobLog table has `executor` column, which was introduced in 3.0"""
+
+    table_name = JobLog._meta.db_table
+    column = "executor"
+
+    with connection.cursor() as cursor:
+        if table_name not in connection.introspection.table_names(cursor):
+            return CheckStatuses.NO_TABLE
+
+        columns = connection.introspection.get_table_description(cursor, table_name)
+
+    if column not in {col.name for col in columns}:
+        return CheckStatuses.NO_FIELD
+
+    return CheckStatuses.SUCCESS
 
 
 def check_contract_version_field_exists() -> CheckStatuses:
@@ -96,13 +120,17 @@ def check_adcm_start_is_allowed(
     report_message: Callable,
     report_warning: Callable,
 ) -> None:
-    result = check_contract_version_field_exists()
-    if result == CheckStatuses.NO_FIELD:
-        message = OUTDATED_VERSION_ERROR
-        raise failure_exc(message)
+    match check_is_upgraded_to_3_0_release_directly():
+        case CheckStatuses.NO_TABLE:
+            return
+        case CheckStatuses.NO_FIELD:
+            raise failure_exc(RELEASE_3_0_SKIPPED_ERROR)
 
-    if result == CheckStatuses.NO_TABLE:
-        return
+    match check_contract_version_field_exists():
+        case CheckStatuses.NO_TABLE:
+            return
+        case CheckStatuses.NO_FIELD:
+            raise failure_exc(OUTDATED_VERSION_ERROR)
 
     with container(scope=Scope.REQUEST) as cont:
         bundle_service = cont.get(core.bundle.BundleService)

@@ -53,7 +53,70 @@
         - name: action
           script: ./playbook.yaml
           script_type: ansible
+    concern_sequential_plan:
+      display_name: Concern sequential plan
+      states: *id001
+      scripts:
+        - name: sequential_first
+          display_name: Sequential first
+          script: ./playbook.yaml
+          script_type: ansible
+        - name: sequential_second
+          display_name: Sequential second
+          script: ./playbook.yaml
+          script_type: ansible
+    concern_mixed_plan:
+      display_name: Concern mixed plan
+      states: *id001
+      scripts:
+        - name: before_parallel
+          display_name: Before parallel
+          script: ./playbook.yaml
+          script_type: ansible
+        - group: parallel
+          name: parallel_jobs
+          scripts:
+            - name: parallel_first
+              display_name: Parallel first
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_second
+              display_name: Parallel second
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_third
+              display_name: Parallel third
+              script: ./playbook.yaml
+              script_type: ansible
+        - name: after_parallel
+          display_name: After parallel
+          script: ./playbook.yaml
+          script_type: ansible
+    concern_parallel_first_plan:
+      display_name: Concern parallel first plan
+      states: *id001
+      scripts:
+        - group: parallel
+          name: parallel_jobs
+          scripts:
+            - name: parallel_first
+              display_name: Parallel first
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_second
+              display_name: Parallel second
+              script: ./playbook.yaml
+              script_type: ansible
+            - name: parallel_third
+              display_name: Parallel third
+              script: ./playbook.yaml
+              script_type: ansible
+        - name: after_parallel
+          display_name: After parallel
+          script: ./playbook.yaml
+          script_type: ansible
     with_config:
+      description: Action with configuration parameters
       config:
         - name: simple
           type: string
@@ -88,6 +151,9 @@
           script: ./playbook.yaml
           script_type: ansible
     with_hc:
+      description: |-
+        Action with hc_acl rules.
+        It adds component_1 and removes component_2.
       allow_in_maintenance_mode: true
       hc_acl:
         - action: add
@@ -103,6 +169,20 @@
         - name: with_hc
           script: ./playbook.yaml
           script_type: ansible
+    adcm_8475_add_services_scripts:
+      scripts:
+        - name: add services
+          script_type: internal
+          script: service_manage
+          params:
+            operation: add
+            services:
+              - name: service_1
+        - name: clean before upgrade
+          script_type: internal
+          script: before_upgrade_clean
+      states:
+        available: any
     cluster_on_host: &id003
       allow_for_action_host_group: false
       host_action: true
@@ -387,6 +467,30 @@
     - name: b_value
       type: integer
       default: 100
+
+- name: adcm_8527
+  type: service
+  version: '1.0'
+  config:
+    - name: check_config_path
+      type: string
+      default: /etc/check/check.yml
+    - name: binary_folder
+      type: string
+      default: /usr/bin
+    - name: common_auth
+      type: group
+      activatable: true
+      active: true
+      subs:
+        - name: username
+          type: string
+          default: superman
+          ansible_options:
+            unsafe: true
+        - name: password
+          type: password
+          default: "!234567Qwer"
 
 - name: adcm_7586
   type: service

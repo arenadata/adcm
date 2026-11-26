@@ -75,8 +75,7 @@ class HCErrorFormatter(Protocol):
         type_: HCViolationType,
         topology: ClusterTopology,
         hc_rules: MappingRules | None,
-    ) -> str:
-        ...
+    ) -> str: ...
 
 
 @dataclass(slots=True, frozen=True)
@@ -95,8 +94,7 @@ class HCViolation:
 
 
 class ConfigInputProcessor(Protocol[T]):
-    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration:
-        ...
+    def __call__(self, configuration: T, specification: core.config.spec.FullSpec, /) -> core.config.Configuration: ...
 
 
 @dataclass(frozen=True, slots=True)

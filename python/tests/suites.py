@@ -14,7 +14,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Final, Literal, TypeVar
+from shutil import rmtree
+from typing import Any, Final, Literal
 import json
 import datetime
 
@@ -33,8 +34,7 @@ from audit.models import (
     AuditUser,
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
-from cm.impl.job.repo import JobRepo, _get_selector_for_core_object
-from cm.legacy.services.job.run._target_factories import prepare_ansible_job_config
+from cm.impl.job.repo import _get_selector_for_core_object
 from cm.models import (
     ADCM,
     Action,
@@ -52,39 +52,31 @@ from cm.models import (
     SignatureStatus,
     TaskLog,
 )
-from core.action import Job
+from cm.tests.scripts import retrieve_rich_jobs
+from core.action.types import RichJob
 from core.legacy.job.executors import Executor as JobExecutor
-from core.legacy.job.runners import (
-    ADCMSettings,
-    AnsibleSettings,
-    ConsulSettings,
-    ExternalSettings,
-    IntegrationsSettings,
-)
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet
 from django.utils import timezone
-from infra.services import prepare_container
 from init_db import init
 from rbac.models import Group, OriginType, Policy, PolicyObject, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.status import HTTP_200_OK
 from unittest_parametrize import ParametrizedTestCase
-import yaml
 import dishka
 import django.test
 
 from tests._base import WithIndependentDirectories
+from tests.ansible import Executor, prepare_plugin_executor
 from tests.client import ADCMTestClient, APINode
 from tests.dependencies import (
     RBACScenariosOverride,
     get_container_manager,
     get_default_overridden_providers,
     get_status_scenarios_manager,
-    get_task_runner_manager,
 )
 from tests.deprecated import AuditMixin, BusinessLogicMixin, TaskTestMixin
+from tests.task_flow import TaskFlowMixin
 from tests.use_cases import UseCases
 from tests.utils import calculate_time_with_delta, extract_from_nested_structure
 
@@ -103,7 +95,7 @@ SETUP_MINIMAL: Final = SuiteSetup(environment="minimal")
 SETUP_WITH_RBAC: Final = SuiteSetup(environment="with-rbac")
 
 
-class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
+class _ADCMTestCase(TaskFlowMixin, django.test.SimpleTestCase, WithIndependentDirectories):
     suite_setup: SuiteSetup = SETUP_MINIMAL
 
     base_dir = Path(__file__).parent.parent.parent
@@ -117,14 +109,12 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
         cls.container = get_container_manager().container
 
         cls.uc = UseCases(container=cls.container)
-        cls.task_runner = get_task_runner_manager()
 
         super().setUpClass()
 
     def setUp(self) -> None:
         super().setUp()
 
-        self.task_runner.reset()
         get_status_scenarios_manager().reset()
 
     @classmethod
@@ -149,9 +139,6 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
 
         container_manager.current = container_environment_name
 
-        # TODO: ADCM-7513
-        prepare_container.cache_clear()
-
     @classmethod
     def _initialize_roles_and_adcm(cls) -> None:
         init_roles()
@@ -166,11 +153,21 @@ class _ADCMTestCase(django.test.SimpleTestCase, WithIndependentDirectories):
         config_log.save(update_fields=["config"])
 
 
-Executor = TypeVar("Executor", bound=ADCMAnsiblePluginExecutor)
+class GenericTestCase(_ADCMTestCase, django.test.TestCase): ...
 
 
-class GenericTestCase(_ADCMTestCase, django.test.TestCase):
-    ...
+class GenericTransactionTestCase(_ADCMTestCase, django.test.TransactionTestCase):
+    """
+    For cases that require committed data (e.g. to access it from other threads).
+
+    Database is flushed after every test, so ADCM and test data has to be prepared in `setUp`.
+    """
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        # files belong to data that is flushed (e.g. uploaded bundles)
+        self._clean_directories()
 
 
 class ADCMPluginExecutorSuite(
@@ -197,51 +194,19 @@ class ADCMPluginExecutorSuite(
         cls.host_2 = cls.uc.add_host(provider=cls.provider, fqdn="host-2")
 
     def prepare_executor(
-        self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | Job | int
+        self, executor_type: type[Executor], call_arguments: dict | str, call_context: dict | JobLog | RichJob | int
     ) -> Executor:
         """
-        Prepare plugin executor more or less like it will be created inside Ansible plugin call
-
-        You can specify `call_arguments` as dict, then it'll be passed right into executor's init function
-        or write it as plain yaml string (that'll be evaluated to dict) to "imitate" ansible plugin call description
-        (note that it should be inner section of plugin (without name).
-        If it is a string, it'll be parsed with `yaml` (so no ansible filters or environment will be there).
-
-        `call_context` can be either a context dict (with `type` and `*_id` fields)
-        or a job (`Job`, `JobLog` or job's id as `int`) based on which this function will build context.
+        Prepare plugin executor more or less like it will be created inside Ansible plugin call,
+        see `prepare_plugin_executor` for details
         """
-        with self.container(scope=dishka.Scope.REQUEST) as container:
-            arguments = call_arguments
-            if isinstance(arguments, str):
-                arguments = yaml.safe_load(arguments)
 
-            context = call_context
-            if not isinstance(call_context, dict):
-                configuration = ExternalSettings(
-                    adcm=ADCMSettings(
-                        code_root_dir=settings.CODE_DIR, run_dir=settings.RUN_DIR, log_dir=settings.LOG_DIR
-                    ),
-                    ansible=AnsibleSettings(ansible_secret_script=settings.CODE_DIR / "ansible_secret.py"),
-                    integrations=IntegrationsSettings(status_server_token=settings.STATUS_SECRET_KEY),
-                    consul=ConsulSettings(
-                        url=settings.CONSUL_URL,
-                        datacenter=settings.CONSUL_DATACENTER,
-                        cacert_file=settings.CONSUL_CACERT_FILE,
-                    ),
-                )
+        # executor uses the scope during the call, so it's closed only when test is finished
+        container = self.enterContext(self.container(scope=dishka.Scope.REQUEST))
 
-                job_id = call_context if isinstance(call_context, int) else call_context.id
-                task_id = JobLog.objects.values_list("task_id", flat=True).get(id=job_id)
-
-                repo = JobRepo()
-
-                context = prepare_ansible_job_config(
-                    task=repo.get_task(id=task_id),
-                    job=repo.get_job(id=job_id),
-                    configuration=configuration,
-                )
-
-            return executor_type(arguments=arguments, runtime_vars=context, container=container)
+        return prepare_plugin_executor(
+            executor_type=executor_type, call_arguments=call_arguments, call_context=call_context, container=container
+        )
 
     def build_executor_call(
         self,
@@ -259,17 +224,15 @@ class ADCMPluginExecutorSuite(
         return _executor_func
 
     def get_task_jobs(self, task_id):
-        return JobRepo().get_task_jobs(task_id)
+        return retrieve_rich_jobs(task_id=task_id)
 
 
-class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase):
+class ADCMDjangoAPISuiteNoBundles(
+    ParametrizedTestCase, _ADCMTestCase, AuditMixin, BusinessLogicMixin, django.test.TestCase
+):
     # is required for correct type detection in test cases
     client: ADCMTestClient  # pyright: ignore[reportIncompatibleVariableOverride]
     client_class = ADCMTestClient
-
-    # strange to bind it in here, but api cases will be related to `api_v2` for a while
-    test_bundles_dir = TEST_API_V2_BUNDLES_DIR
-    test_files_dir = TEST_API_V2_FILES_DIR
 
     @classmethod
     def setUpTestData(cls) -> None:
@@ -277,6 +240,30 @@ class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, Busine
 
         cls._initialize_roles_and_adcm()
         cls._set_adcm_max_password_length()
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self._remove_unregistered_bundle_dirs()
+
+        self.client.login(username="admin", password="admin")
+
+    def _remove_unregistered_bundle_dirs(self) -> None:
+        # DB is rolled back after each test, but bundle dirs on FS aren't
+        registered_hashes = set(Bundle.objects.values_list("hash", flat=True))
+        for bundle_dir in self.directories.bundles.iterdir():
+            if bundle_dir.is_dir() and bundle_dir.name not in registered_hashes:
+                rmtree(bundle_dir)
+
+
+class ADCMDjangoAPISuite(ADCMDjangoAPISuiteNoBundles):
+    # strange to bind it in here, but api cases will be related to `api_v2` for a while
+    test_bundles_dir = TEST_API_V2_BUNDLES_DIR
+    test_files_dir = TEST_API_V2_FILES_DIR
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
         cluster_bundle_1_path = cls.test_bundles_dir / "cluster_one"
         cluster_bundle_2_path = cls.test_bundles_dir / "cluster_two"
@@ -289,11 +276,6 @@ class ADCMDjangoAPISuite(ParametrizedTestCase, _ADCMTestCase, AuditMixin, Busine
         cls.cluster_1 = cls.uc.add_cluster(bundle=cls.bundle_1, name="cluster_1", description="cluster_1")
         cls.cluster_2 = cls.uc.add_cluster(bundle=cls.bundle_2, name="cluster_2", description="cluster_2")
         cls.provider = cls.uc.add_provider(bundle=cls.provider_bundle, name="provider", description="provider")
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.client.login(username="admin", password="admin")
 
 
 class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):

@@ -1,5 +1,5 @@
 import type { JSONObject } from '@models/json';
-import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem } from '@models/adcm/jobs';
+import type { AdcmJob, AdcmSubJobDetails, AdcmSubJobLogItem, AdcmTaskExecutionPlan } from '@models/adcm/jobs';
 import type { AdcmConfiguration } from '@models/adcm/configuration';
 import type { AdcmDynamicActionRunConfig, AdcmHostComponentMapRuleAction } from '@models/adcm/dynamicAction';
 
@@ -214,6 +214,7 @@ export type AdcmWizardJobsData = Record<
   AdcmActionProcessStep['id'],
   {
     job?: AdcmJob;
+    executionPlan?: AdcmTaskExecutionPlan | null;
     subJobLog?: Record<AdcmSubJobDetails['id'], AdcmSubJobLogItem[]>;
   }
 >;

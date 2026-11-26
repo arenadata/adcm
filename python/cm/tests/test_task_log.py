@@ -20,10 +20,11 @@ from core.types import ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.test import override_settings
 from tests.base import BaseTestCase
+from tests.deprecated import prepare_task_for_action
 
-from cm.legacy.services.job.action import prepare_task_for_action
 from cm.legacy.utils import str_remove_non_alnum
-from cm.models import Action, ActionType, Bundle, Cluster, JobLog, LogStorage, Prototype, SubAction, TaskLog
+from cm.models import Action, Bundle, Cluster, JobLog, LogStorage, Prototype, TaskLog
+from cm.tests.scripts import build_plan, build_script_spec
 from cm.tests.utils import gen_adcm
 
 
@@ -74,35 +75,23 @@ def get_task_download_archive_name(task: TaskLog) -> str:
 def get_task_download_archive_file_handler(task: TaskLog) -> io.BytesIO:
     jobs = JobLog.objects.filter(task=task)
 
-    if task.action and task.action.type == ActionType.JOB:
-        task_dir_name_suffix = str_remove_non_alnum(value=task.action.display_name) or str_remove_non_alnum(
-            value=task.action.name,
-        )
-    else:
-        task_dir_name_suffix = None
-
     file_handler = io.BytesIO()
     with tarfile.open(fileobj=file_handler, mode="w:gz") as tar_file:
         for job in jobs:
-            if task_dir_name_suffix is None:
-                dir_name_suffix = str_remove_non_alnum(value=job.display_name or "") or str_remove_non_alnum(
-                    value=job.name
-                )
-            else:
-                dir_name_suffix = task_dir_name_suffix
+            dir_name_suffix = str_remove_non_alnum(value=job.display_name or "") or str_remove_non_alnum(value=job.name)
 
             directory = Path(settings.RUN_DIR, str(job.pk))
             if directory.is_dir():
                 files = [item for item in Path(settings.RUN_DIR, str(job.pk)).iterdir() if item.is_file()]
                 for log_file in files:
-                    tarinfo = tarfile.TarInfo(f'{f"{job.pk}-{dir_name_suffix}".strip("-")}/{log_file.name}')
+                    tarinfo = tarfile.TarInfo(f"{f'{job.pk}-{dir_name_suffix}'.strip('-')}/{log_file.name}")
                     tarinfo.size = log_file.stat().st_size
                     tar_file.addfile(tarinfo=tarinfo, fileobj=io.BytesIO(log_file.read_bytes()))
             else:
                 log_storages = LogStorage.objects.filter(job=job, type__in={"stdout", "stderr"})
                 for log_storage in log_storages:
                     tarinfo = tarfile.TarInfo(
-                        f'{f"{job.pk}-{dir_name_suffix}".strip("-")}' f"/{log_storage.name}-{log_storage.type}.txt",
+                        f"{f'{job.pk}-{dir_name_suffix}'.strip('-')}/{log_storage.name}-{log_storage.type}.txt",
                     )
                     # using `or ""` here to avoid passing None to `bytes`
                     body = io.BytesIO(bytes(log_storage.body or "", settings.ENCODING_UTF_8))
@@ -132,23 +121,19 @@ class TaskLogLockTest(BaseTestCase):
         action = Action.objects.create(
             display_name="Test cluster action",
             prototype=cluster.prototype,
-            type="task",
             state_available="any",
             name="test_cluster_action",
         )
-        SubAction.objects.create(
-            name="test_subaction_1",
-            action=action,
-            script_type="ansible",
-            display_name="Test   Dis%#play   NAME!",
+        action.scripts = build_plan(
+            build_script_spec("/0-test_subaction_1", "test_subaction_1", display_name="Test   Dis%#play   NAME!"),
+            build_script_spec("/1-test_subaction_2", "test_subaction_2"),
         )
-        SubAction.objects.create(name="test_subaction_2", action=action, script_type="ansible")
+        action.save(update_fields=["scripts"])
         object_ = CoreObjectDescriptor(id=cluster.pk, type=ADCMCoreType.CLUSTER)
         task = TaskLog.objects.get(
             id=prepare_task_for_action(
                 target=object_,
                 orm_owner=cluster,
-                orm_target=cluster,
                 action=action.pk,
                 payload=TaskPayloadDTO(),
             ).id

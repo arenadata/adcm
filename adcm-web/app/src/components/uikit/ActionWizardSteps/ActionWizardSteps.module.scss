@@ -62,9 +62,10 @@
 
   &__panel {
     display: flex;
-    height: 64px;
+    align-items: flex-start;
+    position: relative;
+    min-height: 64px;
     gap: 20px;
-    top: 0;
     z-index: 2;
     backdrop-filter: blur(7px);
     background-color: var(--panel-background);
@@ -85,70 +86,42 @@
   &__step:not(:only-child) {
     flex: 1;
 
-    // thread connections styles - start
+    // thread: panel ::before/::after around the circle + content border-left when expanded
     --panel-thread-color: var(--panel-thread-color-normal);
+    --panel-thread-left: 35px;
+    --panel-thread-circle-bottom: 40px; // padding-top 8px + circle 32px
+    --panel-thread-gap: 10px; // matches &_isHidden margin-bottom
 
-    &:first-child {
-      .actionWizardSteps__panel:after {
-          content: "";
-          display: block;
-          position: absolute;
-          left: 35px;
-          height: 80px;
-          width: 1px;
-          border-left: 2px solid var(--panel-thread-color);
-          box-sizing: content-box;
-          margin-top: 48px;
-      }
-    }
-
-    &:last-child {
-      .actionWizardSteps__panel:before {
+    &:not(:first-child) {
+      .actionWizardSteps__panel::before {
         content: "";
-        display: block;
         position: absolute;
-        left: 35px;
-        height: 16px;
-        width: 1px;
+        left: var(--panel-thread-left);
+        top: calc(-1 * var(--panel-thread-gap));
+        height: calc(var(--panel-thread-gap) + 8px); // gap circle top
+        width: 0;
         border-left: 2px solid var(--panel-thread-color);
         box-sizing: content-box;
-        margin-bottom: 48px;
-      }
-    }
-
-    &:not(:first-child):not(:last-child) {
-
-      .actionWizardSteps__panel {
-        &::before {
-          content: "";
-          display: block;
-          position: absolute;
-          left: 35px;
-          height: 16px;
-          width: 1px;
-          border-left: 2px solid var(--panel-thread-color);
-          box-sizing: content-box;
-          margin-bottom: 48px;
-        }
-
-        &::after {
-          content: "";
-          display: block;
-          position: absolute;
-          left: 35px;
-          height: 36px;
-          width: 1px;
-          border-left: 2px solid var(--panel-thread-color);
-          box-sizing: content-box;
-          margin-top: 48px;
-        }
+        pointer-events: none;
       }
     }
 
     &:not(:last-child) {
+      .actionWizardSteps__panel::after {
+        content: "";
+        position: absolute;
+        left: var(--panel-thread-left);
+        top: var(--panel-thread-circle-bottom);
+        bottom: calc(-1 * var(--panel-thread-gap));
+        width: 0;
+        border-left: 2px solid var(--panel-thread-color);
+        box-sizing: content-box;
+        pointer-events: none;
+      }
+
       .actionWizardSteps__content {
         border-left: 2px solid var(--panel-thread-color);
-        margin-left: 35px;
+        margin-left: var(--panel-thread-left);
         padding-left: 10px;
         margin-bottom: var(--base-margin-v);
         padding-top: 32px;
@@ -160,6 +133,8 @@
 
   &__stageInfo {
     display: flex;
+    flex: 1;
+    min-width: 0;
     flex-direction: row;
     gap: 16px;
     align-items: center;
@@ -205,6 +180,9 @@
     font-weight: 500;
     width: 32px;
     height: 32px;
+    min-width: 32px;
+    flex-shrink: 0;
+    aspect-ratio: 1;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -221,6 +199,9 @@
   }
 
   &__labels {
+    flex: 1;
+    min-width: 0;
+
     .stepLabel {
       font-size: 20px;
       font-weight: 600;
@@ -234,11 +215,13 @@
 
     .description {
       color: var(--panel-description);
+      overflow-wrap: anywhere;
     }
   }
 
   &__buttons {
     margin-left: auto;
+    align-self: center;
   }
 
   &__content {

@@ -14,19 +14,25 @@ from logging import Logger
 from typing import Any, Protocol
 
 from audit.alt.core import NameHalfSplitter
-from core.action import CallingProcess, ExecutionStatus, Job, Task, TaskOwner
-from core.action.job import JobRepoI, JobUpdateDTO, TaskUpdateDTO
+from core.action import UNFINISHED_STATUSES, CallingProcess, ExecutionStatus, Task, TaskOwner
+from core.action.job import JobRepoI, JobShortFilter, JobUpdateDTO, TaskUpdateDTO
 from core.action.job._termination import ExecutorTerminator
+from core.action.job.operations import calculate_owner_state_changes, calculate_task_final_status
+from core.action.operations import flatten_execution_plan, to_rich_jobs
+from core.action.types import JobSpecV1, RichJob, StateChanges
 from core.cluster import ClusterService
+from core.config import ConfigRepoI, ConfigService
 from core.legacy.job.runners import (
     ExecutionTarget,
+    ExecutionTargetFactory,
     ExternalSettings,
-    JobProcessor,
     RunnerEnvironment,
     RunnerRuntime,
     TaskRunner,
 )
+from core.object.repo import ObjectRepoI
 from core.result import Fail
+from core.scenarios.concern import ConcernScenarios
 from core.types import (
     ActionTargetDescriptor,
     ADCMCoreType,
@@ -38,8 +44,6 @@ from cm.converters import action_target_type_to_model, core_type_to_model
 from cm.legacy.services.concern.locks import (
     delete_task_flag_concern,
     delete_task_lock_concern,
-    update_task_flag_concern,
-    update_task_lock_concern,
 )
 from cm.legacy.services.job.run import create_related_configs
 from cm.legacy.services.job.run._task_finalizers import (
@@ -47,27 +51,21 @@ from cm.legacy.services.job.run._task_finalizers import (
     update_object_maintenance_mode,
 )
 from cm.legacy.services.job.run.audit import audit_task_finish
+from cm.transition.status import StatusScenarios
 
 NO_PROCESS_PID = 0
 
 
 class EventNotifier(Protocol):
-    def send_update_event(self, object_: CoreObjectDescriptor, changes: dict) -> Any:
-        ...
+    def send_update_event(self, object_: CoreObjectDescriptor, changes: dict) -> Any: ...
 
-    def send_task_status_update_event(self, task_id: int, status: str) -> Any:
-        ...
-
-    def send_prototype_update_event(self, object_: CoreObjectDescriptor) -> Any:
-        ...
+    def send_task_status_update_event(self, task_id: int, status: str) -> Any: ...
 
 
 class StatusServerInteractor(Protocol):
-    def reset_objects_in_mm(self, cluster_service: ClusterService) -> Any:
-        ...
+    def reset_objects_in_mm(self, cluster_service: ClusterService) -> Any: ...
 
-    def reset_hc_map(self) -> Any:
-        ...
+    def reset_hc_map(self) -> Any: ...
 
 
 class JobSequenceRunner(TaskRunner):
@@ -81,31 +79,36 @@ class JobSequenceRunner(TaskRunner):
         status_server: StatusServerInteractor,
         logger: Logger,
         container: dishka.Container,
-        job_processor: JobProcessor,
+        target_factory: ExecutionTargetFactory,
         settings: ExternalSettings,
         repo: JobRepoI,
+        object_repo: ObjectRepoI,
         executor_terminator: ExecutorTerminator,
         environment: RunnerEnvironment,
     ):
-        super().__init__(job_processor=job_processor, settings=settings, repo=repo, environment=environment)
+        super().__init__(target_factory=target_factory, settings=settings, repo=repo, environment=environment)
 
         self._notifier = notifier
         self._status_server = status_server
         self._logger = logger
         self._executor_terminator = executor_terminator
+        self._object_repo = object_repo
 
         self._container = container
 
     def terminate(self) -> None:
         self._runtime.termination.is_requested = True
+        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[self._runtime.task_id]))
+
         for job_to_terminate in filter(
-            lambda job_: job_.status == ExecutionStatus.RUNNING and job_.pid != NO_PROCESS_PID,
-            self._repo.get_task_jobs(task_id=self._runtime.task_id),
+            lambda job_: job_.status == ExecutionStatus.RUNNING and job_.worker.pid != NO_PROCESS_PID,
+            task_jobs,
         ):
-            self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {job_to_terminate.pid}")
-            match self._executor_terminator.terminate(job_to_terminate.pid):
+            pid = job_to_terminate.worker.pid
+            self._logger.info(f"Terminating job #{job_to_terminate.id} with pid {pid}")
+            match self._executor_terminator.terminate(pid):
                 case Fail():
-                    self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {job_to_terminate.pid}")
+                    self._logger.exception(f"Failed to abort job #{job_to_terminate.id} at pid {pid}")
 
     def consider_broken(self) -> None:
         # special value is used to avoid handling NPEs
@@ -114,7 +117,14 @@ class JobSequenceRunner(TaskRunner):
 
         self._runtime.status = ExecutionStatus.BROKEN
         try:
-            self._finish(task=self._repo.get_task(id=self._runtime.task_id), last_job=None)
+            # not started jobs are revoked, others that are unfinished are considered broken
+            self._repo.change_status_of_task_jobs(
+                task_id=self._runtime.task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
+            self._repo.change_status_of_task_jobs(
+                task_id=self._runtime.task_id, previous=UNFINISHED_STATUSES, new=ExecutionStatus.BROKEN
+            )
+            self._finish(task=self._repo.get_task(id=self._runtime.task_id), state_changes=StateChanges())
         except:  # noqa: E722
             # force set task finish date if something goes wrong
             self._repo.update_task(
@@ -124,40 +134,49 @@ class JobSequenceRunner(TaskRunner):
 
     def run(self, task_id: int):
         with self._container():
-            task, configured_jobs = self._configure(task_id=task_id)
+            task, execution_plan, configured_jobs = self._configure(task_id=task_id)
             self._start(task_id=task_id)
 
-            last_processed_job = None
-            last_job_result = None
-            for current_job in configured_jobs:
+            for job, target in configured_jobs:
+                if self._is_revoked(job_id=job.runtime.id):
+                    # job revoked on its own is skipped, following ones are still executed
+                    continue
+
                 task = self._get_updated_task(task=task)
-                self._prepare_job_environment(task=task, target=current_job)
+                self._prepare_job_environment(task=task, job=job, target=target)
 
-                last_processed_job = current_job.job
-                last_job_result = self._execute_job(task=task, target=current_job)
+                job_result = self._execute_job(task=task, job=job, target=target, execution_plan=execution_plan)
 
-                if self._runtime.status != ExecutionStatus.ABORTED and last_job_result not in (
-                    ExecutionStatus.SUCCESS,
-                    ExecutionStatus.ABORTED,
-                ):
-                    self._runtime.status = ExecutionStatus.FAILED
-
-                if not self._should_proceed(last_job_result=last_job_result):
+                if not self._should_proceed(last_job_result=job_result):
                     break
 
-            if self._runtime.termination.is_requested or (
-                last_job_result == ExecutionStatus.ABORTED and last_processed_job.id == configured_jobs[-1].job.id
-            ):
-                self._runtime.status = ExecutionStatus.ABORTED
-            elif self._runtime.status == ExecutionStatus.RUNNING:
-                if last_job_result in (ExecutionStatus.ABORTED, None):
-                    self._runtime.status = ExecutionStatus.SUCCESS
-                else:
-                    self._runtime.status = last_job_result
+            # jobs that weren't started by now won't ever be, final status should see them as revoked
+            self._repo.change_status_of_task_jobs(
+                task_id=task_id, previous=(ExecutionStatus.CREATED,), new=ExecutionStatus.REVOKED
+            )
 
-            self._finish(task=task, last_job=last_processed_job)
+            # statuses are re-read to be calculated from the same data celery runner uses
+            plan, jobs = self._get_plan_with_jobs_in_order(task_id=task_id)
 
-    def _configure(self, task_id: int) -> tuple[Task, tuple[ExecutionTarget, ...]]:
+            final_status = calculate_task_final_status(
+                plan=plan,
+                job_statuses={job.spec.key: job.runtime.status for job in jobs},
+                task_is_aborted=self._runtime.termination.is_requested,
+            )
+            if not final_status:
+                message = f"Failed to calculate final status of task {task_id}: {final_status.value}"
+                raise RuntimeError(message)
+
+            task_result = final_status.value
+            self._runtime.status = task_result
+
+            state_changes = calculate_owner_state_changes(
+                task_result=task_result, jobs=jobs, on_success=task.on_success, on_fail=task.on_fail
+            )
+
+            self._finish(task=task, state_changes=state_changes)
+
+    def _configure(self, task_id: int) -> tuple[Task, JobSpecV1, tuple[tuple[RichJob, ExecutionTarget], ...]]:
         self._runtime: RunnerRuntime = RunnerRuntime(task_id=task_id)
 
         task = self._repo.get_task(id=task_id)
@@ -166,17 +185,25 @@ class JobSequenceRunner(TaskRunner):
             message = "Can't run task with no owner and/or bundle info"
             raise RuntimeError(message)
 
-        configured_jobs = tuple(
-            self._job_processor.convert(
-                task=task,
-                jobs=filter(self._job_processor.filter_predicate, self._repo.get_task_jobs(task_id=task_id)),
-                configuration=self._settings,
-            )
-        )
-        if not configured_jobs:
-            raise RuntimeError()
+        execution_plan, jobs_in_order = self._get_plan_with_jobs_in_order(task_id=task_id)
 
-        return task, configured_jobs
+        configured_jobs = tuple(
+            (job, self._target_factory(task=task, job=job, configuration=self._settings)) for job in jobs_in_order
+        )
+
+        return task, execution_plan, configured_jobs
+
+    def _get_plan_with_jobs_in_order(self, task_id: int) -> tuple[JobSpecV1, tuple[RichJob, ...]]:
+        plan = self._repo.get_execution_plan(task_id=task_id)
+        task_jobs = self._repo.find_jobs_short(JobShortFilter(task_ids=[task_id]))
+        jobs_by_key = to_rich_jobs(spec=plan, jobs=task_jobs)
+
+        # the plan says both what to run and in which order, jobs only say how each run went
+        return plan, tuple(jobs_by_key[key] for key in flatten_execution_plan(plan))
+
+    def _is_revoked(self, job_id: int) -> bool:
+        found_jobs = self._repo.find_jobs_short(JobShortFilter(ids=[job_id]))
+        return next(iter(found_jobs)).status == ExecutionStatus.REVOKED
 
     def _start(self, task_id: int) -> None:
         self._repo.update_task(
@@ -198,25 +225,34 @@ class JobSequenceRunner(TaskRunner):
 
         return Task(**(task.model_dump() | {"hostcomponent": new_fields.hostcomponent}))
 
-    def _prepare_job_environment(self, task: Task, target: ExecutionTarget) -> None:
-        (self._settings.adcm.run_dir / str(target.job.id) / "tmp").mkdir(parents=True, exist_ok=True)
+    def _prepare_job_environment(self, task: Task, job: RichJob, target: ExecutionTarget) -> None:
+        (self._settings.adcm.run_dir / str(job.runtime.id) / "tmp").mkdir(parents=True, exist_ok=True)
 
         cluster_service = self._container.get(ClusterService)
+        config_service = self._container.get(ConfigService)
         for prepare_environment in target.environment_builders:
             prepare_environment(
-                task=task, job=target.job, configuration=self._settings, cluster_service=cluster_service
+                task=task,
+                job=job,
+                configuration=self._settings,
+                cluster_service=cluster_service,
+                config_service=config_service,
             )
 
-    def _execute_job(self, task: Task, target: ExecutionTarget) -> ExecutionStatus:
+    def _execute_job(
+        self, task: Task, job: RichJob, target: ExecutionTarget, execution_plan: JobSpecV1
+    ) -> ExecutionStatus:
         if task.owner:
-            create_related_configs(job_id=target.job.id, owner=task.owner)
+            create_related_configs(
+                job_id=job.runtime.id, owner=task.owner, config_repo=self._container.get(ConfigRepoI)
+            )
 
         target.executor.execute()
 
         pid = getattr(target.executor.process, "pid", NO_PROCESS_PID)
 
         self._repo.update_job(
-            id=target.job.id,
+            id=job.runtime.id,
             data=JobUpdateDTO(
                 pid=pid,
                 status=ExecutionStatus.RUNNING,
@@ -225,12 +261,7 @@ class JobSequenceRunner(TaskRunner):
             ),
         )
 
-        # it's enough to detect the function once (as the delete one),
-        # but implementation of such a thing is better be done with thoughfull concerns refactoring
-        if task.is_blocking:
-            update_task_lock_concern(job_id=target.job.id)
-        else:
-            update_task_flag_concern(job_id=target.job.id)
+        self._container.get(ConcernScenarios).update_job_concern(task=task, job=job, execution_plan=execution_plan)
 
         result = target.executor.wait_finished().result
         # Since the connection was opened outside of the Django request-response cycle and can be open for a long time,
@@ -245,7 +276,7 @@ class JobSequenceRunner(TaskRunner):
             job_status = ExecutionStatus.FAILED
 
         self._repo.update_job(
-            id=target.job.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
+            id=job.runtime.id, data=JobUpdateDTO(status=job_status, finish_date=self._environment.now())
         )
 
         # There a some approaches to implement finalizers:
@@ -259,7 +290,7 @@ class JobSequenceRunner(TaskRunner):
         exception_to_raise = None
         for finalizer in target.finalizers:
             try:
-                finalizer(job=target.job)
+                finalizer(job=job)
             except Exception as err:
                 exception_to_raise = err
                 message = "Unhandled exception occurred during after-job finalization"
@@ -280,7 +311,7 @@ class JobSequenceRunner(TaskRunner):
         # ABORTED means "skipped" here, so if it's skipped, we just continue
         return last_job_result == ExecutionStatus.ABORTED
 
-    def _finish(self, task: Task, last_job: Job | None):
+    def _finish(self, task: Task, state_changes: StateChanges):
         task_result = self._runtime.status
 
         if task.is_blocking:
@@ -303,7 +334,7 @@ class JobSequenceRunner(TaskRunner):
             self._update_owner_object(
                 owner=CoreObjectDescriptor(id=finished_task.owner.id, type=finished_task.owner.type),
                 finished_task=finished_task,
-                last_job=last_job,
+                state_changes=state_changes,
             )
 
         if finished_task.target:
@@ -328,47 +359,37 @@ class JobSequenceRunner(TaskRunner):
         except:  # noqa: E722
             self._logger.exception("Error loading host-component map on task finish")
 
-    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, last_job: Job | None):
+    def _update_owner_object(self, owner: CoreObjectDescriptor, finished_task: Task, state_changes: StateChanges):
         """Task should be re-read before calling this method, because some flags need to be updated"""
-        if last_job:
-            self._update_owner_state(task=finished_task, job=last_job, owner=owner)
+        # aborted or broken task doesn't change owner's state
+        if self._runtime.status in (ExecutionStatus.SUCCESS, ExecutionStatus.FAILED):
+            self._update_owner_state(task=finished_task, owner=owner, state_changes=state_changes)
 
         if self._runtime.status == ExecutionStatus.SUCCESS and finished_task.action.hc_acl:
-            cluster_service = self._container.get(ClusterService)
-            set_hostcomponent(task=finished_task, cluster_service=cluster_service, logger=self._logger)
+            set_hostcomponent(
+                task=finished_task,
+                cluster_service=self._container.get(ClusterService),
+                status_scenarios=self._container.get(StatusScenarios),
+                logger=self._logger,
+            )
 
-    def _update_owner_state(self, task: Task, job: Job, owner: CoreObjectDescriptor) -> None:
-        if self._runtime.status == ExecutionStatus.SUCCESS:
-            multi_state_set = task.on_success.multi_state_set
-            multi_state_unset = task.on_success.multi_state_unset
-            state = task.on_success.state
-            if not state:
-                self._logger.warning('task for "%s" success state is not set', task.action.display_name)
-
-        elif self._runtime.status == ExecutionStatus.FAILED:
-            job_on_fail = job.on_fail
-            task_on_fail = task.on_fail
-            state = job_on_fail.state or task_on_fail.state
-            multi_state_set = job_on_fail.multi_state_set or task_on_fail.multi_state_set
-            multi_state_unset = job_on_fail.multi_state_unset or task_on_fail.multi_state_unset
-            if not state:
-                self._logger.warning('task for "%s" fail state is not set', task.action.display_name)
-
-        else:
-            if self._runtime.status != ExecutionStatus.ABORTED:
-                self._logger.error("unknown task status: %s", self._runtime.status)
-
-            return
+    def _update_owner_state(self, task: Task, owner: CoreObjectDescriptor, state_changes: StateChanges) -> None:
+        state = state_changes.state
+        if not state:
+            result_name = "success" if self._runtime.status == ExecutionStatus.SUCCESS else "fail"
+            self._logger.warning('task for "%s" %s state is not set', task.display_name, result_name)
 
         if state:
-            self._repo.update_owner_state(owner=owner, state=state)
+            self._object_repo.set_state(object_=owner, state=state)
 
-        self._repo.update_owner_multi_states(
-            owner=owner, add_multi_states=multi_state_set, remove_multi_states=multi_state_unset
+        self._object_repo.update_multi_state(
+            object_=owner,
+            add=state_changes.multi_state_set,
+            remove=state_changes.multi_state_unset,
         )
 
         if task.action.is_upgrade:
-            self._notifier.send_prototype_update_event(object_=owner)
+            self._container.get(StatusScenarios).send_prototype_and_state_update_event(object_=owner)
         else:
             self._notifier.send_update_event(object_=owner, changes={"state": state})
 

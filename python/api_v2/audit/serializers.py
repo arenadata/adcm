@@ -50,6 +50,8 @@ class AuditLogSerializer(ModelSerializer):
     object = AuditObjectSerializer(source="audit_object", allow_null=True)
     user = AuditUserShortSerializer(allow_null=True)
     object_changes = DictField()
+    address = CharField(allow_blank=True, required=False)
+    agent = CharField(required=False)
 
     class Meta:
         model = AuditLog
@@ -62,6 +64,8 @@ class AuditLogSerializer(ModelSerializer):
             "object",
             "user",
             "object_changes",
+            "address",
+            "agent",
         ]
 
 
@@ -70,7 +74,9 @@ class AuditSessionSerializer(ModelSerializer):
     result = ChoiceField(choices=AuditSessionLoginResult, source="login_result")
     time = DateTimeField(source="login_time")
     details = DictField(source="login_details")
+    address = CharField(allow_blank=True, required=False)
+    agent = CharField(required=False)
 
     class Meta:
         model = AuditSession
-        fields = ("id", "user", "result", "time", "details")
+        fields = ("id", "user", "result", "time", "details", "address", "agent")

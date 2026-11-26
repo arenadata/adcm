@@ -1,0 +1,67 @@
+# Every way to declare (or not) `hc_acl` that's accepted on upload.
+# Same actions are defined for cluster, service and component.
+- type: cluster
+  name: hc_acl_cluster
+  version: "1"
+  contract_version: "2.1"
+  venv: "2.16"
+
+  actions: &actions
+    # declared, yet empty `hc_acl` is enough for `hc_apply`
+    hc_apply_with_empty_hc_acl:
+      scripts:
+        - &hc_apply
+          name: apply
+          script_type: internal
+          script: hc_apply
+      hc_acl: []
+
+    hc_apply_with_hc_acl:
+      scripts:
+        - *hc_apply
+      hc_acl: &hc_acl
+        - service: service
+          component: component
+          action: add
+
+    # wizards have mapping steps of their own
+    hc_apply_in_wizard_without_hc_acl:
+      scripts:
+        - *hc_apply
+      wizard_template:
+        engine:
+          type: jinja2
+        file:
+          path: ./stages.j2
+
+    no_hc_apply_without_hc_acl:
+      scripts:
+        - &ansible
+          name: run
+          script_type: ansible
+          script: ./playbook.yaml
+
+    no_hc_apply_with_hc_acl:
+      scripts:
+        - *ansible
+      hc_acl: *hc_acl
+
+  upgrade:
+    - name: hc_acl_upgrade
+      versions:
+        min: "0"
+        max: "0"
+      states:
+        available: any
+      scripts:
+        - name: switch
+          script_type: internal
+          script: bundle_switch
+
+- type: service
+  name: service
+  version: "1"
+  actions: *actions
+  components:
+    component:
+      actions: *actions

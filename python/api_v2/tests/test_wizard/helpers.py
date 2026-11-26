@@ -32,6 +32,7 @@ from cm.models import (
     ProcessStepInput,
     Service,
 )
+from cm.transition.status import StatusScenarios
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from jinja2 import Template
@@ -95,8 +96,11 @@ class WizardProcessHelpers:
             ProcessStepInput.objects.create(step_id=step.id, job=None, configuration={"config": {}, "attr": {}})
 
     def cleanup_process_hc_service(self, cluster_id: int, service_ids: list[int], process_id: int):
+        """`service_ids` are deleted in the given order: a service can't be deleted while another one requires it"""
+
         HostComponent.objects.filter(cluster_id=cluster_id).delete()
-        for service in Service.objects.filter(cluster_id=cluster_id, id__in=service_ids):
+        for service_id in service_ids:
+            service = Service.objects.get(id=service_id, cluster_id=cluster_id)
             response = self.client.v2[service].delete()
             self.assertEqual(response.status_code, 204)
         steps_qs = ProcessStep.objects.filter(process_id=process_id)
@@ -120,12 +124,12 @@ class WizardProcessHelpers:
     def clear_hostcomponent_mapping(self, cluster_id: int) -> None:
         HostComponent.objects.filter(cluster_id=cluster_id).delete()
 
-    def add_issue_and_concern_to_object(self, object_, cause: ConcernCause):
+    def add_issue_and_concern_to_object(self, object_, cause: ConcernCause, status_scenarios: StatusScenarios):
         issue = create_issue(
             owner=CoreObjectDescriptor(id=object_.id, type=orm_object_to_core_descriptor(object_).type),
             cause=cause,
         )
-        add_concern_to_object(object_=object_, concern=issue)
+        add_concern_to_object(object_=object_, concern=issue, status_scenarios=status_scenarios)
         return issue
 
     def delete_concern_by_name(self, object_, name: str) -> None:

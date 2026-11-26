@@ -27,8 +27,7 @@ from audit.utils import get_client_agent, get_client_ip
 
 
 class HookObjectLookupFunc(Protocol):
-    def __call__(self, id_: int) -> dict:
-        ...
+    def __call__(self, id_: int) -> dict: ...
 
 
 class AuditHook:
@@ -55,8 +54,7 @@ class AuditHook:
         self.exception = exception
         self()
 
-    def __call__(self):
-        ...
+    def __call__(self): ...
 
 
 # decorators to prepare / enhance / change hook

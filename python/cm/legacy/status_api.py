@@ -10,31 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Iterable
 from urllib.parse import urljoin
 import json
 
-from api_v2.concern.serializers import ConcernSerializer
-from core.types import (
-    ADCMCoreType,
-    ClusterID,
-    ConcernID,
-    CoreObjectDescriptor,
-    ObjectID,
-)
+from core.types import ClusterID, CoreObjectDescriptor
 from django.conf import settings
-from djangorestframework_camel_case.util import camelize
 from requests import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 import requests
 
-from cm.converters import core_type_to_model
-from cm.legacy.services.concern.distribution import AffectedObjectConcernMap, ConcernRelatedObjects
+from cm.errors import HTTP_200_OK, HTTP_201_CREATED
 from cm.logger import logger
-from cm.models import (
-    ADCMEntity,
-    ConcernItem,
-)
 
 
 class EventTypes:
@@ -89,7 +74,7 @@ def api_request(method: str, url: str, data: dict = None) -> Response | None:
         kwargs["data"] = json.dumps(data)
 
     try:
-        response = requests.request(method, url, **kwargs)
+        response = requests.request(method, url, **kwargs)  # noqa: S113
         if response.status_code not in {HTTP_200_OK, HTTP_201_CREATED}:
             logger.error("%s %s error %d: %s", method, url, response.status_code, response.text)
         return response  # noqa: TRY300
@@ -120,26 +105,11 @@ def fix_object_type(type_: str) -> str:
     return type_
 
 
-def send_concern_creation_event(object_: ADCMEntity, concern: dict) -> None:
-    post_event(
-        event=EventTypes.CREATE_CONCERN.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
-        changes=concern,
-    )
-
-
 def send_concern_delete_event(object_id: int, object_type: str, concern_id: int) -> None:
     post_event(
         event=EventTypes.DELETE_CONCERN.format(fix_object_type(type_=object_type)),
         object_id=object_id,
         changes={"id": concern_id},
-    )
-
-
-def send_delete_service_event(service_id: int) -> Response | None:
-    return post_event(
-        event=EventTypes.DELETE_SERVICE,
-        object_id=service_id,
     )
 
 
@@ -171,103 +141,3 @@ def send_object_update_event(obj_id: int, obj_type: str, changes: dict) -> None:
 
 def send_task_status_update_event(task_id: int, status: str) -> None:
     post_event(event=EventTypes.UPDATE.format("task"), object_id=task_id, changes={"status": status})
-
-
-def send_prototype_update_event(object_: CoreObjectDescriptor) -> None:
-    # todo inplace request, no need in the whole object
-    send_prototype_and_state_update_event(
-        core_type_to_model(core_type=object_.type).objects.select_related("prototype").get(id=object_.id)
-    )
-
-
-def send_prototype_and_state_update_event(object_: ADCMEntity) -> None:
-    changes = {
-        "state": object_.state,
-        "prototype": {
-            "id": object_.prototype.pk,
-            "name": object_.prototype.name,
-            "displayName": object_.prototype.display_name,
-            "version": object_.prototype.version,
-        },
-    }
-
-    post_event(
-        event=EventTypes.UPDATE.format(fix_object_type(type_=object_.prototype.type)),
-        object_id=object_.pk,
-        changes=changes,
-    )
-
-
-def get_raw_status(url: str) -> int:
-    response = api_request(method="get", url=url)
-    if response is None:
-        return settings.EMPTY_REQUEST_STATUS_CODE
-
-    try:
-        json_data = response.json()
-    except ValueError:
-        return settings.VALUE_ERROR_STATUS_CODE
-
-    if "status" in json_data:
-        return json_data["status"]
-    return settings.EMPTY_STATUS_STATUS_CODE
-
-
-def notify_about_redistributed_concerns(
-    added: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
-    removed: Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]],
-) -> None:
-    added_concerns = tuple(added)
-    serialized_concerns = {
-        concern.id: camelize(data=ConcernSerializer(instance=concern).data)
-        for concern in ConcernItem.objects.filter(id__in=(id_ for _, _, id_ in added_concerns)).prefetch_related(
-            "owner"
-        )
-    }
-
-    for core_type, object_id, concern_id in removed:
-        post_event(
-            event=f"delete_{fix_object_type(type_=core_type.value)}_concern",
-            object_id=object_id,
-            changes={"id": concern_id},
-        )
-
-    for core_type, object_id, concern_id in added_concerns:
-        concern = serialized_concerns.get(concern_id)
-        if concern:
-            post_event(
-                event=f"create_{fix_object_type(type_=core_type.value)}_concern", object_id=object_id, changes=concern
-            )
-
-
-def notify_about_new_concern(concern_id: ConcernID, related_objects: ConcernRelatedObjects) -> None:
-    notify_about_redistributed_concerns(
-        added=(
-            (core_type, object_id, concern_id)
-            for core_type, object_ids in related_objects.items()
-            for object_id in object_ids
-        ),
-        removed=(),
-    )
-
-
-def notify_about_redistributed_concerns_from_maps(
-    added: AffectedObjectConcernMap,
-    removed: AffectedObjectConcernMap,
-):
-    """
-    Convenience function to call `notify_about_redistributed_concerns` based on input of `redistribute_issues_and_flags`
-    """
-    return notify_about_redistributed_concerns(
-        added=_flatten_concerns_map(added),
-        removed=_flatten_concerns_map(removed),
-    )
-
-
-def _flatten_concerns_map(concerns_map: AffectedObjectConcernMap) -> Iterable[tuple[ADCMCoreType, ObjectID, ConcernID]]:
-    return (
-        (core_type, object_id, concern_id)
-        for core_type, objects in concerns_map.items()
-        for object_id, concerns in objects.items()
-        for concern_id in concerns
-    )

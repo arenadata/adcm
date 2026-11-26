@@ -17,6 +17,7 @@ from cm.legacy.issue import add_concern_to_object, unlink_concern_from_object
 from cm.legacy.services.concern import create_issue
 from cm.models import ConcernCause, ConcernItem, ConcernType
 from cm.tests.utils import gen_concern_item, generate_hierarchy
+from cm.transition.status import StatusScenarios
 
 
 class ADCMEntityConcernTest(BaseTestCase):
@@ -35,14 +36,14 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_is_locked__true(self):
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
 
             self.assertTrue(obj.locked)
 
     def test_is_locked__deleted(self):
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
 
         lock.delete()
         for obj in self.hierarchy.values():
@@ -51,21 +52,21 @@ class ADCMEntityConcernTest(BaseTestCase):
     def test_add_to_concern__none(self):
         lock = None
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
 
             self.assertFalse(obj.locked)
 
     def test_add_to_concern__deleted(self):
         lock = ConcernItem(type=ConcernType.LOCK, name="", reason="unsaved")
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
 
             self.assertFalse(obj.locked)
 
     def test_add_to_concern(self):
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
 
             self.assertTrue(obj.locked)
 
@@ -78,7 +79,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         nolock = None
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
             unlink_concern_from_object(object_=obj, concern=nolock)
 
             self.assertTrue(obj.locked)
@@ -87,7 +88,7 @@ class ADCMEntityConcernTest(BaseTestCase):
         nolock = ConcernItem(type=ConcernType.LOCK, name="", reason="unsaved")
         lock = gen_concern_item(ConcernType.LOCK, owner=self.hierarchy["cluster"])
         for obj in self.hierarchy.values():
-            add_concern_to_object(object_=obj, concern=lock)
+            add_concern_to_object(object_=obj, concern=lock, status_scenarios=self.uc.container.get(StatusScenarios))
             unlink_concern_from_object(object_=obj, concern=nolock)
 
             self.assertTrue(obj.locked)
@@ -102,8 +103,8 @@ class ADCMEntityConcernTest(BaseTestCase):
         service = self.hierarchy["service"]
         issue_cause = ConcernCause.CONFIG
         issue = create_issue(owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=issue_cause)
-        add_concern_to_object(object_=cluster, concern=issue)
-        add_concern_to_object(object_=service, concern=issue)
+        add_concern_to_object(object_=cluster, concern=issue, status_scenarios=self.uc.container.get(StatusScenarios))
+        add_concern_to_object(object_=service, concern=issue, status_scenarios=self.uc.container.get(StatusScenarios))
 
         self.assertIsNone(service.get_own_issue(issue_cause))
 
@@ -111,6 +112,6 @@ class ADCMEntityConcernTest(BaseTestCase):
         cluster = self.hierarchy["cluster"]
         issue_cause = ConcernCause.CONFIG
         issue = create_issue(owner=CoreObjectDescriptor(id=cluster.id, type=ADCMCoreType.CLUSTER), cause=issue_cause)
-        add_concern_to_object(object_=cluster, concern=issue)
+        add_concern_to_object(object_=cluster, concern=issue, status_scenarios=self.uc.container.get(StatusScenarios))
 
         self.assertIsNotNone(cluster.get_own_issue(issue_cause))

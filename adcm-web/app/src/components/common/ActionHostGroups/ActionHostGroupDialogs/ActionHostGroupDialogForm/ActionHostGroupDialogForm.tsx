@@ -7,7 +7,6 @@ import type { AdcmActionHostGroupFormData } from './useActionHostGroupDialogForm
 import ListTransfer from '@uikit/ListTransfer/ListTransfer';
 import { availableHostsPanel, selectedHostsPanel } from './ActionHostGroupDialogForm.constants';
 import s from './ActionHostGroupDialogForm.module.scss';
-import TextFormField from '@commonComponents/Forms/TextFormField/TextFormField';
 
 export interface ActionHostGroupDialogFormProps {
   formData: AdcmActionHostGroupFormData;
@@ -49,18 +48,15 @@ const ActionHostGroupDialogForm = ({
     <FormFieldsContainer className={s.actionHostGroupDialogForm}>
       <div className={s.actionHostGroupDialogForm__column}>
         <FormField label="Action host group name" error={errors.name}>
-          {isCreateNew ? (
-            <Input
-              value={formData.name}
-              type="text"
-              onChange={handleNameChange}
-              placeholder="Enter name"
-              autoComplete="off"
-              autoFocus
-            />
-          ) : (
-            <TextFormField>{formData.name}</TextFormField>
-          )}
+          <Input
+            value={formData.name}
+            type="text"
+            onChange={handleNameChange}
+            placeholder="Enter name"
+            autoComplete="off"
+            autoFocus={isCreateNew}
+            disabled={!isCreateNew}
+          />
         </FormField>
         <FormField label="Description">
           <Input
@@ -79,7 +75,7 @@ const ActionHostGroupDialogForm = ({
         srcOptions={availableHostsPanel}
         destOptions={selectedHostsPanel}
         destError={errors.hosts}
-        className={s.roleDialogForm__listTransfer}
+        className={s.actionHostGroupDialogForm__listTransfer}
         onChangeDest={handleHostsChange}
       />
     </FormFieldsContainer>

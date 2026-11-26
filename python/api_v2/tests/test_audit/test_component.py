@@ -23,17 +23,18 @@ from tests.suites import ADCMDjangoAPISuite
 
 
 class TestComponentAudit(ADCMDjangoAPISuite):
-    def setUp(self) -> None:
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
 
-        self.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
-        self.test_user = self.uc.create_user(**self.test_user_credentials)
+        cls.test_user_credentials = {"username": "test_user_username", "password": "test_user_password"}
+        cls.test_user = cls.uc.create_user(**cls.test_user_credentials)
 
-        self.uc.add_services_to_cluster(names=["service_1"], cluster=self.cluster_1)
-        self.service_1 = Service.objects.get(cluster=self.cluster_1, prototype__name="service_1")
-        self.component_1 = Component.objects.get(prototype__name="component_1", service=self.service_1)
-        self.component_action = Action.objects.get(name="action_1_comp_1", prototype=self.component_1.prototype)
-        self.config_post_data = {
+        cls.uc.add_services_to_cluster(names=["service_1"], cluster=cls.cluster_1)
+        cls.service_1 = Service.objects.get(cluster=cls.cluster_1, prototype__name="service_1")
+        cls.component_1 = Component.objects.get(prototype__name="component_1", service=cls.service_1)
+        cls.component_action = Action.objects.get(name="action_1_comp_1", prototype=cls.component_1.prototype)
+        cls.config_post_data = {
             "config": {
                 "group": {"file": "new content"},
                 "activatable_group": {"secretfile": "new content"},

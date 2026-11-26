@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from cm import errors, models
 from cm.converters import orm_object_to_core_descriptor
-from cm.legacy.services.bundle_alt.errors import convert_bundle_errors_to_adcm_ex
 from cm.legacy.services.cluster import retrieve_cluster_topology
 from cm.legacy.services.concern.cases import (
     recalculate_own_concerns_on_add_clusters,
@@ -23,6 +22,7 @@ from cm.legacy.services.concern.cases import (
 )
 from cm.legacy.services.concern.distribution import redistribute_issues_and_flags
 from cm.transition.status import StatusScenarios
+from core.cluster import ClusterService
 from core.result import Fail, Success
 from core.types import ADCMCoreType, ClusterID, CoreObjectDescriptor, PrototypeID
 from django.db import transaction
@@ -31,12 +31,15 @@ from rbac.scenarios import RBACScenarios
 import core
 import core.bundle
 
+from use_cases.errors import convert_bundle_errors_to_adcm_ex
+
 
 @dataclass(slots=True)
 class CreateCluster:
     config_service: core.config.ConfigService
     status_scenarios: StatusScenarios
     available_contract_versions: core.bundle.AvailableContractVersions
+    cluster_service: ClusterService
 
     @convert_bundle_errors_to_adcm_ex
     def do(self, prototype: models.Prototype, name: str, description: str):
@@ -60,8 +63,10 @@ class CreateCluster:
             _create_ansible_config(cluster_id=cluster.pk)
 
             added, removed = {}, {}
-            if recalculate_own_concerns_on_add_clusters(cluster):
-                added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+            if recalculate_own_concerns_on_add_clusters(cluster, config_service=self.config_service):
+                added, removed = redistribute_issues_and_flags(
+                    topology=retrieve_cluster_topology(cluster.pk), cluster_service=self.cluster_service
+                )
 
         self.status_scenarios.reset_hc_map()
         self.status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
@@ -74,6 +79,7 @@ class CreateServicesFromPrototypes:
     config_service: core.config.ConfigService
     rbac_scenarios: RBACScenarios
     status_scenarios: StatusScenarios
+    cluster_service: ClusterService
 
     def do(self, cluster: models.Cluster, prototype_ids: Iterable[PrototypeID]) -> tuple[models.Service, ...]:
         result = _validate_service_prototypes(cluster=cluster, ids=prototype_ids)
@@ -93,8 +99,11 @@ class CreateServicesFromPrototypes:
                 services=services.prefetch_related(
                     "components"
                 ).all(),  # refresh values from db to update `config` field
+                config_service=self.config_service,
             )
-            added, removed = redistribute_issues_and_flags(topology=retrieve_cluster_topology(cluster.pk))
+            added, removed = redistribute_issues_and_flags(
+                topology=retrieve_cluster_topology(cluster.pk), cluster_service=self.cluster_service
+            )
 
             self.rbac_scenarios.re_apply_object_policy(apply_object=cluster)
 

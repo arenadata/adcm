@@ -32,9 +32,8 @@ from core.types import ADCMCoreType, BundleID, ClusterID, CoreObjectDescriptor, 
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rbac.models import Policy
-from rest_framework.status import HTTP_409_CONFLICT
 
-from cm.errors import AdcmEx
+from cm.errors import HTTP_409_CONFLICT, AdcmEx
 from cm.legacy.services.action_host_group import ActionHostGroupRepo
 from cm.legacy.services.bundle import retrieve_bundle_restrictions
 from cm.legacy.services.cluster import retrieve_cluster_topology
@@ -54,15 +53,15 @@ from cm.legacy.services.concern.locks import retrieve_lock_on_object
 from cm.legacy.services.config_host_group import ConfigHostGroupRepo
 from cm.legacy.services.mapping._repo import _apply_mapping_delta_in_db, lock_cluster_mapping
 from cm.legacy.services.status.notify import reset_hc_map, reset_objects_in_mm
-from cm.legacy.status_api import notify_about_redistributed_concerns_from_maps, send_host_component_map_update_event
+from cm.legacy.status_api import send_host_component_map_update_event
 from cm.models import Cluster, ConcernCause, Host, MaintenanceMode, Service
+from cm.transition.status import StatusScenarios
 
 
 class PerformMappingChecks(Protocol):
     def __call__(
         self, bundle_restrictions: BundleRestrictions, new_topology: ClusterTopology, host_difference: TopologyHostDiff
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 def check_nothing(
@@ -105,6 +104,7 @@ def set_host_component_mapping(
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
@@ -114,6 +114,7 @@ def set_host_component_mapping(
             bundle_id=bundle_id,
             new_mapping=new_mapping,
             cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
             checks_func=checks_func,
         )
 
@@ -123,6 +124,7 @@ def set_host_component_mapping_no_lock(
     bundle_id: BundleID,
     new_mapping: Iterable[HostComponentEntry],
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     new_mapping = tuple(new_mapping)
@@ -132,6 +134,7 @@ def set_host_component_mapping_no_lock(
         bundle_id=bundle_id,
         mapping_delta=mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=checks_func,
     )
 
@@ -141,6 +144,7 @@ def change_host_component_mapping(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     with atomic():
@@ -150,6 +154,7 @@ def change_host_component_mapping(
             bundle_id=bundle_id,
             mapping_delta=mapping_delta,
             cluster_service=cluster_service,
+            status_scenarios=status_scenarios,
             checks_func=checks_func,
         )
 
@@ -159,6 +164,7 @@ def change_host_component_mapping_no_lock(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> None:
     _change_host_component_mapping(
@@ -166,6 +172,7 @@ def change_host_component_mapping_no_lock(
         bundle_id=bundle_id,
         mapping_delta=mapping_delta,
         cluster_service=cluster_service,
+        status_scenarios=status_scenarios,
         checks_func=checks_func,
     )
 
@@ -180,6 +187,7 @@ def _change_host_component_mapping(
     bundle_id: BundleID,
     mapping_delta: TaskMappingDelta,
     cluster_service: ClusterService,
+    status_scenarios: StatusScenarios,
     checks_func: PerformMappingChecks = check_for_main_mapping,
 ) -> ClusterTopology:
     # prepare
@@ -202,7 +210,10 @@ def _change_host_component_mapping(
 
     # updates of related entities
     added, removed = _update_concerns(
-        old_topology=current_topology, new_topology=new_topology, bundle_restrictions=bundle_restrictions
+        old_topology=current_topology,
+        new_topology=new_topology,
+        bundle_restrictions=bundle_restrictions,
+        cluster_service=cluster_service,
     )
     ActionHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
     ConfigHostGroupRepo().remove_unmapped_hosts_from_groups(host_difference.unmapped)
@@ -212,7 +223,7 @@ def _change_host_component_mapping(
     reset_hc_map()
     reset_objects_in_mm(cluster_service=cluster_service)
     send_host_component_map_update_event(cluster_id=cluster_id)
-    notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
+    status_scenarios.notify_about_redistributed_concerns_from_maps(added=added, removed=removed)
 
     return new_topology
 
@@ -278,7 +289,10 @@ def _retrieve_delta_from_new_mapping(
 
 
 def _update_concerns(
-    old_topology: ClusterTopology, new_topology: ClusterTopology, bundle_restrictions: BundleRestrictions
+    old_topology: ClusterTopology,
+    new_topology: ClusterTopology,
+    bundle_restrictions: BundleRestrictions,
+    cluster_service: ClusterService,
 ) -> tuple[AffectedObjectConcernMap, AffectedObjectConcernMap]:
     cluster = CoreObjectDescriptor(id=old_topology.cluster_id, type=ADCMCoreType.CLUSTER)
     if not cluster_mapping_has_issue(cluster_id=cluster.id, bundle_restrictions=bundle_restrictions):
@@ -286,7 +300,7 @@ def _update_concerns(
     elif retrieve_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT) is None:
         create_issue(owner=cluster, cause=ConcernCause.HOSTCOMPONENT)
 
-    added, removed = redistribute_issues_and_flags(topology=new_topology)
+    added, removed = redistribute_issues_and_flags(topology=new_topology, cluster_service=cluster_service)
 
     lock = retrieve_lock_on_object(object_=cluster)
     if lock:

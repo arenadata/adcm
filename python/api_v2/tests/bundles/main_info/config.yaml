@@ -1,0 +1,80 @@
+---
+- type: cluster
+  name: main_info_cluster
+  version: '1.0'
+  edition: community
+  contract_version: '2.1'
+  venv: '2.16'
+
+- type: service
+  name: main_info_service
+  version: '1.0'
+  components:
+    required_with_default:
+      config:
+        - name: __main_info
+          type: string
+          required: true
+          default: required with default
+        - name: plain
+          type: string
+          required: false
+          default: plain
+
+    required_no_default:
+      config:
+        - name: __main_info
+          type: string
+          required: true
+        - name: plain
+          type: string
+          required: false
+          default: plain
+
+    non_required_with_default:
+      config:
+        - name: __main_info
+          type: string
+          required: false
+          default: non required with default
+        - name: plain
+          type: string
+          required: false
+          default: plain
+
+    non_required_no_default:
+      config:
+        - name: __main_info
+          type: string
+          required: false
+        - name: plain
+          type: string
+          required: false
+          default: plain
+
+    non_required_invisible:
+      config:
+        - name: __main_info
+          type: string
+          required: false
+          default: non required invisible
+          ui_options:
+            invisible: true
+        - name: plain
+          type: string
+          required: false
+          default: plain
+
+    only_main_info:
+      config:
+        - name: __main_info
+          type: string
+          required: false
+          default: only main info
+
+    without_main_info:
+      config:
+        - name: plain
+          type: string
+          required: false
+          default: plain

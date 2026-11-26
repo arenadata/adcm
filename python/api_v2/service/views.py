@@ -348,69 +348,57 @@ class ServiceImportViewSet(ImportViewSet):
 
 @document_config_host_group_viewset(object_type="service")
 @audit_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceCHGViewSet(CHGViewSet):
-    ...
+class ServiceCHGViewSet(CHGViewSet): ...
 
 
 @document_host_config_host_group_viewset(object_type="service")
 @audit_host_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceHostCHGViewSet(HostCHGViewSet):
-    ...
+class ServiceHostCHGViewSet(HostCHGViewSet): ...
 
 
 @document_config_viewset(object_type="service config group", operation_id_variant="ServiceConfigGroup")
 @audit_config_config_host_group_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceConfigCHGViewSet(ConfigLogViewSet):
-    ...
+class ServiceConfigCHGViewSet(ConfigLogViewSet): ...
 
 
 @document_action_viewset(object_type="service")
 @audit_action_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceActionViewSet(ActionViewSet):
-    ...
+class ServiceActionViewSet(ActionViewSet): ...
 
 
 @document_action_host_group_viewset(object_type="service")
 @audit_action_host_group_viewset(parent_service_from_lookup)
-class ServiceActionHostGroupViewSet(ActionHostGroupViewSet):
-    ...
+class ServiceActionHostGroupViewSet(ActionHostGroupViewSet): ...
 
 
 @document_action_host_group_hosts_viewset(object_type="service")
-class ServiceActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet):
-    ...
+class ServiceActionHostGroupHostsViewSet(ActionHostGroupHostsViewSet): ...
 
 
 @document_action_host_group_actions_viewset(object_type="service")
-class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet):
-    ...
+class ServiceActionHostGroupActionsViewSet(ActionHostGroupActionsViewSet): ...
 
 
 @document_action_process_viewset(object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup")
 @audit_action_process_viewset(retrieve_owner=parent_service_from_lookup)
-class ServiceActionHostGroupActionsProcessViewSet(ActionProcessViewSet):
-    ...
+class ServiceActionHostGroupActionsProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(
     object_type="serviceActionHostGroup", operation_id_variant="ServiceActionHostGroup"
 )
-class ServiceActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ServiceActionHostGroupActionsProcessStepViewSet(ProcessStepViewSet): ...
 
 
 @document_config_viewset(object_type="service")
 @audit_config_viewset(type_in_name="Service", retrieve_owner=parent_service_from_lookup)
-class ServiceConfigViewSet(ConfigLogViewSet):
-    ...
+class ServiceConfigViewSet(ConfigLogViewSet): ...
 
 
 @audit_action_process_viewset(retrieve_owner=parent_service_from_lookup)
 @document_action_process_viewset(object_type="service")
-class ServiceActionProcessViewSet(ActionProcessViewSet):
-    ...
+class ServiceActionProcessViewSet(ActionProcessViewSet): ...
 
 
 @document_action_process_step_viewset(object_type="service")
-class ServiceActionProcessStepViewSet(ProcessStepViewSet):
-    ...
+class ServiceActionProcessStepViewSet(ProcessStepViewSet): ...

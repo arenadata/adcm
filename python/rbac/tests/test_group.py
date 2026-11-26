@@ -39,7 +39,7 @@ class GroupTestCase(BaseTestCase):
                 self.assertEqual(
                     actual_value,
                     expected_value,
-                    f"{group}: wrong {attr} (`{actual_value}`," f" expected: `{expected_value}`)",
+                    f"{group}: wrong {attr} (`{actual_value}`, expected: `{expected_value}`)",
                 )
 
             group.delete()

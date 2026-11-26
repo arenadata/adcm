@@ -26,3 +26,5 @@ export { useClipboardCopy } from './useClipboardCopy/useClipboardCopy';
 export { useContextHelper } from './useContextHelper';
 export { useFullscreen } from './useFullscreen';
 export { useRemoveActionIdFromUrl } from './useRemoveActionIdFromUrl/useRemoveActionIdFromUrl';
+export { useMappingLayersV2 } from './useMappingLayersV2';
+export { useMappingEditor } from './useMappingEditor';

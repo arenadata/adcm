@@ -18,6 +18,7 @@ from functools import partial, reduce
 from itertools import chain
 from operator import or_
 
+from core.cluster import ClusterService
 from core.types import CoreObjectDescriptor
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -98,7 +99,7 @@ def lower_all_flags(on_objects: Collection[CoreObjectDescriptor]) -> bool:
 
 
 def update_hierarchy_for_flag(
-    flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor]
+    flag: ConcernFlag, on_objects: Collection[CoreObjectDescriptor], cluster_service: ClusterService
 ) -> AffectedObjectConcernMap:
     # not all of these can be considered "affected", but there's little way to know the difference
     processed: AffectedObjectConcernMap = defaultdict(lambda: defaultdict(set))
@@ -110,7 +111,9 @@ def update_hierarchy_for_flag(
     ):
         concern_id = concern.id
         owner = CoreObjectDescriptor(id=concern.owner_id, type=model_name_to_core_type(concern.owner_type.model))
-        related_objects = distribute_concern_on_related_objects(owner=owner, concern_id=concern.id)
+        related_objects = distribute_concern_on_related_objects(
+            owner=owner, concern_id=concern.id, cluster_service=cluster_service
+        )
         for core_type, object_ids in related_objects.items():
             for object_id in object_ids:
                 processed[core_type][object_id].add(concern_id)
