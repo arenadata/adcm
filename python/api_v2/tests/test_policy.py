@@ -61,11 +61,130 @@ class TestPolicy(ADCMDjangoAPISuite):
         response = (self.client.v2 / "rbac" / "policies").get()
 
         self.assertEqual(response.status_code, HTTP_200_OK)
+        expected_response = [
+            {
+                "id": self.remove_provider_policy.pk,
+                "name": "Awesome Policy",
+                "description": "first description",
+                "isBuiltIn": False,
+                "objects": [
+                    {
+                        "id": self.provider.pk,
+                        "type": "provider",
+                        "name": self.provider.name,
+                        "displayName": self.provider.display_name,
+                        "parentId": None,
+                        "objects": [{"type": "provider", "id": self.provider.pk, "name": self.provider.name}],
+                    }
+                ],
+                "groups": [
+                    {"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name}
+                ],
+                "role": {
+                    "id": self.remove_provider_role.pk,
+                    "name": self.remove_provider_role.name,
+                    "displayName": self.remove_provider_role.display_name,
+                },
+            },
+            {
+                "id": self.create_user_policy.pk,
+                "name": "Create User Policy",
+                "description": "second description",
+                "isBuiltIn": False,
+                "objects": [],
+                "groups": [
+                    {"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name},
+                    {"id": self.group_2.pk, "name": self.group_2.name, "displayName": self.group_2.display_name},
+                ],
+                "role": {
+                    "id": self.create_user_role.pk,
+                    "name": self.create_user_role.name,
+                    "displayName": self.create_user_role.display_name,
+                },
+            },
+        ]
+        self.assertEqual(response.json()["results"], expected_response)
+
+    def test_list_policy_pagination(self) -> None:
+        """Selector-related queries must be applied only for retrieved page, not the whole queryset"""
+
+        cluster_admin_role = Role.objects.get(name="Cluster Administrator", built_in=True, type="role")
+        cluster_policy = policy_create(
+            name="Best Policy",
+            role=cluster_admin_role,
+            group=[self.group_1],
+            object=[self.cluster_1],
+            description="third description",
+        )
+
+        group_1 = {"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name}
+
+        awesome_policy = {
+            "id": self.remove_provider_policy.pk,
+            "name": "Awesome Policy",
+            "description": "first description",
+            "isBuiltIn": False,
+            "objects": [
+                {
+                    "id": self.provider.pk,
+                    "type": "provider",
+                    "name": self.provider.name,
+                    "displayName": self.provider.display_name,
+                    "parentId": None,
+                    "objects": [{"type": "provider", "id": self.provider.pk, "name": self.provider.name}],
+                }
+            ],
+            "groups": [group_1],
+            "role": {
+                "id": self.remove_provider_role.pk,
+                "name": self.remove_provider_role.name,
+                "displayName": self.remove_provider_role.display_name,
+            },
+        }
+
+        best_policy = {
+            "id": cluster_policy.pk,
+            "name": "Best Policy",
+            "description": "third description",
+            "isBuiltIn": False,
+            "objects": [
+                {
+                    "id": self.cluster_1.pk,
+                    "type": "cluster",
+                    "name": self.cluster_1.name,
+                    "displayName": self.cluster_1.display_name,
+                    "parentId": None,
+                    "objects": [{"type": "cluster", "id": self.cluster_1.pk, "name": self.cluster_1.name}],
+                }
+            ],
+            "groups": [group_1],
+            "role": {
+                "id": cluster_admin_role.pk,
+                "name": cluster_admin_role.name,
+                "displayName": cluster_admin_role.display_name,
+            },
+        }
+
+        # cache django_content_type / auth_permission queries
+        (self.client.v2 / "rbac" / "policies").get()
+
+        # limit=1 returns only "Awesome Policy" (provider), so the cluster from the next page isn't queried.
+        # limit=2 additionally touches the cluster, adding its prefetch and selector queries (10 vs 12).
+        with self.assertNumQueries(10):
+            response = (self.client.v2 / "rbac" / "policies").get(query={"limit": 1})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
-        self.assertIn("results", data)
-        policies = data["results"]
-        self.assertEqual(len(policies), 2)
-        self.assertTrue(all(set(policy).issuperset({"id", "name", "objects", "groups"}) for policy in policies))
+        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["results"], [awesome_policy])
+
+        with self.assertNumQueries(12):
+            response = (self.client.v2 / "rbac" / "policies").get(query={"limit": 2})
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["count"], 3)
+        self.assertEqual(data["results"], [awesome_policy, best_policy])
 
     def test_retrieve_policy_success(self) -> None:
         response = self.client.v2[self.create_user_policy].get()
@@ -116,6 +235,7 @@ class TestPolicy(ADCMDjangoAPISuite):
                     "name": self.provider.name,
                     "displayName": self.provider.display_name,
                     "parentId": None,
+                    "objects": [{"type": "provider", "id": self.provider.pk, "name": self.provider.name}],
                 }
             ],
         )
@@ -218,6 +338,10 @@ class TestPolicy(ADCMDjangoAPISuite):
                 "name": service_2.name,
                 "parentId": service_2.cluster_id,
                 "type": "service",
+                "objects": [
+                    {"type": "cluster", "id": self.cluster_1.id, "name": self.cluster_1.name},
+                    {"type": "service", "id": service_2.id, "name": service_2.display_name},
+                ],
             },
         ]
         expected_objects_three_services = [
@@ -228,6 +352,10 @@ class TestPolicy(ADCMDjangoAPISuite):
                 "name": service_3.name,
                 "parentId": service_3.cluster_id,
                 "type": "service",
+                "objects": [
+                    {"type": "cluster", "id": self.cluster_1.id, "name": self.cluster_1.name},
+                    {"type": "service", "id": service_3.id, "name": service_3.display_name},
+                ],
             },
             {
                 "id": service_6.id,
@@ -235,6 +363,10 @@ class TestPolicy(ADCMDjangoAPISuite):
                 "name": service_6.name,
                 "parentId": service_6.cluster_id,
                 "type": "service",
+                "objects": [
+                    {"type": "cluster", "id": self.cluster_1.id, "name": self.cluster_1.name},
+                    {"type": "service", "id": service_6.id, "name": service_6.display_name},
+                ],
             },
         ]
         expected_objects_cluster = [
@@ -244,27 +376,95 @@ class TestPolicy(ADCMDjangoAPISuite):
                 "name": self.cluster_1.name,
                 "parentId": None,
                 "type": "cluster",
+                "objects": [{"type": "cluster", "id": self.cluster_1.id, "name": self.cluster_1.name}],
             }
         ]
-        expected_queries_number = 7
+        one_service_queries = 10
+        three_services_queries = 10
+        cluster_queries = 9
 
         # cache django_content_type / auth_permission queries
         (self.client.v2 / "rbac" / "policies").get()
 
-        with self.assertNumQueries(expected_queries_number):
+        with self.assertNumQueries(one_service_queries):
             response = (self.client.v2 / "rbac" / "policies" / str(one_service_admin_policy.id)).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(response.json()["objects"], expected_objects_one_service)
 
-        with self.assertNumQueries(expected_queries_number):
+        with self.assertNumQueries(three_services_queries):
             response = (self.client.v2 / "rbac" / "policies" / str(three_services_admin_policy.id)).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(response.json()["objects"], expected_objects_three_services)
 
-        with self.assertNumQueries(expected_queries_number):
+        with self.assertNumQueries(cluster_queries):
             response = (self.client.v2 / "rbac" / "policies" / str(cluster_admin_policy.id)).get()
         self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertListEqual(response.json()["objects"], expected_objects_cluster)
+
+    def test_policy_with_ten_services_objects_response(self) -> None:
+        """Check queries with many objects"""
+
+        names = [
+            "service_2",
+            "service_3_manual_add",
+            "service_4_save_config_without_required_field",
+            "service_5_variant_type_without_values",
+            "service_6_delete_with_action",
+            "adcm_7807",
+            "adcm_8527",
+            "adcm_7586",
+            "adcm_8014_8016",
+            "adcm_8325_secrets_config",
+        ]
+        self.uc.add_services_to_cluster(names=names, cluster=self.cluster_1)
+        services = list(
+            Service.objects.filter(cluster=self.cluster_1, prototype__name__in=names).order_by("prototype__name")
+        )
+
+        service_admin_role = Role.objects.get(name="Service Administrator", built_in=True, type="role")
+        policy = policy_create(
+            name="Ten services policy",
+            role=service_admin_role,
+            group=[self.group_1],
+            object=services,
+        )
+
+        expected_objects = [
+            {
+                "id": service.id,
+                "displayName": service.display_name,
+                "name": service.name,
+                "parentId": service.cluster_id,
+                "type": "service",
+                "objects": [
+                    {"type": "cluster", "id": self.cluster_1.id, "name": self.cluster_1.name},
+                    {"type": "service", "id": service.id, "name": service.display_name},
+                ],
+            }
+            for service in services
+        ]
+        expected_response = {
+            "id": policy.pk,
+            "name": "Ten services policy",
+            "description": "",
+            "isBuiltIn": False,
+            "objects": expected_objects,
+            "groups": [{"id": self.group_1.pk, "name": self.group_1.name, "displayName": self.group_1.display_name}],
+            "role": {
+                "id": service_admin_role.pk,
+                "name": service_admin_role.name,
+                "displayName": service_admin_role.display_name,
+            },
+        }
+
+        # cache django_content_type / auth_permission queries
+        (self.client.v2 / "rbac" / "policies").get()
+
+        with self.assertNumQueries(10):
+            response = self.client.v2[policy].get()
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.json(), expected_response)
 
     def test_ordering_success(self):
         ordering_fields = {

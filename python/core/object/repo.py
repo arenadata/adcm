@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from typing import Protocol
 
+from core.object.types import Selector, SelectorOwnerDescriptor, SelectorTargetDescriptor
 from core.types import ADCMCoreType, Descriptor
 
 
@@ -24,3 +25,9 @@ class ObjectRepoI(Protocol):
     ) -> list[str]: ...
 
     def retrieve_multi_state(self, object_: Descriptor[ADCMCoreType]) -> list[str]: ...
+
+    def build_selector(
+        self,
+        targets: Iterable[SelectorTargetDescriptor],
+        owner: SelectorOwnerDescriptor | None = None,
+    ) -> dict[SelectorTargetDescriptor, Selector]: ...

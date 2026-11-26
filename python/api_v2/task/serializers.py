@@ -15,27 +15,19 @@ from cm.models import JobLog, TaskLog
 from core.action import TaskRunnerEnvironment
 from core.action.job.operations import is_terminatable_status
 from core.action.types import ExecutionStatus
+from core.object.types import FullSelectorEntry
+from core.object.utils import SELECTOR_OBJECT_ORDER, order_selector
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.fields import CharField, ChoiceField, DateTimeField, IntegerField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from api_v2.generic.action.serializers import ActionNameSerializer
 
-OBJECT_ORDER = {
-    "adcm": 0,
-    "cluster": 1,
-    "service": 2,
-    "component": 3,
-    "provider": 4,
-    "host": 5,
-    "action_host_group": 6,
-}
-
 
 class TaskObjectsFieldSerializer(EmptySerializer):
     id = IntegerField()
     name = CharField()
-    type = ChoiceField(choices=tuple((v, v) for v in OBJECT_ORDER))
+    type = ChoiceField(choices=tuple((type_, type_) for type_ in SELECTOR_OBJECT_ORDER))
 
 
 class TaskGroupTerminateSerializer(EmptySerializer):
@@ -100,8 +92,8 @@ class TaskSerializer(ModelSerializer):
 
     @staticmethod
     @extend_schema_field(field=TaskObjectsFieldSerializer(many=True), component_name="TaskObjectsField")
-    def get_objects(obj: TaskLog) -> list[dict[str, int | str]]:
-        return [{"type": k, **v} for k, v in sorted(obj.selector.items(), key=lambda k: OBJECT_ORDER[k[0]])]
+    def get_objects(obj: TaskLog) -> list[FullSelectorEntry]:
+        return order_selector(selector=obj.selector)
 
     @staticmethod
     @extend_schema_field(

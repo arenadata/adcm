@@ -31,6 +31,7 @@ from core.action.types import (
     TaskShortInfo,
 )
 from core.config import ParameterLevelName
+from core.object.types import Selector
 from core.types import (
     ActionID,
     ActionTargetDescriptor,
@@ -194,7 +195,7 @@ class JobRepoI(Protocol):
 
     # create
 
-    def create_task(self, payload: TaskCreateDTO) -> TaskID: ...
+    def create_task(self, payload: TaskCreateDTO, *, selector: Selector) -> TaskID: ...
 
     def create_jobs(self, task_id: TaskID, scripts: JobSpecV1) -> tuple[JobShortInfo, ...]:
         """Create a job per script of the plan, reporting the jobs it made"""

@@ -34,7 +34,7 @@ from audit.models import (
     AuditUser,
 )
 from cm.converters import core_type_to_model, orm_object_to_core_descriptor
-from cm.impl.job.repo import _get_selector_for_core_object
+from cm.impl.object.repo import ObjectRepo
 from cm.models import (
     ADCM,
     Action,
@@ -515,8 +515,7 @@ class ADCMFiltersDataSuite(_ADCMTestCase, django.test.TestCase):
 
         owner_descr = orm_object_to_core_descriptor(owner)
 
-        # to get the selector need to use temporarily the protected function
-        selector = _get_selector_for_core_object(target=owner_descr, owner=owner_descr)
+        selector = ObjectRepo().build_selector(targets=(owner_descr,), owner=owner_descr)[owner_descr]
         object_type = core_type_to_model(core_type=owner_descr.type).class_content_type
 
         task = TaskLog.objects.create(
