@@ -175,7 +175,8 @@ class BundleSwitch:
             except Prototype.DoesNotExist:
                 update_before_upgrade_after_delete_service = True
                 deleted_service = DeletedServiceBeforeUpgrade(
-                    **_get_before_upgrade_for_deleted_object(object_before_upgrade=service.before_upgrade).model_dump()
+                    **_get_before_upgrade_for_deleted_object(object_before_upgrade=service.before_upgrade).model_dump(),
+                    version=service.before_upgrade.get("version"),
                 )
 
                 for component_name, component_before_upgrade in service.components.select_related(  # pyright: ignore

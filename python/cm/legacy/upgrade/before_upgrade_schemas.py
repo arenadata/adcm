@@ -50,6 +50,11 @@ class _WithBinds(BaseModel):
     binds: Annotated[list[ClusterBindSchema], Field(default_factory=list)]
 
 
+class _WithVersion(BaseModel):
+    # version from which upgrade was performed
+    version: str | None = None
+
+
 class ConfigHostGroupWithIdConfigBeforeUpgrade(BaseModel):
     config_id: int | None = None
     hosts: ListOfHosts
@@ -79,7 +84,9 @@ class ServiceHostComponentMapBeforeUpgrade(BaseModel):
     host: str
 
 
-class ServiceBeforeUpgrade(_BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds): ...
+class ServiceBeforeUpgrade(
+    _BaseBeforeUpgrade, _WithVersion, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds
+): ...
 
 
 class ComponentBeforeUpgrade(_BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup): ...
@@ -88,19 +95,23 @@ class ComponentBeforeUpgrade(_BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _
 class DeletedObjectBeforeUpgrade(_BaseDeletedBeforeUpgrade, _WithConfigHostGroupRawConfig, _WithActionHostGroup): ...
 
 
-class ProviderBeforeUpgrade(_WithBundleID, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig): ...
+class ProviderBeforeUpgrade(_WithBundleID, _WithVersion, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig):
+    # edition from which upgrade was performed
+    edition: str | None = None
 
 
-class HostBeforeUpgrade(_BaseBeforeUpgrade): ...
+class HostBeforeUpgrade(_BaseBeforeUpgrade, _WithVersion): ...
 
 
-class DeletedServiceBeforeUpgrade(DeletedObjectBeforeUpgrade):
+class DeletedServiceBeforeUpgrade(DeletedObjectBeforeUpgrade, _WithVersion):
     components: Annotated[dict[ComponentName, DeletedObjectBeforeUpgrade], Field(default_factory=dict)]
 
 
 class ClusterBeforeUpgrade(
-    _WithBundleID, _BaseBeforeUpgrade, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds
+    _WithBundleID, _BaseBeforeUpgrade, _WithVersion, _WithConfigHostGroupIdConfig, _WithActionHostGroup, _WithBinds
 ):
+    # edition from which upgrade was performed
+    edition: str | None = None
     hc: Annotated[list[ServiceHostComponentMapBeforeUpgrade], Field(default_factory=list)]
     # todo add better typehint (see ImportsDict from context._imports)
     imports: Annotated[dict, Field(default_factory=dict)]

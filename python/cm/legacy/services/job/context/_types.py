@@ -36,6 +36,8 @@ class _BeforeUpgradeInventoryNode(BaseModel):
     state: str | None
     config: dict | None = None
     imports: dict | None = None
+    version: str | None = None
+    edition: str | None = None
 
     def model_dump(self, **_) -> dict:
         # can't rely on `exclude_default` here, because it removes the whole `_BeforeUpgradeInventoryNode`
@@ -47,6 +49,12 @@ class _BeforeUpgradeInventoryNode(BaseModel):
 
         if self.imports is None:
             original.pop("imports")
+
+        if self.version is None:
+            original.pop("version")
+
+        if self.edition is None:
+            original.pop("edition")
 
         return original
 

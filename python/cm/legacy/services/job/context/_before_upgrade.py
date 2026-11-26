@@ -180,6 +180,10 @@ def get_before_upgrades(
         }
         if "imports" in before_upgrade_info.before_upgrade:
             result[object_]["imports"] = before_upgrade_info.before_upgrade["imports"]["config"]
+        if "version" in before_upgrade_info.before_upgrade:
+            result[object_]["version"] = before_upgrade_info.before_upgrade["version"]
+        if "edition" in before_upgrade_info.before_upgrade:
+            result[object_]["edition"] = before_upgrade_info.before_upgrade["edition"]
 
         if not before_upgrade_info.bundle_id:
             # then we can't get the config prototype to convert the config
