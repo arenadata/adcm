@@ -11,10 +11,10 @@
 # limitations under the License.
 
 """
-Upgrade of 3.0.0 data by `cm.0156_execution_plan_storage`.
+Upgrade of 3.0.0 data by `cm.0155_release_3_1_0`.
 
 3.0.0 rows come from `files/execution_plan_migration_3_0_0.yaml`,
-what 0156 has to store for them is in `files/execution_plan_migration_expected.yaml`.
+what 0155 has to store for them is in `files/execution_plan_migration_expected.yaml`.
 """
 
 from collections import defaultdict
@@ -163,8 +163,8 @@ def to_step_model(step: Any) -> wizard.ActionProcessStepModel:
 
 
 class TestExecutionPlanMigrationFrom300(MigratorTestCase):
-    migrate_from = ("cm", "0155_remove_redundant_fields_from_action")
-    migrate_to = ("cm", "0156_execution_plan_storage")
+    migrate_from = ("cm", "0154_release_3_0_0")
+    migrate_to = ("cm", "0155_release_3_1_0")
 
     ids: SeededIDs
     expected: dict[str, Any]
