@@ -10,12 +10,18 @@ export interface AdcmPolicyGroup {
   displayName: string;
 }
 
+export interface AdcmPolicyObjectParent {
+  id: number;
+  type: string;
+  name: string;
+}
+
 export interface AdcmPolicyObject {
   id: number;
   name: string;
   type: string;
   displayName: string;
-  clusterName: string;
+  objects?: AdcmPolicyObjectParent[];
 }
 
 export interface AdcmPoliciesFilter {
@@ -34,11 +40,11 @@ export interface AdcmPolicy {
 
 export type AdcmPolicyGroupPayload = Omit<AdcmPolicyGroup, 'name' | 'displayName'>;
 
-export type AdcmPolicyObjectPayload = Omit<AdcmPolicyObject, 'name' | 'displayName' | 'clusterName'> & {
+export type AdcmPolicyObjectPayload = Omit<AdcmPolicyObject, 'name' | 'displayName' | 'objects'> & {
   type: string;
 };
 
-export type AdcmPolicyObjectCandidate = Omit<AdcmPolicyObject, 'displayName' | 'clusterName'>;
+export type AdcmPolicyObjectCandidate = Omit<AdcmPolicyObject, 'displayName' | 'objects'>;
 
 export type AdcmPolicyObjectCandidateService = AdcmPolicyObjectCandidate & {
   displayName: string;

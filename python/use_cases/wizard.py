@@ -41,7 +41,7 @@ from cm.legacy.services.job.action import check_no_blocking_concerns
 from cm.models import Cluster, TaskLog
 from cm.transition.status import StatusScenarios
 from core.action import CallingProcess
-from core.action.job import JobService
+from core.action.job import JobService, LaunchOptions
 from core.cluster import ClusterService
 from core.dynamic_bundle.render import BundleRenderer
 from core.legacy.cluster.operations import create_topology_with_new_mapping, find_hosts_difference
@@ -366,6 +366,10 @@ class PerformWizardProcessOperation:
                     target=action.target,
                     action_id=action.action_id,
                     extra=task_extra,
+                    launch=LaunchOptions(
+                        is_verbose=payload.params.operation.is_verbose,
+                        is_blocking=payload.params.operation.should_block_object,
+                    ),
                     process=CallingProcess(
                         id=process.process_id, sync_key=process.new_sync_key, step_id=payload.params.step_id
                     ),

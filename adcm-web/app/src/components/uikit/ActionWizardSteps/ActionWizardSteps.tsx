@@ -6,6 +6,8 @@ import {
   type AdcmActionProcessOperationStep,
   type AdcmActionProcessStep,
   type AdcmWizardJobsData,
+  type AdcmWizardOperationSettings,
+  type AdcmWizardSubmitStepOptions,
   AdcmWizardStepStates,
   AdcmWizardStepType,
 } from '@models/adcm/wizard';
@@ -24,6 +26,7 @@ import {
   isStepFailed,
 } from '@uikit/ActionWizardSteps/ActionWizardSteps.utils';
 import ActionWizardMapping from '@uikit/ActionWizardSteps/ActionWizardMapping/ActionWizardMapping';
+import ActionWizardOperationSettings from '@uikit/ActionWizardSteps/ActionWizardOperationSettings/ActionWizardOperationSettings';
 
 interface ActionWizardStepProps {
   clusterId: number;
@@ -32,7 +35,7 @@ interface ActionWizardStepProps {
   stageNumber: number;
   steps: AdcmActionProcessStep[];
   isInRunningState: boolean;
-  onStepSubmit: (stepType: AdcmWizardStepType) => void;
+  onStepSubmit: (stepType: AdcmWizardStepType, options?: AdcmWizardSubmitStepOptions) => void;
   onStepChange: () => void;
   onStepReset: (stepId: number) => void;
   entityDynamicActionWizardOperation: React.FC<{
@@ -42,6 +45,11 @@ interface ActionWizardStepProps {
   selectedStep?: number;
   lastStepActionDetails: AdcmDynamicActionDetails | null;
 }
+
+const defaultOperationSettings: AdcmWizardOperationSettings = {
+  isVerbose: false,
+  shouldBlockObject: true,
+};
 
 const getStepIcon = (step: AdcmActionProcessStep, hasConflict: boolean, jobsData?: AdcmJob) => {
   if (isStepFailed(step, !hasConflict, jobsData)) {
@@ -89,6 +97,13 @@ const ActionWizardSteps = ({
   const WizardOperation = entityDynamicActionWizardOperation;
 
   const [hiddenStates, setHiddenStates] = useState(() => getHiddenSteps(steps, selectedStep || currentStep));
+  const [operationSettings, setOperationSettings] = useState<Record<number, AdcmWizardOperationSettings>>({});
+
+  const getOperationSettings = (stepId: number) => operationSettings[stepId] ?? defaultOperationSettings;
+
+  const handleOperationSettingsChange = (stepId: number, settings: AdcmWizardOperationSettings) => {
+    setOperationSettings((prev) => ({ ...prev, [stepId]: settings }));
+  };
 
   useEffect(() => {
     const element = document.getElementById(`step-${selectedStep}`);
@@ -116,7 +131,7 @@ const ActionWizardSteps = ({
 
   const handleFirstButtonClick = (stepType: AdcmWizardStepType, stepId: number) => {
     if (stepType === AdcmWizardStepType.Operation) {
-      onStepSubmit(stepType);
+      onStepSubmit(stepType, { operation: getOperationSettings(stepId) });
     } else {
       onStepReset(stepId);
       setIsValid(true);
@@ -138,6 +153,7 @@ const ActionWizardSteps = ({
         const isStepHidden = hiddenStates[step.id]; // Per-step hidden state
         const isCurrentStep = currentStep === step.id;
         const hasConflict = isCurrentStep && !isValid;
+        const isStepActionDisabled = isFirstButtonDisabled(step, isCurrentStep, isDraft, isInRunningState);
 
         return (
           <div
@@ -159,10 +175,17 @@ const ActionWizardSteps = ({
                 </div>
               </div>
               <ButtonGroup className={s.actionWizardSteps__buttons}>
+                {step.type === AdcmWizardStepType.Operation && (
+                  <ActionWizardOperationSettings
+                    settings={getOperationSettings(step.id)}
+                    isDisabled={isStepActionDisabled}
+                    onChange={(settings) => handleOperationSettingsChange(step.id, settings)}
+                  />
+                )}
                 {isFirstButtonVisible(step.type) && (
                   <Button
                     variant="secondary"
-                    disabled={isFirstButtonDisabled(step, isCurrentStep, isDraft, isInRunningState)}
+                    disabled={isStepActionDisabled}
                     onClick={() => handleFirstButtonClick(step.type, step.id)}
                   >
                     {step.type === AdcmWizardStepType.Operation ? step?.uiOptions?.buttonName : 'Discard changes'}

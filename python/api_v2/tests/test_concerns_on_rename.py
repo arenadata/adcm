@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.converters import orm_object_to_core_descriptor, orm_object_to_core_type
-from cm.impl.job.repo import _get_selector_for_core_object
+from cm.impl.object.repo import ObjectRepo
 from cm.legacy.services.concern.flags import BuiltInFlag, ConcernFlag, raise_flag, raise_flag_for_process
 from cm.models import Action, ADCMEntity, Cluster, ConcernCause, ConcernItem, ConcernType, Host, JobLog, TaskLog
 from cm.tests.scripts import build_plan, build_script_spec
@@ -117,7 +117,7 @@ class TestConcernsOnRename(GenericTestCase):
             object_type=owner.content_type,
             owner_id=owner.pk,
             owner_type=owner_descriptor.type.value,
-            selector=_get_selector_for_core_object(target=owner_descriptor, owner=owner_descriptor),
+            selector=ObjectRepo().build_selector(targets=(owner_descriptor,), owner=owner_descriptor)[owner_descriptor],
             status="running",
             verbose=False,
             is_blocking=blocking,

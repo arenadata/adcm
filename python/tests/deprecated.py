@@ -19,6 +19,7 @@ import tarfile
 from audit.models import AuditLog, AuditObjectType, AuditSession
 from cm.converters import orm_object_to_core_type
 from cm.impl.job.repo import JobRepo
+from cm.impl.object.repo import ObjectRepo
 from cm.legacy.services.cluster import perform_host_to_cluster_map
 from cm.models import (
     ADCM,
@@ -50,6 +51,7 @@ from core.action.job.errors import TaskCreateError
 from core.action.operations import to_rich_jobs
 from core.cluster import ClusterService
 from core.legacy.rbac.dto import UserCreateDTO
+from core.object.utils import as_selector_target
 from core.types import ActionID, ActionTargetDescriptor, ADCMCoreType, CoreObjectDescriptor
 from django.conf import settings
 from django.db.transaction import atomic
@@ -193,7 +195,9 @@ def prepare_task_for_action(
         ),
     )
 
-    task_id = job_repo.create_task(payload=create_dto)
+    selector_target = as_selector_target(create_dto.target)
+    selector = ObjectRepo().build_selector(targets=(selector_target,), owner=create_dto.owner)[selector_target]
+    task_id = job_repo.create_task(payload=create_dto, selector=selector)
     task = job_repo.get_task(task_id)
 
     execution_plan = job_repo.get_job_specs(id=action)

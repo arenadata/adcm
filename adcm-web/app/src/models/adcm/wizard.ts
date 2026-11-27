@@ -157,11 +157,22 @@ export interface AdcmWizardSkipOperationStepPayload {
   };
 }
 
+export interface AdcmWizardOperationSettings {
+  isVerbose: boolean;
+  shouldBlockObject: boolean;
+}
+
+export interface AdcmWizardSubmitStepOptions {
+  isStepSkippable?: boolean;
+  operation?: AdcmWizardOperationSettings;
+}
+
 export interface AdcmWizardSubmitOperationStepPayload {
   method: AdcmWizardMethodType.Submit;
   params: {
     processSyncKey: string;
     stepId: number;
+    operation?: AdcmWizardOperationSettings;
   };
 }
 
